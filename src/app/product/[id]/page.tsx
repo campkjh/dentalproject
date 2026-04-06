@@ -199,23 +199,28 @@ export default function ProductDetailPage() {
                 className="flex-shrink-0 flex flex-col"
                 style={{ width: 288, height: 358, borderRadius: 12, backgroundColor: '#F6F6F6', padding: 12, overflow: 'hidden' }}
               >
-                {/* 전/후 이미지 */}
+                {/* 전/후 이미지 - r값: 전=좌상좌하12, 후=우상우하12 */}
                 <div className="flex" style={{ gap: 0 }}>
-                  <div className="flex-1 aspect-square relative overflow-hidden" style={{ borderRadius: 8 }}>
+                  <div className="flex-1 aspect-square relative overflow-hidden" style={{ borderTopLeftRadius: 12, borderBottomLeftRadius: 12, borderTopRightRadius: 0, borderBottomRightRadius: 0 }}>
                     <div className="w-full h-full flex items-center justify-center" style={{ backgroundColor: '#EBEBEB' }}>
                       <span className="text-2xl">📷</span>
                     </div>
-                    <span style={{ position: 'absolute', top: 0, left: 0, fontSize: 11, fontWeight: 600, color: '#fff', backgroundColor: '#8037FF', borderTopLeftRadius: 8, borderBottomRightRadius: 8, padding: '2px 8px' }}>전</span>
+                    <span style={{ position: 'absolute', top: 0, left: 0, fontSize: 11, fontWeight: 600, color: '#fff', backgroundColor: '#8037FF', borderTopLeftRadius: 12, borderBottomRightRadius: 12, padding: '3px 10px', lineHeight: '11px', width: 28, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>전</span>
                   </div>
-                  <div className="flex-1 aspect-square relative overflow-hidden" style={{ borderRadius: 8 }}>
+                  <div className="flex-1 aspect-square relative overflow-hidden" style={{ borderTopRightRadius: 12, borderBottomRightRadius: 12, borderTopLeftRadius: 0, borderBottomLeftRadius: 0 }}>
                     <div className="w-full h-full flex items-center justify-center" style={{ backgroundColor: '#EBEBEB' }}>
                       <span className="text-2xl">📷</span>
                     </div>
-                    <span style={{ position: 'absolute', top: 0, right: 0, fontSize: 11, fontWeight: 600, color: '#fff', backgroundColor: '#2B313D', borderTopRightRadius: 8, borderBottomLeftRadius: 8, padding: '2px 8px' }}>후</span>
+                    <span style={{ position: 'absolute', top: 0, right: 0, fontSize: 11, fontWeight: 600, color: '#fff', backgroundColor: '#2B313D', borderTopRightRadius: 12, borderBottomLeftRadius: 12, padding: '3px 10px', lineHeight: '11px', width: 28, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>후</span>
                   </div>
                 </div>
+                {/* 시술비용 + 시술시기 태그 */}
+                <div className="flex gap-1" style={{ marginTop: 8 }}>
+                  <span style={{ fontSize: 10, fontWeight: 600, color: '#2B313D', backgroundColor: 'rgba(200,206,218,0.2)', borderRadius: 6, padding: '2px 6px' }}>{review.totalCost.toLocaleString()}원</span>
+                  <span style={{ fontSize: 10, fontWeight: 600, color: '#2B313D', backgroundColor: 'rgba(200,206,218,0.2)', borderRadius: 6, padding: '2px 6px' }}>{review.treatmentDate}</span>
+                </div>
                 {/* 시술명 */}
-                <p style={{ fontSize: 13, fontWeight: 600, color: '#2B313D', marginTop: 8 }} className="truncate">{review.treatmentName}</p>
+                <p style={{ fontSize: 13, fontWeight: 600, color: '#2B313D', marginTop: 6 }} className="truncate">{review.treatmentName}</p>
                 {/* 날짜 */}
                 <p style={{ fontSize: 11, color: '#A4ABBA', marginTop: 2 }}>{review.date}</p>
                 {/* 별점 */}
@@ -427,31 +432,19 @@ export default function ProductDetailPage() {
                     <span style={{ fontSize: 20, fontWeight: 600, color: '#2B313D' }}>{review.rating.toFixed(1)}</span>
                   </div>
 
-                  {/* 전/후 이미지 */}
+                  {/* 전/후 이미지 - 전:좌상좌하12 후:우상우하12 */}
                   <div className="flex" style={{ marginTop: 14, gap: 0 }}>
-                    {/* 전 이미지 */}
-                    <div className="flex-1 aspect-square relative overflow-hidden" style={{ borderRadius: 12 }}>
+                    <div className="flex-1 aspect-square relative overflow-hidden" style={{ borderTopLeftRadius: 12, borderBottomLeftRadius: 12, borderTopRightRadius: 0, borderBottomRightRadius: 0 }}>
                       <div className="w-full h-full flex items-center justify-center" style={{ backgroundColor: '#F2F3F5' }}>
                         <span className="text-3xl">📷</span>
                       </div>
-                      <span style={{
-                        position: 'absolute', top: 0, left: 0,
-                        fontSize: 14, fontWeight: 600, color: '#FFFFFF', backgroundColor: '#8037FF',
-                        borderTopLeftRadius: 12, borderBottomRightRadius: 12,
-                        padding: '4px 12px',
-                      }}>전</span>
+                      <span style={{ position: 'absolute', top: 0, left: 0, fontSize: 14, fontWeight: 600, color: '#fff', backgroundColor: '#8037FF', borderTopLeftRadius: 12, borderBottomRightRadius: 12, padding: '4px 14px', width: 36, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>전</span>
                     </div>
-                    {/* 후 이미지 */}
-                    <div className="flex-1 aspect-square relative overflow-hidden" style={{ borderRadius: 12 }}>
+                    <div className="flex-1 aspect-square relative overflow-hidden" style={{ borderTopRightRadius: 12, borderBottomRightRadius: 12, borderTopLeftRadius: 0, borderBottomLeftRadius: 0 }}>
                       <div className="w-full h-full flex items-center justify-center" style={{ backgroundColor: '#F2F3F5' }}>
                         <span className="text-3xl">📷</span>
                       </div>
-                      <span style={{
-                        position: 'absolute', top: 0, right: 0,
-                        fontSize: 14, fontWeight: 600, color: '#FFFFFF', backgroundColor: '#2B313D',
-                        borderTopRightRadius: 12, borderBottomLeftRadius: 12,
-                        padding: '4px 12px',
-                      }}>후</span>
+                      <span style={{ position: 'absolute', top: 0, right: 0, fontSize: 14, fontWeight: 600, color: '#fff', backgroundColor: '#2B313D', borderTopRightRadius: 12, borderBottomLeftRadius: 12, padding: '4px 14px', width: 36, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>후</span>
                     </div>
                   </div>
 
@@ -461,25 +454,17 @@ export default function ProductDetailPage() {
                   {/* 시술전체비용 */}
                   <div className="flex items-center justify-between" style={{ marginTop: 10 }}>
                     <span style={{ fontSize: 14, color: '#A4ABBA' }}>시술전체비용</span>
-                    <span style={{
-                      fontSize: 12, fontWeight: 600, color: '#2B313D',
-                      backgroundColor: 'rgba(200, 206, 218, 0.2)', borderRadius: 8,
-                      padding: '4px 10px',
-                    }}>{review.totalCost.toLocaleString()}원</span>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: '#2B313D', backgroundColor: 'rgba(200,206,218,0.2)', borderRadius: 8, padding: '4px 10px' }}>{review.totalCost.toLocaleString()}원</span>
                   </div>
 
                   {/* 시술받은시기 */}
                   <div className="flex items-center justify-between" style={{ marginTop: 6 }}>
                     <span style={{ fontSize: 14, color: '#A4ABBA' }}>시술받은시기</span>
-                    <span style={{
-                      fontSize: 12, fontWeight: 600, color: '#2B313D',
-                      backgroundColor: 'rgba(200, 206, 218, 0.2)', borderRadius: 8,
-                      padding: '4px 10px',
-                    }}>{review.treatmentDate}</span>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: '#2B313D', backgroundColor: 'rgba(200,206,218,0.2)', borderRadius: 8, padding: '4px 10px' }}>{review.treatmentDate}</span>
                   </div>
 
-                  {/* 후기 내용 */}
-                  <p style={{ fontSize: 14, fontWeight: 400, color: '#2C2C2C', lineHeight: '22px', marginTop: 14 }}>{review.content}</p>
+                  {/* 후기 내용 - 더보기 */}
+                  <ReviewContent content={review.content} />
 
                 </div>
               ))}
@@ -496,34 +481,35 @@ export default function ProductDetailPage() {
       <div className="bg-white px-2.5 py-5">
         <h2 style={{ fontSize: 20, fontWeight: 600, color: '#2B313D', marginBottom: 12 }}>자주묻는질문</h2>
         {faqItems.map((faq, index) => (
-          <div key={index} style={{ borderBottom: '1px solid #F2F3F5' }}>
+          <div key={index} style={{ marginBottom: 4 }}>
             <button
               onClick={() => setExpandedFaq(expandedFaq === index ? null : index)}
-              className="w-full flex items-center justify-between py-3.5 text-left"
+              className="w-full flex items-center justify-between text-left"
+              style={{ padding: '12px 8px', borderRadius: 12, transition: 'background-color 0.15s ease', backgroundColor: expandedFaq === index ? '#F6F6F6' : 'transparent' }}
+              onMouseDown={(e) => (e.currentTarget.style.backgroundColor = '#F0F0F0')}
+              onMouseUp={(e) => (e.currentTarget.style.backgroundColor = expandedFaq === index ? '#F6F6F6' : 'transparent')}
+              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = expandedFaq === index ? '#F6F6F6' : 'transparent')}
             >
-              <div className="flex items-center gap-2 flex-1 min-w-0">
-                <span style={{ fontSize: 13, fontWeight: 600, color: '#8037FF' }}>Q</span>
-                <span style={{ fontSize: 14, fontWeight: 500, color: '#2B313D' }}>{faq.question}</span>
-              </div>
-              {expandedFaq === index ? (
-                <ChevronUp size={16} style={{ color: '#A4ABBA', flexShrink: 0 }} />
-              ) : (
-                <ChevronDown size={16} style={{ color: '#A4ABBA', flexShrink: 0 }} />
-              )}
+              <span style={{ fontSize: 18, fontWeight: 600, color: '#2B313D', flex: 1 }}>{faq.question}</span>
+              <ChevronDown
+                size={18}
+                style={{
+                  color: '#A4ABBA', flexShrink: 0,
+                  transform: expandedFaq === index ? 'rotate(180deg)' : 'rotate(0deg)',
+                  transition: 'transform 0.3s ease',
+                }}
+              />
             </button>
             <div
               style={{
                 maxHeight: expandedFaq === index ? 300 : 0,
                 opacity: expandedFaq === index ? 1 : 0,
                 overflow: 'hidden',
-                transition: 'max-height 0.3s ease, opacity 0.25s ease',
+                transition: 'max-height 0.35s ease, opacity 0.3s ease',
               }}
             >
-              <div className="pb-3.5 pl-6">
-                <div className="flex items-start gap-2">
-                  <span style={{ fontSize: 13, fontWeight: 600, color: '#A4ABBA' }}>A</span>
-                  <p style={{ fontSize: 14, color: '#51535C', lineHeight: '22px' }}>{faq.answer}</p>
-                </div>
+              <div style={{ padding: '4px 8px 12px 8px' }}>
+                <p style={{ fontSize: 16, fontWeight: 500, color: '#51535C', lineHeight: '24px' }}>{faq.answer}</p>
               </div>
             </div>
           </div>
@@ -596,6 +582,41 @@ function ReviewMenu({ reviewId, authorName }: { reviewId: string; authorName: st
             </button>
           </div>
         </>
+      )}
+    </div>
+  );
+}
+
+function ReviewContent({ content }: { content: string }) {
+  const [expanded, setExpanded] = useState(false);
+  const isLong = content.length > 200;
+
+  return (
+    <div style={{ marginTop: 14, position: 'relative' }}>
+      <p style={{
+        fontSize: 14, fontWeight: 400, color: '#2C2C2C', lineHeight: '22px',
+        ...(isLong && !expanded ? { maxHeight: 220, overflow: 'hidden' } : {}),
+      }}>
+        {content}
+      </p>
+      {isLong && !expanded && (
+        <>
+          <div style={{ position: 'absolute', bottom: 24, left: 0, right: 0, height: 40, background: 'linear-gradient(transparent, white)' }} />
+          <button
+            onClick={() => setExpanded(true)}
+            style={{ fontSize: 13, fontWeight: 600, color: '#8037FF', marginTop: 4, display: 'block' }}
+          >
+            더보기
+          </button>
+        </>
+      )}
+      {isLong && expanded && (
+        <button
+          onClick={() => setExpanded(false)}
+          style={{ fontSize: 13, fontWeight: 600, color: '#A4ABBA', marginTop: 4, display: 'block' }}
+        >
+          접기
+        </button>
       )}
     </div>
   );
