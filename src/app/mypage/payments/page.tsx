@@ -42,7 +42,7 @@ export default function PaymentsPage() {
     <div className="min-h-screen bg-gray-50 max-w-[430px] mx-auto">
       <TopBar title="결제내역" />
 
-      <div className="px-4 py-4 space-y-3">
+      <div className="px-2.5 py-4 space-y-3">
         {payments.map((payment) => {
           const status = statusConfig[payment.status];
           return (

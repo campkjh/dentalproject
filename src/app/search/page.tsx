@@ -142,7 +142,7 @@ function SearchPage() {
           </button>
           <div
             style={{ height: 46 }}
-            className="flex-1 flex items-center bg-gray-100 rounded-xl px-4 gap-2"
+            className="flex-1 flex items-center bg-gray-100 rounded-xl px-2.5 gap-2"
           >
             <Search size={18} className="text-gray-400 flex-shrink-0" />
             <input
@@ -164,7 +164,7 @@ function SearchPage() {
 
         {/* 연관 태그 */}
         {tags.length > 0 && (
-          <div className="px-4 py-2">
+          <div className="px-2.5 py-2">
             <div className="flex gap-2 overflow-x-auto hide-scrollbar">
               {tags.map((tag) => (
                 <button
@@ -180,7 +180,7 @@ function SearchPage() {
         )}
 
         {/* 필터 버튼들 */}
-        <div className="px-4 py-2 flex gap-2 overflow-x-auto hide-scrollbar border-b border-gray-100">
+        <div className="px-2.5 py-2 flex gap-2 overflow-x-auto hide-scrollbar border-b border-gray-100">
           {/* 지역 */}
           <button
             onClick={() => { setRegionStep('region'); setShowRegionModal(true); }}
@@ -229,7 +229,7 @@ function SearchPage() {
         </div>
 
         {/* 카테고리 아이콘 탭 */}
-        <div className="flex gap-3 overflow-x-auto hide-scrollbar px-4 py-3 lg:px-0">
+        <div className="flex gap-3 overflow-x-auto hide-scrollbar px-2.5 py-3 lg:px-0">
           {categories.map((cat) => (
             <button
               key={cat.id}
@@ -251,7 +251,7 @@ function SearchPage() {
         </div>
 
         {/* 결과 */}
-        <div className="px-4 pb-4 lg:max-w-7xl lg:mx-auto">
+        <div className="px-2.5 pb-4 lg:max-w-7xl lg:mx-auto">
           <p className="text-sm text-gray-500 mb-3">
             <span className="font-bold text-black">{currentCat?.name}</span> · {categoryResults.length}건
             {selectedRegion && (
@@ -379,7 +379,7 @@ function SearchPage() {
         <button onClick={() => router.back()} className="p-1 flex-shrink-0">
           <ChevronLeft size={24} className="text-gray-800" />
         </button>
-        <div style={{ height: 46 }} className="flex-1 flex items-center bg-gray-100 rounded-xl px-4 gap-2">
+        <div style={{ height: 46 }} className="flex-1 flex items-center bg-gray-100 rounded-xl px-2.5 gap-2">
           <Search size={18} className="text-gray-400 flex-shrink-0" />
           <input
             type="text"
@@ -399,7 +399,7 @@ function SearchPage() {
       </div>
 
       {/* Filter buttons for normal search */}
-      <div className="px-4 py-2 flex gap-2 overflow-x-auto hide-scrollbar border-b border-gray-100">
+      <div className="px-2.5 py-2 flex gap-2 overflow-x-auto hide-scrollbar border-b border-gray-100">
         <button onClick={() => { setRegionStep('region'); setShowRegionModal(true); }}
           className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-sm whitespace-nowrap border transition-colors ${selectedRegion ? 'border-[#7C3AED] text-[#7C3AED] bg-[#EDE9FE]' : 'border-gray-200 text-gray-600'}`}>
           <MapPin size={14} /> {selectedRegion ? regionLabel : '지역'} <ChevronDown size={12} />
@@ -421,7 +421,7 @@ function SearchPage() {
       <div className="lg:max-w-7xl lg:mx-auto lg:px-6 lg:py-6">
         <div className="lg:bg-white lg:rounded-2xl lg:shadow-sm lg:p-6">
           {hasSearched ? (
-            <div className="px-4 stagger-children">
+            <div className="px-2.5 stagger-children">
               {selectedRegion && (
                 <div className="flex items-center gap-2 mb-3">
                   <span className="inline-flex items-center gap-1 px-3 py-1 bg-[#EDE9FE] text-[#7C3AED] text-xs font-medium rounded-full">
@@ -453,7 +453,7 @@ function SearchPage() {
           ) : (
             <>
               {recentSearches.length > 0 && (
-                <div className="px-4 mb-6 fade-in-up">
+                <div className="px-2.5 mb-6 fade-in-up">
                   <h2 className="text-sm font-bold mb-3">최근검색어</h2>
                   <div className="flex flex-wrap gap-2">
                     {recentSearches.map((keyword) => (
@@ -467,7 +467,7 @@ function SearchPage() {
                   </div>
                 </div>
               )}
-              <div className="px-4 fade-in-up fade-in-up-delay-1">
+              <div className="px-2.5 fade-in-up fade-in-up-delay-1">
                 <h2 className="text-sm font-bold mb-3">인기검색어</h2>
                 <div className="grid grid-cols-2 lg:grid-cols-5 gap-x-4 stagger-children">
                   {popularSearches.map((keyword, index) => (

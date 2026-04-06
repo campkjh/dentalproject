@@ -35,7 +35,7 @@ export default function WishlistPage() {
       ) : wishlistProducts.length === 0 ? (
         <EmptyState icon="heart" message="찜한 상품이 없습니다" />
       ) : (
-        <div className="px-4 py-4">
+        <div className="px-2.5 py-4">
           <p className="text-sm text-gray-500 mb-4">총 {wishlistProducts.length}개</p>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-6">
             {wishlistProducts.map((product) => (

@@ -56,7 +56,7 @@ export default function DoctorDetailPage() {
         <TopBar title={doctor.name} showBack />
 
         {/* Doctor Profile Header */}
-        <div className="px-4 py-6">
+        <div className="px-2.5 py-6">
           <div className="flex flex-col items-center text-center mb-6">
             {/* Large Avatar */}
             <div className="w-24 h-24 bg-gradient-to-br from-[#7C3AED] to-purple-400 rounded-full flex items-center justify-center mb-4">
@@ -112,7 +112,7 @@ export default function DoctorDetailPage() {
 
         {/* Bio Section */}
         {doctor.bio && (
-          <div className="px-4 pb-4">
+          <div className="px-2.5 pb-4">
             <div className="flex items-center gap-2 mb-3">
               <User size={16} className="text-[#7C3AED]" />
               <h2 className="font-bold text-sm">의사 소개</h2>
@@ -125,7 +125,7 @@ export default function DoctorDetailPage() {
 
         {/* Careers Section */}
         {doctor.careers && doctor.careers.length > 0 && (
-          <div className="px-4 pb-4">
+          <div className="px-2.5 pb-4">
             <div className="flex items-center gap-2 mb-3">
               <Briefcase size={16} className="text-[#7C3AED]" />
               <h2 className="font-bold text-sm">경력</h2>
@@ -145,7 +145,7 @@ export default function DoctorDetailPage() {
 
         {/* Certifications Section */}
         {doctor.certifications && doctor.certifications.length > 0 && (
-          <div className="px-4 pb-4">
+          <div className="px-2.5 pb-4">
             <div className="flex items-center gap-2 mb-3">
               <Award size={16} className="text-[#7C3AED]" />
               <h2 className="font-bold text-sm">자격증</h2>
@@ -164,7 +164,7 @@ export default function DoctorDetailPage() {
         )}
 
         {/* 담당 리뷰 Section */}
-        <div className="px-4 py-4 border-t border-gray-100">
+        <div className="px-2.5 py-4 border-t border-gray-100">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-bold">담당 리뷰</h2>
             <div className="flex items-center gap-1">
@@ -235,7 +235,7 @@ export default function DoctorDetailPage() {
 
         {/* 이 의사의 시술 상품 Section */}
         {hospitalProducts.length > 0 && (
-          <div className="px-4 py-4 border-t border-gray-100">
+          <div className="px-2.5 py-4 border-t border-gray-100">
             <h2 className="font-bold mb-3">이 의사의 시술 상품</h2>
             <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
               {hospitalProducts.map((product) => (

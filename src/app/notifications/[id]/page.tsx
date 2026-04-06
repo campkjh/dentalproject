@@ -44,7 +44,7 @@ export default function NotificationDetailPage() {
     <div className="min-h-screen bg-white max-w-[430px] mx-auto">
       <TopBar title="쪽지상세" />
 
-      <div className="px-4 py-6">
+      <div className="px-2.5 py-6">
         {/* Badge */}
         <span className={`inline-block text-xs font-medium px-2.5 py-1 rounded-full mb-3 ${badge.className}`}>
           {badge.label}

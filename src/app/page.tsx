@@ -59,7 +59,7 @@ export default function HomePage() {
         className="bg-white lg:hidden transition-all duration-300"
       >
         {/* Default Header (logo + icons) */}
-        <div className={`flex items-center justify-between px-4 py-3 transition-all duration-300 ${scrolled ? 'h-0 overflow-hidden opacity-0 py-0' : 'opacity-100'}`}>
+        <div className={`flex items-center justify-between px-2.5 py-3 transition-all duration-300 ${scrolled ? 'h-0 overflow-hidden opacity-0 py-0' : 'opacity-100'}`}>
           <span className="text-lg font-bold text-[#7C3AED]">로고</span>
           {isLoggedIn ? (
             <div className="flex items-center gap-3">
@@ -71,7 +71,7 @@ export default function HomePage() {
             </div>
           ) : (
             <div className="flex items-center gap-3">
-              <button onClick={() => login('kakao')} className="bg-[#7C3AED] text-white text-sm px-4 py-2 rounded-full font-medium">
+              <button onClick={() => login('kakao')} className="bg-[#7C3AED] text-white text-sm px-2.5 py-2 rounded-full font-medium">
                 테스트 로그인
               </button>
               <Link href="/search"><Search size={22} /></Link>
@@ -80,11 +80,11 @@ export default function HomePage() {
         </div>
 
         {/* Scrolled Header (search bar) */}
-        <div className={`px-4 transition-all duration-300 ${scrolled ? 'py-2 opacity-100' : 'h-0 overflow-hidden opacity-0 py-0'}`}>
+        <div className={`px-2.5 transition-all duration-300 ${scrolled ? 'py-2 opacity-100' : 'h-0 overflow-hidden opacity-0 py-0'}`}>
           <button
             onClick={() => router.push('/search')}
             style={{ height: 46, borderRadius: 10, borderWidth: 1.4, borderColor: '#C8CEDA', backgroundColor: '#F9F9F9' }}
-            className="w-full flex items-center gap-3 px-4 text-left border-solid"
+            className="w-full flex items-center gap-3 px-2.5 text-left border-solid"
           >
             <Search size={18} className="text-gray-400 flex-shrink-0" />
             <div style={{ fontSize: 16, height: 22, overflow: 'hidden' }} className="flex-1 relative">
@@ -136,7 +136,7 @@ export default function HomePage() {
         {/* 치과 섹션 */}
         {dentalProducts.length > 0 && (
           <div className="mb-8">
-            <div className="flex items-center justify-between px-4 lg:px-6 lg:max-w-7xl lg:mx-auto mb-3">
+            <div className="flex items-center justify-between px-2.5 lg:px-6 lg:max-w-7xl lg:mx-auto mb-3">
               <div className="flex items-center gap-2">
                 <img src="/icons/dental.svg" alt="치과" className="w-6 h-6" />
                 <h2 className="font-bold">치과</h2>
@@ -145,7 +145,7 @@ export default function HomePage() {
                 더보기 <ChevronRight size={14} />
               </Link>
             </div>
-            <div className="px-4 lg:max-w-7xl lg:mx-auto">
+            <div className="px-2.5 lg:max-w-7xl lg:mx-auto">
               <div className="flex gap-1.5 overflow-x-auto hide-scrollbar pb-2 lg:grid lg:grid-cols-4 lg:gap-1.5 lg:overflow-visible">
                 {dentalProducts.map((product) => (
                   <div key={product.id} className="w-[42vw] max-w-[180px] flex-shrink-0 lg:w-auto lg:max-w-none lg:flex-shrink">
@@ -160,7 +160,7 @@ export default function HomePage() {
         {/* 성형외과 섹션 */}
         {plasticProducts.length > 0 && (
           <div className="mb-8">
-            <div className="flex items-center justify-between px-4 lg:px-6 lg:max-w-7xl lg:mx-auto mb-3">
+            <div className="flex items-center justify-between px-2.5 lg:px-6 lg:max-w-7xl lg:mx-auto mb-3">
               <div className="flex items-center gap-2">
                 <img src="/icons/plastic.svg" alt="성형외과" className="w-6 h-6" />
                 <h2 className="font-bold">성형외과</h2>
@@ -169,7 +169,7 @@ export default function HomePage() {
                 더보기 <ChevronRight size={14} />
               </Link>
             </div>
-            <div className="px-4 lg:max-w-7xl lg:mx-auto">
+            <div className="px-2.5 lg:max-w-7xl lg:mx-auto">
               <div className="flex gap-1.5 overflow-x-auto hide-scrollbar pb-2 lg:grid lg:grid-cols-4 lg:gap-1.5 lg:overflow-visible">
                 {plasticProducts.map((product) => (
                   <div key={product.id} className="w-[42vw] max-w-[180px] flex-shrink-0 lg:w-auto lg:max-w-none lg:flex-shrink">
@@ -184,13 +184,13 @@ export default function HomePage() {
         {/* 최근 본 상품 */}
         {recentProducts.length > 0 && (
           <div className="mb-8">
-            <div className="flex items-center justify-between px-4 lg:px-6 lg:max-w-7xl lg:mx-auto mb-3">
+            <div className="flex items-center justify-between px-2.5 lg:px-6 lg:max-w-7xl lg:mx-auto mb-3">
               <div className="flex items-center gap-2">
                 <span className="text-lg">🕐</span>
                 <h2 className="font-bold">최근 본 상품</h2>
               </div>
             </div>
-            <div className="px-4 lg:max-w-7xl lg:mx-auto">
+            <div className="px-2.5 lg:max-w-7xl lg:mx-auto">
               <div className="flex gap-3 overflow-x-auto hide-scrollbar pb-2 lg:grid lg:grid-cols-4 lg:gap-6 lg:overflow-visible">
                 {recentProducts.slice(0, 10).map((product) => (
                   <div key={product.id} className="w-[42vw] max-w-[180px] flex-shrink-0 lg:w-auto lg:max-w-none lg:flex-shrink">
@@ -204,13 +204,13 @@ export default function HomePage() {
 
         {/* 인기 상품 */}
         <div className="mb-6">
-          <div className="flex items-center justify-between px-4 lg:px-6 lg:max-w-7xl lg:mx-auto mb-3">
+          <div className="flex items-center justify-between px-2.5 lg:px-6 lg:max-w-7xl lg:mx-auto mb-3">
             <h2 className="font-bold">인기 상품</h2>
             <Link href="/search" className="flex items-center gap-0.5 text-sm text-[#7C3AED] hover:underline">
               전체보기 <ChevronRight size={14} />
             </Link>
           </div>
-          <div className="px-4 lg:max-w-7xl lg:mx-auto">
+          <div className="px-2.5 lg:max-w-7xl lg:mx-auto">
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-6 stagger-children">
               {popularProducts.map((product) => (
                 <ProductCard key={product.id} product={product} />
@@ -222,7 +222,7 @@ export default function HomePage() {
       </div>{/* End desktop content wrapper */}
 
       {/* Footer */}
-      <div className="mt-8 px-4 py-6 text-xs text-gray-400 border-t border-gray-100 lg:hidden">
+      <div className="mt-8 px-2.5 py-6 text-xs text-gray-400 border-t border-gray-100 lg:hidden">
         <div className="flex flex-wrap gap-x-3 gap-y-1.5 mb-4 text-gray-500">
           <Link href="/terms/privacy" className="hover:text-gray-700 underline">개인정보처리방침</Link>
           <Link href="/terms/service" className="hover:text-gray-700 underline">서비스이용약관</Link>

@@ -174,7 +174,7 @@ export default function PostDetailPage() {
       )}
 
       {/* Post content */}
-      <div className="px-4 pb-4">
+      <div className="px-2.5 pb-4">
         {/* Author info */}
         <div className="flex items-center gap-3 mb-4">
           <div className="w-10 h-10 rounded-full bg-[#EDE9FE] flex items-center justify-center flex-shrink-0">
@@ -265,7 +265,7 @@ export default function PostDetailPage() {
 
       {/* Answer needed / answer count section */}
       {post.boardType === 'question' && (
-        <div className="px-4 py-3 bg-gray-50 border-y border-gray-100">
+        <div className="px-2.5 py-3 bg-gray-50 border-y border-gray-100">
           {post.hasAnswer && post.answerCount && post.answerCount > 0 ? (
             <div className="flex items-center gap-2">
               <MessageCircle size={16} className="text-[#7C3AED]" />
@@ -285,7 +285,7 @@ export default function PostDetailPage() {
       )}
 
       {/* Comments section */}
-      <div className="px-4 py-4">
+      <div className="px-2.5 py-4">
         <h3 className="text-sm font-bold text-gray-900 mb-4">
           댓글 {postComments.length}
         </h3>
@@ -367,7 +367,7 @@ export default function PostDetailPage() {
       </div>
 
       {/* Comment input - fixed at bottom */}
-      <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-white border-t border-gray-200 px-4 py-3 z-50">
+      <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-white border-t border-gray-200 px-2.5 py-3 z-50">
         <div className="flex items-end gap-2">
           <div className="flex-1 relative">
             <textarea
@@ -379,7 +379,7 @@ export default function PostDetailPage() {
               }}
               placeholder="댓글을 입력해주세요"
               rows={1}
-              className="w-full px-4 py-2.5 bg-gray-100 rounded-xl text-sm resize-none focus:outline-none focus:ring-1 focus:ring-[#7C3AED]"
+              className="w-full px-2.5 py-2.5 bg-gray-100 rounded-xl text-sm resize-none focus:outline-none focus:ring-1 focus:ring-[#7C3AED]"
               style={{ minHeight: '40px', maxHeight: '100px' }}
             />
             <span className="absolute right-3 bottom-2 text-[10px] text-gray-400">
@@ -389,7 +389,7 @@ export default function PostDetailPage() {
           <button
             onClick={handleSubmitComment}
             disabled={!commentText.trim()}
-            className={`px-4 py-2.5 rounded-xl text-sm font-medium flex-shrink-0 transition-colors ${
+            className={`px-2.5 py-2.5 rounded-xl text-sm font-medium flex-shrink-0 transition-colors ${
               commentText.trim()
                 ? 'bg-[#7C3AED] text-white'
                 : 'bg-gray-200 text-gray-400'

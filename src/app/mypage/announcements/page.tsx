@@ -14,7 +14,7 @@ export default function AnnouncementsPage() {
         {announcements.map((announcement) => (
           <button
             key={announcement.id}
-            className="w-full flex items-center justify-between px-4 py-4 hover:bg-gray-50 transition-colors text-left"
+            className="w-full flex items-center justify-between px-2.5 py-4 hover:bg-gray-50 transition-colors text-left"
           >
             <div className="flex-1 min-w-0 pr-3">
               <p className="text-sm font-medium text-gray-900 line-clamp-2 mb-1">

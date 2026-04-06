@@ -111,7 +111,7 @@ function PaymentPage() {
         <div className="relative">
           <button
             onClick={() => setShowCouponDropdown(!showCouponDropdown)}
-            className="w-full flex items-center justify-between border border-gray-200 rounded-xl px-4 py-3"
+            className="w-full flex items-center justify-between border border-gray-200 rounded-xl px-2.5 py-3"
           >
             <span className={`text-sm ${selectedCoupon ? 'text-gray-900 font-medium' : 'text-gray-400'}`}>
               {selectedCoupon
@@ -132,7 +132,7 @@ function PaymentPage() {
                   setSelectedCouponId(null);
                   setShowCouponDropdown(false);
                 }}
-                className={`w-full text-left px-4 py-3 text-sm border-b border-gray-50 ${
+                className={`w-full text-left px-2.5 py-3 text-sm border-b border-gray-50 ${
                   !selectedCouponId ? 'text-[#7C3AED] font-medium bg-purple-50' : 'text-gray-500'
                 }`}
               >
@@ -142,7 +142,7 @@ function PaymentPage() {
                 <button
                   key={coupon.id}
                   onClick={() => handleCouponSelect(coupon.id)}
-                  className={`w-full text-left px-4 py-3 border-b border-gray-50 last:border-0 ${
+                  className={`w-full text-left px-2.5 py-3 border-b border-gray-50 last:border-0 ${
                     selectedCouponId === coupon.id ? 'bg-purple-50' : ''
                   }`}
                 >
@@ -173,7 +173,7 @@ function PaymentPage() {
           </span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="flex-1 flex items-center border border-gray-200 rounded-xl px-4 py-2.5">
+          <div className="flex-1 flex items-center border border-gray-200 rounded-xl px-2.5 py-2.5">
             <input
               type="number"
               value={pointInput}
@@ -194,7 +194,7 @@ function PaymentPage() {
           </div>
           <button
             onClick={handleUseAllPoints}
-            className="px-4 py-2.5 bg-gray-100 rounded-xl text-sm font-medium text-gray-700 whitespace-nowrap"
+            className="px-2.5 py-2.5 bg-gray-100 rounded-xl text-sm font-medium text-gray-700 whitespace-nowrap"
           >
             전액사용
           </button>
@@ -235,7 +235,7 @@ function PaymentPage() {
       </div>
 
       {/* Bottom Payment Button */}
-      <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-white border-t border-gray-100 px-4 py-3 z-50 lg:static lg:mt-4 lg:px-0 lg:border-0 lg:transform-none lg:left-auto lg:max-w-none">
+      <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-white border-t border-gray-100 px-2.5 py-3 z-50 lg:static lg:mt-4 lg:px-0 lg:border-0 lg:transform-none lg:left-auto lg:max-w-none">
         <button
           onClick={handlePayment}
           className="w-full py-3.5 bg-[#7C3AED] text-white rounded-xl font-bold text-sm"

@@ -40,7 +40,7 @@ export default function ProductCard({ product }: { product: Product }) {
   return (
     <Link
       href={`/product/${product.id}`}
-      className="block hover-lift p-1"
+      className="block card-press p-1"
       onMouseDown={handleTouchStart}
       onMouseUp={handleTouchEnd}
       onMouseLeave={handleTouchEnd}
@@ -70,12 +70,21 @@ export default function ProductCard({ product }: { product: Product }) {
           </div>
         )}
       </div>
-      <h3 className="text-sm font-medium line-clamp-2 mb-1">{product.title}</h3>
-      <div className="flex flex-wrap gap-1 mb-1">
-        {product.tags.slice(0, 3).map((tag) => (
-          <span key={tag} style={{ backgroundColor: '#F2F3F5', borderRadius: 8, fontSize: 12, fontWeight: 500, color: '#51535C' }} className="px-2 py-0.5">{tag}</span>
-        ))}
+      <div className="flex flex-wrap mb-1" style={{ gap: 3 }}>
+        {product.discount && (
+          <span style={{ backgroundColor: '#FFF0F0', borderRadius: 5, fontSize: 10, fontWeight: 500, color: '#EF4444' }} className="px-1.5 py-0.5">할인</span>
+        )}
+        {product.rating >= 4.5 && (
+          <span style={{ backgroundColor: '#F0F0FF', borderRadius: 5, fontSize: 10, fontWeight: 500, color: '#7C3AED' }} className="px-1.5 py-0.5">추천</span>
+        )}
+        {product.reviewCount >= 10 && (
+          <span style={{ backgroundColor: '#F0FFF4', borderRadius: 5, fontSize: 10, fontWeight: 500, color: '#10B981' }} className="px-1.5 py-0.5">인기</span>
+        )}
+        {product.likeCount >= 5 && (
+          <span style={{ backgroundColor: '#FFF8F0', borderRadius: 5, fontSize: 10, fontWeight: 500, color: '#F59E0B' }} className="px-1.5 py-0.5">HOT</span>
+        )}
       </div>
+      <h3 className="text-sm font-medium line-clamp-2 mb-1">{product.title}</h3>
       <div className="flex items-baseline gap-1 mb-1">
         {product.discount && (
           <span className="text-[#7C3AED] font-bold text-sm">{product.discount}%</span>

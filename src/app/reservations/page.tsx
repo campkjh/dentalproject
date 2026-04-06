@@ -61,13 +61,13 @@ export default function ReservationsPage() {
       ) : (
         <>
           {/* Status tabs - horizontal scrollable */}
-          <div className="bg-white px-4 pb-3">
+          <div className="bg-white px-2.5 pb-3">
             <div className="flex gap-2 overflow-x-auto hide-scrollbar">
               {statusTabs.map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
-                  className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+                  className={`px-2.5 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
                     activeTab === tab
                       ? 'bg-gray-900 text-white'
                       : 'bg-white text-gray-500 border border-gray-200'
@@ -80,7 +80,7 @@ export default function ReservationsPage() {
           </div>
 
           {/* Reservation list */}
-          <div className="px-4 py-4 lg:max-w-5xl lg:mx-auto lg:px-6 lg:py-6">
+          <div className="px-2.5 py-4 lg:max-w-5xl lg:mx-auto lg:px-6 lg:py-6">
             {filtered.length === 0 ? (
               <EmptyState icon="calendar" message="내역이 존재하지 않아요" />
             ) : (

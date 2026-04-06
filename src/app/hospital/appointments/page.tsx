@@ -235,12 +235,12 @@ export default function AppointmentsPage() {
   return (
     <div className="pb-[86px] bg-gray-50 min-h-screen">
       {/* Header */}
-      <div style={{ position: "sticky", top: 0, zIndex: 40 }} className="bg-white flex items-center justify-between h-12 px-4">
+      <div style={{ position: "sticky", top: 0, zIndex: 40 }} className="bg-white flex items-center justify-between h-12 px-2.5">
         <h1 className="text-lg font-bold">예약관리</h1>
       </div>
 
       {/* Sub-tabs */}
-      <div className="bg-white px-4">
+      <div className="bg-white px-2.5">
         <TabBar
           tabs={['병원예약', '예약설정']}
           activeTab={activeTab}
@@ -250,7 +250,7 @@ export default function AppointmentsPage() {
       </div>
 
       {/* Calendar */}
-      <div className="bg-white px-4 py-4">
+      <div className="bg-white px-2.5 py-4">
         <div className="flex items-center justify-between mb-4">
           <button className="p-1">
             <ChevronLeft size={20} className="text-gray-400" />
@@ -268,20 +268,20 @@ export default function AppointmentsPage() {
       {/* Content based on tab */}
       {activeTab === '병원예약' ? (
         <div className="py-3 space-y-3">
-          <div className="px-4">
+          <div className="px-2.5">
             <h3 className="text-sm font-bold text-gray-900">
               4월 {selectedDate}일 예약 ({selectedAppointments.length}건)
             </h3>
           </div>
 
           {selectedAppointments.length === 0 ? (
-            <div className="bg-white px-4 py-10 flex flex-col items-center">
+            <div className="bg-white px-2.5 py-10 flex flex-col items-center">
               <p className="text-gray-400 text-sm">해당 날짜에 예약이 없습니다.</p>
             </div>
           ) : (
             <div className="space-y-3">
               {selectedAppointments.map((apt) => (
-                <div key={apt.id} className="bg-white px-4 py-4 space-y-3">
+                <div key={apt.id} className="bg-white px-2.5 py-4 space-y-3">
                   {/* Time + patient info */}
                   <div className="flex items-start gap-3">
                     <div className="w-14 text-center flex-shrink-0">
@@ -355,7 +355,7 @@ export default function AppointmentsPage() {
       ) : (
         /* 예약설정 tab */
         <div className="py-3 space-y-3">
-          <div className="px-4 flex items-center justify-between">
+          <div className="px-2.5 flex items-center justify-between">
             <h3 className="text-sm font-bold text-gray-900">
               4월 {selectedDate}일 시간 설정
             </h3>
@@ -373,7 +373,7 @@ export default function AppointmentsPage() {
             </button>
           </div>
 
-          <div className="bg-white px-4 py-4">
+          <div className="bg-white px-2.5 py-4">
             {disabledDays.has(selectedDate) ? (
               <div className="py-8 text-center">
                 <p className="text-gray-400 text-sm">

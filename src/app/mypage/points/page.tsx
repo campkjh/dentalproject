@@ -36,7 +36,7 @@ export default function PointsPage() {
       <TopBar title="내 포인트" />
 
       {/* Total Points */}
-      <div className="bg-white px-4 py-8 text-center">
+      <div className="bg-white px-2.5 py-8 text-center">
         <div className="w-14 h-14 bg-[#7C3AED]/10 rounded-full flex items-center justify-center mx-auto mb-3">
           <Coins size={26} className="text-[#7C3AED]" />
         </div>
@@ -47,7 +47,7 @@ export default function PointsPage() {
       </div>
 
       {/* Tabs */}
-      <div className="bg-white mt-2 px-4 py-3">
+      <div className="bg-white mt-2 px-2.5 py-3">
         <TabBar
           tabs={tabs}
           activeTab={activeTab}
@@ -63,7 +63,7 @@ export default function PointsPage() {
         <div className="bg-white mt-2">
           <div className="divide-y divide-gray-50">
             {filteredHistory.map((item) => (
-              <div key={item.id} className="px-4 py-4 flex items-center justify-between">
+              <div key={item.id} className="px-2.5 py-4 flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-900">{item.description}</p>
                   <p className="text-xs text-gray-400 mt-1">{item.date}</p>

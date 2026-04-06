@@ -42,7 +42,7 @@ export default function CouponsPage() {
     <div className="min-h-screen bg-gray-50 max-w-[430px] mx-auto">
       <TopBar title="쿠폰함" />
 
-      <div className="bg-white px-4 py-3">
+      <div className="bg-white px-2.5 py-3">
         <TabBar
           tabs={tabs}
           activeTab={activeTab}
@@ -55,7 +55,7 @@ export default function CouponsPage() {
       {filteredCoupons.length === 0 ? (
         <EmptyState icon="payment" message="쿠폰이 없습니다" />
       ) : (
-        <div className="px-4 py-4 space-y-3">
+        <div className="px-2.5 py-4 space-y-3">
           {filteredCoupons.map((coupon) => {
             const isAvailable = coupon.status === 'available';
             return (
@@ -80,7 +80,7 @@ export default function CouponsPage() {
                   </div>
 
                   {/* Right: coupon info */}
-                  <div className="flex-1 px-4 py-4 flex flex-col justify-center">
+                  <div className="flex-1 px-2.5 py-4 flex flex-col justify-center">
                     <p className="text-sm font-medium text-gray-900 mb-1 line-clamp-2">
                       {coupon.name}
                     </p>

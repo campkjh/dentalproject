@@ -55,12 +55,12 @@ export default function ProfilePage() {
 
       {/* Customer Info */}
       <div className="mt-2 bg-white">
-        <div className="px-4 pt-4 pb-2">
+        <div className="px-2.5 pt-4 pb-2">
           <h3 className="text-sm font-bold text-gray-900">고객정보</h3>
         </div>
         <div className="divide-y divide-gray-50">
           {infoItems.map((item) => (
-            <div key={item.label} className="flex items-center justify-between px-4 py-3.5">
+            <div key={item.label} className="flex items-center justify-between px-2.5 py-3.5">
               <span className="text-sm text-gray-500">{item.label}</span>
               <div className="flex items-center gap-1">
                 <span className="text-sm font-medium text-gray-900">{item.value}</span>
@@ -72,7 +72,7 @@ export default function ProfilePage() {
       </div>
 
       {/* Withdraw Button */}
-      <div className="px-4 py-8">
+      <div className="px-2.5 py-8">
         <button
           onClick={handleWithdraw}
           className="w-full py-3 text-sm text-gray-400 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"

@@ -29,7 +29,7 @@ export default function PaymentFailPage() {
       </div>
 
       {/* Home Button */}
-      <div className="px-4 py-6">
+      <div className="px-2.5 py-6">
         <button
           onClick={() => router.push('/')}
           className="w-full py-3.5 bg-[#7C3AED] text-white rounded-xl font-bold text-sm btn-press"

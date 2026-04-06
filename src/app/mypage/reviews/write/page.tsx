@@ -100,7 +100,7 @@ function ReviewWritePage() {
     <div className="min-h-screen bg-gray-50">
       <TopBar title="리뷰작성" />
 
-      <div className="px-4 py-4 space-y-5">
+      <div className="px-2.5 py-4 space-y-5">
         {/* Product Info Card */}
         <div className="bg-white rounded-xl p-4">
           <div className="flex gap-3">
@@ -210,7 +210,7 @@ function ReviewWritePage() {
           {/* Total Cost */}
           <div>
             <label className="text-xs text-gray-500 mb-1.5 block">시술전체비용</label>
-            <div className="flex items-center border border-gray-200 rounded-xl px-4 py-3 bg-white">
+            <div className="flex items-center border border-gray-200 rounded-xl px-2.5 py-3 bg-white">
               <input
                 type="text"
                 inputMode="numeric"
@@ -230,7 +230,7 @@ function ReviewWritePage() {
               type="date"
               value={treatmentDate}
               onChange={(e) => setTreatmentDate(e.target.value)}
-              className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-[#7C3AED] bg-white text-gray-900"
+              className="w-full border border-gray-200 rounded-xl px-2.5 py-3 text-sm outline-none focus:border-[#7C3AED] bg-white text-gray-900"
             />
           </div>
         </div>
@@ -248,7 +248,7 @@ function ReviewWritePage() {
               }}
               placeholder="시술 후기를 자유롭게 작성해 주세요"
               rows={6}
-              className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-[#7C3AED] resize-none bg-white placeholder:text-gray-400"
+              className="w-full border border-gray-200 rounded-xl px-2.5 py-3 text-sm outline-none focus:border-[#7C3AED] resize-none bg-white placeholder:text-gray-400"
             />
             <span className="absolute bottom-3 right-3 text-xs text-gray-400">
               {content.length}/{MAX_CONTENT}
@@ -258,7 +258,7 @@ function ReviewWritePage() {
       </div>
 
       {/* Submit Button */}
-      <div className="px-4 py-6">
+      <div className="px-2.5 py-6">
         <button
           onClick={handleSubmit}
           disabled={!isFormValid}

@@ -67,7 +67,7 @@ export default function HospitalDetailPage() {
         </div>
 
         {/* Hospital Info */}
-        <div className="px-4 py-4">
+        <div className="px-2.5 py-4">
           <div className="flex items-center gap-2 mb-2">
             <span className="text-xs bg-purple-50 text-[#7C3AED] font-medium rounded-full px-3 py-1">
               {hospital.category}
@@ -135,7 +135,7 @@ export default function HospitalDetailPage() {
         </div>
 
         {/* Tab Content */}
-        <div className="px-4 py-4">
+        <div className="px-2.5 py-4">
           {/* 병원소개 Tab */}
           {activeTab === '병원소개' && (
             <div>
@@ -334,7 +334,7 @@ export default function HospitalDetailPage() {
 
         {/* 이 병원의 상품 Section */}
         {hospitalProducts.length > 0 && (
-          <div className="px-4 py-4 border-t border-gray-100">
+          <div className="px-2.5 py-4 border-t border-gray-100">
             <h2 className="font-bold mb-3">이 병원의 상품</h2>
             <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
               {hospitalProducts.map((product) => (

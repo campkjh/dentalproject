@@ -68,7 +68,7 @@ export default function HoursEditPage() {
     <div className="bg-white min-h-screen flex flex-col">
       <TopBar title="운영일 및 시간" />
 
-      <div className="flex-1 px-4 py-4 space-y-6">
+      <div className="flex-1 px-2.5 py-4 space-y-6">
         {/* Holiday notice */}
         <div>
           <label className="text-sm font-bold text-gray-900 block mb-2">
@@ -193,7 +193,7 @@ export default function HoursEditPage() {
       </div>
 
       {/* Save button */}
-      <div className="sticky bottom-0 bg-white px-4 py-4 border-t border-gray-100">
+      <div className="sticky bottom-0 bg-white px-2.5 py-4 border-t border-gray-100">
         <button
           onClick={handleSave}
           className="w-full py-3.5 bg-[#7C3AED] text-white rounded-xl text-base font-bold"

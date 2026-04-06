@@ -177,6 +177,18 @@ body {
   transition: transform 0.1s ease;
 }
 
+/* ===== Card Press (darken + scale down) ===== */
+.card-press {
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+.card-press:hover {
+  filter: brightness(0.97);
+}
+.card-press:active {
+  transform: scale(0.97);
+  filter: brightness(0.94);
+}
+
 /* ===== Hover Lift ===== */
 .hover-lift {
   transition: transform 0.2s ease, box-shadow 0.2s ease;

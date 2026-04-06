@@ -27,7 +27,7 @@ export default function IntroEditPage() {
     <div className="bg-white min-h-screen flex flex-col">
       <TopBar title="병원소개" />
 
-      <div className="flex-1 px-4 py-4 space-y-4">
+      <div className="flex-1 px-2.5 py-4 space-y-4">
         <div>
           <div className="flex items-center justify-between mb-2">
             <label className="text-sm font-bold text-gray-900">병원소개</label>
@@ -64,7 +64,7 @@ export default function IntroEditPage() {
       </div>
 
       {/* Save button */}
-      <div className="sticky bottom-0 bg-white px-4 py-4 border-t border-gray-100">
+      <div className="sticky bottom-0 bg-white px-2.5 py-4 border-t border-gray-100">
         <button
           onClick={handleSave}
           disabled={isOverLimit}

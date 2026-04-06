@@ -82,7 +82,7 @@ function DoctorAssignPage() {
       <TopBar title="담당지정" />
 
       {/* Patient info */}
-      <div className="px-4 py-4 bg-gray-50 border-b border-gray-100">
+      <div className="px-2.5 py-4 bg-gray-50 border-b border-gray-100">
         <div className="space-y-2">
           <div className="flex items-center gap-3">
             <span className="text-sm font-bold text-[#7C3AED]">
@@ -112,7 +112,7 @@ function DoctorAssignPage() {
       </div>
 
       {/* Doctor list */}
-      <div className="flex-1 px-4 py-4">
+      <div className="flex-1 px-2.5 py-4">
         <h3 className="text-sm font-bold text-gray-900 mb-3">의사 선택</h3>
         <div className="space-y-2">
           {doctorOptions.map((doctor) => {
@@ -200,7 +200,7 @@ function DoctorAssignPage() {
       </div>
 
       {/* Bottom button */}
-      <div className="sticky bottom-0 bg-white px-4 py-4 border-t border-gray-100">
+      <div className="sticky bottom-0 bg-white px-2.5 py-4 border-t border-gray-100">
         <button
           onClick={handleComplete}
           disabled={!selectedDoctor}

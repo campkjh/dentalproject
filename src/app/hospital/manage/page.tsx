@@ -48,7 +48,7 @@ export default function HospitalManagePage() {
   return (
     <div className="pb-[86px] bg-gray-50 min-h-screen">
       {/* Header */}
-      <div style={{ position: "sticky", top: 0, zIndex: 40 }} className="bg-white flex items-center justify-between h-12 px-4">
+      <div style={{ position: "sticky", top: 0, zIndex: 40 }} className="bg-white flex items-center justify-between h-12 px-2.5">
         <h1 className="text-lg font-bold">병원관리</h1>
       </div>
 
@@ -83,7 +83,7 @@ function HospitalTab() {
     <div className="space-y-3 py-3">
       {/* Cover photo */}
       <div className="bg-white">
-        <div className="flex items-center justify-between px-4 py-3">
+        <div className="flex items-center justify-between px-2.5 py-3">
           <h2 className="font-bold text-base">대문사진</h2>
           <Link href="/hospital/manage/photos" className="text-[#7C3AED] text-sm font-medium flex items-center gap-1">
             편집 <ChevronRight size={16} />
@@ -97,7 +97,7 @@ function HospitalTab() {
       </div>
 
       {/* Hospital Profile */}
-      <div className="bg-white px-4 py-4 space-y-3">
+      <div className="bg-white px-2.5 py-4 space-y-3">
         <div className="flex items-center gap-3">
           <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
             <User size={24} className="text-gray-400" />
@@ -134,7 +134,7 @@ function HospitalTab() {
       </div>
 
       {/* Operating hours */}
-      <div className="bg-white px-4 py-4">
+      <div className="bg-white px-2.5 py-4">
         <div className="flex items-center justify-between mb-3">
           <h2 className="font-bold text-base">운영일 및 시간</h2>
           <Link href="/hospital/manage/hours" className="text-[#7C3AED] text-sm font-medium flex items-center gap-1">
@@ -158,7 +158,7 @@ function HospitalTab() {
       </div>
 
       {/* Hospital intro */}
-      <div className="bg-white px-4 py-4">
+      <div className="bg-white px-2.5 py-4">
         <div className="flex items-center justify-between mb-3">
           <h2 className="font-bold text-base">병원소개</h2>
           <Link href="/hospital/manage/intro" className="text-[#7C3AED] text-sm font-medium flex items-center gap-1">
@@ -171,7 +171,7 @@ function HospitalTab() {
       </div>
 
       {/* Hospital location */}
-      <div className="bg-white px-4 py-4">
+      <div className="bg-white px-2.5 py-4">
         <h2 className="font-bold text-base mb-3">병원위치</h2>
         <div className="h-40 bg-gray-200 rounded-xl flex items-center justify-center mb-3">
           <MapPin size={32} className="text-gray-400" />
@@ -205,12 +205,12 @@ function MemberTab({
     <div className="py-3 space-y-3">
       {/* Active members */}
       <div className="bg-white">
-        <div className="px-4 py-3">
+        <div className="px-2.5 py-3">
           <h2 className="font-bold text-sm text-gray-500">활성 멤버</h2>
         </div>
         <div className="divide-y divide-gray-50">
           {hospital.doctors.map((doctor) => (
-            <div key={doctor.id} className="px-4 py-3 flex items-center gap-3">
+            <div key={doctor.id} className="px-2.5 py-3 flex items-center gap-3">
               <div className="w-11 h-11 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
                 <User size={20} className="text-gray-400" />
               </div>
@@ -251,12 +251,12 @@ function MemberTab({
       {/* Pending requests */}
       {pendingRequests.length > 0 && (
         <div className="bg-white">
-          <div className="px-4 py-3">
+          <div className="px-2.5 py-3">
             <h2 className="font-bold text-sm text-gray-500">새로운 요청</h2>
           </div>
           <div className="divide-y divide-gray-50">
             {pendingRequests.map((request) => (
-              <div key={request.id} className="px-4 py-3">
+              <div key={request.id} className="px-2.5 py-3">
                 <div className="flex items-center gap-3">
                   <div className="w-11 h-11 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
                     <User size={20} className="text-gray-400" />
@@ -311,7 +311,7 @@ function ReviewTab({ reviews: reviewList }: { reviews: typeof reviews }) {
   return (
     <div className="py-3 space-y-3">
       {/* Rating summary */}
-      <div className="bg-white px-4 py-6 flex flex-col items-center">
+      <div className="bg-white px-2.5 py-6 flex flex-col items-center">
         <div className="flex items-center gap-2 mb-1">
           <Star size={24} fill="#FBBF24" className="text-yellow-400" />
           <span className="text-3xl font-bold">{avgRating.toFixed(1)}</span>
@@ -334,7 +334,7 @@ function ReviewTab({ reviews: reviewList }: { reviews: typeof reviews }) {
       {/* Review list */}
       <div className="space-y-3">
         {reviewList.map((review) => (
-          <div key={review.id} className="bg-white px-4 py-4">
+          <div key={review.id} className="bg-white px-2.5 py-4">
             {/* Author + date */}
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">

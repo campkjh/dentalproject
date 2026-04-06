@@ -88,7 +88,7 @@ export default function ProductDetailPage() {
 
       {/* Fixed Header - portal to body */}
       <FixedBar position="top" className="lg:hidden">
-        <div className="flex items-center justify-between px-4 h-12 bg-white/90 backdrop-blur-md">
+        <div className="flex items-center justify-between px-2.5 h-12 bg-white/90 backdrop-blur-md">
           <button onClick={() => router.back()} className="p-1 -ml-1">
             <ChevronLeft size={24} style={{ color: '#2B313D' }} />
           </button>
@@ -122,7 +122,7 @@ export default function ProductDetailPage() {
       <div className="lg:col-span-3 fade-in-up">
 
       {/* Product Info - open layout, no wrapping */}
-      <div className="bg-white px-4 pt-5 pb-4">
+      <div className="bg-white px-2.5 pt-5 pb-4">
         <Link href={`/hospital/detail/${product.hospitalId}`} style={{ fontSize: 13, color: '#A4ABBA' }} className="hover:underline">{product.hospitalName}</Link>
         <h1 style={{ fontSize: 20, fontWeight: 600, color: '#2B313D', lineHeight: '28px', marginTop: 4 }}>{product.title}</h1>
         <div className="flex items-center gap-1.5 mt-2">
@@ -163,7 +163,7 @@ export default function ProductDetailPage() {
       {/* Product Options - separated section */}
       {product.options && product.options.length > 0 && (
         <>
-          <div className="bg-white px-4 py-4">
+          <div className="bg-white px-2.5 py-4">
             <h3 style={{ fontSize: 20, fontWeight: 600, color: '#2B313D', marginBottom: 12 }}>옵션 선택</h3>
             {product.options.map((option, idx) => (
               <div
@@ -181,7 +181,7 @@ export default function ProductDetailPage() {
       )}
 
       {/* Customer Reviews Summary - open */}
-      <div className="bg-white px-4 py-4">
+      <div className="bg-white px-2.5 py-4">
         <div className="flex items-center justify-between mb-3">
           <h2 style={{ fontSize: 20, fontWeight: 600, color: '#2B313D' }}>고객후기모음</h2>
           <div className="flex items-center gap-1">
@@ -225,7 +225,7 @@ export default function ProductDetailPage() {
               <p style={{ fontSize: 13, color: '#A4ABBA' }}>상품 상세 이미지</p>
             </div>
           </div>
-          <div className="px-4 py-5">
+          <div className="px-2.5 py-5">
             <h3 style={{ fontSize: 20, fontWeight: 600, color: '#2B313D', marginBottom: 8 }}>{product.title}</h3>
             <p style={{ fontSize: 14, color: '#51535C', lineHeight: '22px' }}>
               {product.hospitalName}에서 제공하는 {product.title} 시술입니다.
@@ -238,7 +238,7 @@ export default function ProductDetailPage() {
       {activeTab === '병원정보' && hospital && (
         <div>
           {/* Hospital info - flat, no card border */}
-          <div className="bg-white px-4 py-5">
+          <div className="bg-white px-2.5 py-5">
             <Link href={`/hospital/detail/${hospital.id}`} className="flex items-center gap-3 hover:opacity-80 transition-opacity">
               <div className="w-14 h-14 rounded-full flex items-center justify-center" style={{ backgroundColor: '#F2F3F5' }}>
                 <span className="text-xl">🏥</span>
@@ -269,7 +269,7 @@ export default function ProductDetailPage() {
           <div style={{ height: 8, backgroundColor: '#F2F3F5' }} />
 
           {/* Address + Map */}
-          <div className="bg-white px-4 py-5">
+          <div className="bg-white px-2.5 py-5">
             {hospital.addressDetail && (
               <div className="flex items-start gap-2 mb-4">
                 <MapPin size={16} style={{ color: '#A4ABBA', flexShrink: 0, marginTop: 2 }} />
@@ -288,7 +288,7 @@ export default function ProductDetailPage() {
           <div style={{ height: 8, backgroundColor: '#F2F3F5' }} />
 
           {/* Operating Hours - flat */}
-          <div className="bg-white px-4 py-5">
+          <div className="bg-white px-2.5 py-5">
             <div className="flex items-center gap-2 mb-4">
               <Clock size={16} style={{ color: '#A4ABBA' }} />
               <h3 style={{ fontSize: 20, fontWeight: 600, color: '#2B313D' }}>진료시간</h3>
@@ -311,7 +311,7 @@ export default function ProductDetailPage() {
           <div style={{ height: 8, backgroundColor: '#F2F3F5' }} />
 
           {/* Doctors - flat list */}
-          <div className="bg-white px-4 py-5">
+          <div className="bg-white px-2.5 py-5">
             <h3 style={{ fontSize: 20, fontWeight: 600, color: '#2B313D', marginBottom: 16 }}>의료진 소개</h3>
             {hospital.doctors.map((doctor, idx) => (
               <Link key={doctor.id} href={`/doctor/${doctor.id}`}
@@ -341,7 +341,7 @@ export default function ProductDetailPage() {
           {hospitalProducts.length > 0 && (
             <>
               <div style={{ height: 8, backgroundColor: '#F2F3F5' }} />
-              <div className="bg-white px-4 py-5">
+              <div className="bg-white px-2.5 py-5">
                 <h3 style={{ fontSize: 20, fontWeight: 600, color: '#2B313D', marginBottom: 12 }}>이 병원의 다른 상품</h3>
                 {hospitalProducts.map((hp, idx) => (
                   <button key={hp.id} onClick={() => router.push(`/product/${hp.id}`)}
@@ -375,7 +375,7 @@ export default function ProductDetailPage() {
           {productReviews.length > 0 ? (
             <div>
               {productReviews.map((review, idx) => (
-                <div key={review.id} className="px-4 py-5" style={{ borderBottom: idx < productReviews.length - 1 ? '8px solid #F2F3F5' : 'none' }}>
+                <div key={review.id} className="px-2.5 py-5" style={{ borderBottom: idx < productReviews.length - 1 ? '8px solid #F2F3F5' : 'none' }}>
                   {/* Reviewer info */}
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2.5">
@@ -426,7 +426,7 @@ export default function ProductDetailPage() {
       <div style={{ height: 8, backgroundColor: '#F2F3F5' }} />
 
       {/* FAQ Section - flat */}
-      <div className="bg-white px-4 py-5">
+      <div className="bg-white px-2.5 py-5">
         <h2 style={{ fontSize: 20, fontWeight: 600, color: '#2B313D', marginBottom: 12 }}>자주묻는질문</h2>
         {faqItems.map((faq, index) => (
           <div key={index} style={{ borderBottom: '1px solid #F2F3F5' }}>
@@ -468,7 +468,7 @@ export default function ProductDetailPage() {
 
       {/* Bottom Fixed Bar - portal to body */}
       <FixedBar position="bottom" className="lg:hidden">
-        <div className="bg-white px-4" style={{ borderTop: '1px solid #F2F3F5', paddingTop: 10, paddingBottom: 10 }}>
+        <div className="bg-white px-2.5" style={{ borderTop: '1px solid #F2F3F5', paddingTop: 10, paddingBottom: 10 }}>
           <div className="flex items-center gap-2">
             <button style={{ width: 44, height: 44, borderRadius: 10, border: '1px solid #C8CEDA' }} className="flex items-center justify-center">
               <Phone size={18} style={{ color: '#51535C' }} />

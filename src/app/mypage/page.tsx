@@ -74,7 +74,7 @@ export default function MyPage() {
           router.push(item.href);
         }
       }}
-      className="flex items-center justify-between w-full px-4 py-3.5 hover:bg-gray-50 transition-colors"
+      className="flex items-center justify-between w-full px-2.5 py-3.5 hover:bg-gray-50 transition-colors"
     >
       <div className="flex items-center gap-3">
         <span className="text-gray-500">{item.icon}</span>
@@ -94,7 +94,7 @@ export default function MyPage() {
   if (!isLoggedIn) {
     return (
       <div className="min-h-screen bg-white max-w-[430px] mx-auto">
-        <div className="px-4 pt-12">
+        <div className="px-2.5 pt-12">
           <h1 className="text-xl font-bold mb-6">마이페이지</h1>
         </div>
         <LoginRequired />
@@ -108,7 +108,7 @@ export default function MyPage() {
   return (
     <div className="min-h-screen bg-gray-50 max-w-[430px] mx-auto pb-[86px] lg:pb-0 lg:max-w-4xl lg:py-8 page-enter">
       {/* Header */}
-      <div className="bg-white px-4 pt-12 pb-6 fade-in-up">
+      <div className="bg-white px-2.5 pt-12 pb-6 fade-in-up">
         <div className="flex items-center gap-4">
           <div className="relative">
             <div className="w-16 h-16 bg-gradient-to-br from-purple-100 to-purple-200 rounded-full flex items-center justify-center">
@@ -155,7 +155,7 @@ export default function MyPage() {
 
       {/* Customer History */}
       <div className="bg-white lg:bg-white lg:rounded-2xl lg:shadow-sm lg:p-6 lg:mb-4 stagger-children">
-        <div className="px-4 pt-4 pb-2">
+        <div className="px-2.5 pt-4 pb-2">
           <h3 className="text-sm font-bold text-gray-900">고객내역</h3>
         </div>
         {customerMenuItems.map(renderMenuItem)}
@@ -166,14 +166,14 @@ export default function MyPage() {
 
       {/* Customer Support */}
       <div className="bg-white lg:bg-white lg:rounded-2xl lg:shadow-sm lg:p-6 lg:mb-4 stagger-children">
-        <div className="px-4 pt-4 pb-2">
+        <div className="px-2.5 pt-4 pb-2">
           <h3 className="text-sm font-bold text-gray-900">고객센터</h3>
         </div>
         {supportMenuItems.map(renderMenuItem)}
       </div>
 
       {/* Hospital Registration */}
-      <div className="px-4 py-6">
+      <div className="px-2.5 py-6">
         <button
           onClick={() => router.push('/hospital')}
           className="w-full py-3.5 bg-[#7C3AED] text-white rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-[#6D28D9] transition-colors"

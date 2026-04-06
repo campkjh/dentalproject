@@ -189,7 +189,7 @@ export default function HospitalRegisterPage() {
     switch (step) {
       case 1:
         return (
-          <div className="px-4 py-6 space-y-4">
+          <div className="px-2.5 py-6 space-y-4">
             <div>
               <h2 className="text-xl font-bold text-gray-900 mb-1">
                 어떤 과에 해당하시나요?
@@ -227,7 +227,7 @@ export default function HospitalRegisterPage() {
 
       case 2:
         return (
-          <div className="px-4 py-6 space-y-4">
+          <div className="px-2.5 py-6 space-y-4">
             <div>
               <h2 className="text-xl font-bold text-gray-900 mb-1">
                 진료과목을 선택해주세요
@@ -241,7 +241,7 @@ export default function HospitalRegisterPage() {
                 <button
                   key={t}
                   onClick={() => toggleTreatment(t)}
-                  className={`px-4 py-2.5 rounded-full text-sm font-medium transition-colors ${
+                  className={`px-2.5 py-2.5 rounded-full text-sm font-medium transition-colors ${
                     selectedTreatments.has(t)
                       ? 'bg-[#7C3AED] text-white'
                       : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -256,7 +256,7 @@ export default function HospitalRegisterPage() {
 
       case 3:
         return (
-          <div className="px-4 py-6 space-y-4">
+          <div className="px-2.5 py-6 space-y-4">
             <div>
               <h2 className="text-xl font-bold text-gray-900 mb-1">
                 등록 유형을 선택해주세요
@@ -326,7 +326,7 @@ export default function HospitalRegisterPage() {
 
       case 4:
         return (
-          <div className="px-4 py-6 space-y-4">
+          <div className="px-2.5 py-6 space-y-4">
             <div>
               <h2 className="text-xl font-bold text-gray-900 mb-1">
                 병원을 검색해주세요
@@ -376,7 +376,7 @@ export default function HospitalRegisterPage() {
 
       case 5:
         return (
-          <div className="px-4 py-6 space-y-4">
+          <div className="px-2.5 py-6 space-y-4">
             <div>
               <h2 className="text-xl font-bold text-gray-900 mb-1">
                 약관에 동의해주세요
@@ -431,7 +431,7 @@ export default function HospitalRegisterPage() {
 
       case 6:
         return (
-          <div className="px-4 py-6 space-y-4">
+          <div className="px-2.5 py-6 space-y-4">
             <div>
               <h2 className="text-xl font-bold text-gray-900 mb-1">
                 병원 기본정보를 입력해주세요
@@ -455,7 +455,7 @@ export default function HospitalRegisterPage() {
                     }))
                   }
                   placeholder="병원명을 입력해주세요"
-                  className="w-full px-4 py-3 bg-gray-50 rounded-xl text-sm border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#7C3AED] focus:border-[#7C3AED]"
+                  className="w-full px-2.5 py-3 bg-gray-50 rounded-xl text-sm border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#7C3AED] focus:border-[#7C3AED]"
                 />
               </div>
               <div>
@@ -472,7 +472,7 @@ export default function HospitalRegisterPage() {
                     }))
                   }
                   placeholder="대표자명을 입력해주세요"
-                  className="w-full px-4 py-3 bg-gray-50 rounded-xl text-sm border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#7C3AED] focus:border-[#7C3AED]"
+                  className="w-full px-2.5 py-3 bg-gray-50 rounded-xl text-sm border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#7C3AED] focus:border-[#7C3AED]"
                 />
               </div>
               <div>
@@ -489,7 +489,7 @@ export default function HospitalRegisterPage() {
                     }))
                   }
                   placeholder="전화번호를 입력해주세요"
-                  className="w-full px-4 py-3 bg-gray-50 rounded-xl text-sm border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#7C3AED] focus:border-[#7C3AED]"
+                  className="w-full px-2.5 py-3 bg-gray-50 rounded-xl text-sm border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#7C3AED] focus:border-[#7C3AED]"
                 />
               </div>
               <div>
@@ -506,7 +506,7 @@ export default function HospitalRegisterPage() {
                     }))
                   }
                   placeholder="사업자등록번호를 입력해주세요"
-                  className="w-full px-4 py-3 bg-gray-50 rounded-xl text-sm border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#7C3AED] focus:border-[#7C3AED]"
+                  className="w-full px-2.5 py-3 bg-gray-50 rounded-xl text-sm border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#7C3AED] focus:border-[#7C3AED]"
                 />
               </div>
 
@@ -542,7 +542,7 @@ export default function HospitalRegisterPage() {
 
       case 7:
         return (
-          <div className="px-4 py-6 space-y-4">
+          <div className="px-2.5 py-6 space-y-4">
             <div>
               <h2 className="text-xl font-bold text-gray-900 mb-1">
                 운영시간을 설정해주세요
@@ -611,7 +611,7 @@ export default function HospitalRegisterPage() {
 
       case 8:
         return (
-          <div className="px-4 py-6 space-y-4">
+          <div className="px-2.5 py-6 space-y-4">
             <div>
               <h2 className="text-xl font-bold text-gray-900 mb-1">
                 원장 정보를 입력해주세요
@@ -632,7 +632,7 @@ export default function HospitalRegisterPage() {
                     setDoctorInfo((prev) => ({ ...prev, name: e.target.value }))
                   }
                   placeholder="원장명을 입력해주세요"
-                  className="w-full px-4 py-3 bg-gray-50 rounded-xl text-sm border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#7C3AED] focus:border-[#7C3AED]"
+                  className="w-full px-2.5 py-3 bg-gray-50 rounded-xl text-sm border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#7C3AED] focus:border-[#7C3AED]"
                 />
               </div>
               <div>
@@ -649,7 +649,7 @@ export default function HospitalRegisterPage() {
                     }))
                   }
                   placeholder="전문분야를 입력해주세요"
-                  className="w-full px-4 py-3 bg-gray-50 rounded-xl text-sm border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#7C3AED] focus:border-[#7C3AED]"
+                  className="w-full px-2.5 py-3 bg-gray-50 rounded-xl text-sm border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#7C3AED] focus:border-[#7C3AED]"
                 />
               </div>
               <div>
@@ -666,7 +666,7 @@ export default function HospitalRegisterPage() {
                     }))
                   }
                   placeholder="면허번호를 입력해주세요"
-                  className="w-full px-4 py-3 bg-gray-50 rounded-xl text-sm border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#7C3AED] focus:border-[#7C3AED]"
+                  className="w-full px-2.5 py-3 bg-gray-50 rounded-xl text-sm border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#7C3AED] focus:border-[#7C3AED]"
                 />
               </div>
             </div>
@@ -683,7 +683,7 @@ export default function HospitalRegisterPage() {
     return (
       <div className="bg-white min-h-screen flex flex-col">
         <TopBar title="" showBack={false} />
-        <div className="flex-1 flex flex-col items-center justify-center px-4">
+        <div className="flex-1 flex flex-col items-center justify-center px-2.5">
           <div className="w-20 h-20 bg-[#EDE9FE] rounded-full flex items-center justify-center mb-6">
             <Plane size={36} className="text-[#7C3AED]" />
           </div>
@@ -719,7 +719,7 @@ export default function HospitalRegisterPage() {
       />
 
       {/* Step indicator */}
-      <div className="px-4 pt-1 pb-2">
+      <div className="px-2.5 pt-1 pb-2">
         <div className="flex gap-1">
           {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
             <div
@@ -736,7 +736,7 @@ export default function HospitalRegisterPage() {
       <div className="flex-1 overflow-y-auto">{renderStep()}</div>
 
       {/* Bottom button */}
-      <div className="sticky bottom-0 bg-white px-4 py-4 border-t border-gray-100">
+      <div className="sticky bottom-0 bg-white px-2.5 py-4 border-t border-gray-100">
         <button
           onClick={() => {
             if (step === TOTAL_STEPS) {

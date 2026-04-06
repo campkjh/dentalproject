@@ -83,7 +83,7 @@ export default function ReservationDetailPage() {
       <TopBar title="정보" />
 
       {/* Status + date */}
-      <div className="bg-white px-4 py-4">
+      <div className="bg-white px-2.5 py-4">
         <div className="flex items-center gap-3">
           <span
             className={`px-3 py-1 rounded-full text-xs font-medium ${

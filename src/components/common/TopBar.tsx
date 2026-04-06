@@ -16,7 +16,7 @@ export default function TopBar({ title, showBack = true, rightContent, transpare
   return (
     <div
       style={{ position: 'sticky', top: 0, zIndex: 40 }}
-      className={`flex items-center justify-between h-12 px-4 lg:hidden ${
+      className={`flex items-center justify-between h-12 px-2.5 lg:hidden ${
         transparent ? 'bg-transparent' : 'bg-white'
       }`}
     >

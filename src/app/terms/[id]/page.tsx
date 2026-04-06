@@ -93,7 +93,7 @@ function DataTable({
     <div className="my-5 overflow-x-auto">
       {caption && (
         <div
-          className="px-4 py-2.5 text-xs font-semibold tracking-wide"
+          className="px-2.5 py-2.5 text-xs font-semibold tracking-wide"
           style={{
             color: '#A4ABBA',
             borderBottom: '1px solid #C8CEDA',
@@ -108,7 +108,7 @@ function DataTable({
             {headers.map((h, i) => (
               <th
                 key={i}
-                className="px-4 py-3 text-left font-semibold text-[13px]"
+                className="px-2.5 py-3 text-left font-semibold text-[13px]"
                 style={{ color: '#2B313D' }}
               >
                 {h}
@@ -122,7 +122,7 @@ function DataTable({
               {row.map((cell, ci) => (
                 <td
                   key={ci}
-                  className="px-4 py-3 text-[13px] leading-relaxed"
+                  className="px-2.5 py-3 text-[13px] leading-relaxed"
                   style={{ color: '#51535C' }}
                 >
                   {cell}

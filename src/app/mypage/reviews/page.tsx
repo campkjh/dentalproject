@@ -35,7 +35,7 @@ export default function MyReviewsPage() {
     <div className="min-h-screen bg-gray-50 max-w-[430px] mx-auto">
       <TopBar title="내리뷰" />
 
-      <div className="px-4 py-4 space-y-3">
+      <div className="px-2.5 py-4 space-y-3">
         {userReviews.map((review) => (
           <div key={review.id} className="bg-white rounded-xl p-4 border border-gray-100">
             {/* Product Info */}

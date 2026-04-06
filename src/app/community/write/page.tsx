@@ -121,13 +121,13 @@ function CommunityWritePage() {
     <div className="min-h-screen bg-gray-50">
       <TopBar title="글작성" />
 
-      <div className="px-4 py-4 space-y-5">
+      <div className="px-2.5 py-4 space-y-5">
         {/* Category Dropdown */}
         <div className="relative">
           <label className="text-sm font-bold text-gray-900 mb-2 block">카테고리</label>
           <button
             onClick={() => setShowBoardDropdown(!showBoardDropdown)}
-            className="w-full flex items-center justify-between border border-gray-200 rounded-xl px-4 py-3 bg-white"
+            className="w-full flex items-center justify-between border border-gray-200 rounded-xl px-2.5 py-3 bg-white"
           >
             <span className="text-sm text-gray-900 font-medium">{currentBoardLabel}</span>
             <ChevronDown size={16} className="text-gray-400" />
@@ -141,7 +141,7 @@ function CommunityWritePage() {
                     setBoardType(option.value);
                     setShowBoardDropdown(false);
                   }}
-                  className={`w-full text-left px-4 py-3 text-sm border-b border-gray-50 last:border-0 ${
+                  className={`w-full text-left px-2.5 py-3 text-sm border-b border-gray-50 last:border-0 ${
                     boardType === option.value
                       ? 'text-[#7C3AED] font-medium bg-[#EDE9FE]'
                       : 'text-gray-600'
@@ -156,7 +156,7 @@ function CommunityWritePage() {
 
         {/* Anonymous notice for free board */}
         {boardType === 'free' && (
-          <div className="bg-[#EDE9FE] rounded-xl px-4 py-3">
+          <div className="bg-[#EDE9FE] rounded-xl px-2.5 py-3">
             <p className="text-xs text-[#7C3AED]">
               자유게시판은 익명으로 작성됩니다. 자동으로 익명 ID가 부여됩니다.
             </p>
@@ -171,7 +171,7 @@ function CommunityWritePage() {
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="제목을 입력해 주세요"
-            className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-[#7C3AED] bg-white placeholder:text-gray-400"
+            className="w-full border border-gray-200 rounded-xl px-2.5 py-3 text-sm outline-none focus:border-[#7C3AED] bg-white placeholder:text-gray-400"
           />
         </div>
 
@@ -188,7 +188,7 @@ function CommunityWritePage() {
               }}
               placeholder="내용을 입력해 주세요"
               rows={8}
-              className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-[#7C3AED] resize-none bg-white placeholder:text-gray-400"
+              className="w-full border border-gray-200 rounded-xl px-2.5 py-3 text-sm outline-none focus:border-[#7C3AED] resize-none bg-white placeholder:text-gray-400"
             />
             <span className="absolute bottom-3 right-3 text-xs text-gray-400">
               {content.length}/{MAX_CONTENT}
@@ -258,7 +258,7 @@ function CommunityWritePage() {
       </div>
 
       {/* Submit Button */}
-      <div className="px-4 py-6 mt-4">
+      <div className="px-2.5 py-6 mt-4">
         <button
           onClick={handleSubmit}
           disabled={!isFormValid}

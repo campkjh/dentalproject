@@ -111,7 +111,7 @@ function BookingPage() {
       <TopBar title="내원일 선택" />
 
       {/* Calendar Header */}
-      <div className="flex items-center justify-between px-4 py-3">
+      <div className="flex items-center justify-between px-2.5 py-3">
         <button onClick={goToPrevMonth} className="p-1">
           <ChevronLeft size={20} className="text-gray-600" />
         </button>
@@ -124,7 +124,7 @@ function BookingPage() {
       </div>
 
       {/* Day Labels */}
-      <div className="grid grid-cols-7 px-4 mb-1">
+      <div className="grid grid-cols-7 px-2.5 mb-1">
         {dayLabels.map((label, i) => (
           <div
             key={label}
@@ -138,7 +138,7 @@ function BookingPage() {
       </div>
 
       {/* Calendar Grid */}
-      <div className="px-4 mb-4">
+      <div className="px-2.5 mb-4">
         {calendarData.map((week, weekIdx) => (
           <div key={weekIdx} className="grid grid-cols-7">
             {week.map((day, dayIdx) => {
@@ -174,7 +174,7 @@ function BookingPage() {
       </div>
 
       {/* Legend */}
-      <div className="flex items-center justify-center gap-6 px-4 mb-6">
+      <div className="flex items-center justify-center gap-6 px-2.5 mb-6">
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 bg-[#7C3AED] rounded-full" />
           <span className="text-xs text-gray-500">예약가능</span>
@@ -187,7 +187,7 @@ function BookingPage() {
 
       {/* Time Selection */}
       {selectedDate && (
-        <div className="px-4 mb-6">
+        <div className="px-2.5 mb-6">
           <h3 className="font-bold text-sm mb-3">
             {currentMonth}월 {selectedDate}일 시간 선택
           </h3>
@@ -210,7 +210,7 @@ function BookingPage() {
       )}
 
       {/* Notes */}
-      <div className="px-4 mb-6">
+      <div className="px-2.5 mb-6">
         <div className="bg-gray-50 rounded-xl p-4">
           <h3 className="text-sm font-bold mb-2">안내사항</h3>
           <ul className="space-y-1.5">
@@ -241,7 +241,7 @@ function BookingPage() {
       </div>
 
       {/* Bottom Button */}
-      <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-white border-t border-gray-100 px-4 py-3 z-50 lg:static lg:mt-6 lg:transform-none lg:left-auto lg:border-0 lg:px-4 lg:max-w-none">
+      <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-white border-t border-gray-100 px-2.5 py-3 z-50 lg:static lg:mt-6 lg:transform-none lg:left-auto lg:border-0 lg:px-2.5 lg:max-w-none">
         <button
           onClick={handleBooking}
           disabled={!selectedDate || !selectedTime}

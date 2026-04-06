@@ -60,7 +60,7 @@ export default function HospitalHomePage() {
   return (
     <div className="pb-[86px] bg-gray-50 min-h-screen">
       {/* Header */}
-      <div style={{ position: "sticky", top: 0, zIndex: 40 }} className="bg-white flex items-center justify-between h-12 px-4">
+      <div style={{ position: "sticky", top: 0, zIndex: 40 }} className="bg-white flex items-center justify-between h-12 px-2.5">
         <h1 className="text-lg font-bold">홈</h1>
         <button className="p-1">
           <Bell size={22} className="text-gray-700" />
@@ -68,13 +68,13 @@ export default function HospitalHomePage() {
       </div>
 
       {/* Tab filters */}
-      <div className="bg-white px-4 pb-3">
+      <div className="bg-white px-2.5 pb-3">
         <div className="flex gap-2 overflow-x-auto hide-scrollbar">
           {tabs.map((tab) => (
             <button
               key={tab.label}
               onClick={() => setActiveTab(tab.label)}
-              className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+              className={`px-2.5 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
                 activeTab === tab.label
                   ? 'bg-gray-900 text-white'
                   : 'bg-white text-gray-500 border border-gray-200'
@@ -87,7 +87,7 @@ export default function HospitalHomePage() {
       </div>
 
       {/* Reservation list */}
-      <div className="px-4 py-4">
+      <div className="px-2.5 py-4">
         {filtered.length === 0 ? (
           <EmptyState icon="calendar" message="예약내역이 존재하지 않아요" />
         ) : (

@@ -95,7 +95,7 @@ export default function CommunityPage() {
       >
         {/* Popular posts - horizontal scroll */}
         {popularPosts.length > 0 && (
-          <div className="bg-white px-4 py-4 mb-2">
+          <div className="bg-white px-2.5 py-4 mb-2">
             <h3 className="text-sm font-bold text-gray-900 mb-3">
               인기글
             </h3>
@@ -126,7 +126,7 @@ export default function CommunityPage() {
         )}
 
         {/* Board header + sort */}
-        <div className="bg-white px-4 py-3 flex items-center justify-between mb-px">
+        <div className="bg-white px-2.5 py-3 flex items-center justify-between mb-px">
           <h3 className="text-sm font-bold text-gray-900">{boardHeader()}</h3>
           <div className="relative">
             <button
@@ -145,7 +145,7 @@ export default function CommunityPage() {
                       setSortBy(option);
                       setShowSortDropdown(false);
                     }}
-                    className={`block w-full px-4 py-2.5 text-xs text-left whitespace-nowrap ${
+                    className={`block w-full px-2.5 py-2.5 text-xs text-left whitespace-nowrap ${
                       sortBy === option
                         ? 'text-[#7C3AED] bg-[#EDE9FE]'
                         : 'text-gray-600'
@@ -173,7 +173,7 @@ export default function CommunityPage() {
                 className="block"
               >
                 <div
-                  className={`px-4 py-4 hover-lift ${
+                  className={`px-2.5 py-4 hover-lift ${
                     index < sortedPosts.length - 1
                       ? 'border-b border-gray-100'
                       : ''

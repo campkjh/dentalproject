@@ -81,7 +81,7 @@ export default function FAQPage() {
       <TopBar title="자주하는질문" />
 
       {/* Tab Bar */}
-      <div className="px-4 py-3 overflow-x-auto">
+      <div className="px-2.5 py-3 overflow-x-auto">
         <TabBar
           tabs={tabs}
           activeTab={activeTab}
@@ -100,7 +100,7 @@ export default function FAQPage() {
             <div key={index}>
               <button
                 onClick={() => toggleItem(faq.question)}
-                className="w-full flex items-center justify-between px-4 py-4 hover:bg-gray-50 transition-colors text-left"
+                className="w-full flex items-center justify-between px-2.5 py-4 hover:bg-gray-50 transition-colors text-left"
               >
                 <div className="flex items-start gap-2 flex-1 pr-3">
                   <span className="text-[#7C3AED] font-bold text-sm mt-0.5">Q</span>
@@ -114,7 +114,7 @@ export default function FAQPage() {
                 />
               </button>
               {isOpen && (
-                <div className="px-4 pb-4">
+                <div className="px-2.5 pb-4">
                   <div className="flex items-start gap-2 bg-gray-50 rounded-xl p-4">
                     <span className="text-[#7C3AED] font-bold text-sm mt-0.5">A</span>
                     <p className="text-sm text-gray-600 leading-relaxed">{faq.answer}</p>

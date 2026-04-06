@@ -97,7 +97,7 @@ export default function NotificationsPage() {
     <div className="min-h-screen bg-white page-enter">
       {/* Header */}
       <div style={{ position: 'sticky', top: 0, zIndex: 40 }} className="bg-white">
-        <div className="flex items-center justify-between h-12 px-4">
+        <div className="flex items-center justify-between h-12 px-2.5">
           <div className="flex items-center gap-2">
             <button onClick={() => router.back()} className="p-1 -ml-1">
               <ChevronLeft size={24} style={{ color: '#2B313D' }} />
@@ -122,7 +122,7 @@ export default function NotificationsPage() {
 
         {/* Search bar */}
         {showSearch && (
-          <div className="px-4 pb-3 fade-in-up">
+          <div className="px-2.5 pb-3 fade-in-up">
             <div
               style={{ height: 40, borderRadius: 8, borderWidth: 1, borderColor: '#C8CEDA', backgroundColor: '#F2F3F5' }}
               className="flex items-center px-3 gap-2 border-solid"
@@ -195,7 +195,7 @@ export default function NotificationsPage() {
                     if (swipeX > 20) { e.preventDefault(); setSwipeStates(prev => ({ ...prev, [notification.id]: 0 })); }
                   }}
                 >
-                  <div className="px-4 py-4">
+                  <div className="px-2.5 py-4">
                     {/* Badge + Date row */}
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">

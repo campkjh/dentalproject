@@ -18,7 +18,7 @@ export default function TermsPage() {
     <div className="min-h-screen bg-white page-enter">
       <TopBar title="" />
 
-      <div className="px-4 pt-2 pb-4 lg:max-w-3xl lg:mx-auto">
+      <div className="px-2.5 pt-2 pb-4 lg:max-w-3xl lg:mx-auto">
         <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center mb-4">
           <FileText size={24} className="text-gray-500" />
         </div>
@@ -30,7 +30,7 @@ export default function TermsPage() {
           <Link
             key={term.id}
             href={`/terms/${term.id}`}
-            className="flex items-center justify-between px-4 py-4 hover:bg-gray-50 transition-colors"
+            className="flex items-center justify-between px-2.5 py-4 hover:bg-gray-50 transition-colors"
           >
             <span className="text-sm font-medium text-gray-900">{term.title}</span>
             <ChevronRight size={16} className="text-gray-300" />
@@ -39,7 +39,7 @@ export default function TermsPage() {
       </div>
 
       {/* Company Info */}
-      <div className="mt-8 px-4 py-6 border-t border-gray-100 lg:max-w-3xl lg:mx-auto">
+      <div className="mt-8 px-2.5 py-6 border-t border-gray-100 lg:max-w-3xl lg:mx-auto">
         <div className="space-y-1.5 text-xs text-gray-400">
           <p>(주)00000은 통신판매중개자로서 통신판매의 당사자가 아니며 개별 판매자가 제공하는 서비스에 대한 이행, 계약사항 등과 관련한 의무와 책임은 거래 당사자에게 있습니다.</p>
           <p className="mt-2">통신판매업신고번호 : 제 2025-서울송파-0000호</p>
