@@ -15,6 +15,7 @@ import {
   Clock,
   ChevronLeft,
   User,
+  MoreHorizontal,
 } from 'lucide-react';
 import TabBar from '@/components/common/TabBar';
 import FixedBar from '@/components/common/FixedBar';
@@ -376,44 +377,80 @@ export default function ProductDetailPage() {
             <div>
               {productReviews.map((review, idx) => (
                 <div key={review.id} className="px-2.5 py-5" style={{ borderBottom: idx < productReviews.length - 1 ? '8px solid #F2F3F5' : 'none' }}>
-                  {/* Reviewer info */}
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: '#F2F3F5' }}>
-                        <User size={16} style={{ color: '#A4ABBA' }} />
-                      </div>
-                      <div>
-                        <p style={{ fontSize: 14, fontWeight: 600, color: '#2B313D' }}>{review.authorName}</p>
-                        <p style={{ fontSize: 12, color: '#A4ABBA' }}>{review.date}</p>
-                      </div>
-                    </div>
+
+                  {/* 닉네임 + 메뉴 */}
+                  <div className="flex items-center justify-between">
+                    <p style={{ fontSize: 16, fontWeight: 600, color: '#2B313D' }}>{review.authorName}</p>
+                    <ReviewMenu reviewId={review.id} authorName={review.authorName} />
+                  </div>
+
+                  {/* 날짜 */}
+                  <p style={{ fontSize: 14, color: '#A4ABBA', marginTop: 2 }}>{review.date}</p>
+
+                  {/* 별점 */}
+                  <div className="flex items-center gap-2" style={{ marginTop: 10 }}>
                     <div className="flex items-center gap-0.5">
                       {[...Array(5)].map((_, i) => (
-                        <Star key={i} size={14} fill={i < review.rating ? '#FBBF24' : '#E5E7EB'} stroke={i < review.rating ? '#FBBF24' : '#E5E7EB'} />
+                        <Star key={i} width={24} height={24} fill={i < review.rating ? '#FBBF24' : '#E5E7EB'} stroke={i < review.rating ? '#FBBF24' : '#E5E7EB'} />
                       ))}
                     </div>
+                    <span style={{ fontSize: 20, fontWeight: 600, color: '#2B313D' }}>{review.rating.toFixed(1)}</span>
                   </div>
-                  {/* Before/After */}
-                  <div className="flex gap-2 mb-4">
-                    <div className="flex-1 aspect-[4/3] rounded-lg flex flex-col items-center justify-center" style={{ backgroundColor: '#F2F3F5' }}>
-                      <span className="text-xl">📷</span>
-                      <span style={{ fontSize: 10, color: '#A4ABBA', marginTop: 4 }}>전</span>
+
+                  {/* 전/후 이미지 */}
+                  <div className="flex" style={{ marginTop: 14, gap: 0 }}>
+                    {/* 전 이미지 */}
+                    <div className="flex-1 aspect-square relative overflow-hidden" style={{ borderRadius: 12 }}>
+                      <div className="w-full h-full flex items-center justify-center" style={{ backgroundColor: '#F2F3F5' }}>
+                        <span className="text-3xl">📷</span>
+                      </div>
+                      <span style={{
+                        position: 'absolute', top: 0, left: 0,
+                        fontSize: 14, fontWeight: 600, color: '#FFFFFF', backgroundColor: '#8037FF',
+                        borderTopLeftRadius: 12, borderBottomRightRadius: 12,
+                        padding: '4px 12px',
+                      }}>전</span>
                     </div>
-                    <div className="flex-1 aspect-[4/3] rounded-lg flex flex-col items-center justify-center" style={{ backgroundColor: '#F2F3F5' }}>
-                      <span className="text-xl">📷</span>
-                      <span style={{ fontSize: 10, color: '#A4ABBA', marginTop: 4 }}>후</span>
+                    {/* 후 이미지 */}
+                    <div className="flex-1 aspect-square relative overflow-hidden" style={{ borderRadius: 12 }}>
+                      <div className="w-full h-full flex items-center justify-center" style={{ backgroundColor: '#F2F3F5' }}>
+                        <span className="text-3xl">📷</span>
+                      </div>
+                      <span style={{
+                        position: 'absolute', top: 0, right: 0,
+                        fontSize: 14, fontWeight: 600, color: '#FFFFFF', backgroundColor: '#2B313D',
+                        borderTopRightRadius: 12, borderBottomLeftRadius: 12,
+                        padding: '4px 12px',
+                      }}>후</span>
                     </div>
                   </div>
-                  {/* Treatment info - inline, no box */}
-                  <div className="flex items-center gap-3 mb-3" style={{ fontSize: 13, color: '#A4ABBA' }}>
-                    <span>{review.treatmentName}</span>
-                    <span>·</span>
-                    <span>{review.totalCost.toLocaleString()}원</span>
-                    <span>·</span>
-                    <span>{review.treatmentDate}</span>
+
+                  {/* 시술명 */}
+                  <p style={{ fontSize: 18, fontWeight: 600, color: '#2B313D', marginTop: 14 }}>{review.treatmentName}</p>
+
+                  {/* 시술전체비용 */}
+                  <div className="flex items-center justify-between" style={{ marginTop: 10 }}>
+                    <span style={{ fontSize: 14, color: '#A4ABBA' }}>시술전체비용</span>
+                    <span style={{
+                      fontSize: 12, fontWeight: 600, color: '#2B313D',
+                      backgroundColor: 'rgba(200, 206, 218, 0.2)', borderRadius: 8,
+                      padding: '4px 10px',
+                    }}>{review.totalCost.toLocaleString()}원</span>
                   </div>
-                  {/* Review content */}
-                  <p style={{ fontSize: 14, color: '#51535C', lineHeight: '22px' }}>{review.content}</p>
+
+                  {/* 시술받은시기 */}
+                  <div className="flex items-center justify-between" style={{ marginTop: 6 }}>
+                    <span style={{ fontSize: 14, color: '#A4ABBA' }}>시술받은시기</span>
+                    <span style={{
+                      fontSize: 12, fontWeight: 600, color: '#2B313D',
+                      backgroundColor: 'rgba(200, 206, 218, 0.2)', borderRadius: 8,
+                      padding: '4px 10px',
+                    }}>{review.treatmentDate}</span>
+                  </div>
+
+                  {/* 후기 내용 */}
+                  <p style={{ fontSize: 14, fontWeight: 400, color: '#2C2C2C', lineHeight: '22px', marginTop: 14 }}>{review.content}</p>
+
                 </div>
               ))}
             </div>
@@ -486,6 +523,50 @@ export default function ProductDetailPage() {
           </div>
         </div>
       </FixedBar>
+    </div>
+  );
+}
+
+function ReviewMenu({ reviewId, authorName }: { reviewId: string; authorName: string }) {
+  const [open, setOpen] = useState(false);
+  const { showToast, showModal } = useStore();
+
+  return (
+    <div className="relative">
+      <button onClick={() => setOpen(!open)} className="p-1">
+        <MoreHorizontal size={20} style={{ color: '#A4ABBA' }} />
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          <div className="absolute right-0 top-full mt-1 z-50 bg-white rounded-xl overflow-hidden scale-in" style={{ border: '1px solid #F2F3F5', boxShadow: '0 4px 20px rgba(0,0,0,0.08)', minWidth: 160 }}>
+            <button
+              onClick={() => {
+                setOpen(false);
+                showModal('리뷰를 신고하시겠습니까?', '부적절한 리뷰는 검토 후 조치됩니다.', () => {
+                  showToast('리뷰가 신고되었습니다.');
+                });
+              }}
+              className="w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors"
+              style={{ fontSize: 14, color: '#2B313D', borderBottom: '1px solid #F2F3F5' }}
+            >
+              리뷰 신고하기
+            </button>
+            <button
+              onClick={() => {
+                setOpen(false);
+                showModal(`${authorName}님을 차단하시겠습니까?`, '차단된 유저의 리뷰는 더 이상 표시되지 않습니다.', () => {
+                  showToast(`${authorName}님이 차단되었습니다.`);
+                });
+              }}
+              className="w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors"
+              style={{ fontSize: 14, color: '#EF4444' }}
+            >
+              유저 차단하기
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 }
