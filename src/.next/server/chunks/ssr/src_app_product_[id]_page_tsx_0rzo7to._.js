@@ -1,3 +1,0 @@
-module.exports=[80509,a=>{"use strict";a.i(87924),a.i(72131),a.i(50944),a.i(38246),a.i(76472),(0,a.i(70106).default)("share-2",[["circle",{cx:"18",cy:"5",r:"3",key:"gq8acd"}],["circle",{cx:"6",cy:"12",r:"3",key:"w7nqdw"}],["circle",{cx:"18",cy:"19",r:"3",key:"1xt0gg"}],["line",{x1:"8.59",x2:"15.42",y1:"13.51",y2:"17.49",key:"47mynk"}],["line",{x1:"15.41",x2:"8.59",y1:"6.51",y2:"10.49",key:"1n3mei"}]]),a.i(21374),a.i(63519),a.i(45222),a.i(5784),a.i(67552),a.i(24987),a.i(41710),a.i(13749),a.i(46842);let b=Error("Cannot find module '@/components/common/TabBar'");throw b.code="MODULE_NOT_FOUND",b}];
-
-//# sourceMappingURL=src_app_product_%5Bid%5D_page_tsx_0rzo7to._.js.map
