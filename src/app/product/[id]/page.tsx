@@ -192,13 +192,43 @@ export default function ProductDetailPage() {
           </div>
         </div>
         {productReviews.length > 0 && (
-          <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-2">
+          <div className="flex overflow-x-auto hide-scrollbar pb-2" style={{ gap: 6 }}>
             {productReviews.map((review) => (
               <div
                 key={review.id}
-                className="flex-shrink-0 w-24 h-24 bg-gradient-to-br from-purple-50 to-blue-50 rounded-xl flex items-center justify-center"
+                className="flex-shrink-0 flex flex-col"
+                style={{ width: 288, height: 358, borderRadius: 12, backgroundColor: '#F6F6F6', padding: 12, overflow: 'hidden' }}
               >
-                <span className="text-2xl">📷</span>
+                {/* 전/후 이미지 */}
+                <div className="flex" style={{ gap: 0 }}>
+                  <div className="flex-1 aspect-square relative overflow-hidden" style={{ borderRadius: 8 }}>
+                    <div className="w-full h-full flex items-center justify-center" style={{ backgroundColor: '#EBEBEB' }}>
+                      <span className="text-2xl">📷</span>
+                    </div>
+                    <span style={{ position: 'absolute', top: 0, left: 0, fontSize: 11, fontWeight: 600, color: '#fff', backgroundColor: '#8037FF', borderTopLeftRadius: 8, borderBottomRightRadius: 8, padding: '2px 8px' }}>전</span>
+                  </div>
+                  <div className="flex-1 aspect-square relative overflow-hidden" style={{ borderRadius: 8 }}>
+                    <div className="w-full h-full flex items-center justify-center" style={{ backgroundColor: '#EBEBEB' }}>
+                      <span className="text-2xl">📷</span>
+                    </div>
+                    <span style={{ position: 'absolute', top: 0, right: 0, fontSize: 11, fontWeight: 600, color: '#fff', backgroundColor: '#2B313D', borderTopRightRadius: 8, borderBottomLeftRadius: 8, padding: '2px 8px' }}>후</span>
+                  </div>
+                </div>
+                {/* 시술명 */}
+                <p style={{ fontSize: 13, fontWeight: 600, color: '#2B313D', marginTop: 8 }} className="truncate">{review.treatmentName}</p>
+                {/* 날짜 */}
+                <p style={{ fontSize: 11, color: '#A4ABBA', marginTop: 2 }}>{review.date}</p>
+                {/* 별점 */}
+                <div className="flex items-center gap-1" style={{ marginTop: 4 }}>
+                  <div className="flex">
+                    {[...Array(5)].map((_, i) => (
+                      <Star key={i} width={14} height={14} fill={i < review.rating ? '#FBBF24' : '#E5E7EB'} stroke={i < review.rating ? '#FBBF24' : '#E5E7EB'} />
+                    ))}
+                  </div>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: '#2B313D' }}>{review.rating.toFixed(1)}</span>
+                </div>
+                {/* 후기 */}
+                <p style={{ fontSize: 12, color: '#51535C', lineHeight: '17px', marginTop: 6, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical' as const }}>{review.content}</p>
               </div>
             ))}
           </div>
