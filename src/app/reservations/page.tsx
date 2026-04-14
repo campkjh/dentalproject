@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { MapPin } from 'lucide-react';
+import { MapPin, Calendar, ChevronRight, Clock, CheckCircle2, XCircle } from 'lucide-react';
 import TopBar from '@/components/common/TopBar';
 import EmptyState from '@/components/common/EmptyState';
 import LoginRequired from '@/components/common/LoginRequired';
@@ -27,11 +27,34 @@ const statusLabel: Record<Reservation['status'], string> = {
   cancelled: '취소',
 };
 
-const statusColor: Record<Reservation['status'], string> = {
-  pending: 'bg-yellow-100 text-yellow-700',
-  confirmed: 'bg-[#EDE9FE] text-[#7C3AED]',
-  completed: 'bg-green-100 text-green-700',
-  cancelled: 'bg-gray-100 text-gray-500',
+const statusStyle: Record<
+  Reservation['status'],
+  { text: string; bg: string; dot: string; icon: React.ReactNode }
+> = {
+  pending: {
+    text: 'text-[#F59E0B]',
+    bg: 'bg-[#FFFBEB]',
+    dot: 'text-[#F59E0B]',
+    icon: <Clock size={12} />,
+  },
+  confirmed: {
+    text: 'text-[#7C3AED]',
+    bg: 'bg-[#EDE9FE]',
+    dot: 'text-[#7C3AED]',
+    icon: <CheckCircle2 size={12} />,
+  },
+  completed: {
+    text: 'text-[#10B981]',
+    bg: 'bg-[#ECFDF5]',
+    dot: 'text-[#10B981]',
+    icon: <CheckCircle2 size={12} />,
+  },
+  cancelled: {
+    text: 'text-gray-500',
+    bg: 'bg-gray-100',
+    dot: 'text-gray-400',
+    icon: <XCircle size={12} />,
+  },
 };
 
 export default function ReservationsPage() {
@@ -39,11 +62,26 @@ export default function ReservationsPage() {
   const { isLoggedIn, reservations, showModal, showToast, updateReservationStatus } = useStore();
   const [activeTab, setActiveTab] = useState('전체');
 
-  const filtered = reservations.filter((r) => {
-    const target = statusMap[activeTab];
-    if (!target) return true;
-    return r.status === target;
-  });
+  const filtered = useMemo(
+    () =>
+      reservations.filter((r) => {
+        const target = statusMap[activeTab];
+        if (!target) return true;
+        return r.status === target;
+      }),
+    [reservations, activeTab]
+  );
+
+  const counts = useMemo(() => {
+    const c: Record<Reservation['status'], number> = {
+      pending: 0,
+      confirmed: 0,
+      completed: 0,
+      cancelled: 0,
+    };
+    reservations.forEach((r) => (c[r.status] += 1));
+    return c;
+  }, [reservations]);
 
   const handleCancel = (id: string) => {
     showModal('예약 취소', '예약을 취소하시겠습니까?', () => {
@@ -53,132 +91,184 @@ export default function ReservationsPage() {
   };
 
   return (
-    <div className="pb-[86px] lg:pb-0 bg-gray-50 min-h-screen">
+    <div className="pb-[86px] lg:pb-0 bg-gray-50 min-h-screen page-enter">
       <TopBar title="예약내역" showBack={false} />
 
       {!isLoggedIn ? (
         <LoginRequired />
       ) : (
         <>
-          {/* Status tabs - horizontal scrollable */}
-          <div className="bg-white px-2.5 pb-3">
-            <div className="flex gap-2 overflow-x-auto hide-scrollbar">
-              {statusTabs.map((tab) => (
-                <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  className={`px-2.5 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
-                    activeTab === tab
-                      ? 'bg-gray-900 text-white'
-                      : 'bg-white text-gray-500 border border-gray-200'
-                  }`}
-                >
-                  {tab}
-                </button>
-              ))}
+          {/* Summary hero */}
+          <div className="bg-white px-2.5 pt-2 pb-5 fade-in-up">
+            <p className="text-[22px] font-bold text-gray-900 leading-tight">
+              총 <span className="text-[#7C3AED]">{reservations.length}</span>건의 예약이 있어요
+            </p>
+            <div className="mt-4 grid grid-cols-4 gap-2">
+              {(
+                [
+                  { key: 'pending', label: '확인중' },
+                  { key: 'confirmed', label: '확정' },
+                  { key: 'completed', label: '완료' },
+                  { key: 'cancelled', label: '취소' },
+                ] as { key: Reservation['status']; label: string }[]
+              ).map((s) => {
+                const style = statusStyle[s.key];
+                return (
+                  <button
+                    key={s.key}
+                    onClick={() => setActiveTab(statusLabel[s.key])}
+                    className={`${style.bg} rounded-2xl px-2 py-3 text-center card-press`}
+                  >
+                    <p className={`text-[11px] font-medium ${style.text}`}>{s.label}</p>
+                    <p className={`text-lg font-bold ${style.text} mt-0.5`}>
+                      {counts[s.key]}
+                    </p>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Sticky tabs */}
+          <div className="sticky top-0 z-10 bg-gray-50 px-2.5 pt-3 pb-3 -mt-2">
+            <div className="flex gap-1.5 overflow-x-auto hide-scrollbar">
+              {statusTabs.map((tab) => {
+                const isActive = activeTab === tab;
+                return (
+                  <button
+                    key={tab}
+                    onClick={() => setActiveTab(tab)}
+                    className={`pill-tab px-3.5 py-1.5 rounded-full text-[13px] font-semibold whitespace-nowrap ${
+                      isActive
+                        ? 'bg-gray-900 text-white'
+                        : 'bg-white text-gray-500 border border-gray-200'
+                    }`}
+                  >
+                    {tab}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
           {/* Reservation list */}
-          <div className="px-2.5 py-4 lg:max-w-5xl lg:mx-auto lg:px-6 lg:py-6">
+          <div
+            key={activeTab}
+            className="list-fade-slide px-2.5 pb-6 lg:max-w-5xl lg:mx-auto lg:px-6 lg:py-6"
+          >
             {filtered.length === 0 ? (
               <EmptyState icon="calendar" message="내역이 존재하지 않아요" />
             ) : (
-              <div className="flex flex-col gap-3 lg:grid lg:grid-cols-2 lg:gap-4">
-                {filtered.map((reservation) => (
-                  <Link
-                    key={reservation.id}
-                    href={`/reservations/${reservation.id}`}
-                    className="block"
-                  >
-                    <div className="bg-white rounded-2xl p-4 shadow-sm lg:bg-white lg:rounded-xl lg:shadow-sm">
-                      {/* Status badge + date */}
-                      <div className="flex items-center justify-between mb-3">
-                        <span
-                          className={`px-3 py-1 rounded-full text-xs font-medium ${
-                            statusColor[reservation.status]
-                          }`}
-                        >
-                          {statusLabel[reservation.status]}
-                        </span>
-                        <span className="text-xs text-gray-400">
-                          {reservation.date}
-                        </span>
-                      </div>
+              <div className="flex flex-col gap-3 lg:grid lg:grid-cols-2 lg:gap-4 stagger-children">
+                {filtered.map((reservation) => {
+                  const style = statusStyle[reservation.status];
+                  const isPending = reservation.status === 'pending';
+                  const isCompleted = reservation.status === 'completed';
 
-                      {/* Product info */}
-                      <div className="flex gap-3">
-                        <div className="w-20 h-20 rounded-xl bg-gray-100 overflow-hidden flex-shrink-0 relative">
-                          <div className="w-full h-full bg-gradient-to-br from-purple-100 to-blue-100 flex items-center justify-center"><span className="text-2xl">🦷</span></div>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-bold text-gray-900 line-clamp-2">
-                            {reservation.productTitle}
-                          </p>
-                          <p className="text-xs text-gray-500 mt-1">
-                            {reservation.hospitalName}
-                          </p>
-                          <div className="flex items-center gap-1 mt-1">
-                            <MapPin size={12} className="text-gray-400 flex-shrink-0" />
-                            <p className="text-xs text-gray-400 truncate">
-                              {reservation.location}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Extra info for pending */}
-                      {reservation.status === 'pending' && (
-                        <div className="mt-3 pt-3 border-t border-gray-100">
-                          <div className="flex items-center justify-between text-sm">
-                            <span className="text-gray-500">예약일시</span>
-                            <span className="text-gray-700">
-                              {reservation.reservationDate}
-                            </span>
-                          </div>
-                          <div className="flex items-center justify-between text-sm mt-1">
-                            <span className="text-gray-500">금액</span>
-                            <span className="font-bold text-gray-900">
-                              {reservation.amount.toLocaleString()}원
-                            </span>
-                          </div>
-                          <button
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              handleCancel(reservation.id);
-                            }}
-                            className="mt-3 w-full py-2.5 border border-red-400 text-red-500 rounded-xl text-sm font-medium"
+                  return (
+                    <Link
+                      key={reservation.id}
+                      href={`/reservations/${reservation.id}`}
+                      className="block card-press"
+                    >
+                      <div
+                        className="bg-white rounded-2xl p-4"
+                        style={{ boxShadow: '0 1px 2px rgba(16,24,40,0.04), 0 4px 16px rgba(16,24,40,0.04)' }}
+                      >
+                        {/* Status chip + date */}
+                        <div className="flex items-center justify-between">
+                          <span
+                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold ${style.bg} ${style.text}`}
                           >
-                            취소하기
-                          </button>
+                            <span className={`status-dot ${isPending ? 'pulse' : ''} ${style.dot}`} style={{ backgroundColor: 'currentColor' }} />
+                            {statusLabel[reservation.status]}
+                          </span>
+                          <span className="text-[11px] text-gray-400 font-medium">
+                            {reservation.date}
+                          </span>
                         </div>
-                      )}
 
-                      {/* Review button for completed */}
-                      {reservation.status === 'completed' && (
-                        <div className="mt-3 pt-3 border-t border-gray-100">
+                        {/* Product info */}
+                        <div className="flex gap-3 mt-3">
+                          <div className="w-[72px] h-[72px] rounded-xl bg-gradient-to-br from-purple-100 to-blue-100 flex items-center justify-center flex-shrink-0">
+                            <span className="text-3xl">🦷</span>
+                          </div>
+                          <div className="flex-1 min-w-0 flex flex-col justify-between">
+                            <div>
+                              <p className="text-[15px] font-bold text-gray-900 line-clamp-1 leading-snug">
+                                {reservation.productTitle}
+                              </p>
+                              <p className="text-[12px] text-gray-500 mt-0.5">
+                                {reservation.hospitalName}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <MapPin size={11} className="text-gray-400 flex-shrink-0" />
+                              <p className="text-[11px] text-gray-400 truncate">
+                                {reservation.location}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Meta row - visit date + amount */}
+                        <div className="mt-3 pt-3 border-t border-dashed border-gray-150" style={{ borderColor: '#F2F3F5' }}>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-1.5 text-gray-500">
+                              <Calendar size={13} />
+                              <span className="text-[12px]">{reservation.reservationDate || reservation.visitDate}</span>
+                            </div>
+                            <div className="flex items-baseline gap-0.5">
+                              <span className="text-[15px] font-extrabold text-gray-900">
+                                {reservation.amount.toLocaleString()}
+                              </span>
+                              <span className="text-[11px] text-gray-500 font-medium">원</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Action area */}
+                        {isPending && (
+                          <div className="mt-3 flex gap-2">
+                            <button
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleCancel(reservation.id);
+                              }}
+                              className="btn-press flex-1 py-2.5 border border-gray-200 text-gray-600 rounded-xl text-[13px] font-semibold bg-white hover:bg-gray-50"
+                            >
+                              예약취소
+                            </button>
+                            <div className="btn-press flex-1 py-2.5 bg-gray-900 text-white rounded-xl text-[13px] font-semibold flex items-center justify-center gap-1">
+                              상세보기
+                              <ChevronRight size={14} />
+                            </div>
+                          </div>
+                        )}
+
+                        {isCompleted && (
                           <button
                             onClick={(e) => {
                               e.preventDefault();
                               e.stopPropagation();
                               router.push(`/mypage/reviews/write?productId=${reservation.hospitalId}`);
                             }}
-                            className="w-full py-2.5 bg-[#7C3AED] text-white rounded-xl text-sm font-medium"
+                            className="btn-press mt-3 w-full py-3 bg-[#7C3AED] text-white rounded-xl text-[13px] font-bold flex items-center justify-center gap-1.5"
                           >
-                            리뷰작성 +500P
+                            리뷰작성하고 500P 받기
+                            <ChevronRight size={14} />
                           </button>
-                        </div>
-                      )}
-                    </div>
-                  </Link>
-                ))}
+                        )}
+                      </div>
+                    </Link>
+                  );
+                })}
               </div>
             )}
           </div>
         </>
       )}
-
     </div>
   );
 }
