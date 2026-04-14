@@ -12,7 +12,6 @@ import {
   IconMapPin,
   IconCalendarMini,
 } from '@/components/icons/AppIcons';
-import TopBar from '@/components/common/TopBar';
 import EmptyState from '@/components/common/EmptyState';
 import LoginRequired from '@/components/common/LoginRequired';
 import { useStore } from '@/store';
@@ -144,7 +143,10 @@ export default function ReservationsPage() {
 
   return (
     <div className="pb-[86px] lg:pb-0 bg-white min-h-screen page-enter">
-      <TopBar title="예약내역" showBack={false} />
+      {/* Custom tall header (70px) */}
+      <div className="sticky top-0 z-40 bg-white flex items-center px-2.5 lg:hidden" style={{ height: 70 }}>
+        <h1 className="text-xl font-bold">예약내역</h1>
+      </div>
 
       {!isLoggedIn ? (
         <LoginRequired />
@@ -196,14 +198,13 @@ export default function ReservationsPage() {
             className="sticky z-[45]"
             style={{
               top: 0,
-              paddingLeft: `${10 + dockProgress * 78}px`,
+              paddingLeft: `${10 + dockProgress * 114}px`,
               paddingRight: '10px',
-              paddingTop: `${12 - dockProgress * 6}px`,
-              paddingBottom: `${12 - dockProgress * 6}px`,
+              paddingTop: `${12 + dockProgress * 10}px`,
+              paddingBottom: `${12 + dockProgress * 10}px`,
               backgroundColor: `rgba(255, 255, 255, ${Math.max(0, 1 - dockProgress * 1.4)})`,
               marginTop: '-8px',
-              transform: `translateY(${-dockProgress * 4}px)`,
-              transition: 'transform 60ms linear',
+              transition: 'padding 60ms linear, background-color 60ms linear',
             }}
           >
             <div
