@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect, useLayoutEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ChevronRight } from 'lucide-react';
@@ -69,6 +69,37 @@ export default function ReservationsPage() {
   const router = useRouter();
   const { isLoggedIn, reservations, showModal, showToast, updateReservationStatus } = useStore();
   const [activeTab, setActiveTab] = useState('전체');
+  const prevIndexRef = useRef(0);
+  const [direction, setDirection] = useState<'left' | 'right'>('right');
+  const tabsRef = useRef<HTMLDivElement>(null);
+  const tabBtnRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const [indicator, setIndicator] = useState({ left: 0, width: 0 });
+
+  const activeIndex = statusTabs.indexOf(activeTab);
+
+  const changeTab = (tab: string) => {
+    const nextIdx = statusTabs.indexOf(tab);
+    setDirection(nextIdx >= prevIndexRef.current ? 'right' : 'left');
+    prevIndexRef.current = nextIdx;
+    setActiveTab(tab);
+  };
+
+  useLayoutEffect(() => {
+    const btn = tabBtnRefs.current[activeIndex];
+    const container = tabsRef.current;
+    if (!btn || !container) return;
+    setIndicator({ left: btn.offsetLeft, width: btn.offsetWidth });
+  }, [activeIndex]);
+
+  useEffect(() => {
+    const handleResize = () => {
+      const btn = tabBtnRefs.current[activeIndex];
+      if (!btn) return;
+      setIndicator({ left: btn.offsetLeft, width: btn.offsetWidth });
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [activeIndex]);
 
   const filtered = useMemo(
     () =>
@@ -124,7 +155,7 @@ export default function ReservationsPage() {
                 return (
                   <button
                     key={s.key}
-                    onClick={() => setActiveTab(statusLabel[s.key])}
+                    onClick={() => changeTab(statusLabel[s.key])}
                     className={`${style.bg} rounded-2xl px-2 py-3 text-center card-press`}
                   >
                     <p className={`text-[11px] font-medium ${style.text}`}>{s.label}</p>
@@ -137,20 +168,37 @@ export default function ReservationsPage() {
             </div>
           </div>
 
-          {/* Sticky tabs */}
+          {/* Sticky tabs with sliding indicator */}
           <div className="sticky top-0 z-10 bg-gray-50 px-2.5 pt-3 pb-3 -mt-2">
-            <div className="flex gap-1.5 overflow-x-auto hide-scrollbar">
-              {statusTabs.map((tab) => {
+            <div ref={tabsRef} className="relative flex gap-1.5 overflow-x-auto hide-scrollbar">
+              {/* Animated indicator pill */}
+              <span
+                aria-hidden
+                className="absolute top-0 bottom-0 rounded-full bg-gray-900 pointer-events-none"
+                style={{
+                  left: indicator.left,
+                  width: indicator.width,
+                  transition:
+                    'left 400ms cubic-bezier(0.22, 1, 0.36, 1), width 400ms cubic-bezier(0.22, 1, 0.36, 1)',
+                }}
+              />
+              {statusTabs.map((tab, i) => {
                 const isActive = activeTab === tab;
                 return (
                   <button
                     key={tab}
-                    onClick={() => setActiveTab(tab)}
-                    className={`pill-tab px-3.5 py-1.5 rounded-full text-[13px] font-semibold whitespace-nowrap ${
-                      isActive
-                        ? 'bg-gray-900 text-white'
-                        : 'bg-white text-gray-500 border border-gray-200'
+                    ref={(el) => {
+                      tabBtnRefs.current[i] = el;
+                    }}
+                    onClick={() => changeTab(tab)}
+                    className={`pill-tab relative z-10 px-3.5 py-1.5 rounded-full text-[13px] font-semibold whitespace-nowrap ${
+                      isActive ? 'text-white' : 'text-gray-500'
                     }`}
+                    style={{
+                      transition: 'color 280ms ease',
+                      border: isActive ? '1px solid transparent' : '1px solid #E5E7EB',
+                      background: isActive ? 'transparent' : '#fff',
+                    }}
                   >
                     {tab}
                   </button>
@@ -162,7 +210,9 @@ export default function ReservationsPage() {
           {/* Reservation list */}
           <div
             key={activeTab}
-            className="list-fade-slide px-2.5 pb-6 lg:max-w-5xl lg:mx-auto lg:px-6 lg:py-6"
+            className={`px-2.5 pb-6 lg:max-w-5xl lg:mx-auto lg:px-6 lg:py-6 ${
+              direction === 'right' ? 'tab-slide-right' : 'tab-slide-left'
+            }`}
           >
             {filtered.length === 0 ? (
               <EmptyState icon="calendar" message="내역이 존재하지 않아요" />
