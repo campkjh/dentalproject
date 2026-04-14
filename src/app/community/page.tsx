@@ -360,11 +360,12 @@ export default function CommunityPage() {
                               {post.date}
                             </span>
                             {post.hasAnswer && post.answerCount && post.answerCount > 0 ? (
-                              <span className="px-2 py-0.5 bg-[#EDE9FE] text-[#7C3AED] text-[11px] rounded-full font-semibold">
+                              <span className="inline-flex items-center gap-1 pl-1 pr-2 py-0.5 bg-[#EEF1FF] text-[#3852FF] text-[12px] rounded-full font-semibold">
+                                <img src="/icons/community-answer.svg" alt="" width={18} height={18} />
                                 {post.answerCount}명이 답변했어요
                               </span>
                             ) : (
-                              <span className="px-2 py-0.5 bg-red-50 text-red-500 text-[11px] rounded-full font-semibold">
+                              <span className="px-2 py-0.5 bg-red-50 text-red-500 text-[12px] rounded-full font-semibold">
                                 답변이 필요해요!
                               </span>
                             )}
