@@ -11,10 +11,10 @@ import { useStore } from '@/store';
 import { Reservation } from '@/types';
 
 const statusIconSrc: Record<Reservation['status'], string> = {
-  pending: '/images/확인중.svg',
-  confirmed: '/images/확정.svg',
-  completed: '/images/완료.svg',
-  cancelled: '/images/취소.svg',
+  pending: '/icons/status-pending.svg',
+  confirmed: '/icons/status-confirmed.svg',
+  completed: '/icons/status-completed.svg',
+  cancelled: '/icons/status-cancelled.svg',
 };
 
 function StatusIcon({ status, size = 16 }: { status: Reservation['status']; size?: number }) {
