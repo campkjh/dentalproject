@@ -31,8 +31,14 @@ export function IconCalendar({ size = 24 }: IconProps) {
 export function IconMail({ size = 24 }: IconProps) {
   return (
     <svg {...wrap(size)}>
-      <rect x="2.5" y="5.5" width="19" height="13" rx="2.5" fill="#3B82F6" />
-      <path d="M3.5 7.5l8.5 6 8.5-6" stroke="#fff" strokeWidth="1.8" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+      <path
+        d="M3 6.5a3 3 0 013-3h12a3 3 0 013 3v7a3 3 0 01-3 3h-6.2L8 21v-4.5H6a3 3 0 01-3-3v-7z"
+        fill="#3B82F6"
+      />
+      <circle cx="9" cy="10" r="1.2" fill="#fff" />
+      <circle cx="12" cy="10" r="1.2" fill="#fff" />
+      <circle cx="15" cy="10" r="1.2" fill="#fff" />
+      <circle cx="19.5" cy="5" r="2.8" fill="#EF4444" stroke="#fff" strokeWidth="0.8" />
     </svg>
   );
 }
@@ -41,11 +47,17 @@ export function IconTicket({ size = 24 }: IconProps) {
   return (
     <svg {...wrap(size)}>
       <path
-        d="M2 8.5a2 2 0 012-2h16a2 2 0 012 2v1.8a1.7 1.7 0 000 3.4v1.8a2 2 0 01-2 2H4a2 2 0 01-2-2v-1.8a1.7 1.7 0 000-3.4V8.5z"
-        fill="#A78BFA"
+        d="M2 9a2 2 0 012-2h16a2 2 0 012 2v1.5a1.5 1.5 0 000 3V15a2 2 0 01-2 2H4a2 2 0 01-2-2v-1.5a1.5 1.5 0 000-3V9z"
+        fill="#F97316"
       />
-      <line x1="14" y1="7" x2="14" y2="17" stroke="#fff" strokeWidth="1" strokeDasharray="1.5 1.5" />
-      <circle cx="8" cy="12" r="0.8" fill="#fff" />
+      <line x1="13" y1="8" x2="13" y2="16" stroke="#fff" strokeWidth="1" strokeDasharray="1.3 1.5" opacity="0.75" />
+      <circle cx="6.5" cy="10.5" r="1" fill="#fff" />
+      <circle cx="9.5" cy="13.5" r="1" fill="#fff" />
+      <line x1="10" y1="10" x2="6" y2="14" stroke="#fff" strokeWidth="1.4" strokeLinecap="round" />
+      <path
+        d="M17.5 10.3l.55 1.15 1.25.2-.9.88.22 1.25-1.12-.6-1.12.6.22-1.25-.9-.88 1.25-.2z"
+        fill="#FDE68A"
+      />
     </svg>
   );
 }
@@ -140,10 +152,15 @@ export function IconHeadset({ size = 24 }: IconProps) {
 export function IconMegaphone({ size = 24 }: IconProps) {
   return (
     <svg {...wrap(size)}>
-      <path d="M3 10v4a1 1 0 001 1h1l8 4V5L5 9H4a1 1 0 00-1 1z" fill="#EF4444" />
-      <rect x="13" y="7.5" width="6.5" height="9" rx="1.2" fill="#F87171" />
-      <rect x="15.2" y="10" width="2.2" height="4.5" rx="0.6" fill="#fff" opacity="0.55" />
-      <path d="M6 18l1.3 3.5H9L8 18" fill="#EF4444" />
+      <path
+        d="M3 10.5a1.5 1.5 0 011.5-1.5h3l10-3.5v14l-10-3.5h-3A1.5 1.5 0 013 14v-3.5z"
+        fill="#EF4444"
+      />
+      <path d="M7.5 9v6" stroke="#DC2626" strokeWidth="0.9" opacity="0.5" strokeLinecap="round" />
+      <rect x="6" y="15" width="2.4" height="4.5" rx="1.1" fill="#EF4444" />
+      <rect x="5.3" y="19" width="3.8" height="1.6" rx="0.8" fill="#DC2626" />
+      <path d="M20 9.5v5" stroke="#F59E0B" strokeWidth="1.6" strokeLinecap="round" />
+      <path d="M22 7.5v9" stroke="#F59E0B" strokeWidth="1.6" strokeLinecap="round" opacity="0.6" />
     </svg>
   );
 }
