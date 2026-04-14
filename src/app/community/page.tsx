@@ -163,11 +163,11 @@ export default function CommunityPage() {
                   </p>
                   <div className="flex items-center gap-3 text-[10px] text-gray-400">
                     <span className="flex items-center gap-0.5">
-                      <IconEye size={11} />
+                      <img src="/icons/community-views.svg" alt="" width={14} height={14} />
                       {post.viewCount}
                     </span>
                     <span className="flex items-center gap-0.5">
-                      <IconChat size={11} />
+                      <img src="/icons/community-comments.svg" alt="" width={14} height={14} />
                       {post.commentCount}
                     </span>
                   </div>
@@ -429,11 +429,11 @@ export default function CommunityPage() {
                               {post.date}
                             </span>
                             <span className="flex items-center gap-0.5 text-[10px] text-gray-400">
-                              <IconEye size={11} />
+                              <img src="/icons/community-views.svg" alt="" width={14} height={14} />
                               {post.viewCount}
                             </span>
                             <span className="flex items-center gap-0.5 text-[10px] text-gray-400">
-                              <IconChat size={12} />
+                              <img src="/icons/community-comments.svg" alt="" width={14} height={14} />
                               {post.commentCount}
                             </span>
                           </div>
