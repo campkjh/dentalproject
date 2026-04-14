@@ -4,18 +4,30 @@ import { useState, useMemo, useRef, useEffect, useLayoutEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ChevronRight } from 'lucide-react';
-import {
-  IconClock,
-  IconCheckCircle,
-  IconXCircle,
-  IconPending,
-  IconMapPin,
-  IconCalendarMini,
-} from '@/components/icons/AppIcons';
+import { IconMapPin, IconCalendarMini } from '@/components/icons/AppIcons';
 import EmptyState from '@/components/common/EmptyState';
 import LoginRequired from '@/components/common/LoginRequired';
 import { useStore } from '@/store';
 import { Reservation } from '@/types';
+
+const statusIconSrc: Record<Reservation['status'], string> = {
+  pending: '/images/확인중.svg',
+  confirmed: '/images/확정.svg',
+  completed: '/images/완료.svg',
+  cancelled: '/images/취소.svg',
+};
+
+function StatusIcon({ status, size = 16 }: { status: Reservation['status']; size?: number }) {
+  return (
+    <img
+      src={statusIconSrc[status]}
+      alt=""
+      width={size}
+      height={size}
+      style={{ display: 'inline-block' }}
+    />
+  );
+}
 
 const statusTabs = ['전체', '예약확인중', '예약확정', '완료', '취소'];
 
@@ -36,31 +48,27 @@ const statusLabel: Record<Reservation['status'], string> = {
 
 const statusStyle: Record<
   Reservation['status'],
-  { text: string; bg: string; dot: string; icon: React.ReactNode }
+  { text: string; bg: string; chipBg: string }
 > = {
   pending: {
-    text: 'text-[#F59E0B]',
-    bg: 'bg-[#FFFBEB]',
-    dot: 'text-[#F59E0B]',
-    icon: <IconPending size={14} />,
+    text: 'text-[#FFA04E]',
+    bg: 'bg-[#FFF4E6]',
+    chipBg: 'bg-[#FFF4E6]',
   },
   confirmed: {
-    text: 'text-[#7C3AED]',
-    bg: 'bg-[#EDE9FE]',
-    dot: 'text-[#7C3AED]',
-    icon: <IconClock size={14} />,
+    text: 'text-[#38B369]',
+    bg: 'bg-[#E6F7EB]',
+    chipBg: 'bg-[#E6F7EB]',
   },
   completed: {
-    text: 'text-[#10B981]',
-    bg: 'bg-[#ECFDF5]',
-    dot: 'text-[#10B981]',
-    icon: <IconCheckCircle size={14} />,
+    text: 'text-[#1084FD]',
+    bg: 'bg-[#E6F2FF]',
+    chipBg: 'bg-[#E6F2FF]',
   },
   cancelled: {
-    text: 'text-gray-500',
-    bg: 'bg-gray-100',
-    dot: 'text-gray-400',
-    icon: <IconXCircle size={14} />,
+    text: 'text-[#6B7280]',
+    bg: 'bg-[#F3F4F6]',
+    chipBg: 'bg-[#F3F4F6]',
   },
 };
 
@@ -181,10 +189,11 @@ export default function ReservationsPage() {
                   <button
                     key={s.key}
                     onClick={() => changeTab(statusLabel[s.key])}
-                    className={`${style.bg} rounded-2xl px-2 py-3 text-center card-press`}
+                    className={`${style.bg} rounded-2xl px-2 py-3 text-center card-press flex flex-col items-center`}
                   >
-                    <p className={`text-[11px] font-medium ${style.text}`}>{s.label}</p>
-                    <p className={`text-lg font-bold ${style.text} mt-0.5`}>
+                    <StatusIcon status={s.key} size={30} />
+                    <p className={`text-[11px] font-medium ${style.text} mt-1`}>{s.label}</p>
+                    <p className={`text-base font-bold ${style.text} mt-0.5 leading-none`}>
                       {counts[s.key]}
                     </p>
                   </button>
@@ -198,13 +207,14 @@ export default function ReservationsPage() {
             className="sticky z-[45]"
             style={{
               top: 0,
-              paddingLeft: `${10 + dockProgress * 114}px`,
+              paddingLeft: `${10 + (1 - Math.pow(1 - dockProgress, 2)) * 114}px`,
               paddingRight: '10px',
               paddingTop: `${12 + dockProgress * 10}px`,
               paddingBottom: `${12 + dockProgress * 10}px`,
               backgroundColor: `rgba(255, 255, 255, ${Math.max(0, 1 - dockProgress * 1.4)})`,
               marginTop: '-8px',
-              transition: 'padding 60ms linear, background-color 60ms linear',
+              transform: `translateY(${-Math.pow(dockProgress, 2) * 6}px)`,
+              transition: 'padding 120ms cubic-bezier(0.22, 1, 0.36, 1), background-color 120ms ease',
             }}
           >
               <div ref={tabsRef} className="relative flex gap-1.5 overflow-x-auto hide-scrollbar">
@@ -216,7 +226,7 @@ export default function ReservationsPage() {
                     left: indicator.left,
                     width: indicator.width,
                     transition:
-                      'left 400ms cubic-bezier(0.22, 1, 0.36, 1), width 400ms cubic-bezier(0.22, 1, 0.36, 1)',
+                      'left 440ms cubic-bezier(0.22, 1, 0.36, 1), width 440ms cubic-bezier(0.22, 1, 0.36, 1)',
                   }}
                 />
                 {statusTabs.map((tab, i) => {
@@ -232,9 +242,9 @@ export default function ReservationsPage() {
                         isActive ? 'text-white' : 'text-gray-500'
                       }`}
                       style={{
-                        transition: 'color 280ms ease',
-                        border: isActive ? '1px solid transparent' : '1px solid #E5E7EB',
-                        background: isActive ? 'transparent' : '#fff',
+                        transition: 'color 440ms cubic-bezier(0.22, 1, 0.36, 1)',
+                        border: `1px solid ${isActive ? 'transparent' : '#E5E7EB'}`,
+                        background: 'transparent',
                       }}
                     >
                       {tab}
@@ -278,9 +288,9 @@ export default function ReservationsPage() {
                         {/* Status chip + date */}
                         <div className="flex items-center justify-between">
                           <span
-                            className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-semibold ${style.bg} ${style.text}`}
+                            className={`inline-flex items-center gap-1 pl-1 pr-2 py-0.5 rounded-full text-[11px] font-semibold ${style.chipBg} ${style.text}`}
                           >
-                            {style.icon}
+                            <StatusIcon status={reservation.status} size={16} />
                             {statusLabel[reservation.status]}
                           </span>
                           <span className="text-[11px] text-gray-400 font-medium">
