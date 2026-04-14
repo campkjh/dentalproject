@@ -207,13 +207,6 @@ export default function ReservationsPage() {
               transition: 'padding 60ms linear, background-color 60ms linear',
             }}
           >
-            <div
-              style={{
-                transform: `scale(${1 - dockProgress * 0.12})`,
-                transformOrigin: 'left center',
-                transition: 'transform 120ms cubic-bezier(0.22, 1, 0.36, 1)',
-              }}
-            >
               <div ref={tabsRef} className="relative flex gap-1.5 overflow-x-auto hide-scrollbar">
                 {/* Animated indicator pill */}
                 <span
@@ -249,7 +242,6 @@ export default function ReservationsPage() {
                   );
                 })}
               </div>
-            </div>
             {/* Bottom hairline appears only when docked */}
             <div
               className="absolute left-0 right-0 bottom-0 h-px bg-gray-100 pointer-events-none"
