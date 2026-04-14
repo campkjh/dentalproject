@@ -3,7 +3,15 @@
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { MapPin, Calendar, ChevronRight, Clock, CheckCircle2, XCircle } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
+import {
+  IconClock,
+  IconCheckCircle,
+  IconXCircle,
+  IconPending,
+  IconMapPin,
+  IconCalendarMini,
+} from '@/components/icons/AppIcons';
 import TopBar from '@/components/common/TopBar';
 import EmptyState from '@/components/common/EmptyState';
 import LoginRequired from '@/components/common/LoginRequired';
@@ -35,25 +43,25 @@ const statusStyle: Record<
     text: 'text-[#F59E0B]',
     bg: 'bg-[#FFFBEB]',
     dot: 'text-[#F59E0B]',
-    icon: <Clock size={12} />,
+    icon: <IconPending size={14} />,
   },
   confirmed: {
     text: 'text-[#7C3AED]',
     bg: 'bg-[#EDE9FE]',
     dot: 'text-[#7C3AED]',
-    icon: <CheckCircle2 size={12} />,
+    icon: <IconClock size={14} />,
   },
   completed: {
     text: 'text-[#10B981]',
     bg: 'bg-[#ECFDF5]',
     dot: 'text-[#10B981]',
-    icon: <CheckCircle2 size={12} />,
+    icon: <IconCheckCircle size={14} />,
   },
   cancelled: {
     text: 'text-gray-500',
     bg: 'bg-gray-100',
     dot: 'text-gray-400',
-    icon: <XCircle size={12} />,
+    icon: <IconXCircle size={14} />,
   },
 };
 
@@ -178,9 +186,9 @@ export default function ReservationsPage() {
                         {/* Status chip + date */}
                         <div className="flex items-center justify-between">
                           <span
-                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold ${style.bg} ${style.text}`}
+                            className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-semibold ${style.bg} ${style.text}`}
                           >
-                            <span className={`status-dot ${isPending ? 'pulse' : ''} ${style.dot}`} style={{ backgroundColor: 'currentColor' }} />
+                            {style.icon}
                             {statusLabel[reservation.status]}
                           </span>
                           <span className="text-[11px] text-gray-400 font-medium">
@@ -203,7 +211,7 @@ export default function ReservationsPage() {
                               </p>
                             </div>
                             <div className="flex items-center gap-1">
-                              <MapPin size={11} className="text-gray-400 flex-shrink-0" />
+                              <span className="flex-shrink-0"><IconMapPin size={13} /></span>
                               <p className="text-[11px] text-gray-400 truncate">
                                 {reservation.location}
                               </p>
@@ -215,7 +223,7 @@ export default function ReservationsPage() {
                         <div className="mt-3 pt-3 border-t border-dashed border-gray-150" style={{ borderColor: '#F2F3F5' }}>
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-1.5 text-gray-500">
-                              <Calendar size={13} />
+                              <IconCalendarMini size={15} />
                               <span className="text-[12px]">{reservation.reservationDate || reservation.visitDate}</span>
                             </div>
                             <div className="flex items-baseline gap-0.5">

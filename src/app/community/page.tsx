@@ -2,7 +2,15 @@
 
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import { Search, Pencil, ArrowUp, Eye, MessageCircle, ChevronDown, ChevronRight, Stethoscope } from 'lucide-react';
+import { ChevronDown, ChevronRight } from 'lucide-react';
+import {
+  IconSearch,
+  IconPencil,
+  IconArrowUp,
+  IconEye,
+  IconChat,
+  IconStethoscope,
+} from '@/components/icons/AppIcons';
 import TopBar from '@/components/common/TopBar';
 import { useStore } from '@/store';
 import { Post } from '@/types';
@@ -107,7 +115,7 @@ export default function CommunityPage() {
         showBack={false}
         rightContent={
           <Link href="/search">
-            <Search size={22} className="text-gray-700" />
+            <IconSearch size={22} />
           </Link>
         }
       />
@@ -155,11 +163,11 @@ export default function CommunityPage() {
                   </p>
                   <div className="flex items-center gap-3 text-[10px] text-gray-400">
                     <span className="flex items-center gap-0.5">
-                      <Eye size={10} />
+                      <IconEye size={11} />
                       {post.viewCount}
                     </span>
                     <span className="flex items-center gap-0.5">
-                      <MessageCircle size={10} />
+                      <IconChat size={11} />
                       {post.commentCount}
                     </span>
                   </div>
@@ -174,7 +182,7 @@ export default function CommunityPage() {
           <div className="bg-white px-2.5 py-4 mb-2">
             <div className="flex items-center justify-between mb-1">
               <div className="flex items-center gap-1.5">
-                <Stethoscope size={16} className="text-[#7C3AED]" />
+                <IconStethoscope size={18} />
                 <h3 className="text-sm font-bold text-gray-900">실시간 의사에게 질문</h3>
               </div>
               <Link href={`/community/write?board=question`} className="text-[11px] text-[#7C3AED] font-medium">
@@ -421,11 +429,11 @@ export default function CommunityPage() {
                               {post.date}
                             </span>
                             <span className="flex items-center gap-0.5 text-[10px] text-gray-400">
-                              <Eye size={10} />
+                              <IconEye size={11} />
                               {post.viewCount}
                             </span>
                             <span className="flex items-center gap-0.5 text-[10px] text-gray-400">
-                              <MessageCircle size={10} />
+                              <IconChat size={12} />
                               {post.commentCount}
                             </span>
                           </div>
@@ -464,7 +472,7 @@ export default function CommunityPage() {
         style={{ right: 'calc(50% - 215px + 16px)' }}
       >
         <div className="bg-[#7C3AED] text-white rounded-full px-5 py-3 shadow-lg flex items-center gap-2 text-sm font-medium">
-          <Pencil size={16} />
+          <IconPencil size={18} />
           {writeButtonLabel}
         </div>
       </Link>
@@ -476,7 +484,7 @@ export default function CommunityPage() {
           className="fixed bottom-40 right-4 z-30 w-10 h-10 bg-white border border-gray-200 rounded-full shadow-md flex items-center justify-center"
           style={{ right: 'calc(50% - 215px + 16px)' }}
         >
-          <ArrowUp size={18} className="text-gray-500" />
+          <IconArrowUp size={20} />
         </button>
       )}
 
