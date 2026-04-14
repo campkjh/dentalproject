@@ -47,7 +47,7 @@ export default function Avatar({
       width={size}
       height={size}
       className={`rounded-full object-cover ${className}`}
-      style={{ width: size, height: size, backgroundColor: '#F3F4F6' }}
+      style={{ width: size, height: size }}
     />
   );
 }

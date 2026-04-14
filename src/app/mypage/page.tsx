@@ -125,7 +125,12 @@ export default function MyPage() {
       <div className="bg-white px-2.5 pt-12 pb-6 fade-in-up">
         <div className="flex items-center gap-4">
           <div className="relative">
-            <Avatar src={user?.profileImage} gender={user?.gender} size={64} alt={user?.name || '프로필'} />
+            <div
+              className="w-16 h-16 rounded-full flex items-center justify-center overflow-hidden"
+              style={{ backgroundColor: '#F3F4F6' }}
+            >
+              <Avatar src={user?.profileImage} gender={user?.gender} size={52} alt={user?.name || '프로필'} />
+            </div>
             <button className="absolute -bottom-0.5 -right-0.5 w-6 h-6 bg-white border border-gray-200 rounded-full flex items-center justify-center shadow-sm">
               <Camera size={12} className="text-gray-500" />
             </button>

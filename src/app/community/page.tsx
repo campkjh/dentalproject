@@ -212,7 +212,7 @@ export default function CommunityPage() {
           <div className="bg-white px-2.5 py-4 mb-2">
             <div className="flex items-center justify-between mb-1">
               <div className="flex items-center gap-2">
-                <img src="/icons/community-live-doctor.svg" alt="" width={22} height={22} />
+                <img src="/icons/community-live-doctor-v2.svg" alt="" width={22} height={22} />
                 <h3 className="text-[17px] font-bold text-gray-900">실시간 의사에게 질문</h3>
               </div>
               <Link href={`/community/write?board=question`} className="text-[13px] text-[#7C3AED] font-semibold">
@@ -309,7 +309,7 @@ export default function CommunityPage() {
         <div className="bg-white px-2.5 py-3 flex items-center justify-between mb-px">
           <div className="flex items-center gap-2">
             {activeBoard === '질문게시판' && (
-              <img src="/icons/community-doctor-board.svg" alt="" width={22} height={22} />
+              <img src="/icons/community-doctor-board-v2.svg" alt="" width={22} height={22} />
             )}
             <h3 className="text-[17px] font-bold text-gray-900">{boardHeader()}</h3>
           </div>
