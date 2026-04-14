@@ -230,7 +230,7 @@ export default function ReservationsPage() {
                       className="block card-press"
                     >
                       <div
-                        className="bg-white rounded-2xl p-4"
+                        className="bg-white rounded-2xl p-3.5"
                         style={{ boxShadow: '0 1px 2px rgba(16,24,40,0.04), 0 4px 16px rgba(16,24,40,0.04)' }}
                       >
                         {/* Status chip + date */}
@@ -247,22 +247,20 @@ export default function ReservationsPage() {
                         </div>
 
                         {/* Product info */}
-                        <div className="flex gap-3 mt-3">
-                          <div className="w-[72px] h-[72px] rounded-xl bg-gradient-to-br from-purple-100 to-blue-100 flex items-center justify-center flex-shrink-0">
-                            <span className="text-3xl">🦷</span>
+                        <div className="flex gap-2.5 mt-2">
+                          <div className="w-[64px] h-[64px] rounded-xl bg-gradient-to-br from-purple-100 to-blue-100 flex items-center justify-center flex-shrink-0">
+                            <span className="text-2xl">🦷</span>
                           </div>
-                          <div className="flex-1 min-w-0 flex flex-col justify-between">
-                            <div>
-                              <p className="text-[15px] font-bold text-gray-900 line-clamp-1 leading-snug">
-                                {reservation.productTitle}
-                              </p>
-                              <p className="text-[12px] text-gray-500 mt-0.5">
-                                {reservation.hospitalName}
-                              </p>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <span className="flex-shrink-0"><IconMapPin size={13} /></span>
-                              <p className="text-[11px] text-gray-400 truncate">
+                          <div className="flex-1 min-w-0 flex flex-col justify-center">
+                            <p className="text-[14px] font-bold text-gray-900 line-clamp-1 leading-tight">
+                              {reservation.productTitle}
+                            </p>
+                            <p className="text-[12px] text-gray-500 leading-tight">
+                              {reservation.hospitalName}
+                            </p>
+                            <div className="flex items-center gap-0.5 mt-0.5">
+                              <span className="flex-shrink-0"><IconMapPin size={12} /></span>
+                              <p className="text-[11px] text-gray-400 truncate leading-tight">
                                 {reservation.location}
                               </p>
                             </div>
@@ -270,7 +268,7 @@ export default function ReservationsPage() {
                         </div>
 
                         {/* Meta row - visit date + amount */}
-                        <div className="mt-3 pt-3 border-t border-dashed border-gray-150" style={{ borderColor: '#F2F3F5' }}>
+                        <div className="mt-2 pt-2 border-t border-dashed" style={{ borderColor: '#F2F3F5' }}>
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-1.5 text-gray-500">
                               <IconCalendarMini size={15} />
@@ -287,7 +285,7 @@ export default function ReservationsPage() {
 
                         {/* Action area */}
                         {isPending && (
-                          <div className="mt-3 flex gap-2">
+                          <div className="mt-2.5 flex gap-2">
                             <button
                               onClick={(e) => {
                                 e.preventDefault();
@@ -312,7 +310,7 @@ export default function ReservationsPage() {
                               e.stopPropagation();
                               router.push(`/mypage/reviews/write?productId=${reservation.hospitalId}`);
                             }}
-                            className="btn-press mt-3 w-full py-3 bg-[#7C3AED] text-white rounded-xl text-[13px] font-bold flex items-center justify-center gap-1.5"
+                            className="btn-press mt-2.5 w-full py-2.5 bg-[#7C3AED] text-white rounded-xl text-[13px] font-bold flex items-center justify-center gap-1.5"
                           >
                             리뷰작성하고 500P 받기
                             <ChevronRight size={14} />
