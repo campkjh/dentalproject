@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, Suspense } from 'react';
+import { useState, Suspense, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Search, XCircle, ChevronLeft, ChevronDown, MapPin, Locate, Check, X, SlidersHorizontal, DollarSign, CalendarCheck } from 'lucide-react';
 import ProductCard from '@/components/common/ProductCard';
 import { useStore } from '@/store';
-import { regions, popularSearches, categories, dentalSubCategories } from '@/lib/mock-data';
+import { regions, popularSearches, dentalSubCategories } from '@/lib/mock-data';
 
 const subRegions: Record<string, string[]> = {
   '서울시 강남구': ['전체', '압구정동', '청담동', '신사동', '논현동', '역삼동', '삼성동', '대치동'],
@@ -50,7 +50,8 @@ function SearchPage() {
   const router = useRouter();
   const categoryParam = searchParams.get('category');
 
-  const { products, recentSearches, addRecentSearch, removeRecentSearch, showToast } = useStore();
+  const { products, recentSearches, addRecentSearch, removeRecentSearch, showToast, categories } = useStore();
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [query, setQuery] = useState('');
   const [selectedRegion, setSelectedRegion] = useState('');
   const [selectedSubRegion, setSelectedSubRegion] = useState('');
@@ -67,7 +68,7 @@ function SearchPage() {
   const [hasSearched, setHasSearched] = useState(false);
   const [locating, setLocating] = useState(false);
 
-  const isCategoryMode = !!activeCategory;
+  const isCategoryMode = categoryParam !== null;
   const currentCat = categories.find(c => c.id === activeCategory);
   const tags = relatedTags[activeCategory] ?? [];
 
@@ -78,7 +79,7 @@ function SearchPage() {
     : '';
 
   const categoryResults = isCategoryMode
-    ? products.filter(p => p.category === activeCategory)
+    ? (activeCategory ? products.filter(p => p.category === activeCategory) : products)
     : [];
 
   const searchResults = hasSearched
@@ -156,7 +157,11 @@ function SearchPage() {
             />
             {(query || currentCat) && (
               <button onClick={() => { setQuery(''); setHasSearched(false); }}>
-                <XCircle size={20} style={{ color: '#505050' }} />
+                <svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="10" fill="rgba(43,49,61,0.6)" />
+                  <path d="m15 9-6 6" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
+                  <path d="m9 9 6 6" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
+                </svg>
               </button>
             )}
           </div>
@@ -166,84 +171,102 @@ function SearchPage() {
         {tags.length > 0 && (
           <div className="px-2.5 py-2">
             <div className="flex gap-2 overflow-x-auto hide-scrollbar">
-              {tags.map((tag) => (
-                <button
-                  key={tag}
-                  onClick={() => { setQuery(tag); handleSearch(tag); }}
-                  className="px-3 py-1.5 bg-gray-100 rounded-full text-sm text-gray-600 whitespace-nowrap hover:bg-[#EDE9FE] hover:text-[#7C3AED] transition-colors"
-                >
-                  {tag}
-                </button>
-              ))}
+              {tags.map((tag) => {
+                const isSelected = selectedTags.includes(tag);
+                return (
+                  <button
+                    key={tag}
+                    onClick={() => {
+                      setSelectedTags(prev => isSelected ? prev.filter(t => t !== tag) : [...prev, tag]);
+                    }}
+                    style={{
+                      fontSize: 12, fontWeight: 500, borderRadius: 8, color: '#51535C', backgroundColor: '#F2F3F5',
+                      border: isSelected ? '1.4px solid #2B313D' : '1.4px solid transparent',
+                      transition: 'border-color 0.15s ease',
+                    }}
+                    className="px-3 py-1.5 whitespace-nowrap"
+                  >
+                    {tag}
+                  </button>
+                );
+              })}
             </div>
           </div>
         )}
 
-        {/* 필터 버튼들 */}
-        <div className="px-2.5 py-2 flex gap-2 overflow-x-auto hide-scrollbar border-b border-gray-100">
-          {/* 지역 */}
+        {/* 필터 버튼들 + 선택된 태그 */}
+        <div className="px-2.5 flex gap-2 overflow-x-auto hide-scrollbar border-b border-gray-100" style={{ paddingTop: 10, paddingBottom: 10 }}>
           <button
             onClick={() => { setRegionStep('region'); setShowRegionModal(true); }}
-            className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-sm whitespace-nowrap border transition-colors ${
-              selectedRegion ? 'border-[#7C3AED] text-[#7C3AED] bg-[#EDE9FE]' : 'border-gray-200 text-gray-600'
-            }`}
+            className="flex items-center gap-1 px-3 py-1.5 rounded-full whitespace-nowrap border transition-colors"
+            style={{ fontSize: 14, fontWeight: 500, boxShadow: '0 1px 4px rgba(0,0,0,0.06)', ...(selectedRegion ? { backgroundColor: '#2B313D', color: '#fff', borderColor: '#2B313D' } : { borderColor: '#E5E7EB', color: '#4B5563' }) }}
           >
-            <MapPin size={14} />
             {selectedRegion ? regionLabel : '지역'}
             <ChevronDown size={12} />
           </button>
-
-          {/* 가격 */}
           <button
             onClick={() => setShowPriceModal(true)}
-            className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-sm whitespace-nowrap border transition-colors ${
-              selectedPrice !== '전체' ? 'border-[#7C3AED] text-[#7C3AED] bg-[#EDE9FE]' : 'border-gray-200 text-gray-600'
-            }`}
+            className="flex items-center gap-1 px-3 py-1.5 rounded-full whitespace-nowrap border transition-colors"
+            style={{ fontSize: 14, fontWeight: 500, boxShadow: '0 1px 4px rgba(0,0,0,0.06)', ...(selectedPrice !== '전체' ? { backgroundColor: '#2B313D', color: '#fff', borderColor: '#2B313D' } : { borderColor: '#E5E7EB', color: '#4B5563' }) }}
           >
-            <DollarSign size={14} />
             {selectedPrice !== '전체' ? selectedPrice : '가격'}
             <ChevronDown size={12} />
           </button>
-
-          {/* 예약방법 */}
           <button
             onClick={() => setShowBookingModal(true)}
-            className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-sm whitespace-nowrap border transition-colors ${
-              selectedBooking !== '전체' ? 'border-[#7C3AED] text-[#7C3AED] bg-[#EDE9FE]' : 'border-gray-200 text-gray-600'
-            }`}
+            className="flex items-center gap-1 px-3 py-1.5 rounded-full whitespace-nowrap border transition-colors"
+            style={{ fontSize: 14, fontWeight: 500, boxShadow: '0 1px 4px rgba(0,0,0,0.06)', ...(selectedBooking !== '전체' ? { backgroundColor: '#2B313D', color: '#fff', borderColor: '#2B313D' } : { borderColor: '#E5E7EB', color: '#4B5563' }) }}
           >
-            <CalendarCheck size={14} />
             {selectedBooking !== '전체' ? selectedBooking : '예약방법'}
             <ChevronDown size={12} />
           </button>
-
-          {/* 정렬 */}
           <button
             onClick={() => setShowSortModal(true)}
-            className="flex items-center gap-1 px-3 py-1.5 rounded-full text-sm whitespace-nowrap border border-gray-200 text-gray-600 transition-colors"
+            className="flex items-center gap-1 px-3 py-1.5 rounded-full whitespace-nowrap border transition-colors"
+            style={{ fontSize: 14, fontWeight: 500, boxShadow: '0 1px 4px rgba(0,0,0,0.06)', borderColor: '#E5E7EB', color: '#4B5563' }}
           >
-            <SlidersHorizontal size={14} />
             {selectedSort}
             <ChevronDown size={12} />
           </button>
+          {selectedTags.map(tag => (
+            <span key={tag} className="flex items-center gap-1 px-3 py-1.5 rounded-full whitespace-nowrap"
+              style={{ fontSize: 12, fontWeight: 500, backgroundColor: '#F2F3F5', color: '#51535C', borderRadius: 8 }}>
+              {tag}
+              <button onClick={() => setSelectedTags(prev => prev.filter(t => t !== tag))}>
+                <X size={10} />
+              </button>
+            </span>
+          ))}
         </div>
 
         {/* 카테고리 아이콘 탭 */}
         <div className="flex gap-3 overflow-x-auto hide-scrollbar px-2.5 py-3 lg:px-0">
+          {/* 전체 카테고리 */}
+          <button
+            onClick={() => setActiveCategory('')}
+            className="flex flex-col items-center gap-1.5 min-w-[52px]"
+          >
+            <div className={`w-11 h-11 rounded-full flex items-center justify-center transition-all p-2 ${
+              !activeCategory ? 'bg-[#EDE9FE] ring-2 ring-[#7C3AED]' : 'bg-gray-50'
+            }`}>
+              <span className="text-lg">📋</span>
+            </div>
+            <span className={`text-[10px] whitespace-nowrap ${!activeCategory ? 'text-[#7C3AED] font-bold' : 'text-gray-500'}`}>
+              전체
+            </span>
+          </button>
           {categories.map((cat) => (
             <button
               key={cat.id}
               onClick={() => setActiveCategory(cat.id)}
-              className={`flex flex-col items-center gap-1.5 min-w-[52px] transition-opacity ${
-                activeCategory === cat.id ? '' : 'opacity-40'
-              }`}
+              className="flex flex-col items-center gap-1.5 min-w-[52px]"
             >
               <div className={`w-11 h-11 rounded-full flex items-center justify-center transition-all p-2 ${
                 activeCategory === cat.id ? 'bg-[#EDE9FE] ring-2 ring-[#7C3AED]' : 'bg-gray-50'
               }`}>
                 <img src={cat.icon} alt={cat.name} className="w-full h-full" />
               </div>
-              <span className={`text-[10px] whitespace-nowrap ${activeCategory === cat.id ? 'text-[#7C3AED] font-bold' : 'text-gray-400'}`}>
+              <span className={`text-[10px] whitespace-nowrap ${activeCategory === cat.id ? 'text-[#7C3AED] font-bold' : 'text-gray-500'}`}>
                 {cat.name}
               </span>
             </button>
@@ -253,7 +276,7 @@ function SearchPage() {
         {/* 결과 */}
         <div className="px-2.5 pb-4 lg:max-w-7xl lg:mx-auto">
           <p className="text-sm text-gray-500 mb-3">
-            <span className="font-bold text-black">{currentCat?.name}</span> · {categoryResults.length}건
+            <span className="font-bold text-black">{currentCat?.name || '전체'}</span> · {categoryResults.length}건
             {selectedRegion && (
               <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 bg-[#EDE9FE] text-[#7C3AED] text-xs font-medium rounded-full">
                 <MapPin size={10} /> {regionLabel}
@@ -261,7 +284,7 @@ function SearchPage() {
             )}
           </p>
           {categoryResults.length > 0 ? (
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-1.5 lg:gap-6 stagger-children">
+            <div className="grid grid-cols-3 lg:grid-cols-4 gap-1.5 lg:gap-6 stagger-children">
               {categoryResults.map((product) => (
                 <ProductCard key={product.id} product={product} />
               ))}
@@ -271,7 +294,8 @@ function SearchPage() {
               <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4 bounce-in">
                 <Search size={28} className="text-gray-300" />
               </div>
-              <p className="text-gray-500">해당 카테고리에 상품이 없습니다.</p>
+              <p style={{ fontSize: 18, fontWeight: 600, color: '#2B313D' }}>해당 카테고리에 상품이 없습니다.</p>
+              <p style={{ fontSize: 14, fontWeight: 500, color: '#51535C', marginTop: 2 }}>어떤 상품을 찾으시나요?</p>
             </div>
           )}
         </div>
@@ -392,29 +416,37 @@ function SearchPage() {
           />
           {query && (
             <button onClick={() => { setQuery(''); setHasSearched(false); }}>
-              <XCircle size={20} style={{ color: '#505050' }} />
+              <svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="10" fill="rgba(43,49,61,0.6)" />
+                <path d="m15 9-6 6" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
+                <path d="m9 9 6 6" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
+              </svg>
             </button>
           )}
         </div>
       </div>
 
       {/* Filter buttons for normal search */}
-      <div className="px-2.5 py-2 flex gap-2 overflow-x-auto hide-scrollbar border-b border-gray-100">
+      <div className="px-2.5 flex gap-2 overflow-x-auto hide-scrollbar border-b border-gray-100" style={{ paddingTop: 10, paddingBottom: 10 }}>
         <button onClick={() => { setRegionStep('region'); setShowRegionModal(true); }}
-          className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-sm whitespace-nowrap border transition-colors ${selectedRegion ? 'border-[#7C3AED] text-[#7C3AED] bg-[#EDE9FE]' : 'border-gray-200 text-gray-600'}`}>
-          <MapPin size={14} /> {selectedRegion ? regionLabel : '지역'} <ChevronDown size={12} />
+          className="flex items-center gap-1 px-3 py-1.5 rounded-full whitespace-nowrap border transition-colors"
+          style={{ fontSize: 14, fontWeight: 500, boxShadow: '0 1px 4px rgba(0,0,0,0.06)', ...(selectedRegion ? { backgroundColor: '#2B313D', color: '#fff', borderColor: '#2B313D' } : { borderColor: '#E5E7EB', color: '#4B5563' }) }}>
+          {selectedRegion ? regionLabel : '지역'} <ChevronDown size={12} />
         </button>
         <button onClick={() => setShowPriceModal(true)}
-          className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-sm whitespace-nowrap border transition-colors ${selectedPrice !== '전체' ? 'border-[#7C3AED] text-[#7C3AED] bg-[#EDE9FE]' : 'border-gray-200 text-gray-600'}`}>
-          <DollarSign size={14} /> {selectedPrice !== '전체' ? selectedPrice : '가격'} <ChevronDown size={12} />
+          className="flex items-center gap-1 px-3 py-1.5 rounded-full whitespace-nowrap border transition-colors"
+          style={{ fontSize: 14, fontWeight: 500, boxShadow: '0 1px 4px rgba(0,0,0,0.06)', ...(selectedPrice !== '전체' ? { backgroundColor: '#2B313D', color: '#fff', borderColor: '#2B313D' } : { borderColor: '#E5E7EB', color: '#4B5563' }) }}>
+          {selectedPrice !== '전체' ? selectedPrice : '가격'} <ChevronDown size={12} />
         </button>
         <button onClick={() => setShowBookingModal(true)}
-          className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-sm whitespace-nowrap border transition-colors ${selectedBooking !== '전체' ? 'border-[#7C3AED] text-[#7C3AED] bg-[#EDE9FE]' : 'border-gray-200 text-gray-600'}`}>
-          <CalendarCheck size={14} /> {selectedBooking !== '전체' ? selectedBooking : '예약방법'} <ChevronDown size={12} />
+          className="flex items-center gap-1 px-3 py-1.5 rounded-full whitespace-nowrap border transition-colors"
+          style={{ fontSize: 14, fontWeight: 500, boxShadow: '0 1px 4px rgba(0,0,0,0.06)', ...(selectedBooking !== '전체' ? { backgroundColor: '#2B313D', color: '#fff', borderColor: '#2B313D' } : { borderColor: '#E5E7EB', color: '#4B5563' }) }}>
+          {selectedBooking !== '전체' ? selectedBooking : '예약방법'} <ChevronDown size={12} />
         </button>
         <button onClick={() => setShowSortModal(true)}
-          className="flex items-center gap-1 px-3 py-1.5 rounded-full text-sm whitespace-nowrap border border-gray-200 text-gray-600">
-          <SlidersHorizontal size={14} /> {selectedSort} <ChevronDown size={12} />
+          className="flex items-center gap-1 px-3 py-1.5 rounded-full whitespace-nowrap border transition-colors"
+          style={{ fontSize: 14, fontWeight: 500, boxShadow: '0 1px 4px rgba(0,0,0,0.06)', borderColor: '#E5E7EB', color: '#4B5563' }}>
+          {selectedSort} <ChevronDown size={12} />
         </button>
       </div>
 
@@ -561,6 +593,11 @@ function SearchPage() {
 
 // Reusable filter bottom sheet modal
 function FilterModal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = prev; };
+  }, []);
   return (
     <div className="fixed inset-0 z-[100] bg-black/40 modal-overlay-enter" onClick={onClose}>
       <div

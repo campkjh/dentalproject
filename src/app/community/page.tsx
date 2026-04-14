@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react';
 import Link from 'next/link';
-import { Search, Pencil, ArrowUp, Eye, MessageCircle, ChevronDown } from 'lucide-react';
+import { Search, Pencil, ArrowUp, Eye, MessageCircle, ChevronDown, ChevronRight, Stethoscope } from 'lucide-react';
 import TopBar from '@/components/common/TopBar';
 import { useStore } from '@/store';
 import { Post } from '@/types';
@@ -37,6 +37,26 @@ export default function CommunityPage() {
   const popularPosts = [...posts]
     .sort((a, b) => b.viewCount - a.viewCount)
     .slice(0, 5);
+
+  // Recent questions for live Q&A marquee
+  const liveQuestions = posts
+    .filter((p) => p.boardType === 'question')
+    .slice(0, 8);
+  const marqueeItems = liveQuestions.length > 0
+    ? [...liveQuestions, ...liveQuestions]
+    : [];
+  const categoryEmoji: Record<string, string> = {
+    '임플란트': '🦷',
+    '치아교정': '💠',
+    '사랑니': '🪥',
+    '라미네이트': '✨',
+    '치아미백': '🤍',
+    '스케일링': '🫧',
+    '충치치료': '🩹',
+    '턱관절': '💊',
+  };
+  const pickCategory = (post: Post) =>
+    post.tags?.find((t) => categoryEmoji[t]) || post.tags?.[0] || '치과 상담';
 
   const handleScroll = () => {
     if (scrollContainerRef.current) {
@@ -122,6 +142,72 @@ export default function CommunityPage() {
                 </Link>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* Live doctor Q&A - question board only */}
+        {activeBoard === '질문게시판' && marqueeItems.length > 0 && (
+          <div className="bg-white px-2.5 py-4 mb-2">
+            <div className="flex items-center justify-between mb-1">
+              <div className="flex items-center gap-1.5">
+                <Stethoscope size={16} className="text-[#7C3AED]" />
+                <h3 className="text-sm font-bold text-gray-900">실시간 의사에게 질문</h3>
+              </div>
+              <Link href={`/community/write?board=question`} className="text-[11px] text-[#7C3AED] font-medium">
+                질문하기
+              </Link>
+            </div>
+            <div className="flex items-center gap-1.5 mb-3">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-red-500"></span>
+              </span>
+              <p className="text-[11px] text-gray-500">방금 올라온 질문 · 방금 전</p>
+            </div>
+
+            <div className="marquee-vertical rounded-xl bg-gray-50 p-3" style={{ height: 176 }}>
+              <div className="marquee-vertical-track">
+                {marqueeItems.map((post, i) => {
+                  const cat = pickCategory(post);
+                  const emoji = categoryEmoji[cat] || '🦷';
+                  return (
+                    <Link
+                      key={`${post.id}-${i}`}
+                      href={`/community/${post.id}`}
+                      className="block bg-white rounded-lg px-3 py-2.5 shadow-sm border border-gray-100"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="text-[13px] font-semibold text-gray-900 line-clamp-1 flex-1">
+                          {post.title}
+                        </p>
+                        {i % 4 === 3 && (
+                          <span className="flex-shrink-0 text-[9px] text-gray-400 border border-gray-200 rounded px-1 py-px leading-none">
+                            AD
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-gray-500 line-clamp-1 mt-0.5">
+                        {post.content}
+                      </p>
+                      <div className="mt-1.5">
+                        <span className="inline-flex items-center gap-0.5 text-[10px] text-gray-600 bg-gray-100 rounded px-1.5 py-0.5">
+                          <span>{emoji}</span>
+                          <span>{cat}</span>
+                        </span>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+
+            <Link
+              href={`/community/write?board=question`}
+              className="mt-3 flex items-center justify-between w-full px-3 py-2.5 rounded-xl bg-[#EDE9FE] text-[#7C3AED]"
+            >
+              <span className="text-xs font-medium">질문 전체 보기</span>
+              <ChevronRight size={14} />
+            </Link>
           </div>
         )}
 
@@ -313,7 +399,7 @@ export default function CommunityPage() {
       {/* Floating write button */}
       <Link
         href={`/community/write?board=${boardType}`}
-        className="fixed bottom-24 right-4 max-w-[430px] z-30 lg:fixed lg:bottom-8 lg:right-8"
+        className="fixed bottom-24 right-4 max-w-[480px] z-30 lg:fixed lg:bottom-8 lg:right-8"
         style={{ right: 'calc(50% - 215px + 16px)' }}
       >
         <div className="bg-[#7C3AED] text-white rounded-full px-5 py-3 shadow-lg flex items-center gap-2 text-sm font-medium">

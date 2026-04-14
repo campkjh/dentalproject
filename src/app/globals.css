@@ -288,3 +288,22 @@ body {
 .stagger-children > *:nth-child(9) { animation-delay: 0.27s; }
 .stagger-children > *:nth-child(10) { animation-delay: 0.30s; }
 .stagger-children > *:nth-child(n+11) { animation-delay: 0.33s; }
+
+/* ===== Marquee (vertical, upward auto-scroll) ===== */
+.marquee-vertical {
+  position: relative;
+  overflow: hidden;
+}
+.marquee-vertical-track {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  animation: marqueeUp 18s linear infinite;
+}
+.marquee-vertical:hover .marquee-vertical-track {
+  animation-play-state: paused;
+}
+@keyframes marqueeUp {
+  from { transform: translateY(0); }
+  to   { transform: translateY(-50%); }
+}
