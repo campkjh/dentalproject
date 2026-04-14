@@ -180,7 +180,7 @@ export default function PostDetailPage() {
         {/* Author info */}
         <div className="flex items-center gap-3 mb-4">
           <Avatar
-            role={post.boardType === 'question' || post.boardType === 'dental' ? 'doctor' : 'user'}
+            role={post.boardType === 'dental' ? 'doctor' : 'user'}
             seed={post.anonymousId || post.authorId || post.id}
             size={40}
             className="flex-shrink-0"

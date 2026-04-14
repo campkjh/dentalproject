@@ -259,7 +259,7 @@ export default function CommunityPage() {
                             : '0 1px 2px rgba(16,24,40,0.03)',
                         }}
                       >
-                        <Avatar role="doctor" seed={post.authorId || post.id} size={40} className="flex-shrink-0" />
+                        <Avatar seed={post.authorId || post.id} size={40} className="flex-shrink-0" />
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-semibold text-gray-900 truncate">
                             {post.title}
@@ -420,7 +420,7 @@ export default function CommunityPage() {
                   {post.boardType === 'question' && (
                     <>
                       <div className="flex items-start gap-3">
-                        <Avatar role="doctor" seed={post.authorId || post.id} size={36} className="flex-shrink-0" />
+                        <Avatar seed={post.authorId || post.id} size={36} className="flex-shrink-0" />
                         <div className="flex-1 min-w-0">
                           <p className="text-[13px] text-gray-500 mb-1">
                             {post.authorName || '익명'}
@@ -441,7 +441,8 @@ export default function CommunityPage() {
                                 {post.answerCount}명이 답변했어요
                               </span>
                             ) : (
-                              <span className="px-2 py-0.5 bg-red-50 text-red-500 text-[12px] rounded-full font-semibold">
+                              <span className="inline-flex items-center gap-1 pl-1 pr-2 py-0.5 bg-[#FFF8E1] text-[#B88700] text-[12px] rounded-full font-semibold">
+                                <img src="/icons/community-need-answer.svg" alt="" width={18} height={18} />
                                 답변이 필요해요!
                               </span>
                             )}
