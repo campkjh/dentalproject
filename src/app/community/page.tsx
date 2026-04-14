@@ -138,7 +138,7 @@ export default function CommunityPage() {
   const writeButtonLabel = activeBoard === '질문게시판' ? '질문하기' : '글쓰기';
 
   return (
-    <div className="min-h-screen bg-white pb-[86px] lg:pb-0">
+    <div className="h-[100dvh] flex flex-col bg-white lg:h-auto lg:min-h-screen">
       <TopBar
         title="커뮤니티"
         showBack={false}
@@ -171,8 +171,8 @@ export default function CommunityPage() {
       <div
         ref={scrollContainerRef}
         onScroll={handleScroll}
-        className="overflow-y-auto lg:max-w-7xl lg:mx-auto lg:px-6 lg:py-6 page-enter"
-        style={{ height: 'calc(100dvh - 48px - 45px - 72px)' }}
+        className="flex-1 overflow-y-auto lg:max-w-7xl lg:mx-auto lg:px-6 lg:py-6 page-enter"
+        style={{ paddingBottom: 86 }}
       >
         {/* Popular posts - horizontal scroll */}
         {popularPosts.length > 0 && (
