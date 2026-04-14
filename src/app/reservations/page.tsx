@@ -101,6 +101,19 @@ export default function ReservationsPage() {
     return () => window.removeEventListener('resize', handleResize);
   }, [activeIndex]);
 
+  // Scroll-driven collapse: hero fades while tabs dock into TopBar
+  const [dockProgress, setDockProgress] = useState(0);
+  useEffect(() => {
+    const COLLAPSE = 140;
+    const onScroll = () => {
+      const y = window.scrollY;
+      setDockProgress(Math.min(1, Math.max(0, y / COLLAPSE)));
+    };
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
   const filtered = useMemo(
     () =>
       reservations.filter((r) => {
@@ -138,7 +151,17 @@ export default function ReservationsPage() {
       ) : (
         <>
           {/* Summary hero */}
-          <div className="bg-white px-2.5 pt-2 pb-5 fade-in-up">
+          <div
+            className="bg-white px-2.5 fade-in-up overflow-hidden"
+            style={{
+              paddingTop: `${8 * (1 - dockProgress)}px`,
+              paddingBottom: `${20 * (1 - dockProgress)}px`,
+              maxHeight: `${(1 - dockProgress) * 220}px`,
+              opacity: 1 - dockProgress * 0.85,
+              transform: `translateY(${-dockProgress * 16}px)`,
+              transition: 'transform 60ms linear',
+            }}
+          >
             <p className="text-[22px] font-bold text-gray-900 leading-tight">
               총 <span className="text-[#7C3AED]">{reservations.length}</span>건의 예약이 있어요
             </p>
@@ -168,43 +191,69 @@ export default function ReservationsPage() {
             </div>
           </div>
 
-          {/* Sticky tabs with sliding indicator */}
-          <div className="sticky top-0 z-10 bg-white px-2.5 pt-3 pb-3 -mt-2">
-            <div ref={tabsRef} className="relative flex gap-1.5 overflow-x-auto hide-scrollbar">
-              {/* Animated indicator pill */}
-              <span
-                aria-hidden
-                className="absolute top-0 bottom-0 rounded-full bg-gray-900 pointer-events-none"
-                style={{
-                  left: indicator.left,
-                  width: indicator.width,
-                  transition:
-                    'left 400ms cubic-bezier(0.22, 1, 0.36, 1), width 400ms cubic-bezier(0.22, 1, 0.36, 1)',
-                }}
-              />
-              {statusTabs.map((tab, i) => {
-                const isActive = activeTab === tab;
-                return (
-                  <button
-                    key={tab}
-                    ref={(el) => {
-                      tabBtnRefs.current[i] = el;
-                    }}
-                    onClick={() => changeTab(tab)}
-                    className={`pill-tab relative z-10 px-3.5 py-1.5 rounded-full text-[13px] font-semibold whitespace-nowrap ${
-                      isActive ? 'text-white' : 'text-gray-500'
-                    }`}
-                    style={{
-                      transition: 'color 280ms ease',
-                      border: isActive ? '1px solid transparent' : '1px solid #E5E7EB',
-                      background: isActive ? 'transparent' : '#fff',
-                    }}
-                  >
-                    {tab}
-                  </button>
-                );
-              })}
+          {/* Sticky tabs with sliding indicator + dock-into-title animation */}
+          <div
+            className="sticky z-[45]"
+            style={{
+              top: 0,
+              paddingLeft: `${10 + dockProgress * 78}px`,
+              paddingRight: '10px',
+              paddingTop: `${12 - dockProgress * 6}px`,
+              paddingBottom: `${12 - dockProgress * 6}px`,
+              backgroundColor: `rgba(255, 255, 255, ${Math.max(0, 1 - dockProgress * 1.4)})`,
+              marginTop: '-8px',
+              transform: `translateY(${-dockProgress * 4}px)`,
+              transition: 'transform 60ms linear',
+            }}
+          >
+            <div
+              style={{
+                transform: `scale(${1 - dockProgress * 0.12})`,
+                transformOrigin: 'left center',
+                transition: 'transform 120ms cubic-bezier(0.22, 1, 0.36, 1)',
+              }}
+            >
+              <div ref={tabsRef} className="relative flex gap-1.5 overflow-x-auto hide-scrollbar">
+                {/* Animated indicator pill */}
+                <span
+                  aria-hidden
+                  className="absolute top-0 bottom-0 rounded-full bg-gray-900 pointer-events-none"
+                  style={{
+                    left: indicator.left,
+                    width: indicator.width,
+                    transition:
+                      'left 400ms cubic-bezier(0.22, 1, 0.36, 1), width 400ms cubic-bezier(0.22, 1, 0.36, 1)',
+                  }}
+                />
+                {statusTabs.map((tab, i) => {
+                  const isActive = activeTab === tab;
+                  return (
+                    <button
+                      key={tab}
+                      ref={(el) => {
+                        tabBtnRefs.current[i] = el;
+                      }}
+                      onClick={() => changeTab(tab)}
+                      className={`pill-tab relative z-10 px-3.5 py-1.5 rounded-full text-[13px] font-semibold whitespace-nowrap ${
+                        isActive ? 'text-white' : 'text-gray-500'
+                      }`}
+                      style={{
+                        transition: 'color 280ms ease',
+                        border: isActive ? '1px solid transparent' : '1px solid #E5E7EB',
+                        background: isActive ? 'transparent' : '#fff',
+                      }}
+                    >
+                      {tab}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
+            {/* Bottom hairline appears only when docked */}
+            <div
+              className="absolute left-0 right-0 bottom-0 h-px bg-gray-100 pointer-events-none"
+              style={{ opacity: dockProgress }}
+            />
           </div>
 
           {/* Reservation list */}
