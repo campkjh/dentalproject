@@ -7,7 +7,15 @@ import {
   comments as mockComments,
   reviews as mockReviews,
   coupons,
+  categories as mockCategories,
 } from '@/lib/mock-data';
+
+interface Category {
+  id: string;
+  name: string;
+  icon: string;
+  popular: boolean;
+}
 
 interface AppState {
   // Auth
@@ -16,6 +24,12 @@ interface AppState {
   user: User | null;
   login: (type: 'kakao' | 'apple') => void;
   logout: () => void;
+
+  // Categories
+  categories: Category[];
+  addCategory: (cat: Category) => void;
+  updateCategory: (id: string, data: Partial<Category>) => void;
+  removeCategory: (id: string) => void;
 
   // Products
   products: Product[];
@@ -83,6 +97,11 @@ export const useStore = create<AppState>((set, get) => ({
   logout: () => {
     set({ isLoggedIn: false, user: null, isDoctor: false });
   },
+
+  categories: mockCategories,
+  addCategory: (cat) => set({ categories: [...get().categories, cat] }),
+  updateCategory: (id, data) => set({ categories: get().categories.map(c => c.id === id ? { ...c, ...data } : c) }),
+  removeCategory: (id) => set({ categories: get().categories.filter(c => c.id !== id) }),
 
   products: mockProducts,
   wishlist: [],
