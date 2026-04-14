@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect, useRef, useLayoutEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -45,7 +45,37 @@ export default function ProductDetailPage() {
   const params = useParams();
   const router = useRouter();
   const { wishlist, toggleWishlist, addRecentlyViewed, showToast } = useStore();
+  const tabs = ['상품설명', '병원정보', '리뷰'];
   const [activeTab, setActiveTab] = useState('상품설명');
+  const [tabDirection, setTabDirection] = useState<'left' | 'right'>('right');
+  const prevTabIdxRef = useRef(0);
+  const tabBtnRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const [tabIndicator, setTabIndicator] = useState({ left: 0, width: 0 });
+  const activeTabIdx = tabs.indexOf(activeTab);
+
+  const changeTab = (t: string) => {
+    const nextIdx = tabs.indexOf(t);
+    setTabDirection(nextIdx >= prevTabIdxRef.current ? 'right' : 'left');
+    prevTabIdxRef.current = nextIdx;
+    setActiveTab(t);
+  };
+
+  useLayoutEffect(() => {
+    const btn = tabBtnRefs.current[activeTabIdx];
+    if (!btn) return;
+    setTabIndicator({ left: btn.offsetLeft, width: btn.offsetWidth });
+  }, [activeTabIdx]);
+
+  useEffect(() => {
+    const onResize = () => {
+      const btn = tabBtnRefs.current[activeTabIdx];
+      if (!btn) return;
+      setTabIndicator({ left: btn.offsetLeft, width: btn.offsetWidth });
+    };
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, [activeTabIdx]);
+
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
   const [heartAnim, setHeartAnim] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
@@ -286,17 +316,46 @@ export default function ProductDetailPage() {
 
       <div style={{ height: 8, backgroundColor: '#F2F3F5' }} />
 
-      {/* Tabs */}
+      {/* Tabs with sliding underline indicator */}
       <div style={{ position: 'sticky', top: 48, zIndex: 30 }} className="bg-white lg:static">
-        <TabBar
-          tabs={['상품설명', '병원정보', '리뷰']}
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-          variant="underline"
-        />
+        <div className="relative flex border-b border-gray-100">
+          {tabs.map((t, i) => {
+            const isActive = activeTab === t;
+            return (
+              <button
+                key={t}
+                ref={(el) => {
+                  tabBtnRefs.current[i] = el;
+                }}
+                onClick={() => changeTab(t)}
+                className="flex-1 py-3 text-[14px] font-semibold"
+                style={{
+                  color: isActive ? '#2B313D' : '#A4ABBA',
+                  transition: 'color 320ms cubic-bezier(0.22, 1, 0.36, 1)',
+                }}
+              >
+                {t}
+              </button>
+            );
+          })}
+          <span
+            aria-hidden
+            className="absolute bottom-0 h-[2px] bg-[#2B313D] pointer-events-none"
+            style={{
+              left: tabIndicator.left,
+              width: tabIndicator.width,
+              transition:
+                'left 380ms cubic-bezier(0.22, 1, 0.36, 1), width 380ms cubic-bezier(0.22, 1, 0.36, 1)',
+            }}
+          />
+        </div>
       </div>
 
       {/* Tab Content - open layout */}
+      <div
+        key={activeTab}
+        className={tabDirection === 'right' ? 'tab-slide-right' : 'tab-slide-left'}
+      >
       {activeTab === '상품설명' && (
         <div className="bg-white">
           <div className="aspect-[4/3] bg-gradient-to-br from-purple-50 to-blue-50 flex items-center justify-center">
@@ -547,6 +606,7 @@ export default function ProductDetailPage() {
           )}
         </div>
       )}
+      </div>{/* End tab content wrapper */}
 
       <div style={{ height: 8, backgroundColor: '#F2F3F5' }} />
 
