@@ -109,7 +109,7 @@ export default function CommunityPage() {
   const writeButtonLabel = activeBoard === '질문게시판' ? '질문하기' : '글쓰기';
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-[86px] lg:pb-0">
+    <div className="min-h-screen bg-white pb-[86px] lg:pb-0">
       <TopBar
         title="커뮤니티"
         showBack={false}

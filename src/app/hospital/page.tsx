@@ -58,7 +58,7 @@ export default function HospitalHomePage() {
   };
 
   return (
-    <div className="pb-[86px] bg-gray-50 min-h-screen">
+    <div className="pb-[86px] bg-white min-h-screen">
       {/* Header */}
       <div style={{ position: "sticky", top: 0, zIndex: 40 }} className="bg-white flex items-center justify-between h-12 px-2.5">
         <h1 className="text-lg font-bold">홈</h1>

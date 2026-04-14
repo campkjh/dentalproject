@@ -2,9 +2,32 @@
 
 import { useRef, useCallback, useState } from 'react';
 import Link from 'next/link';
-import { Star, Heart } from 'lucide-react';
+import { Star, Heart, BadgeCheck, Crown } from 'lucide-react';
 import { Product } from '@/types';
 import { useStore } from '@/store';
+
+const BLOB_BASE = 'https://4ipmgcqyzk6ysqa7.public.blob.vercel-storage.com';
+const productImages = [
+  `${BLOB_BASE}/banner_img_1750993128.jpg`,
+  `${BLOB_BASE}/banner_img_1751346038.jpg`,
+  `${BLOB_BASE}/banner_img_1751610140.jpg`,
+  `${BLOB_BASE}/banner_img_1763710790.jpg`,
+  `${BLOB_BASE}/banner_img_1767675084.jpg`,
+  `${BLOB_BASE}/banner_img_1768360956.jpg`,
+  `${BLOB_BASE}/banner_img_1768795367.jpg`,
+  `${BLOB_BASE}/banner_img_1770274828.jpg`,
+  `${BLOB_BASE}/banner_img_1772072706.jpg`,
+  `${BLOB_BASE}/banner_img_1772505033.jpg`,
+  `${BLOB_BASE}/banner_img_1773290485.jpg`,
+  `${BLOB_BASE}/banner_img_1773384556.jpg`,
+  `${BLOB_BASE}/banner_img_1775110063.jpg`,
+];
+
+function getProductImage(id: string) {
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) hash = ((hash << 5) - hash) + id.charCodeAt(i);
+  return productImages[Math.abs(hash) % productImages.length];
+}
 
 export default function ProductCard({ product }: { product: Product }) {
   const { wishlist, toggleWishlist } = useStore();
@@ -40,7 +63,7 @@ export default function ProductCard({ product }: { product: Product }) {
   return (
     <Link
       href={`/product/${product.id}`}
-      className="block card-press p-1"
+      className="block card-press"
       onMouseDown={handleTouchStart}
       onMouseUp={handleTouchEnd}
       onMouseLeave={handleTouchEnd}
@@ -48,15 +71,13 @@ export default function ProductCard({ product }: { product: Product }) {
       onTouchEnd={handleTouchEnd}
       onClick={handleClick}
     >
+      {/* 1:1 Image */}
       <div className="relative aspect-square rounded-xl overflow-hidden bg-gray-100 mb-2">
-        <div className="w-full h-full bg-gradient-to-br from-purple-100 to-blue-100 flex items-center justify-center transition-transform duration-300 hover:scale-105">
-          <span className="text-4xl">🦷</span>
-        </div>
-        {product.discount && (
-          <div className="absolute top-2 left-2 bg-[#7C3AED] text-white text-xs px-2 py-0.5 rounded">
-            {product.discount}%
-          </div>
-        )}
+        <img
+          src={getProductImage(product.id)}
+          alt={product.title}
+          className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+        />
         {/* Wishlist indicator */}
         {isWished && (
           <div className="absolute top-2 right-2">
@@ -70,38 +91,38 @@ export default function ProductCard({ product }: { product: Product }) {
           </div>
         )}
       </div>
-      <div className="flex flex-wrap mb-1" style={{ gap: 3 }}>
-        {product.discount && (
-          <span style={{ backgroundColor: '#FFF0F0', borderRadius: 5, fontSize: 10, fontWeight: 500, color: '#EF4444' }} className="px-1.5 py-0.5">할인</span>
-        )}
-        {product.rating >= 4.5 && (
-          <span style={{ backgroundColor: '#F0F0FF', borderRadius: 5, fontSize: 10, fontWeight: 500, color: '#7C3AED' }} className="px-1.5 py-0.5">추천</span>
-        )}
-        {product.reviewCount >= 10 && (
-          <span style={{ backgroundColor: '#F0FFF4', borderRadius: 5, fontSize: 10, fontWeight: 500, color: '#10B981' }} className="px-1.5 py-0.5">인기</span>
-        )}
-        {product.likeCount >= 5 && (
-          <span style={{ backgroundColor: '#FFF8F0', borderRadius: 5, fontSize: 10, fontWeight: 500, color: '#F59E0B' }} className="px-1.5 py-0.5">HOT</span>
-        )}
-      </div>
-      <h3 className="text-sm font-medium line-clamp-2 mb-1">{product.title}</h3>
-      <div className="flex items-baseline gap-1 mb-1">
-        {product.discount && (
-          <span className="text-[#7C3AED] font-bold text-sm">{product.discount}%</span>
-        )}
-        <span className="font-bold text-sm">{product.price.toLocaleString()}원</span>
-        <span className="text-[11px] text-gray-400">vat포함</span>
-      </div>
-      <div className="flex items-center gap-2 text-xs text-gray-500">
-        <div className="flex items-center gap-0.5">
-          <Star size={12} fill="#FBBF24" stroke="#FBBF24" />
-          <span>{product.rating}</span>
-          <span className="text-gray-400">({product.reviewCount})</span>
+
+      {/* Product Name */}
+      <h3 style={{ fontSize: 16, fontWeight: 600, color: '#2B313D', lineHeight: '20px' }} className="line-clamp-2 mb-0.5">{product.title}</h3>
+
+      {/* Hospital Location - 1 line */}
+      <p style={{ fontSize: 14, fontWeight: 400, color: '#A4ABBA' }} className="truncate">{product.location || product.hospitalName}</p>
+
+      {/* Discount + Original Price */}
+      {product.discount && product.originalPrice && (
+        <div className="flex items-center gap-1.5 mt-1">
+          <span style={{ fontSize: 13, fontWeight: 500, color: '#8037FF' }}>{product.discount}%</span>
+          <span style={{ fontSize: 13, fontWeight: 400, color: '#C8CEDA', textDecoration: 'line-through' }}>{product.originalPrice.toLocaleString()}원</span>
         </div>
-        <div className="flex items-center gap-0.5">
-          <Heart size={12} fill={isWished ? '#EF4444' : '#F87171'} stroke={isWished ? '#EF4444' : '#F87171'} />
-          <span>{product.likeCount}</span>
-        </div>
+      )}
+
+      {/* Price */}
+      <p style={{ fontSize: 18, fontWeight: 600, color: '#2B313D', marginTop: 2 }}>{product.price.toLocaleString()}원</p>
+
+      {/* Badges row */}
+      <div className="flex items-center gap-1.5 mt-1.5">
+        <span style={{ fontSize: 11, fontWeight: 500, color: '#8037FF', backgroundColor: '#F0EBFF', borderRadius: 4, padding: '2px 6px' }}>앱결제</span>
+        <span style={{ fontSize: 11, fontWeight: 500, color: '#51535C', backgroundColor: '#F2F3F5', borderRadius: 4, padding: '2px 6px' }}>앱예약</span>
+        {product.rating >= 4.8 && (
+          <span className="flex items-center gap-0.5" style={{ fontSize: 11, fontWeight: 500, color: '#10B981', backgroundColor: '#ECFDF5', borderRadius: 4, padding: '2px 6px' }}>
+            <BadgeCheck size={10} /> 인증
+          </span>
+        )}
+        {product.likeCount >= 10 && (
+          <span className="flex items-center gap-0.5" style={{ fontSize: 11, fontWeight: 500, color: '#F59E0B', backgroundColor: '#FFFBEB', borderRadius: 4, padding: '2px 6px' }}>
+            <Crown size={10} /> 프라임
+          </span>
+        )}
       </div>
     </Link>
   );

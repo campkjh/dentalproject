@@ -28,7 +28,7 @@ export default function NotificationDetailPage() {
 
   if (!notification) {
     return (
-      <div className="min-h-screen bg-white max-w-[430px] mx-auto">
+      <div className="min-h-screen bg-white max-w-[480px] mx-auto">
         <TopBar title="쪽지상세" />
         <div className="flex items-center justify-center py-20">
           <p className="text-gray-500">쪽지를 찾을 수 없습니다</p>
@@ -41,7 +41,7 @@ export default function NotificationDetailPage() {
   const content = notificationContent[notification.id] ?? '상세 내용이 없습니다.';
 
   return (
-    <div className="min-h-screen bg-white max-w-[430px] mx-auto">
+    <div className="min-h-screen bg-white max-w-[480px] mx-auto">
       <TopBar title="쪽지상세" />
 
       <div className="px-2.5 py-6">

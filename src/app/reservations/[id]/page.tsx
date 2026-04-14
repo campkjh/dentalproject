@@ -79,7 +79,7 @@ export default function ReservationDetailPage() {
   const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-10">
+    <div className="min-h-screen bg-white pb-10">
       <TopBar title="정보" />
 
       {/* Status + date */}

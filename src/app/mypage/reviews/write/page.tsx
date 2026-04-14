@@ -97,7 +97,7 @@ function ReviewWritePage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-white">
       <TopBar title="리뷰작성" />
 
       <div className="px-2.5 py-4 space-y-5">

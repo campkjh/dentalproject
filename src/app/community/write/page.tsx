@@ -118,7 +118,7 @@ function CommunityWritePage() {
   const isFormValid = title.trim().length > 0 && content.trim().length > 0;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-white">
       <TopBar title="글작성" />
 
       <div className="px-2.5 py-4 space-y-5">

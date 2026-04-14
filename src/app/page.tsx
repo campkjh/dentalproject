@@ -3,10 +3,10 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Search, Send, ChevronRight } from 'lucide-react';
+import { Search, Send, ChevronRight, Star } from 'lucide-react';
 import ProductCard from '@/components/common/ProductCard';
 import { useStore } from '@/store';
-import { categories } from '@/lib/mock-data';
+import { categories, reviews, hospitals, products as allMockProducts } from '@/lib/mock-data';
 
 const searchPlaceholders = [
   '입술필러 검색해보세요',
@@ -30,6 +30,13 @@ export default function HomePage() {
     .filter(Boolean) as typeof products;
   const dentalProducts = products.filter(p => p.category === 'dental').slice(0, 4);
   const plasticProducts = products.filter(p => p.category === 'plastic').slice(0, 4);
+
+  // 이번 주 인기 많은 패키지: 리뷰 많은 순
+  const weeklyPopularPackages = [...products].sort((a, b) => b.reviewCount - a.reviewCount).slice(0, 8);
+  // 이런 패키지는 어때요?: 할인율 높은 순
+  const suggestedPackages = [...products].filter(p => p.discount).sort((a, b) => (b.discount || 0) - (a.discount || 0)).slice(0, 8);
+  // 요즘 뜨고 있는 병원
+  const trendingHospitals = hospitals.slice(0, 6);
 
   // Scroll detection
   useEffect(() => {
@@ -201,6 +208,168 @@ export default function HomePage() {
             </div>
           </div>
         )}
+
+        {/* 나한테 꿀이되는 후기 */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between px-2.5 lg:px-6 lg:max-w-7xl lg:mx-auto mb-3">
+            <h2 className="font-bold">나한테 꿀이되는 후기</h2>
+          </div>
+          <div className="px-2.5 lg:max-w-7xl lg:mx-auto">
+            <div className="flex gap-2.5 overflow-x-auto hide-scrollbar pb-2" style={{ scrollSnapType: 'x mandatory' }}>
+              {reviews.slice(0, 10).map((review) => {
+                const hospital = hospitals.find(h => h.id === review.hospitalId);
+                const relatedProduct = allMockProducts.find(p => p.id === review.productId || p.hospitalId === review.hospitalId);
+                return (
+                  <Link
+                    key={review.id}
+                    href={relatedProduct ? `/product/${relatedProduct.id}` : '#'}
+                    className="flex-shrink-0 block"
+                    style={{ width: 286, scrollSnapAlign: 'start' }}
+                  >
+                    {/* 전후 이미지 영역 */}
+                    <div className="relative overflow-hidden" style={{ borderRadius: '16px 16px 0 0', backgroundColor: '#111' }}>
+                      <div className="flex">
+                        <div className="flex-1 aspect-square flex items-center justify-center" style={{ backgroundColor: '#EBEBEB' }}>
+                          <span className="text-3xl">📷</span>
+                        </div>
+                        <div className="flex-1 aspect-square flex items-center justify-center" style={{ backgroundColor: '#DEDEDE' }}>
+                          <span className="text-3xl">📷</span>
+                        </div>
+                      </div>
+                      <span style={{ position: 'absolute', top: 12, right: 12, fontSize: 13, fontWeight: 600, color: '#fff' }}>시술 후</span>
+                    </div>
+                    {/* 카드 본문 */}
+                    <div style={{ backgroundColor: '#F6F6F8', borderRadius: '0 0 16px 16px', padding: '14px 16px' }}>
+                      <p style={{ fontSize: 14, color: '#C8CEDA' }}>
+                        {hospital?.location || '서울 강남구'} · {hospital?.name || review.authorName}
+                      </p>
+                      <h3 style={{ fontSize: 18, fontWeight: 600, color: '#2B313D', marginTop: 6, lineHeight: '24px' }} className="line-clamp-2">
+                        {review.treatmentName}
+                      </h3>
+                      <div className="flex items-center gap-1.5" style={{ marginTop: 8 }}>
+                        <Star size={16} fill="#FBBF24" stroke="#FBBF24" />
+                        <span style={{ fontSize: 14, fontWeight: 600, color: '#2B313D' }}>{review.rating.toFixed(1)}</span>
+                        <span style={{ fontSize: 14, color: '#A4ABBA' }}>({relatedProduct?.reviewCount?.toLocaleString() || '0'})</span>
+                      </div>
+                      <p style={{ fontSize: 20, fontWeight: 700, color: '#111111', marginTop: 6 }}>
+                        {review.totalCost.toLocaleString()}원
+                      </p>
+                      <div className="flex items-center gap-1.5" style={{ marginTop: 10 }}>
+                        <span className="flex items-center gap-1" style={{ fontSize: 12, fontWeight: 500, color: '#3B82F6', backgroundColor: '#EFF6FF', borderRadius: 4, padding: '3px 8px' }}>
+                          <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+                          앱결제
+                        </span>
+                        <span className="flex items-center gap-1" style={{ fontSize: 12, fontWeight: 500, color: '#10B981', backgroundColor: '#ECFDF5', borderRadius: 4, padding: '3px 8px' }}>
+                          <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4 12 14.01l-3-3"/></svg>
+                          앱예약
+                        </span>
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* 이번 주 인기 많은 패키지 */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between px-2.5 lg:px-6 lg:max-w-7xl lg:mx-auto mb-3">
+            <h2 className="font-bold">이번 주 인기 많은 패키지</h2>
+            <Link href="/search" className="flex items-center gap-0.5 text-sm text-[#7C3AED] hover:underline">
+              더보기 <ChevronRight size={14} />
+            </Link>
+          </div>
+          <div className="px-2.5 lg:max-w-7xl lg:mx-auto">
+            <div className="flex gap-1.5 overflow-x-auto hide-scrollbar pb-2 lg:grid lg:grid-cols-4 lg:gap-1.5 lg:overflow-visible">
+              {weeklyPopularPackages.map((product) => (
+                <div key={product.id} className="w-[42vw] max-w-[180px] flex-shrink-0 lg:w-auto lg:max-w-none lg:flex-shrink">
+                  <ProductCard product={product} />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* 이런 패키지는 어때요? */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between px-2.5 lg:px-6 lg:max-w-7xl lg:mx-auto mb-3">
+            <h2 className="font-bold">이런 패키지는 어때요?</h2>
+            <Link href="/search" className="flex items-center gap-0.5 text-sm text-[#7C3AED] hover:underline">
+              더보기 <ChevronRight size={14} />
+            </Link>
+          </div>
+          <div className="px-2.5 lg:max-w-7xl lg:mx-auto">
+            <div className="flex gap-1.5 overflow-x-auto hide-scrollbar pb-2 lg:grid lg:grid-cols-4 lg:gap-1.5 lg:overflow-visible">
+              {suggestedPackages.map((product) => (
+                <div key={product.id} className="w-[42vw] max-w-[180px] flex-shrink-0 lg:w-auto lg:max-w-none lg:flex-shrink">
+                  <ProductCard product={product} />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* 요즘 뜨고 있는 병원 */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between px-2.5 lg:px-6 lg:max-w-7xl lg:mx-auto mb-3">
+            <h2 className="font-bold">요즘 뜨고 있는 병원</h2>
+          </div>
+          <div className="px-2.5 lg:max-w-7xl lg:mx-auto">
+            <div className="flex gap-2.5 overflow-x-auto hide-scrollbar pb-2" style={{ scrollSnapType: 'x mandatory' }}>
+              {(() => {
+                const BLOB = 'https://4ipmgcqyzk6ysqa7.public.blob.vercel-storage.com';
+                const hospitalCovers = [
+                  `${BLOB}/etc_1620284296.jpg`,
+                  `${BLOB}/etc_1669967008.jpg`,
+                  `${BLOB}/etc_1672388697.jpg`,
+                  `${BLOB}/etc_1698051602.jpg`,
+                  `${BLOB}/etc_1721806033.jpg`,
+                  `${BLOB}/etc_1723509679.jpg`,
+                  `${BLOB}/etc_1753324431.jpg`,
+                  `${BLOB}/etc_1754971619.jpg`,
+                  `${BLOB}/etc_1770601235.jpg`,
+                ];
+                return trendingHospitals.map((hp, hpIdx) => {
+                const hpReviews = reviews.filter(r => r.hospitalId === hp.id);
+                const topReview = hpReviews[0];
+                return (
+                  <Link
+                    key={hp.id}
+                    href={`/hospital/detail/${hp.id}`}
+                    className="flex-shrink-0 block"
+                    style={{ width: 286, scrollSnapAlign: 'start' }}
+                  >
+                    {/* 커버 이미지 */}
+                    <div className="relative overflow-hidden" style={{ borderRadius: 16, aspectRatio: '64/26' }}>
+                      <img src={hospitalCovers[hpIdx % hospitalCovers.length]} alt={hp.name} className="w-full h-full object-cover" />
+                      {/* 로고 */}
+                      <div className="absolute top-3 left-3 w-8 h-8 bg-white/90 rounded-full flex items-center justify-center" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.1)' }}>
+                        <span className="text-xs">🦷</span>
+                      </div>
+                    </div>
+                    {/* 정보 */}
+                    <div style={{ padding: '12px 4px' }}>
+                      <h3 style={{ fontSize: 18, fontWeight: 600, color: '#2B313D' }}>{hp.name}</h3>
+                      {topReview && (
+                        <p style={{ fontSize: 14, fontWeight: 600, color: '#7C3AED', marginTop: 4 }}>
+                          {topReview.treatmentName} 후기 {hpReviews.length}개
+                        </p>
+                      )}
+                      <div className="flex items-center gap-1" style={{ marginTop: 6, fontSize: 14, color: '#A4ABBA' }}>
+                        <Star size={14} fill="#FBBF24" stroke="#FBBF24" />
+                        <span style={{ fontWeight: 600, color: '#2B313D' }}>{hp.rating.toFixed(1)}</span>
+                        <span>· 후기 {hp.reviewCount.toLocaleString()}개</span>
+                        <span>· {hp.location}</span>
+                      </div>
+                    </div>
+                  </Link>
+                );
+              });
+              })()}
+            </div>
+          </div>
+        </div>
 
         {/* 인기 상품 */}
         <div className="mb-6">

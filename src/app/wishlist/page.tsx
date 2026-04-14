@@ -27,7 +27,7 @@ export default function WishlistPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white max-w-[430px] mx-auto lg:max-w-7xl lg:px-6 lg:py-6">
+    <div className="min-h-screen bg-white max-w-[480px] mx-auto lg:max-w-7xl lg:px-6 lg:py-6">
       <TopBar title="찜목록" />
 
       {!isLoggedIn ? (
@@ -58,7 +58,7 @@ export default function WishlistPage() {
       {showScrollTop && (
         <button
           onClick={scrollToTop}
-          className="fixed bottom-24 right-4 max-w-[430px] w-10 h-10 bg-white border border-gray-200 rounded-full shadow-lg flex items-center justify-center z-40 hover:bg-gray-50 transition-colors"
+          className="fixed bottom-24 right-4 max-w-[480px] w-10 h-10 bg-white border border-gray-200 rounded-full shadow-lg flex items-center justify-center z-40 hover:bg-gray-50 transition-colors"
         >
           <ArrowUp size={18} className="text-gray-600" />
         </button>

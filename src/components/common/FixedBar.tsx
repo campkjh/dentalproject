@@ -27,7 +27,7 @@ export default function FixedBar({ position, children, className = '' }: FixedBa
         transform: 'translateX(-50%)',
         zIndex: 9998,
         width: '100%',
-        maxWidth: 430,
+        maxWidth: 480,
       }}
       className={className}
     >

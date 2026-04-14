@@ -12,7 +12,7 @@ export default function ProfilePage() {
 
   if (!isLoggedIn) {
     return (
-      <div className="min-h-screen bg-white max-w-[430px] mx-auto">
+      <div className="min-h-screen bg-white max-w-[480px] mx-auto">
         <TopBar title="프로필설정" />
         <LoginRequired />
       </div>
@@ -37,7 +37,7 @@ export default function ProfilePage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 max-w-[430px] mx-auto">
+    <div className="min-h-screen bg-white max-w-[480px] mx-auto">
       <TopBar title="프로필설정" />
 
       {/* Profile Avatar */}

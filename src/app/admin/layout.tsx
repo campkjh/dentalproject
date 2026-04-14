@@ -16,6 +16,7 @@ import {
   LogOut,
   ChevronLeft,
   Menu,
+  LayoutGrid,
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -24,6 +25,7 @@ const sidebarItems = [
   { href: '/admin/users', label: '회원 관리', icon: Users },
   { href: '/admin/hospitals', label: '병원 관리', icon: Building2 },
   { href: '/admin/products', label: '상품 관리', icon: Package },
+  { href: '/admin/categories', label: '카테고리 관리', icon: LayoutGrid },
   { href: '/admin/reservations', label: '예약 관리', icon: CalendarDays },
   { href: '/admin/community', label: '커뮤니티 관리', icon: MessageSquare },
   { href: '/admin/payments', label: '매출/결제', icon: CreditCard },
@@ -37,7 +39,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [collapsed, setCollapsed] = useState(false);
 
   return (
-    <div className="!max-w-none !shadow-none flex min-h-screen bg-gray-50">
+    <div className="!max-w-none !shadow-none flex min-h-screen bg-white">
       {/* Sidebar */}
       <aside
         className={`fixed left-0 top-0 h-full bg-[#1E1B2E] text-white z-50 transition-all duration-300 flex flex-col ${

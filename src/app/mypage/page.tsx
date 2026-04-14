@@ -116,7 +116,7 @@ export default function MyPage() {
   const availableCoupons = user?.coupons?.filter(c => c.status === 'available').length ?? 0;
 
   return (
-    <div className="min-h-screen bg-gray-50 max-w-[480px] mx-auto pb-[86px] lg:pb-0 lg:max-w-4xl lg:py-8 page-enter">
+    <div className="min-h-screen bg-white max-w-[480px] mx-auto pb-[86px] lg:pb-0 lg:max-w-4xl lg:py-8 page-enter">
       {/* Header */}
       <div className="bg-white px-2.5 pt-12 pb-6 fade-in-up">
         <div className="flex items-center gap-4">
@@ -161,7 +161,7 @@ export default function MyPage() {
       </div>
 
       {/* Separator */}
-      <div className="h-2 bg-gray-50" />
+      <div className="h-px bg-gray-100 mx-2.5 my-2" />
 
       {/* Customer History */}
       <div className="bg-white lg:bg-white lg:rounded-2xl lg:shadow-sm lg:p-6 lg:mb-4 stagger-children">
@@ -172,7 +172,7 @@ export default function MyPage() {
       </div>
 
       {/* Separator */}
-      <div className="h-2 bg-gray-50" />
+      <div className="h-px bg-gray-100 mx-2.5 my-2" />
 
       {/* Customer Support */}
       <div className="bg-white lg:bg-white lg:rounded-2xl lg:shadow-sm lg:p-6 lg:mb-4 stagger-children">

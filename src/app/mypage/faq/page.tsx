@@ -77,7 +77,7 @@ export default function FAQPage() {
   const currentFaqs = faqData[activeTab] ?? [];
 
   return (
-    <div className="min-h-screen bg-white max-w-[430px] mx-auto">
+    <div className="min-h-screen bg-white max-w-[480px] mx-auto">
       <TopBar title="자주하는질문" />
 
       {/* Tab Bar */}

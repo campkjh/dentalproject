@@ -73,7 +73,7 @@ function PaymentPage() {
   };
 
   return (
-    <div className="pb-28 bg-gray-50 min-h-screen lg:max-w-2xl lg:mx-auto lg:py-8">
+    <div className="pb-28 bg-white min-h-screen lg:max-w-2xl lg:mx-auto lg:py-8">
       <TopBar title="결제하기" />
 
       {/* Product Info Card */}
@@ -235,7 +235,7 @@ function PaymentPage() {
       </div>
 
       {/* Bottom Payment Button */}
-      <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-white border-t border-gray-100 px-2.5 py-3 z-50 lg:static lg:mt-4 lg:px-0 lg:border-0 lg:transform-none lg:left-auto lg:max-w-none">
+      <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] bg-white border-t border-gray-100 px-2.5 py-3 z-50 lg:static lg:mt-4 lg:px-0 lg:border-0 lg:transform-none lg:left-auto lg:max-w-none">
         <button
           onClick={handlePayment}
           className="w-full py-3.5 bg-[#7C3AED] text-white rounded-xl font-bold text-sm"

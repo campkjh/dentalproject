@@ -241,7 +241,7 @@ function BookingPage() {
       </div>
 
       {/* Bottom Button */}
-      <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-white border-t border-gray-100 px-2.5 py-3 z-50 lg:static lg:mt-6 lg:transform-none lg:left-auto lg:border-0 lg:px-2.5 lg:max-w-none">
+      <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] bg-white border-t border-gray-100 px-2.5 py-3 z-50 lg:static lg:mt-6 lg:transform-none lg:left-auto lg:border-0 lg:px-2.5 lg:max-w-none">
         <button
           onClick={handleBooking}
           disabled={!selectedDate || !selectedTime}

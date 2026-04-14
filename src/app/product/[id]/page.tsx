@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -48,6 +48,19 @@ export default function ProductDetailPage() {
   const [activeTab, setActiveTab] = useState('상품설명');
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
   const [heartAnim, setHeartAnim] = useState(false);
+  const [showScrollTop, setShowScrollTop] = useState(false);
+  const reviewSectionRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (reviewSectionRef.current) {
+        const rect = reviewSectionRef.current.getBoundingClientRect();
+        setShowScrollTop(rect.bottom < 0);
+      }
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const product = useMemo(() => {
     const found = products.find((p) => p.id === params.id);
@@ -85,7 +98,7 @@ export default function ProductDetailPage() {
     : product.rating.toFixed(1);
 
   return (
-    <div className="bg-gray-50 min-h-screen page-enter" style={{ paddingTop: 48, paddingBottom: 72 }}>
+    <div className="bg-white min-h-screen page-enter" style={{ paddingTop: 48, paddingBottom: 72 }}>
 
       {/* Fixed Header - portal to body */}
       <FixedBar position="top" className="lg:hidden">
@@ -182,22 +195,53 @@ export default function ProductDetailPage() {
       )}
 
       {/* Customer Reviews Summary - open */}
-      <div className="bg-white px-2.5 py-4">
-        <div className="flex items-center justify-between mb-3">
+      <div ref={reviewSectionRef} className="bg-white px-2.5 py-4">
+        <div className="flex items-center justify-between mb-4">
           <h2 style={{ fontSize: 20, fontWeight: 600, color: '#2B313D' }}>고객후기모음</h2>
-          <div className="flex items-center gap-1">
-            <Star size={14} fill="#FBBF24" stroke="#FBBF24" />
-            <span className="text-sm font-semibold">{avgRating}</span>
-            <span className="text-sm text-gray-400">({productReviews.length}건)</span>
-          </div>
+          <span className="text-sm text-gray-400">{productReviews.length}건</span>
         </div>
+        {/* Rating summary with progress bars */}
+        {productReviews.length > 0 && (() => {
+          const counts = [0, 0, 0, 0, 0];
+          productReviews.forEach(r => { const idx = Math.min(Math.max(Math.round(r.rating) - 1, 0), 4); counts[idx]++; });
+          const total = productReviews.length;
+          return (
+            <div className="flex gap-5 mb-4" style={{ padding: '16px', backgroundColor: '#F9F9FB', borderRadius: 12 }}>
+              {/* Left: score + stars */}
+              <div className="flex flex-col items-center justify-center" style={{ minWidth: 80 }}>
+                <span style={{ fontSize: 36, fontWeight: 700, color: '#2B313D', lineHeight: 1 }}>{avgRating}</span>
+                <div className="flex gap-0.5 mt-2">
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} size={14} fill={i < Math.round(Number(avgRating)) ? '#FBBF24' : '#E5E7EB'} stroke={i < Math.round(Number(avgRating)) ? '#FBBF24' : '#E5E7EB'} />
+                  ))}
+                </div>
+              </div>
+              {/* Right: progress bars */}
+              <div className="flex-1 flex flex-col justify-center gap-1.5">
+                {[5, 4, 3, 2, 1].map(star => {
+                  const count = counts[star - 1];
+                  const pct = total > 0 ? (count / total) * 100 : 0;
+                  return (
+                    <div key={star} className="flex items-center gap-2">
+                      <span style={{ fontSize: 12, fontWeight: 500, color: '#A4ABBA', width: 14, textAlign: 'right' }}>{star}</span>
+                      <div className="flex-1 h-2 rounded-full" style={{ backgroundColor: '#E5E7EB' }}>
+                        <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: '#FBBF24', transition: 'width 0.3s ease' }} />
+                      </div>
+                      <span style={{ fontSize: 11, fontWeight: 500, color: '#A4ABBA', width: 32, textAlign: 'right' }}>{Math.round(pct)}%</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()}
         {productReviews.length > 0 && (
-          <div className="flex overflow-x-auto hide-scrollbar pb-2" style={{ gap: 6 }}>
+          <div className="flex overflow-x-auto hide-scrollbar pb-2" style={{ gap: 6, scrollSnapType: 'x mandatory' }}>
             {productReviews.map((review) => (
               <div
                 key={review.id}
                 className="flex-shrink-0 flex flex-col"
-                style={{ width: 288, height: 358, borderRadius: 12, backgroundColor: '#F6F6F6', padding: 12, overflow: 'hidden' }}
+                style={{ width: 288, height: 358, borderRadius: 12, backgroundColor: '#F6F6F6', padding: 12, overflow: 'hidden', scrollSnapAlign: 'start' }}
               >
                 {/* 전/후 이미지 - r값: 전=좌상좌하12, 후=우상우하12 */}
                 <div className="flex" style={{ gap: 0 }}>
@@ -273,32 +317,33 @@ export default function ProductDetailPage() {
 
       {activeTab === '병원정보' && hospital && (
         <div>
-          {/* Hospital info - flat, no card border */}
+          {/* Hospital info */}
           <div className="bg-white px-2.5 py-5">
-            <Link href={`/hospital/detail/${hospital.id}`} className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-              <div className="w-14 h-14 rounded-full flex items-center justify-center" style={{ backgroundColor: '#F2F3F5' }}>
-                <span className="text-xl">🏥</span>
+            <Link href={`/hospital/detail/${hospital.id}`} className="flex items-start gap-3 hover:opacity-80 transition-opacity">
+              <div className="w-14 h-14 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden" style={{ backgroundColor: '#F2F3F5' }}>
+                {hospital.logoUrl ? (
+                  <img src={hospital.logoUrl} alt={hospital.name} className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-xl">🏥</span>
+                )}
               </div>
-              <div>
-                <h3 style={{ fontSize: 17, fontWeight: 600, color: '#2B313D' }}>{hospital.name}</h3>
-                <p style={{ fontSize: 13, color: '#A4ABBA' }}>{hospital.category}</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 3, flex: 1, minWidth: 0 }}>
+                <h3 style={{ fontSize: 16, fontWeight: 600, color: '#2B313D' }}>{hospital.name}</h3>
+                <p style={{ fontSize: 14, fontWeight: 500, color: '#51535C' }}>{hospital.address}</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {hospital.tags.map((tag) => (
+                    <span key={tag} style={{ backgroundColor: '#F2F3F5', borderRadius: 8, fontSize: 12, fontWeight: 500, color: '#51535C' }} className="px-2.5 py-1">{tag}</span>
+                  ))}
+                </div>
               </div>
             </Link>
-            <div className="flex items-center gap-1.5 mt-3">
-              <MapPin size={14} style={{ color: '#A4ABBA' }} />
-              <span style={{ fontSize: 13, color: '#51535C' }}>{hospital.address}</span>
-            </div>
-            <div className="flex flex-wrap gap-1.5 mt-3">
-              {hospital.tags.map((tag) => (
-                <span key={tag} style={{ backgroundColor: '#F2F3F5', borderRadius: 8, fontSize: 12, fontWeight: 500, color: '#51535C' }} className="px-2.5 py-1">{tag}</span>
-              ))}
-            </div>
             <button
               onClick={() => window.open(`https://map.naver.com/v5/search/${encodeURIComponent(hospital.name + ' ' + hospital.address)}`, '_blank')}
-              style={{ height: 44, borderRadius: 10, backgroundColor: '#8037FF', fontSize: 14, fontWeight: 600 }}
-              className="w-full text-white mt-4"
+              style={{ height: 48, borderRadius: 12, backgroundColor: '#F2F3F5', fontSize: 18, fontWeight: 600, color: '#2B313D' }}
+              className="w-full flex items-center justify-center gap-2 mt-4"
             >
-              찾아가는길
+              <img src="/icons/naver-map.svg" alt="" width={20} height={26} />
+              찾아오시는길
             </button>
           </div>
 
@@ -323,22 +368,40 @@ export default function ProductDetailPage() {
 
           <div style={{ height: 8, backgroundColor: '#F2F3F5' }} />
 
-          {/* Operating Hours - flat */}
+          {/* Operating Hours */}
           <div className="bg-white px-2.5 py-5">
             <div className="flex items-center gap-2 mb-4">
               <Clock size={16} style={{ color: '#A4ABBA' }} />
               <h3 style={{ fontSize: 20, fontWeight: 600, color: '#2B313D' }}>진료시간</h3>
             </div>
-            {hospital.operatingHours.map((oh) => (
-              <div key={oh.day} className="flex items-center justify-between" style={{ padding: '8px 0', borderBottom: '1px solid #F2F3F5' }}>
-                <span style={{ fontSize: 14, fontWeight: 600, color: '#2B313D', width: 28 }}>{oh.day}</span>
-                {oh.isClosed ? (
-                  <span style={{ fontSize: 14, color: '#EF4444' }}>휴진</span>
-                ) : (
-                  <span style={{ fontSize: 14, color: '#51535C' }}>{oh.startTime} - {oh.endTime}</span>
-                )}
-              </div>
-            ))}
+            {(() => {
+              const dayMap: Record<string, number> = { '일': 0, '월': 1, '화': 2, '수': 3, '목': 4, '금': 5, '토': 6 };
+              const todayIdx = new Date().getDay();
+              return hospital.operatingHours.map((oh) => {
+                const isToday = dayMap[oh.day] === todayIdx;
+                const isClosed = oh.isClosed;
+                return (
+                  <div
+                    key={oh.day}
+                    className="flex items-center justify-between"
+                    style={{
+                      padding: '8px 8px',
+                      borderRadius: 8,
+                      marginBottom: 2,
+                      opacity: isClosed ? 0.6 : 1,
+                      backgroundColor: isToday ? '#F0EBFF' : 'transparent',
+                    }}
+                  >
+                    <span style={{ fontSize: 12, fontWeight: 500, color: isToday ? '#7C3AED' : '#2B313D', width: 28 }}>{oh.day}</span>
+                    {isClosed ? (
+                      <span style={{ fontSize: 12, fontWeight: 500, color: '#51535C', backgroundColor: '#F2F3F5', borderRadius: 8, padding: '4px 10px' }}>휴진</span>
+                    ) : (
+                      <span style={{ fontSize: 12, fontWeight: 500, color: '#51535C', backgroundColor: '#F2F3F5', borderRadius: 8, padding: '4px 10px' }}>{oh.startTime} - {oh.endTime}</span>
+                    )}
+                  </div>
+                );
+              });
+            })()}
             {hospital.holidayNotice && (
               <p style={{ fontSize: 12, color: '#EF4444', marginTop: 8 }}>{hospital.holidayNotice}</p>
             )}
@@ -349,13 +412,22 @@ export default function ProductDetailPage() {
           {/* Doctors - flat list */}
           <div className="bg-white px-2.5 py-5">
             <h3 style={{ fontSize: 20, fontWeight: 600, color: '#2B313D', marginBottom: 16 }}>의료진 소개</h3>
-            {hospital.doctors.map((doctor, idx) => (
+            {(() => {
+              const BLOB = 'https://4ipmgcqyzk6ysqa7.public.blob.vercel-storage.com';
+              const faceImages = [
+                `${BLOB}/face.jpeg`, `${BLOB}/face_1.jpeg`, `${BLOB}/face_2.jpeg`, `${BLOB}/face_3.jpeg`,
+                `${BLOB}/face_4.jpeg`, `${BLOB}/face_5.jpeg`, `${BLOB}/face_6.jpeg`, `${BLOB}/face_7.jpeg`,
+                `${BLOB}/face_8.jpeg`, `${BLOB}/face_9.jpeg`, `${BLOB}/face_10.jpeg`, `${BLOB}/face_11.jpeg`,
+                `${BLOB}/face_12.jpeg`, `${BLOB}/face_13.jpeg`, `${BLOB}/face_14.jpeg`, `${BLOB}/face_15.jpeg`,
+                `${BLOB}/face_16.jpeg`, `${BLOB}/face_17.jpeg`, `${BLOB}/face_18.jpeg`,
+              ];
+              return hospital.doctors.map((doctor, idx) => (
               <Link key={doctor.id} href={`/doctor/${doctor.id}`}
                 className="flex items-center gap-3 py-3 hover:opacity-80 transition-opacity"
                 style={{ borderBottom: idx < hospital.doctors.length - 1 ? '1px solid #F2F3F5' : 'none' }}
               >
-                <div className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#F2F3F5' }}>
-                  <User size={20} style={{ color: '#A4ABBA' }} />
+                <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0" style={{ backgroundColor: '#F2F3F5' }}>
+                  <img src={faceImages[idx % faceImages.length]} alt={doctor.name} className="w-full h-full object-cover" />
                 </div>
                 <div>
                   <div className="flex items-center gap-1.5">
@@ -370,7 +442,8 @@ export default function ProductDetailPage() {
                   )}
                 </div>
               </Link>
-            ))}
+            ));
+            })()}
           </div>
 
           {/* More Products from Hospital */}
@@ -479,7 +552,7 @@ export default function ProductDetailPage() {
 
       {/* FAQ Section - flat */}
       <div className="bg-white px-2.5 py-5">
-        <h2 style={{ fontSize: 20, fontWeight: 600, color: '#2B313D', marginBottom: 12 }}>자주묻는질문</h2>
+        <h2 style={{ fontSize: 20, fontWeight: 700, color: '#2B313D', marginBottom: 12 }}>자주묻는질문</h2>
         {faqItems.map((faq, index) => (
           <div key={index} style={{ marginBottom: 4 }}>
             <button
@@ -490,7 +563,7 @@ export default function ProductDetailPage() {
               onMouseUp={(e) => (e.currentTarget.style.backgroundColor = expandedFaq === index ? '#F6F6F6' : 'transparent')}
               onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = expandedFaq === index ? '#F6F6F6' : 'transparent')}
             >
-              <span style={{ fontSize: 18, fontWeight: 600, color: '#2B313D', flex: 1 }}>{faq.question}</span>
+              <span style={{ fontSize: 16, fontWeight: 600, color: '#2B313D', flex: 1 }}>{faq.question}</span>
               <ChevronDown
                 size={18}
                 style={{
@@ -519,19 +592,101 @@ export default function ProductDetailPage() {
       </div>{/* End Info Section */}
       </div>{/* End grid wrapper */}
 
+      {/* Scroll to top button */}
+      <button
+        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+        style={{
+          position: 'fixed',
+          bottom: 90,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          width: 44,
+          height: 44,
+          borderRadius: '50%',
+          backgroundColor: 'rgba(17, 17, 17, 0.4)',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 50,
+          border: 'none',
+          cursor: 'pointer',
+          opacity: showScrollTop ? 1 : 0,
+          pointerEvents: showScrollTop ? 'auto' : 'none',
+          transition: 'opacity 0.3s ease',
+        }}
+        className="lg:hidden"
+      >
+        <ChevronUp size={22} style={{ color: '#fff' }} />
+      </button>
+
       {/* Bottom Fixed Bar - portal to body */}
       <FixedBar position="bottom" className="lg:hidden">
+        {/* Closed-hours banner */}
+        {(() => {
+          if (!hospital) return null;
+          const dayMap: Record<string, number> = { '일': 0, '월': 1, '화': 2, '수': 3, '목': 4, '금': 5, '토': 6 };
+          const now = new Date();
+          const todayIdx = now.getDay();
+          const todayHour = hospital.operatingHours.find(oh => dayMap[oh.day] === todayIdx);
+          if (!todayHour) return null;
+          if (todayHour.isClosed) {
+            // Find next open day
+            const nextOpen = hospital.operatingHours.find((oh, i) => {
+              const ohIdx = dayMap[oh.day];
+              return ohIdx > todayIdx && !oh.isClosed;
+            }) || hospital.operatingHours.find(oh => !oh.isClosed);
+            return (
+              <div style={{ backgroundColor: '#2B313D', padding: '8px 16px', textAlign: 'center', fontSize: 13, fontWeight: 500, color: '#fff' }}>
+                오늘은 휴진입니다{nextOpen ? ` · ${nextOpen.day}요일 ${nextOpen.startTime}에 운영해요` : ''}
+              </div>
+            );
+          }
+          const currentHour = now.getHours();
+          const currentMin = now.getMinutes();
+          const currentTime = currentHour * 60 + currentMin;
+          const [startH, startM] = (todayHour.startTime || '09:00').split(':').map(Number);
+          const [endH, endM] = (todayHour.endTime || '18:00').split(':').map(Number);
+          const startTime = startH * 60 + startM;
+          const endTime = endH * 60 + endM;
+          if (currentTime < startTime) {
+            return (
+              <div style={{ backgroundColor: '#2B313D', padding: '8px 16px', textAlign: 'center', fontSize: 13, fontWeight: 500, color: '#fff' }}>
+                아직 운영시간이 아니에요 · {todayHour.startTime}에 운영해요
+              </div>
+            );
+          }
+          if (currentTime > endTime) {
+            return (
+              <div style={{ backgroundColor: '#2B313D', padding: '8px 16px', textAlign: 'center', fontSize: 13, fontWeight: 500, color: '#fff' }}>
+                오늘 운영이 종료되었습니다
+              </div>
+            );
+          }
+          return null;
+        })()}
         <div className="bg-white px-2.5" style={{ borderTop: '1px solid #F2F3F5', paddingTop: 10, paddingBottom: 10 }}>
           <div className="flex items-center gap-2">
-            <button style={{ width: 44, height: 44, borderRadius: 10, border: '1px solid #C8CEDA' }} className="flex items-center justify-center">
+            <button
+              onClick={() => {
+                if (hospital?.phone) {
+                  window.location.href = `tel:${hospital.phone}`;
+                } else {
+                  showToast('전화번호 정보가 없습니다.');
+                }
+              }}
+              style={{ width: 48, height: 48, borderRadius: 10, border: '1px solid #C8CEDA' }} className="flex items-center justify-center btn-press">
               <Phone size={18} style={{ color: '#51535C' }} />
             </button>
-            <button style={{ width: 44, height: 44, borderRadius: 10, border: '1px solid #C8CEDA' }} className="flex items-center justify-center">
+            <button
+              onClick={() => showToast('1:1 상담 기능은 곧 오픈됩니다.')}
+              style={{ width: 48, height: 48, borderRadius: 10, border: '1px solid #C8CEDA' }} className="flex items-center justify-center btn-press">
               <MessageCircle size={18} style={{ color: '#51535C' }} />
             </button>
             <button
               onClick={() => router.push(`/booking?productId=${product.id}`)}
-              style={{ height: 44, borderRadius: 10, backgroundColor: '#8037FF', fontSize: 15, fontWeight: 600 }}
+              style={{ height: 48, borderRadius: 10, backgroundColor: '#8037FF', fontSize: 18, fontWeight: 600 }}
               className="flex-1 text-white btn-press"
             >
               예약하기

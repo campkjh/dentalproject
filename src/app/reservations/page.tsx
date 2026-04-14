@@ -130,7 +130,7 @@ export default function ReservationsPage() {
   };
 
   return (
-    <div className="pb-[86px] lg:pb-0 bg-gray-50 min-h-screen page-enter">
+    <div className="pb-[86px] lg:pb-0 bg-white min-h-screen page-enter">
       <TopBar title="예약내역" showBack={false} />
 
       {!isLoggedIn ? (
@@ -169,7 +169,7 @@ export default function ReservationsPage() {
           </div>
 
           {/* Sticky tabs with sliding indicator */}
-          <div className="sticky top-0 z-10 bg-gray-50 px-2.5 pt-3 pb-3 -mt-2">
+          <div className="sticky top-0 z-10 bg-white px-2.5 pt-3 pb-3 -mt-2">
             <div ref={tabsRef} className="relative flex gap-1.5 overflow-x-auto hide-scrollbar">
               {/* Animated indicator pill */}
               <span

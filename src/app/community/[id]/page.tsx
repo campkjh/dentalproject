@@ -367,7 +367,7 @@ export default function PostDetailPage() {
       </div>
 
       {/* Comment input - fixed at bottom */}
-      <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-white border-t border-gray-200 px-2.5 py-3 z-50">
+      <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] bg-white border-t border-gray-200 px-2.5 py-3 z-50">
         <div className="flex items-end gap-2">
           <div className="flex-1 relative">
             <textarea

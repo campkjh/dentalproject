@@ -42,7 +42,7 @@ function BottomNavInner() {
 
   return createPortal(
     <nav
-      style={{ position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)', zIndex: 9999, height: 82, width: '100%', maxWidth: 430 }}
+      style={{ position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)', zIndex: 9999, height: 82, width: '100%', maxWidth: 480 }}
       className="bg-white border-t border-gray-100 lg:hidden"
     >
       <div className="flex items-center justify-around h-full">
