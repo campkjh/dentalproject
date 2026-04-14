@@ -3,8 +3,9 @@
 import { useRouter } from 'next/navigation';
 import { useStore } from '@/store';
 import LoginRequired from '@/components/common/LoginRequired';
-import { ChevronRight, Camera, User } from 'lucide-react';
+import { ChevronRight, Camera } from 'lucide-react';
 import { IconHospital } from '@/components/icons/MyPageIcons';
+import Avatar from '@/components/common/Avatar';
 
 function MenuIcon({ name, size = 22 }: { name: string; size?: number }) {
   return (
@@ -124,9 +125,7 @@ export default function MyPage() {
       <div className="bg-white px-2.5 pt-12 pb-6 fade-in-up">
         <div className="flex items-center gap-4">
           <div className="relative">
-            <div className="w-16 h-16 bg-gradient-to-br from-purple-100 to-purple-200 rounded-full flex items-center justify-center">
-              <User size={28} className="text-[#7C3AED]" />
-            </div>
+            <Avatar src={user?.profileImage} gender={user?.gender} size={64} alt={user?.name || '프로필'} />
             <button className="absolute -bottom-0.5 -right-0.5 w-6 h-6 bg-white border border-gray-200 rounded-full flex items-center justify-center shadow-sm">
               <Camera size={12} className="text-gray-500" />
             </button>

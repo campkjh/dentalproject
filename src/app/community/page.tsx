@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import Link from 'next/link';
+import Avatar from '@/components/common/Avatar';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import {
   IconSearch,
@@ -241,41 +242,39 @@ export default function CommunityPage() {
               >
                 {tickerItems.map((post, i) => {
                   const cat = pickCategory(post);
-                  const emoji = categoryEmoji[cat] || '🦷';
                   const isCurrent = i === tickerIdx % liveQuestions.length;
                   return (
-                    <Link
+                    <div
                       key={`${post.id}-${i}`}
-                      href={`/community/${post.id}`}
-                      className="flex items-center gap-3 bg-white mx-2 my-2 rounded-xl px-3 py-3 border border-gray-100"
-                      style={{
-                        height: ITEM_HEIGHT - 16,
-                        transition: 'box-shadow 400ms ease',
-                        boxShadow: isCurrent
-                          ? '0 4px 14px rgba(16,24,40,0.06)'
-                          : '0 1px 2px rgba(16,24,40,0.03)',
-                      }}
+                      style={{ height: ITEM_HEIGHT, padding: '6px 4px', boxSizing: 'border-box' }}
                     >
-                      <div className="flex-shrink-0 w-10 h-10 rounded-full bg-[#EDE9FE] flex items-center justify-center text-[#7C3AED] text-base font-bold">
-                        {post.authorName?.charAt(0) || 'Q'}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5">
+                      <Link
+                        href={`/community/${post.id}`}
+                        className="flex items-center gap-3 bg-white h-full w-full px-3 border border-gray-100"
+                        style={{
+                          borderRadius: 12,
+                          transition: 'box-shadow 400ms ease',
+                          boxShadow: isCurrent
+                            ? '0 4px 14px rgba(16,24,40,0.06)'
+                            : '0 1px 2px rgba(16,24,40,0.03)',
+                        }}
+                      >
+                        <Avatar role="doctor" seed={post.authorId || post.id} size={40} className="flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
                           <p className="text-sm font-semibold text-gray-900 truncate">
                             {post.title}
                           </p>
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            <span className="text-[11px] text-gray-600 bg-gray-100 rounded px-1.5 py-0.5 flex-shrink-0 font-medium">
+                              {cat}
+                            </span>
+                            <p className="text-xs text-gray-500 truncate">
+                              {post.content}
+                            </p>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-1.5 mt-0.5">
-                          <span className="inline-flex items-center gap-0.5 text-[11px] text-gray-600 bg-gray-100 rounded px-1.5 py-0.5 flex-shrink-0">
-                            <span>{emoji}</span>
-                            <span>{cat}</span>
-                          </span>
-                          <p className="text-xs text-gray-500 truncate">
-                            {post.content}
-                          </p>
-                        </div>
-                      </div>
-                    </Link>
+                      </Link>
+                    </div>
                   );
                 })}
               </div>
@@ -421,11 +420,7 @@ export default function CommunityPage() {
                   {post.boardType === 'question' && (
                     <>
                       <div className="flex items-start gap-3">
-                        <div className="w-9 h-9 rounded-full bg-[#EDE9FE] flex items-center justify-center flex-shrink-0">
-                          <span className="text-xs font-bold text-[#7C3AED]">
-                            {post.authorName?.charAt(0) || 'Q'}
-                          </span>
-                        </div>
+                        <Avatar role="doctor" seed={post.authorId || post.id} size={36} className="flex-shrink-0" />
                         <div className="flex-1 min-w-0">
                           <p className="text-[13px] text-gray-500 mb-1">
                             {post.authorName || '익명'}
@@ -460,11 +455,7 @@ export default function CommunityPage() {
                   {post.boardType === 'free' && (
                     <>
                       <div className="flex items-start gap-3">
-                        <div className="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
-                          <span className="text-xs font-medium text-gray-500">
-                            {post.anonymousId?.slice(0, 2) || '??'}
-                          </span>
-                        </div>
+                        <Avatar seed={post.anonymousId || post.authorId || post.id} size={36} className="flex-shrink-0" />
                         <div className="flex-1 min-w-0">
                           <p className="text-[13px] text-gray-500 mb-1">
                             익명 {post.anonymousId}
@@ -487,11 +478,7 @@ export default function CommunityPage() {
                   {post.boardType === 'dental' && (
                     <>
                       <div className="flex items-start gap-3">
-                        <div className="w-9 h-9 rounded-full bg-[#EDE9FE] flex items-center justify-center flex-shrink-0">
-                          <span className="text-xs font-bold text-[#7C3AED]">
-                            {post.authorName?.charAt(0) || 'D'}
-                          </span>
-                        </div>
+                        <Avatar role="doctor" seed={post.authorId || post.id} size={36} className="flex-shrink-0" />
                         <div className="flex-1 min-w-0">
                           <p className="text-[13px] text-gray-500 mb-1">
                             {post.authorName}

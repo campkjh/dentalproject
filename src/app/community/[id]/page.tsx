@@ -1,5 +1,7 @@
 'use client';
 
+import Avatar from '@/components/common/Avatar';
+
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
@@ -177,13 +179,12 @@ export default function PostDetailPage() {
       <div className="px-2.5 pb-4">
         {/* Author info */}
         <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-full bg-[#EDE9FE] flex items-center justify-center flex-shrink-0">
-            <span className="text-sm font-bold text-[#7C3AED]">
-              {post.isAnonymous
-                ? '?'
-                : post.authorName?.charAt(0) || 'U'}
-            </span>
-          </div>
+          <Avatar
+            role={post.boardType === 'question' || post.boardType === 'dental' ? 'doctor' : 'user'}
+            seed={post.anonymousId || post.authorId || post.id}
+            size={40}
+            className="flex-shrink-0"
+          />
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
               <span className="text-sm font-bold text-gray-900">
@@ -302,13 +303,7 @@ export default function PostDetailPage() {
               <div key={comment.id} className="pb-4 border-b border-gray-100 last:border-0">
                 {/* Comment author */}
                 <div className="flex items-center gap-2.5 mb-2">
-                  <div className="w-8 h-8 rounded-full bg-[#EDE9FE] flex items-center justify-center flex-shrink-0">
-                    <span className="text-xs font-bold text-[#7C3AED]">
-                      {comment.isAnonymous
-                        ? '?'
-                        : comment.authorName?.charAt(0) || 'U'}
-                    </span>
-                  </div>
+                  <Avatar seed={comment.anonymousId || comment.authorId || comment.id} size={32} className="flex-shrink-0" />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5">
                       <span className="text-xs font-bold text-gray-900">
