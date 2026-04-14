@@ -50,7 +50,7 @@ export default function CommunityPage() {
   const liveQuestions = posts
     .filter((p) => p.boardType === 'question')
     .slice(0, 8);
-  const ITEM_HEIGHT = 72; // px per card incl. gap
+  const ITEM_HEIGHT = 92; // px per card incl. gap
   const DWELL_MS = 2400; // pause on each card
   const [tickerIdx, setTickerIdx] = useState(0);
   const [tickerAnim, setTickerAnim] = useState(true);
@@ -198,12 +198,9 @@ export default function CommunityPage() {
             </div>
 
             <div
-              className="relative rounded-xl bg-gray-50 overflow-hidden"
-              style={{ height: ITEM_HEIGHT }}
+              className="relative rounded-xl overflow-hidden"
+              style={{ height: ITEM_HEIGHT, backgroundColor: '#F7F8FA' }}
             >
-              {/* Gradient mask top/bottom */}
-              <div className="pointer-events-none absolute inset-x-0 top-0 h-3 bg-gradient-to-b from-gray-50 to-transparent z-10" />
-              <div className="pointer-events-none absolute inset-x-0 bottom-0 h-3 bg-gradient-to-t from-gray-50 to-transparent z-10" />
               <div
                 onTransitionEnd={handleTickerTransitionEnd}
                 style={{
@@ -221,12 +218,12 @@ export default function CommunityPage() {
                     <Link
                       key={`${post.id}-${i}`}
                       href={`/community/${post.id}`}
-                      className="flex items-center gap-3 bg-white mx-2 my-1.5 rounded-xl px-3 py-2.5 border border-gray-100"
+                      className="flex items-center gap-3 bg-white mx-2 my-2 rounded-xl px-3 py-3 border border-gray-100"
                       style={{
-                        height: ITEM_HEIGHT - 12,
-                        transition: 'box-shadow 400ms ease, transform 400ms cubic-bezier(0.22,1,0.36,1)',
+                        height: ITEM_HEIGHT - 16,
+                        transition: 'box-shadow 400ms ease',
                         boxShadow: isCurrent
-                          ? '0 4px 14px rgba(124,58,237,0.12)'
+                          ? '0 4px 14px rgba(16,24,40,0.06)'
                           : '0 1px 2px rgba(16,24,40,0.03)',
                       }}
                     >
