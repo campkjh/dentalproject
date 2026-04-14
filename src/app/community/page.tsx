@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import Link from 'next/link';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import {
@@ -17,6 +17,7 @@ import { Post } from '@/types';
 
 const boardTabs = ['질문게시판', '자유게시판', '치과게시판'];
 const sortOptions = ['최신순', '인기순', '댓글순'];
+const questionCategories = ['전체', '임플란트', '교정', '치아미백', '사랑니', '스케일링', '일반진료'];
 
 const boardTypeMap: Record<string, Post['boardType']> = {
   '질문게시판': 'question',
@@ -32,10 +33,38 @@ export default function CommunityPage() {
   const [showScrollTop, setShowScrollTop] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
+  // Question category sub-tabs (only shown when 질문게시판)
+  const [activeCategory, setActiveCategory] = useState('전체');
+  const [categoryDir, setCategoryDir] = useState<'left' | 'right'>('right');
+  const prevCategoryIdxRef = useRef(0);
+  const categoryTabsRef = useRef<HTMLDivElement>(null);
+  const categoryBtnRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const [categoryIndicator, setCategoryIndicator] = useState({ left: 0, width: 0 });
+
+  const changeCategory = (cat: string) => {
+    const nextIdx = questionCategories.indexOf(cat);
+    setCategoryDir(nextIdx >= prevCategoryIdxRef.current ? 'right' : 'left');
+    prevCategoryIdxRef.current = nextIdx;
+    setActiveCategory(cat);
+  };
+
+  const activeCategoryIdx = questionCategories.indexOf(activeCategory);
+
+  useLayoutEffect(() => {
+    const btn = categoryBtnRefs.current[activeCategoryIdx];
+    if (!btn) return;
+    setCategoryIndicator({ left: btn.offsetLeft, width: btn.offsetWidth });
+  }, [activeCategoryIdx, activeBoard]);
+
   const boardType = boardTypeMap[activeBoard];
   const filteredPosts = posts.filter((p) => p.boardType === boardType);
 
-  const sortedPosts = [...filteredPosts].sort((a, b) => {
+  const categoryFilteredPosts =
+    activeBoard === '질문게시판' && activeCategory !== '전체'
+      ? filteredPosts.filter((p) => p.tags?.includes(activeCategory))
+      : filteredPosts;
+
+  const sortedPosts = [...categoryFilteredPosts].sort((a, b) => {
     if (sortBy === '인기순') return b.viewCount - a.viewCount;
     if (sortBy === '댓글순') return b.commentCount - a.commentCount;
     return 0; // default: 최신순 (already in order)
@@ -198,8 +227,8 @@ export default function CommunityPage() {
             </div>
 
             <div
-              className="relative rounded-xl overflow-hidden"
-              style={{ height: ITEM_HEIGHT, backgroundColor: '#F7F8FA' }}
+              className="relative overflow-hidden"
+              style={{ height: ITEM_HEIGHT }}
             >
               <div
                 onTransitionEnd={handleTickerTransitionEnd}
@@ -316,8 +345,60 @@ export default function CommunityPage() {
           </div>
         </div>
 
+        {/* Question category sub-tabs */}
+        {activeBoard === '질문게시판' && (
+          <div className="bg-white px-2.5 pb-2 pt-0.5">
+            <div
+              ref={categoryTabsRef}
+              className="relative flex gap-2 overflow-x-auto hide-scrollbar"
+            >
+              <span
+                aria-hidden
+                className="absolute top-0 bottom-0 rounded-full bg-[#7C3AED] pointer-events-none"
+                style={{
+                  left: categoryIndicator.left,
+                  width: categoryIndicator.width,
+                  transition:
+                    'left 420ms cubic-bezier(0.22, 1, 0.36, 1), width 420ms cubic-bezier(0.22, 1, 0.36, 1)',
+                }}
+              />
+              {questionCategories.map((cat, i) => {
+                const isActive = activeCategory === cat;
+                return (
+                  <button
+                    key={cat}
+                    ref={(el) => {
+                      categoryBtnRefs.current[i] = el;
+                    }}
+                    onClick={() => changeCategory(cat)}
+                    className={`pill-tab relative z-10 px-3 py-1.5 rounded-full text-[13px] font-semibold whitespace-nowrap ${
+                      isActive ? 'text-white' : 'text-gray-500'
+                    }`}
+                    style={{
+                      transition: 'color 420ms cubic-bezier(0.22, 1, 0.36, 1)',
+                      border: `1px solid ${isActive ? 'transparent' : '#E5E7EB'}`,
+                      background: 'transparent',
+                    }}
+                  >
+                    {cat}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Post list */}
-        <div className="bg-white lg:bg-white lg:rounded-2xl lg:shadow-sm lg:p-6 stagger-children">
+        <div
+          key={`${activeBoard}-${activeCategory}`}
+          className={`bg-white lg:bg-white lg:rounded-2xl lg:shadow-sm lg:p-6 stagger-children ${
+            activeBoard === '질문게시판'
+              ? categoryDir === 'right'
+                ? 'tab-slide-right'
+                : 'tab-slide-left'
+              : ''
+          }`}
+        >
           {sortedPosts.length === 0 ? (
             <div className="flex items-center justify-center py-20">
               <p className="text-sm text-gray-400">게시글이 없습니다.</p>
