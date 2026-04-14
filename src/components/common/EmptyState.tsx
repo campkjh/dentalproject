@@ -1,10 +1,11 @@
-import { CalendarDays, MessageCircle, Heart, CreditCard } from 'lucide-react';
+import { CalendarDays, MessageCircle, Heart, CreditCard, Clock } from 'lucide-react';
 
 const icons = {
   calendar: CalendarDays,
   message: MessageCircle,
   heart: Heart,
   payment: CreditCard,
+  clock: Clock,
 };
 
 interface EmptyStateProps {
