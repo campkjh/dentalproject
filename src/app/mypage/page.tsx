@@ -3,24 +3,23 @@
 import { useRouter } from 'next/navigation';
 import { useStore } from '@/store';
 import LoginRequired from '@/components/common/LoginRequired';
+import { ChevronRight, Camera, User } from 'lucide-react';
 import {
-  User,
-  ChevronRight,
-  Ticket,
-  Coins,
-  CalendarDays,
-  Mail,
-  CreditCard,
-  Heart,
-  Star,
-  HelpCircle,
-  FileText,
-  Headphones,
-  Megaphone,
-  LogOut,
-  Hospital,
-  Camera,
-} from 'lucide-react';
+  IconProfile,
+  IconCalendar,
+  IconMail,
+  IconTicket,
+  IconCoin,
+  IconLogout,
+  IconCard,
+  IconHeart,
+  IconStar,
+  IconHelp,
+  IconDoc,
+  IconHeadset,
+  IconMegaphone,
+  IconHospital,
+} from '@/components/icons/MyPageIcons';
 
 interface MenuItem {
   label: string;
@@ -54,25 +53,25 @@ export default function MyPage() {
   };
 
   const myMenuItems: MenuItem[] = [
-    { label: '내 프로필', href: '/mypage/profile', icon: <User size={20} /> },
-    { label: '예약내역', href: '/reservations', icon: <CalendarDays size={20} /> },
-    { label: '쪽지함', href: '/notifications', icon: <Mail size={20} />, badge: 12 },
-    { label: '쿠폰함', href: '/mypage/coupons', icon: <Ticket size={20} /> },
-    { label: '내 포인트', href: '/mypage/points', icon: <Coins size={20} /> },
-    { label: '로그아웃', icon: <LogOut size={20} />, onClick: handleLogout },
+    { label: '내 프로필', href: '/mypage/profile', icon: <IconProfile size={26} /> },
+    { label: '예약내역', href: '/reservations', icon: <IconCalendar size={26} /> },
+    { label: '쪽지함', href: '/notifications', icon: <IconMail size={26} />, badge: 12 },
+    { label: '쿠폰함', href: '/mypage/coupons', icon: <IconTicket size={26} /> },
+    { label: '내 포인트', href: '/mypage/points', icon: <IconCoin size={26} /> },
+    { label: '로그아웃', icon: <IconLogout size={26} />, onClick: handleLogout },
   ];
 
   const customerMenuItems: MenuItem[] = [
-    { label: '결제내역', href: '/mypage/payments', icon: <CreditCard size={20} /> },
-    { label: '찜목록', href: '/wishlist', icon: <Heart size={20} /> },
-    { label: '내리뷰', href: '/mypage/reviews', icon: <Star size={20} /> },
+    { label: '결제내역', href: '/mypage/payments', icon: <IconCard size={26} /> },
+    { label: '찜목록', href: '/wishlist', icon: <IconHeart size={26} /> },
+    { label: '내리뷰', href: '/mypage/reviews', icon: <IconStar size={26} /> },
   ];
 
   const supportMenuItems: MenuItem[] = [
-    { label: '자주하는 질문', href: '/mypage/faq', icon: <HelpCircle size={20} /> },
-    { label: '모든약관', href: '/terms', icon: <FileText size={20} /> },
-    { label: '고객센터', icon: <Headphones size={20} />, onClick: handleCustomerCenter },
-    { label: '공지사항', href: '/mypage/announcements', icon: <Megaphone size={20} /> },
+    { label: '자주하는 질문', href: '/mypage/faq', icon: <IconHelp size={26} /> },
+    { label: '모든약관', href: '/terms', icon: <IconDoc size={26} /> },
+    { label: '고객센터', icon: <IconHeadset size={26} />, onClick: handleCustomerCenter },
+    { label: '공지사항', href: '/mypage/announcements', icon: <IconMegaphone size={26} /> },
   ];
 
   const renderMenuItem = (item: MenuItem) => (
@@ -88,7 +87,7 @@ export default function MyPage() {
       className="flex items-center justify-between w-full px-2.5 py-3.5 hover:bg-gray-50 transition-colors"
     >
       <div className="flex items-center gap-3">
-        <span className="text-gray-500">{item.icon}</span>
+        <span className="flex items-center justify-center w-7 h-7">{item.icon}</span>
         <span className="text-sm font-medium">{item.label}</span>
       </div>
       <div className="flex items-center gap-2">
@@ -189,7 +188,7 @@ export default function MyPage() {
           onClick={() => router.push('/hospital/register')}
           className="w-full py-3.5 bg-[#7C3AED] text-white rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-[#6D28D9] transition-colors"
         >
-          <Hospital size={18} />
+          <IconHospital size={22} />
           병원신청하기
         </button>
       </div>

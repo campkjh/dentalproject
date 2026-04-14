@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { Search, Pencil, ArrowUp, Eye, MessageCircle, ChevronDown, ChevronRight, Stethoscope } from 'lucide-react';
 import TopBar from '@/components/common/TopBar';
@@ -38,13 +38,37 @@ export default function CommunityPage() {
     .sort((a, b) => b.viewCount - a.viewCount)
     .slice(0, 5);
 
-  // Recent questions for live Q&A marquee
+  // Recent questions for live Q&A ticker (stop-and-go)
   const liveQuestions = posts
     .filter((p) => p.boardType === 'question')
     .slice(0, 8);
-  const marqueeItems = liveQuestions.length > 0
-    ? [...liveQuestions, ...liveQuestions]
+  const ITEM_HEIGHT = 72; // px per card incl. gap
+  const DWELL_MS = 2400; // pause on each card
+  const [tickerIdx, setTickerIdx] = useState(0);
+  const [tickerAnim, setTickerAnim] = useState(true);
+  const tickerItems = liveQuestions.length > 0
+    ? [...liveQuestions, liveQuestions[0]] // append first to allow seamless wrap
     : [];
+
+  useEffect(() => {
+    if (activeBoard !== '질문게시판' || liveQuestions.length === 0) return;
+    const id = setInterval(() => {
+      setTickerAnim(true);
+      setTickerIdx((i) => i + 1);
+    }, DWELL_MS);
+    return () => clearInterval(id);
+  }, [activeBoard, liveQuestions.length]);
+
+  const handleTickerTransitionEnd = () => {
+    if (tickerIdx >= liveQuestions.length) {
+      setTickerAnim(false);
+      setTickerIdx(0);
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => setTickerAnim(true));
+      });
+    }
+  };
+
   const categoryEmoji: Record<string, string> = {
     '임플란트': '🦷',
     '치아교정': '💠',
@@ -146,7 +170,7 @@ export default function CommunityPage() {
         )}
 
         {/* Live doctor Q&A - question board only */}
-        {activeBoard === '질문게시판' && marqueeItems.length > 0 && (
+        {activeBoard === '질문게시판' && tickerItems.length > 0 && (
           <div className="bg-white px-2.5 py-4 mb-2">
             <div className="flex items-center justify-between mb-1">
               <div className="flex items-center gap-1.5">
@@ -165,40 +189,77 @@ export default function CommunityPage() {
               <p className="text-[11px] text-gray-500">방금 올라온 질문 · 방금 전</p>
             </div>
 
-            <div className="marquee-vertical rounded-xl bg-gray-50 p-3" style={{ height: 176 }}>
-              <div className="marquee-vertical-track">
-                {marqueeItems.map((post, i) => {
+            <div
+              className="relative rounded-xl bg-gray-50 overflow-hidden"
+              style={{ height: ITEM_HEIGHT }}
+            >
+              {/* Gradient mask top/bottom */}
+              <div className="pointer-events-none absolute inset-x-0 top-0 h-3 bg-gradient-to-b from-gray-50 to-transparent z-10" />
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 h-3 bg-gradient-to-t from-gray-50 to-transparent z-10" />
+              <div
+                onTransitionEnd={handleTickerTransitionEnd}
+                style={{
+                  transform: `translateY(-${tickerIdx * ITEM_HEIGHT}px)`,
+                  transition: tickerAnim
+                    ? 'transform 620ms cubic-bezier(0.22, 1, 0.36, 1)'
+                    : 'none',
+                }}
+              >
+                {tickerItems.map((post, i) => {
                   const cat = pickCategory(post);
                   const emoji = categoryEmoji[cat] || '🦷';
+                  const isCurrent = i === tickerIdx % liveQuestions.length;
                   return (
                     <Link
                       key={`${post.id}-${i}`}
                       href={`/community/${post.id}`}
-                      className="block bg-white rounded-lg px-3 py-2.5 shadow-sm border border-gray-100"
+                      className="flex items-center gap-3 bg-white mx-2 my-1.5 rounded-xl px-3 py-2.5 border border-gray-100"
+                      style={{
+                        height: ITEM_HEIGHT - 12,
+                        transition: 'box-shadow 400ms ease, transform 400ms cubic-bezier(0.22,1,0.36,1)',
+                        boxShadow: isCurrent
+                          ? '0 4px 14px rgba(124,58,237,0.12)'
+                          : '0 1px 2px rgba(16,24,40,0.03)',
+                      }}
                     >
-                      <div className="flex items-start justify-between gap-2">
-                        <p className="text-[13px] font-semibold text-gray-900 line-clamp-1 flex-1">
-                          {post.title}
-                        </p>
-                        {i % 4 === 3 && (
-                          <span className="flex-shrink-0 text-[9px] text-gray-400 border border-gray-200 rounded px-1 py-px leading-none">
-                            AD
-                          </span>
-                        )}
+                      <div className="flex-shrink-0 w-9 h-9 rounded-full bg-[#EDE9FE] flex items-center justify-center text-[#7C3AED] text-sm font-bold">
+                        {post.authorName?.charAt(0) || 'Q'}
                       </div>
-                      <p className="text-[11px] text-gray-500 line-clamp-1 mt-0.5">
-                        {post.content}
-                      </p>
-                      <div className="mt-1.5">
-                        <span className="inline-flex items-center gap-0.5 text-[10px] text-gray-600 bg-gray-100 rounded px-1.5 py-0.5">
-                          <span>{emoji}</span>
-                          <span>{cat}</span>
-                        </span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <p className="text-[13px] font-semibold text-gray-900 truncate">
+                            {post.title}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <span className="inline-flex items-center gap-0.5 text-[10px] text-gray-600 bg-gray-100 rounded px-1.5 py-0.5 flex-shrink-0">
+                            <span>{emoji}</span>
+                            <span>{cat}</span>
+                          </span>
+                          <p className="text-[11px] text-gray-500 truncate">
+                            {post.content}
+                          </p>
+                        </div>
                       </div>
                     </Link>
                   );
                 })}
               </div>
+            </div>
+
+            {/* Progress dots */}
+            <div className="flex justify-center gap-1 mt-2.5">
+              {liveQuestions.map((_, i) => (
+                <span
+                  key={i}
+                  className="h-1 rounded-full transition-all duration-500"
+                  style={{
+                    width: i === tickerIdx % liveQuestions.length ? 14 : 4,
+                    backgroundColor:
+                      i === tickerIdx % liveQuestions.length ? '#7C3AED' : '#E5E7EB',
+                  }}
+                />
+              ))}
             </div>
 
             <Link
