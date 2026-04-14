@@ -1,8 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import TopBar from '@/components/common/TopBar';
-import TabBar from '@/components/common/TabBar';
 import { ChevronDown } from 'lucide-react';
 
 const tabs = ['이용문의', '결제문의', '서비스문의', '기타문의'];
@@ -65,35 +64,94 @@ const faqData: Record<string, { question: string; answer: string }[]> = {
 export default function FAQPage() {
   const [activeTab, setActiveTab] = useState('이용문의');
   const [openItems, setOpenItems] = useState<string[]>([]);
+  const [direction, setDirection] = useState<'left' | 'right'>('right');
+  const prevIdxRef = useRef(0);
+  const tabBtnRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const [indicator, setIndicator] = useState({ left: 0, width: 0 });
+
+  const activeIdx = tabs.indexOf(activeTab);
+
+  const changeTab = (t: string) => {
+    const nextIdx = tabs.indexOf(t);
+    setDirection(nextIdx >= prevIdxRef.current ? 'right' : 'left');
+    prevIdxRef.current = nextIdx;
+    setActiveTab(t);
+    setOpenItems([]);
+  };
+
+  useLayoutEffect(() => {
+    const btn = tabBtnRefs.current[activeIdx];
+    if (!btn) return;
+    setIndicator({ left: btn.offsetLeft, width: btn.offsetWidth });
+  }, [activeIdx]);
+
+  useEffect(() => {
+    const onResize = () => {
+      const btn = tabBtnRefs.current[activeIdx];
+      if (!btn) return;
+      setIndicator({ left: btn.offsetLeft, width: btn.offsetWidth });
+    };
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, [activeIdx]);
 
   const toggleItem = (question: string) => {
-    setOpenItems(prev =>
-      prev.includes(question)
-        ? prev.filter(q => q !== question)
-        : [...prev, question]
+    setOpenItems((prev) =>
+      prev.includes(question) ? prev.filter((q) => q !== question) : [...prev, question]
     );
   };
 
   const currentFaqs = faqData[activeTab] ?? [];
 
   return (
-    <div className="min-h-screen bg-white max-w-[480px] mx-auto">
+    <div className="min-h-screen bg-white max-w-[480px] mx-auto page-enter">
       <TopBar title="자주하는질문" />
 
-      {/* Tab Bar */}
-      <div className="px-2.5 py-3 overflow-x-auto">
-        <TabBar
-          tabs={tabs}
-          activeTab={activeTab}
-          onTabChange={(tab) => {
-            setActiveTab(tab);
-            setOpenItems([]);
-          }}
-        />
+      {/* Tabs with sliding pill indicator */}
+      <div className="px-2.5 pt-2 pb-3">
+        <div className="relative flex gap-1.5 overflow-x-auto hide-scrollbar">
+          <span
+            aria-hidden
+            className="absolute top-0 bottom-0 rounded-full bg-gray-900 pointer-events-none"
+            style={{
+              left: indicator.left,
+              width: indicator.width,
+              transition:
+                'left 420ms cubic-bezier(0.22, 1, 0.36, 1), width 420ms cubic-bezier(0.22, 1, 0.36, 1)',
+            }}
+          />
+          {tabs.map((t, i) => {
+            const isActive = activeTab === t;
+            return (
+              <button
+                key={t}
+                ref={(el) => {
+                  tabBtnRefs.current[i] = el;
+                }}
+                onClick={() => changeTab(t)}
+                className={`pill-tab relative z-10 px-3.5 py-1.5 rounded-full text-[13px] font-semibold whitespace-nowrap ${
+                  isActive ? 'text-white' : 'text-gray-500'
+                }`}
+                style={{
+                  transition: 'color 420ms cubic-bezier(0.22, 1, 0.36, 1)',
+                  border: `1px solid ${isActive ? 'transparent' : '#E5E7EB'}`,
+                  background: 'transparent',
+                }}
+              >
+                {t}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
-      {/* FAQ List */}
-      <div className="divide-y divide-gray-100">
+      {/* FAQ list with directional slide */}
+      <div
+        key={activeTab}
+        className={`divide-y divide-gray-100 ${
+          direction === 'right' ? 'tab-slide-right' : 'tab-slide-left'
+        }`}
+      >
         {currentFaqs.map((faq, index) => {
           const isOpen = openItems.includes(faq.question);
           return (
