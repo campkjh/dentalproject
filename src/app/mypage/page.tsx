@@ -6,7 +6,7 @@ import LoginRequired from '@/components/common/LoginRequired';
 import { ChevronRight, Camera, User } from 'lucide-react';
 import { IconHospital } from '@/components/icons/MyPageIcons';
 
-function MenuIcon({ name, size = 26 }: { name: string; size?: number }) {
+function MenuIcon({ name, size = 22 }: { name: string; size?: number }) {
   return (
     <img
       src={`/icons/mypage/${name}.svg`}
@@ -85,7 +85,12 @@ export default function MyPage() {
       className="flex items-center justify-between w-full px-2.5 py-3.5 hover:bg-gray-50 transition-colors"
     >
       <div className="flex items-center gap-3">
-        <span className="flex items-center justify-center w-7 h-7">{item.icon}</span>
+        <span
+          className="flex items-center justify-center w-9 h-9 bg-gray-100 flex-shrink-0"
+          style={{ borderRadius: 16 }}
+        >
+          {item.icon}
+        </span>
         <span className="text-sm font-medium">{item.label}</span>
       </div>
       <div className="flex items-center gap-2">
