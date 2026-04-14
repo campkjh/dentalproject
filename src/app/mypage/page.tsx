@@ -4,22 +4,19 @@ import { useRouter } from 'next/navigation';
 import { useStore } from '@/store';
 import LoginRequired from '@/components/common/LoginRequired';
 import { ChevronRight, Camera, User } from 'lucide-react';
-import {
-  IconProfile,
-  IconCalendar,
-  IconMail,
-  IconTicket,
-  IconCoin,
-  IconLogout,
-  IconCard,
-  IconHeart,
-  IconStar,
-  IconHelp,
-  IconDoc,
-  IconHeadset,
-  IconMegaphone,
-  IconHospital,
-} from '@/components/icons/MyPageIcons';
+import { IconHospital } from '@/components/icons/MyPageIcons';
+
+function MenuIcon({ name, size = 26 }: { name: string; size?: number }) {
+  return (
+    <img
+      src={`/icons/mypage/${name}.svg`}
+      alt=""
+      width={size}
+      height={size}
+      style={{ display: 'inline-block' }}
+    />
+  );
+}
 
 interface MenuItem {
   label: string;
@@ -53,25 +50,26 @@ export default function MyPage() {
   };
 
   const myMenuItems: MenuItem[] = [
-    { label: '내 프로필', href: '/mypage/profile', icon: <IconProfile size={26} /> },
-    { label: '예약내역', href: '/reservations', icon: <IconCalendar size={26} /> },
-    { label: '쪽지함', href: '/notifications', icon: <IconMail size={26} />, badge: 12 },
-    { label: '쿠폰함', href: '/mypage/coupons', icon: <IconTicket size={26} /> },
-    { label: '내 포인트', href: '/mypage/points', icon: <IconCoin size={26} /> },
-    { label: '로그아웃', icon: <IconLogout size={26} />, onClick: handleLogout },
+    { label: '프로필 설정', href: '/mypage/profile', icon: <MenuIcon name="profile" /> },
+    { label: '예약내역', href: '/reservations', icon: <MenuIcon name="reservations" /> },
+    { label: '쪽지함', href: '/notifications', icon: <MenuIcon name="messages" />, badge: 12 },
+    { label: '쿠폰함', href: '/mypage/coupons', icon: <MenuIcon name="coupons" /> },
+    { label: '내 포인트', href: '/mypage/points', icon: <MenuIcon name="points" /> },
+    { label: '알림 설정', href: '/mypage/notifications', icon: <MenuIcon name="notifications" /> },
+    { label: '로그아웃', icon: <MenuIcon name="logout" />, onClick: handleLogout },
   ];
 
   const customerMenuItems: MenuItem[] = [
-    { label: '결제내역', href: '/mypage/payments', icon: <IconCard size={26} /> },
-    { label: '찜목록', href: '/wishlist', icon: <IconHeart size={26} /> },
-    { label: '내리뷰', href: '/mypage/reviews', icon: <IconStar size={26} /> },
+    { label: '결제내역', href: '/mypage/payments', icon: <MenuIcon name="payments" /> },
+    { label: '찜목록', href: '/wishlist', icon: <MenuIcon name="wishlist" /> },
+    { label: '내리뷰', href: '/mypage/reviews', icon: <MenuIcon name="my-review" /> },
   ];
 
   const supportMenuItems: MenuItem[] = [
-    { label: '자주하는 질문', href: '/mypage/faq', icon: <IconHelp size={26} /> },
-    { label: '모든약관', href: '/terms', icon: <IconDoc size={26} /> },
-    { label: '고객센터', icon: <IconHeadset size={26} />, onClick: handleCustomerCenter },
-    { label: '공지사항', href: '/mypage/announcements', icon: <IconMegaphone size={26} /> },
+    { label: '자주하는 질문', href: '/mypage/faq', icon: <MenuIcon name="faq" /> },
+    { label: '약관 및 정책', href: '/terms', icon: <MenuIcon name="terms" /> },
+    { label: '고객센터', icon: <MenuIcon name="customer-service" />, onClick: handleCustomerCenter },
+    { label: '공지사항', href: '/mypage/announcements', icon: <MenuIcon name="announcements" /> },
   ];
 
   const renderMenuItem = (item: MenuItem) => (
