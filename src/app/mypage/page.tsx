@@ -42,6 +42,17 @@ export default function MyPage() {
     });
   };
 
+  const handleCustomerCenter = () => {
+    showModal(
+      '고객센터 연결',
+      '평일 09:00 ~ 18:00\n1588-0000 으로 연결됩니다.',
+      () => {
+        window.location.href = 'tel:1588-0000';
+        hideModal();
+      }
+    );
+  };
+
   const myMenuItems: MenuItem[] = [
     { label: '내 프로필', href: '/mypage/profile', icon: <User size={20} /> },
     { label: '예약내역', href: '/reservations', icon: <CalendarDays size={20} /> },
@@ -60,7 +71,7 @@ export default function MyPage() {
   const supportMenuItems: MenuItem[] = [
     { label: '자주하는 질문', href: '/mypage/faq', icon: <HelpCircle size={20} /> },
     { label: '모든약관', href: '/terms', icon: <FileText size={20} /> },
-    { label: '고객센터', href: '#', icon: <Headphones size={20} /> },
+    { label: '고객센터', icon: <Headphones size={20} />, onClick: handleCustomerCenter },
     { label: '공지사항', href: '/mypage/announcements', icon: <Megaphone size={20} /> },
   ];
 

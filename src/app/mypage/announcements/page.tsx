@@ -7,13 +7,14 @@ import { ChevronRight } from 'lucide-react';
 
 export default function AnnouncementsPage() {
   return (
-    <div className="min-h-screen bg-white max-w-[430px] mx-auto">
+    <div className="min-h-screen bg-white max-w-[480px] mx-auto">
       <TopBar title="공지사항" />
 
       <div className="divide-y divide-gray-100">
         {announcements.map((announcement) => (
-          <button
+          <Link
             key={announcement.id}
+            href={`/mypage/announcements/${announcement.id}`}
             className="w-full flex items-center justify-between px-2.5 py-4 hover:bg-gray-50 transition-colors text-left"
           >
             <div className="flex-1 min-w-0 pr-3">
@@ -23,7 +24,7 @@ export default function AnnouncementsPage() {
               <p className="text-xs text-gray-400">{announcement.date}</p>
             </div>
             <ChevronRight size={16} className="text-gray-300 flex-shrink-0" />
-          </button>
+          </Link>
         ))}
       </div>
 

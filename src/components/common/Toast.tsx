@@ -9,7 +9,7 @@ export default function Toast() {
   if (!toast) return null;
 
   return (
-    <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-[90] max-w-[400px] w-[calc(100%-32px)]">
+    <div className="fixed bottom-32 left-1/2 -translate-x-1/2 z-[10000] max-w-[400px] w-[calc(100%-32px)]">
       <div className="bg-gray-800 text-white px-4 py-3 rounded-xl flex items-center justify-between toast-enter">
         <span className="text-sm">{toast}</span>
         <button onClick={() => useStore.setState({ toast: null })}>
