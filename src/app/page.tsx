@@ -122,23 +122,9 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Categories */}
-        <div className="grid grid-cols-4 lg:grid-cols-8 gap-4 px-6 lg:max-w-7xl lg:mx-auto lg:px-6 mb-8 stagger-children">
-          {categories.map((cat) => (
-            <Link
-              key={cat.id}
-              href={`/search?category=${cat.id}`}
-              className="flex flex-col items-center gap-2 relative group"
-            >
-              <div className="w-14 h-14 rounded-full flex items-center justify-center bg-gray-50 group-hover:bg-[#EDE9FE] group-hover:ring-2 group-hover:ring-[#7C3AED] transition-all duration-200 p-2.5">
-                <img src={cat.icon} alt={cat.name} className="w-full h-full" />
-              </div>
-              <span className="text-xs text-gray-600 group-hover:text-[#7C3AED] group-hover:font-medium transition-colors">
-                {cat.name}
-              </span>
-            </Link>
-          ))}
-        </div>
+        {/* Categories — 5x2 pager (swipe horizontally) */}
+        <CategoryPager />
+
 
         {/* 치과 섹션 */}
         {dentalProducts.length > 0 && (
@@ -409,6 +395,77 @@ export default function HomePage() {
         <p>Copyright(c) 000. All right reserved.</p>
       </div>
 
+    </div>
+  );
+}
+
+function CategoryPager() {
+  const pageSize = 10; // 5 cols x 2 rows
+  const totalPages = Math.ceil(categories.length / pageSize);
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  const [activePage, setActivePage] = useState(0);
+
+  const handleScroll = () => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    const pageIndex = Math.round(el.scrollLeft / el.clientWidth);
+    setActivePage(pageIndex);
+  };
+
+  return (
+    <div className="mb-8 lg:max-w-7xl lg:mx-auto">
+      <div
+        ref={scrollerRef}
+        onScroll={handleScroll}
+        className="flex overflow-x-auto hide-scrollbar"
+        style={{
+          scrollSnapType: 'x mandatory',
+          WebkitOverflowScrolling: 'touch',
+        }}
+      >
+        {Array.from({ length: totalPages }).map((_, pageIdx) => {
+          const pageItems = categories.slice(pageIdx * pageSize, (pageIdx + 1) * pageSize);
+          return (
+            <div
+              key={pageIdx}
+              className="flex-shrink-0 w-full px-4 lg:px-6"
+              style={{ scrollSnapAlign: 'start' }}
+            >
+              <div className="grid grid-cols-5 gap-y-4 gap-x-2">
+                {pageItems.map((cat) => (
+                  <Link
+                    key={cat.id}
+                    href={`/search?category=${cat.id}`}
+                    className="flex flex-col items-center gap-1.5 card-press"
+                  >
+                    <div className="w-[52px] h-[52px] rounded-2xl bg-[#F4F5F7] flex items-center justify-center">
+                      <img src={cat.icon} alt={cat.name} className="w-9 h-9" />
+                    </div>
+                    <span className="text-[12px] text-gray-700 font-medium text-center leading-tight">
+                      {cat.name}
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {totalPages > 1 && (
+        <div className="flex justify-center gap-1 mt-3">
+          {Array.from({ length: totalPages }).map((_, i) => (
+            <span
+              key={i}
+              className="h-1 rounded-full transition-all duration-300"
+              style={{
+                width: i === activePage ? 16 : 4,
+                backgroundColor: i === activePage ? '#7C3AED' : '#E5E7EB',
+              }}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

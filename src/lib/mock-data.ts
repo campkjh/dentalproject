@@ -1,14 +1,20 @@
 import { Product, Hospital, Review, Reservation, Post, Comment, Notification, Coupon, PointHistory } from '@/types';
 
 export const categories = [
-  { id: 'dental', name: '치과', icon: '/icons/dental.svg', popular: true },
-  { id: 'hair', name: '모발', icon: '/icons/hair.svg', popular: false },
-  { id: 'eye', name: '안과', icon: '/icons/eye.svg', popular: false },
-  { id: 'ent', name: '이비인후과', icon: '/icons/ent.svg', popular: false },
-  { id: 'pediatric', name: '소아과', icon: '/icons/pediatric.svg', popular: false },
-  { id: 'urology', name: '비뇨/산부', icon: '/icons/urology.svg', popular: false },
-  { id: 'orthopedic', name: '정형외과', icon: '/icons/orthopedic.svg', popular: false },
-  { id: 'plastic', name: '성형외과', icon: '/icons/plastic.svg', popular: false },
+  { id: 'internal', name: '내과', icon: '/icons/categories/internal.svg', popular: true },
+  { id: 'pediatric', name: '소아과', icon: '/icons/categories/pediatric.svg', popular: true },
+  { id: 'obstetrics', name: '산부인과', icon: '/icons/categories/obstetrics.svg', popular: true },
+  { id: 'urology', name: '비뇨기과', icon: '/icons/categories/urology.svg', popular: false },
+  { id: 'dermatology', name: '피부과', icon: '/icons/categories/dermatology.svg', popular: true },
+  { id: 'plastic', name: '성형외과', icon: '/icons/categories/plastic.svg', popular: true },
+  { id: 'eye', name: '안과', icon: '/icons/categories/eye.svg', popular: true },
+  { id: 'ent', name: '이비인후과', icon: '/icons/categories/ent.svg', popular: false },
+  { id: 'orthopedic', name: '정형외과', icon: '/icons/categories/orthopedic.svg', popular: false },
+  { id: 'neurosurgery', name: '신경외과', icon: '/icons/categories/neurosurgery.svg', popular: false },
+  { id: 'psychiatry', name: '정신과', icon: '/icons/categories/psychiatry.svg', popular: false },
+  { id: 'korean-medicine', name: '한의학과', icon: '/icons/categories/korean-medicine.svg', popular: false },
+  { id: 'physical-therapy', name: '물리치료과', icon: '/icons/categories/physical-therapy.svg', popular: false },
+  { id: 'radiology', name: '영상·검사과', icon: '/icons/categories/radiology.svg', popular: false },
 ];
 
 export const dentalSubCategories = [
