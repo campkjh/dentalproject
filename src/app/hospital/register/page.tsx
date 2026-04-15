@@ -1188,12 +1188,18 @@ function SequentialAgreeFlow({
     });
   };
 
+  const [justChecked, setJustChecked] = useState(false);
+
   const handleAgree = () => {
-    if (!currentItem) return;
-    const next = [...signedIds, currentItem.id];
-    setSignedIds(next);
-    setStepIdx(stepIdx + 1);
-    resetScroll();
+    if (!currentItem || justChecked) return;
+    setJustChecked(true);
+    setTimeout(() => {
+      const next = [...signedIds, currentItem.id];
+      setSignedIds(next);
+      setStepIdx(stepIdx + 1);
+      setJustChecked(false);
+      resetScroll();
+    }, 550);
   };
 
   const handleSignatureComplete = (dataUrl: string | null) => {
@@ -1280,15 +1286,31 @@ function SequentialAgreeFlow({
             </button>
           ) : (
             <button
-              disabled={!reachedBottom}
+              disabled={!reachedBottom || justChecked}
               onClick={handleAgree}
-              className={`w-full py-3.5 rounded-xl text-base font-bold transition-colors ${
+              className={`agree-btn w-full py-3.5 rounded-xl text-base font-bold transition-colors ${
                 reachedBottom
-                  ? 'bg-[#7C3AED] text-white btn-press'
+                  ? 'bg-[#7C3AED] text-white'
                   : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-              }`}
+              } ${justChecked ? 'is-checked' : ''}`}
             >
-              동의합니다
+              <span className="agree-btn-inner">
+                <span className="agree-btn-check" aria-hidden>
+                  <svg viewBox="0 0 24 24" fill="none" width="18" height="18">
+                    <path
+                      d="M5 12l4.8 4.8L19 7.5"
+                      stroke="currentColor"
+                      strokeWidth="3"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </span>
+                <span className="agree-btn-label">
+                  <span className="agree-btn-label-pre">동의합니다</span>
+                  <span className="agree-btn-label-post">동의 완료</span>
+                </span>
+              </span>
             </button>
           )}
         </div>

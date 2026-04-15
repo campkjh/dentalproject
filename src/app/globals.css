@@ -298,6 +298,69 @@ body {
   to   { opacity: 1; transform: translateY(0); }
 }
 
+/* ===== Agree button: check icon + label gap collapse on check ===== */
+.agree-btn { position: relative; }
+.agree-btn-inner {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  transition: gap 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.agree-btn.is-checked .agree-btn-inner { gap: 6px; }
+
+.agree-btn-check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  opacity: 0;
+  transform: scale(0.6) translateX(4px);
+  transition:
+    opacity 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.agree-btn.is-checked .agree-btn-check {
+  opacity: 1;
+  transform: scale(1) translateX(0);
+}
+.agree-btn-check path {
+  stroke-dasharray: 26;
+  stroke-dashoffset: 26;
+  transition: stroke-dashoffset 0.38s cubic-bezier(0.22, 1, 0.36, 1) 0.1s;
+}
+.agree-btn.is-checked .agree-btn-check path { stroke-dashoffset: 0; }
+
+.agree-btn-label {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  overflow: hidden;
+}
+.agree-btn-label-pre,
+.agree-btn-label-post {
+  white-space: nowrap;
+  transition:
+    transform 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.agree-btn-label-post {
+  position: absolute;
+  inset: 0;
+  transform: translateY(120%);
+  opacity: 0;
+}
+.agree-btn.is-checked .agree-btn-label-pre {
+  transform: translateY(-120%);
+  opacity: 0;
+}
+.agree-btn.is-checked .agree-btn-label-post {
+  transform: translateY(0);
+  opacity: 1;
+}
+
 /* ===== Checkbox pop-in ===== */
 .check-pop {
   animation: checkPop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
