@@ -1142,6 +1142,52 @@ function AgreementSheet({
   );
 }
 
+// ===== Toss-style agree checkbox =====
+function AgreeCheckbox({
+  checked,
+  enabled,
+  onTap,
+}: {
+  checked: boolean;
+  enabled: boolean;
+  onTap: () => void;
+}) {
+  const [rippleKey, setRippleKey] = useState(0);
+
+  const handleClick = () => {
+    if (!enabled || checked) return;
+    setRippleKey((k) => k + 1);
+    onTap();
+  };
+
+  const baseBg = checked ? '#7C3AED' : enabled ? '#F4EFFF' : '#F3F4F6';
+  const textColor = checked ? '#fff' : enabled ? '#7C3AED' : '#A4ABBA';
+  const ringBg = checked ? '#fff' : enabled ? '#fff' : '#fff';
+  const ringBorder = checked ? 'transparent' : enabled ? '#C4B5FD' : '#E5E7EB';
+
+  return (
+    <button
+      onClick={handleClick}
+      disabled={!enabled || checked}
+      className="agree-check-btn"
+      style={{ backgroundColor: baseBg, color: textColor }}
+    >
+      <span
+        className={`agree-check-ring ${checked ? 'is-checked' : ''}`}
+        style={{
+          backgroundColor: ringBg,
+          border: `2px solid ${ringBorder}`,
+          color: '#7C3AED',
+        }}
+      >
+        {checked && <Check size={14} strokeWidth={3} className="agree-check-icon" color="#7C3AED" />}
+        {checked && <span key={rippleKey} className="agree-check-ripple fire" />}
+      </span>
+      {checked ? '동의 완료' : '위 약관에 동의합니다'}
+    </button>
+  );
+}
+
 // ===== Sequential agree flow with signature =====
 function SequentialAgreeFlow({
   items,
@@ -1157,6 +1203,7 @@ function SequentialAgreeFlow({
   const totalSteps = items.length + 1; // +1 for signature step
   const [stepIdx, setStepIdx] = useState(0);
   const [reachedBottom, setReachedBottom] = useState(false);
+  const [checked, setChecked] = useState(false);
   const [signedIds, setSignedIds] = useState<string[]>([]);
   const [sigUrl, setSigUrl] = useState<string | null>(existingSignature);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -1174,26 +1221,39 @@ function SequentialAgreeFlow({
   const currentNumber = stepIdx + 1;
   const progressPct = (currentNumber / totalSteps) * 100;
 
-  const handleScroll = () => {
+  const checkScrollable = () => {
     const el = scrollRef.current;
     if (!el) return;
     const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 12;
-    if (atBottom && !reachedBottom) setReachedBottom(true);
+    const notScrollable = el.scrollHeight <= el.clientHeight + 12;
+    if ((atBottom || notScrollable) && !reachedBottom) setReachedBottom(true);
   };
 
-  const resetScroll = () => {
+  // Reset and re-evaluate scrollability when step changes
+  useEffect(() => {
+    if (isSignatureStep) return;
+    setChecked(false);
     setReachedBottom(false);
-    requestAnimationFrame(() => {
-      scrollRef.current?.scrollTo({ top: 0 });
-    });
-  };
+    const el = scrollRef.current;
+    if (el) el.scrollTop = 0;
+    // Wait for content to render, then measure
+    const t = setTimeout(() => {
+      const el = scrollRef.current;
+      if (!el) return;
+      const notScrollable = el.scrollHeight <= el.clientHeight + 12;
+      if (notScrollable) setReachedBottom(true);
+    }, 60);
+    return () => clearTimeout(t);
+  }, [stepIdx, isSignatureStep]);
 
-  const handleAgree = () => {
-    if (!currentItem) return;
-    const next = [...signedIds, currentItem.id];
-    setSignedIds(next);
-    setStepIdx(stepIdx + 1);
-    resetScroll();
+  const handleAgreeTap = () => {
+    if (!currentItem || !reachedBottom || checked) return;
+    setChecked(true);
+    // Visual hold, then advance
+    setTimeout(() => {
+      setSignedIds((prev) => [...prev, currentItem.id]);
+      setStepIdx((idx) => idx + 1);
+    }, 520);
   };
 
   const handleSignatureComplete = (dataUrl: string | null) => {
@@ -1243,7 +1303,7 @@ function SequentialAgreeFlow({
         ) : (
           <div
             ref={scrollRef}
-            onScroll={handleScroll}
+            onScroll={checkScrollable}
             className="flex-1 overflow-y-auto px-5 py-4"
           >
             <h4 className="text-[15px] font-bold text-gray-900 mb-3">
@@ -1260,7 +1320,7 @@ function SequentialAgreeFlow({
         )}
 
         {/* Footer */}
-        <div className="px-5 py-3.5 border-t border-gray-100 bg-white">
+        <div className="px-5 py-4 border-t border-gray-100 bg-white">
           {!isSignatureStep && !reachedBottom && (
             <p className="text-[11px] text-gray-400 text-center mb-2">
               아래까지 스크롤해서 약관을 모두 확인해주세요
@@ -1279,17 +1339,11 @@ function SequentialAgreeFlow({
               제출하고 완료하기
             </button>
           ) : (
-            <button
-              disabled={!reachedBottom}
-              onClick={handleAgree}
-              className={`w-full py-3.5 rounded-xl text-base font-bold transition-colors ${
-                reachedBottom
-                  ? 'bg-[#7C3AED] text-white btn-press'
-                  : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-              }`}
-            >
-              동의합니다
-            </button>
+            <AgreeCheckbox
+              checked={checked}
+              enabled={reachedBottom}
+              onTap={handleAgreeTap}
+            />
           )}
         </div>
       </div>
