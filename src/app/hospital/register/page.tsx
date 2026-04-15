@@ -16,14 +16,8 @@ import { useStore } from '@/store';
 
 const TOTAL_STEPS = 8;
 
-const specialties = [
-  { id: 'dental', name: '치과', icon: '🦷' },
-  { id: 'derma', name: '피부과', icon: '✨' },
-  { id: 'plastic', name: '성형외과', icon: '💎' },
-  { id: 'eye', name: '안과', icon: '👁' },
-  { id: 'uro-ob', name: '비뇨/산부', icon: '🏥' },
-  { id: 'health', name: '건강/심리', icon: '💚' },
-];
+import { categories } from '@/lib/mock-data';
+const specialties = categories;
 
 const dentalTreatments = [
   '임플란트',
@@ -198,20 +192,22 @@ export default function HospitalRegisterPage() {
                 해당하는 과를 선택해주세요.
               </p>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-2.5">
               {specialties.map((s) => (
                 <button
                   key={s.id}
                   onClick={() => setSelectedSpecialty(s.id)}
-                  className={`flex items-center gap-3 p-4 rounded-xl border transition-colors ${
+                  className={`flex flex-col items-center gap-2 py-4 px-2 rounded-xl border transition-colors card-press ${
                     selectedSpecialty === s.id
                       ? 'border-[#7C3AED] bg-[#EDE9FE]/30'
                       : 'border-gray-200'
                   }`}
                 >
-                  <span className="text-2xl">{s.icon}</span>
+                  <div className="w-11 h-11 rounded-xl bg-[#F4F5F7] flex items-center justify-center">
+                    <img src={s.icon} alt={s.name} className="w-8 h-8" />
+                  </div>
                   <span
-                    className={`font-medium text-sm ${
+                    className={`font-medium text-[12px] text-center leading-tight ${
                       selectedSpecialty === s.id
                         ? 'text-[#7C3AED]'
                         : 'text-gray-700'
