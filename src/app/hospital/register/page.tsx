@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Check,
@@ -10,6 +10,7 @@ import {
   Plane,
   Search,
   Upload,
+  X,
 } from 'lucide-react';
 import TopBar from '@/components/common/TopBar';
 import { useStore } from '@/store';
@@ -39,12 +40,210 @@ const treatmentsBySpecialty: Record<string, string[]> = {
 
 const defaultTreatments = treatmentsBySpecialty['dental'];
 
-const agreementItems = [
+interface AgreementItem {
+  id: string;
+  label: string;
+  required?: boolean;
+  isAll?: boolean;
+  body?: string;
+}
+
+const agreementItems: AgreementItem[] = [
   { id: 'all', label: '모두 동의합니다.', isAll: true },
-  { id: 'terms', label: '(필수) 서비스 이용약관', required: true },
-  { id: 'privacy', label: '(필수) 개인정보 수집·이용 동의', required: true },
-  { id: 'medical', label: '(필수) 의료정보 제공 동의', required: true },
-  { id: 'marketing', label: '(선택) 마케팅 수신 동의', required: false },
+  {
+    id: 'terms',
+    label: '(필수) 서비스 이용약관',
+    required: true,
+    body: `제1조 (목적)
+본 약관은 키닥터(이하 "회사")가 제공하는 의료 정보 연결 플랫폼 서비스(이하 "서비스") 이용과 관련하여 회사와 회원 간의 권리, 의무, 책임사항 및 이용조건을 규정함을 목적으로 합니다.
+
+제2조 (용어의 정의)
+① "회원"이란 본 약관에 동의하고 회사와 서비스 이용계약을 체결한 자를 말합니다.
+② "병원 회원"이란 의료법에 따라 개설된 의료기관으로서 서비스를 이용하기 위해 회사에 입점 신청을 하고 승인된 회원을 말합니다.
+③ "서비스"란 회사가 의료기관과 일반 이용자를 중개·연결하고, 의료 상품 정보 제공, 예약 대행, 리뷰 등을 제공하는 플랫폼 전반을 의미합니다.
+
+제3조 (약관의 효력 및 변경)
+① 본 약관은 서비스 화면에 게시하거나 기타의 방법으로 회원에게 공지함으로써 효력이 발생합니다.
+② 회사는 관련 법령을 위배하지 않는 범위에서 본 약관을 변경할 수 있으며, 변경 시 변경 사유 및 적용 일자를 명시하여 최소 7일 전(회원에게 불리하거나 중대한 사항은 30일 전)부터 공지합니다.
+
+제4조 (회원 의무)
+① 회원은 타인의 개인정보 및 계정을 도용하여서는 안 됩니다.
+② 회원은 서비스를 통해 제공받은 의료 정보가 진단·처방을 대체할 수 없음을 이해하고, 최종 의료 판단은 의료기관의 진료를 통해 결정되어야 함을 동의합니다.
+③ 회원이 작성하는 리뷰·게시물은 진실성·정확성을 갖추어야 하며, 허위·과장 정보 게시 시 삭제 및 이용 제한 조치가 이루어질 수 있습니다.
+
+제5조 (서비스의 중단)
+회사는 정기 점검, 천재지변, 통신장애 등 불가항력적인 사유가 발생한 경우 서비스 제공을 일시 중단할 수 있으며, 사전 공지합니다.
+
+제6조 (면책)
+회사는 의료 행위의 주체가 아니며, 의료기관이 제공하는 진료 결과, 부작용, 합병증 등에 대해 법적 책임을 지지 않습니다. 회원과 의료기관 간에 발생하는 분쟁은 당사자 간에 해결함을 원칙으로 합니다.
+
+제7조 (관할 및 준거법)
+본 약관과 관련한 분쟁은 대한민국 법을 준거법으로 하며, 서울중앙지방법원을 제1심 관할 법원으로 합니다.
+
+부칙
+본 약관은 2026년 1월 1일부터 시행합니다.`,
+  },
+  {
+    id: 'privacy',
+    label: '(필수) 개인정보 수집·이용 동의',
+    required: true,
+    body: `「개인정보 보호법」 제15조, 제22조에 따라 이용자의 개인정보를 다음과 같이 수집·이용하는 데 동의를 받습니다.
+
+1. 수집 항목 (필수)
+   - 회원 가입 시: 이름, 휴대전화번호, 생년월일, 성별, 로그인 식별정보(카카오/Apple ID)
+   - 서비스 이용 시: 예약/결제 내역, 진료 상품 조회 이력, 기기정보(OS·IP 주소·광고식별자)
+   - 의료기관 회원: 의료기관 명칭, 대표자명, 사업자등록번호, 의료기관 개설허가번호,
+     담당자 연락처, 진료과목, 운영시간
+
+2. 수집 목적
+   - 회원 식별 및 본인 확인, 부정 이용 방지
+   - 의료 상품 예약·결제·알림, 고객 문의 응대
+   - 서비스 이용 통계 분석 및 맞춤형 콘텐츠 제공
+   - 법령상 의무 이행 (전자상거래, 세무, 분쟁 조정 등)
+
+3. 보유 및 이용 기간
+   - 회원 탈퇴 시까지 (단, 관련 법령에 따른 보존 의무가 있는 경우 해당 기간까지 보관)
+     · 전자상거래법: 계약·청약철회 등의 기록 5년, 소비자 불만·분쟁처리 기록 3년
+     · 전자금융거래법: 전자금융 거래기록 5년
+     · 통신비밀보호법: 로그 기록 3개월
+
+4. 동의 거부권 및 거부 시 불이익
+   이용자는 개인정보 수집·이용 동의를 거부할 권리가 있습니다. 다만 필수 항목에 대한
+   동의를 거부하시는 경우 회원 가입 및 예약·결제 등 핵심 서비스 이용이 제한됩니다.`,
+  },
+  {
+    id: 'sensitive',
+    label: '(필수) 민감정보(건강·의료정보) 수집·이용 동의',
+    required: true,
+    body: `「개인정보 보호법」 제23조 및 시행령 제18조에 따라 다음과 같이 민감정보를 수집·이용합니다. 건강정보는 민감정보에 해당하므로 별도 동의가 요구됩니다.
+
+1. 수집 항목
+   - 진료 희망 과목, 증상·치료 이력, 수술/시술 이력, 알레르기·복용 약물
+   - 시술 전·후 사진(리뷰 작성 시 이용자 선택에 의함)
+   - 예약·상담 과정에서 이용자가 제공하는 건강 관련 정보
+
+2. 수집·이용 목적
+   - 의료기관과의 상담·예약 매칭 및 진료 준비
+   - 시술 후기·리뷰 게시를 위한 콘텐츠 관리
+   - 의료 사고·분쟁 시 사실관계 확인
+
+3. 보유 및 이용 기간
+   회원 탈퇴 시 또는 수집·이용 목적 달성 시 즉시 파기합니다.
+   단, 의료법 제22조에 따라 진료기록부가 필요한 경우 해당 의료기관에서 10년간 보관됩니다.
+
+4. 동의 거부권 및 거부 시 불이익
+   민감정보 수집에 동의하지 않을 권리가 있습니다. 거부 시 상담·예약 서비스 이용이
+   제한될 수 있습니다.`,
+  },
+  {
+    id: 'third-party',
+    label: '(필수) 개인정보 제3자 제공 동의',
+    required: true,
+    body: `「개인정보 보호법」 제17조에 따라 이용자의 개인정보를 다음과 같이 제3자에게 제공합니다.
+
+제공받는 자 및 제공 항목
+1. 예약/상담 요청한 의료기관
+   - 항목: 이름, 휴대전화번호, 생년월일(선택), 예약 일시, 진료 요청 사항
+   - 목적: 진료 예약 접수, 상담 회신, 방문 안내
+   - 보유 기간: 제공 후 해당 의료기관의 진료기록부 보관 기간 (의료법 제22조, 최대 10년)
+
+2. 결제대행사 (PG사)
+   - 항목: 결제 정보(카드 번호 일부·승인번호·결제 수단)
+   - 목적: 결제 승인, 환불 처리, 부정거래 방지
+   - 보유 기간: 전자금융거래법에 따라 5년
+
+3. 본인확인기관 및 통신사
+   - 항목: 휴대전화번호, CI/DI
+   - 목적: 본인 확인 및 연령 인증
+   - 보유 기간: 본인확인 완료 후 즉시 파기
+
+이용자는 제3자 제공에 대한 동의를 거부할 권리가 있으며, 거부 시 예약·결제 관련 핵심
+서비스 이용이 제한됩니다.`,
+  },
+  {
+    id: 'location',
+    label: '(필수) 위치기반서비스 이용약관',
+    required: true,
+    body: `「위치정보의 보호 및 이용 등에 관한 법률」 제18조 및 제19조에 따라 개인위치정보를 다음과 같이 수집·이용합니다.
+
+1. 수집 항목
+   - 모바일 기기의 GPS/네트워크 기반 위치정보
+   - IP 주소를 통한 행정구역 단위 추정 위치
+
+2. 이용 목적
+   - 주변 의료기관 검색, 거리순 정렬, 길찾기
+   - 지역 기반 맞춤 정보(인기 병원, 이벤트 등) 제공
+
+3. 보유 기간
+   위치정보는 서비스 제공 즉시 처리·폐기되며, 개인위치정보의 저장·이용 기록은
+   6개월간 보관합니다 (위치정보법 제16조).
+
+4. 이용자 권리
+   이용자는 언제든지 기기 설정을 통해 위치 권한을 철회할 수 있습니다. 위치 권한을
+   거부할 경우 주변 병원 검색 등 일부 기능이 제한될 수 있습니다.`,
+  },
+  {
+    id: 'age14',
+    label: '(필수) 만 14세 이상 확인',
+    required: true,
+    body: `「정보통신망법」 및 「개인정보 보호법」에 따라 만 14세 미만 아동의 개인정보는 법정대리인의 동의 없이는 수집·이용할 수 없습니다.
+
+1. 서비스 이용을 위해서는 이용자가 만 14세 이상임을 확인합니다.
+2. 만 14세 미만의 아동이 보호자 동의 없이 가입한 사실이 확인되는 경우, 회사는 해당
+   회원의 개인정보를 즉시 파기하고 계정을 정지합니다.
+3. 보호자(법정대리인)의 경우 자녀를 대신하여 진료 예약을 진행하실 수 있으며, 이 경우
+   본인의 계정으로 예약을 진행해 주시기 바랍니다.`,
+  },
+  {
+    id: 'medical',
+    label: '(필수) 의료정보 제공 및 이용 동의',
+    required: true,
+    body: `본 동의는 「의료법」 제56조(의료광고의 금지 등) 및 보건복지부 「의료광고 사전심의 운영 지침」에 따라 이용자에게 의료 정보를 전달하기 위한 목적에 한정됩니다.
+
+1. 제공되는 정보의 성격
+   - 회사가 제공하는 의료 상품·시술 정보는 참고용이며, 의사의 진단·처방을 대체하지 않습니다.
+   - 시술 효과·부작용은 개인에 따라 차이가 있을 수 있으며, 동일한 결과를 보장하지 않습니다.
+   - 가격 정보는 의료기관이 제공한 기준가이며, 실제 진료 범위·재료에 따라 달라질 수 있습니다.
+
+2. 비급여 진료비용 표시
+   회사는 「의료법」 제45조 및 「비급여 진료비용 고지 지침」에 따라 의료기관이 등록한
+   비급여 항목의 가격 정보를 표시합니다. 최종 금액은 내원 시 의료진과 상담 후 확정됩니다.
+
+3. 의료 광고 심의
+   회사에 게시되는 의료광고는 의료법 제57조에 따라 대한의사협회·대한치과의사협회 등
+   해당 의료인 단체의 사전 심의를 받은 콘텐츠를 기준으로 하며, 심의번호를 표기합니다.
+
+4. 금지 사항
+   이용자는 다음 행위를 하여서는 안 됩니다.
+   ① 허위·과장 리뷰 작성, 유료 리뷰 게시
+   ② 환자 유인·알선 등 의료법 제27조 위반 행위
+   ③ 의료기관의 치료효과 보장 주장 및 타 의료기관 폄훼
+
+본 사항은 관련 법령 개정 시 함께 변경될 수 있습니다.`,
+  },
+  {
+    id: 'marketing',
+    label: '(선택) 마케팅 정보 수신 동의',
+    required: false,
+    body: `「정보통신망법」 제50조에 따라 영리 목적의 광고성 정보 전송에 대해 사전 동의를 받습니다.
+
+1. 수신 채널
+   앱 푸시 알림, SMS/LMS, 카카오 알림톡, 이메일
+
+2. 전송 내용
+   - 신규 병원 입점, 이벤트·할인 쿠폰 안내
+   - 내 관심 시술의 프로모션·신규 상품 소개
+   - 회원 혜택(포인트 적립, 등급 업그레이드) 공지
+
+3. 보유 기간
+   동의 철회 시까지 (수신 거부 시 즉시 중단)
+
+4. 동의 철회
+   이용자는 마이페이지 > 알림 설정에서 언제든지 동의를 철회할 수 있으며, 수신 거부는
+   서비스 이용에 어떠한 불이익도 주지 않습니다.
+
+본 동의는 선택 사항이며, 동의하지 않아도 핵심 서비스 이용에는 영향이 없습니다.`,
+  },
 ];
 
 export default function HospitalRegisterPage() {
@@ -61,6 +260,7 @@ export default function HospitalRegisterPage() {
   );
   const [hospitalSearch, setHospitalSearch] = useState('');
   const [agreements, setAgreements] = useState<Set<string>>(new Set());
+  const [viewingAgreement, setViewingAgreement] = useState<AgreementItem | null>(null);
   const [hospitalInfo, setHospitalInfo] = useState({
     name: '',
     ownerName: '',
@@ -393,45 +593,46 @@ export default function HospitalRegisterPage() {
               </p>
             </div>
             <div className="space-y-1">
-              {agreementItems.map((item, idx) => (
-                <div key={item.id}>
-                  {idx === 1 && (
-                    <div className="h-px bg-gray-100 my-2" />
-                  )}
-                  <button
-                    onClick={() => toggleAgreement(item.id)}
-                    className="w-full flex items-center gap-3 py-3 text-left"
-                  >
-                    <div
-                      className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${
-                        item.isAll
-                          ? agreements.size ===
-                            agreementItems.filter((a) => !a.isAll).length
-                            ? 'bg-[#7C3AED]'
-                            : 'border-2 border-gray-300'
-                          : agreements.has(item.id)
-                            ? 'bg-[#7C3AED]'
-                            : 'border-2 border-gray-300'
-                      }`}
-                    >
-                      <Check size={12} className="text-white" />
+              {agreementItems.map((item, idx) => {
+                const nonAllItems = agreementItems.filter((a) => !a.isAll);
+                const allChecked = nonAllItems.every((a) => agreements.has(a.id));
+                const isChecked = item.isAll ? allChecked : agreements.has(item.id);
+                return (
+                  <div key={item.id}>
+                    {idx === 1 && <div className="h-px bg-gray-100 my-2" />}
+                    <div className="w-full flex items-center gap-3 py-3">
+                      <button
+                        onClick={() => toggleAgreement(item.id)}
+                        className="flex items-center gap-3 flex-1 min-w-0 text-left"
+                      >
+                        <div
+                          className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${
+                            isChecked ? 'bg-[#7C3AED]' : 'border-2 border-gray-300'
+                          }`}
+                        >
+                          <Check size={12} className="text-white" />
+                        </div>
+                        <span
+                          className={`text-sm ${
+                            item.isAll ? 'font-bold text-gray-900' : 'text-gray-700'
+                          }`}
+                        >
+                          {item.label}
+                        </span>
+                      </button>
+                      {!item.isAll && item.body && (
+                        <button
+                          onClick={() => setViewingAgreement(item)}
+                          className="flex-shrink-0 p-1 -m-1"
+                          aria-label="약관 전문 보기"
+                        >
+                          <ChevronRight size={16} className="text-gray-400" />
+                        </button>
+                      )}
                     </div>
-                    <span
-                      className={`text-sm ${
-                        item.isAll ? 'font-bold text-gray-900' : 'text-gray-700'
-                      }`}
-                    >
-                      {item.label}
-                    </span>
-                    {!item.isAll && (
-                      <ChevronRight
-                        size={16}
-                        className="text-gray-300 ml-auto flex-shrink-0"
-                      />
-                    )}
-                  </button>
-                </div>
-              ))}
+                  </div>
+                );
+              })}
             </div>
           </div>
         );
@@ -761,6 +962,73 @@ export default function HospitalRegisterPage() {
         >
           {step === TOTAL_STEPS ? '완료' : '다음'}
         </button>
+      </div>
+
+      {/* Agreement terms bottom sheet */}
+      {viewingAgreement && (
+        <AgreementSheet
+          item={viewingAgreement}
+          onClose={() => setViewingAgreement(null)}
+          onAgree={() => {
+            setAgreements((prev) => new Set(prev).add(viewingAgreement.id));
+            setViewingAgreement(null);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+function AgreementSheet({
+  item,
+  onClose,
+  onAgree,
+}: {
+  item: AgreementItem;
+  onClose: () => void;
+  onAgree: () => void;
+}) {
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, []);
+
+  return (
+    <div
+      className="fixed inset-0 z-[100] bg-black/40 modal-overlay-enter"
+      onClick={onClose}
+    >
+      <div
+        className="absolute bottom-0 left-0 right-0 bg-white rounded-t-2xl max-h-[85vh] flex flex-col modal-content-enter lg:bottom-auto lg:top-1/2 lg:left-1/2 lg:-translate-x-1/2 lg:-translate-y-1/2 lg:max-w-lg lg:rounded-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+          <h3 className="text-[16px] font-bold text-gray-900">{item.label.replace(/^\(필수\)\s*|^\(선택\)\s*/, '')}</h3>
+          <button onClick={onClose}>
+            <X size={20} className="text-gray-400" />
+          </button>
+        </div>
+
+        {/* Scrollable body */}
+        <div className="flex-1 overflow-y-auto px-5 py-4">
+          <p className="text-[13px] leading-relaxed text-gray-700 whitespace-pre-line">
+            {item.body}
+          </p>
+        </div>
+
+        {/* Footer button */}
+        <div className="px-5 py-4 border-t border-gray-100">
+          <button
+            onClick={onAgree}
+            className="w-full py-3.5 bg-[#7C3AED] text-white rounded-xl text-base font-bold btn-press"
+          >
+            {item.required ? '동의하고 계속하기' : '동의합니다'}
+          </button>
+        </div>
       </div>
     </div>
   );
