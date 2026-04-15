@@ -1142,7 +1142,18 @@ function AgreementSheet({
   );
 }
 
-// ===== Toss-style agree checkbox =====
+// ===== Toss-style agree checkbox (premium) =====
+const PARTICLES = [
+  { x: 36, y: -30 },
+  { x: -36, y: -30 },
+  { x: 48, y: 0 },
+  { x: -48, y: 0 },
+  { x: 36, y: 30 },
+  { x: -36, y: 30 },
+  { x: 0, y: -42 },
+  { x: 0, y: 42 },
+];
+
 function AgreeCheckbox({
   checked,
   enabled,
@@ -1152,38 +1163,44 @@ function AgreeCheckbox({
   enabled: boolean;
   onTap: () => void;
 }) {
-  const [rippleKey, setRippleKey] = useState(0);
-
   const handleClick = () => {
     if (!enabled || checked) return;
-    setRippleKey((k) => k + 1);
     onTap();
   };
-
-  const baseBg = checked ? '#7C3AED' : enabled ? '#F4EFFF' : '#F3F4F6';
-  const textColor = checked ? '#fff' : enabled ? '#7C3AED' : '#A4ABBA';
-  const ringBg = checked ? '#fff' : enabled ? '#fff' : '#fff';
-  const ringBorder = checked ? 'transparent' : enabled ? '#C4B5FD' : '#E5E7EB';
 
   return (
     <button
       onClick={handleClick}
       disabled={!enabled || checked}
-      className="agree-check-btn"
-      style={{ backgroundColor: baseBg, color: textColor }}
+      className={`toss-agree ${checked ? 'is-checked' : ''}`}
     >
-      <span
-        className={`agree-check-ring ${checked ? 'is-checked' : ''}`}
-        style={{
-          backgroundColor: ringBg,
-          border: `2px solid ${ringBorder}`,
-          color: '#7C3AED',
-        }}
-      >
-        {checked && <Check size={14} strokeWidth={3} className="agree-check-icon" color="#7C3AED" />}
-        {checked && <span key={rippleKey} className="agree-check-ripple fire" />}
+      <span className="toss-agree-ring">
+        <svg className="toss-agree-check" viewBox="0 0 24 24" fill="none">
+          <path
+            d="M5 12l4.8 4.8L19 7.5"
+            stroke="#7C3AED"
+            strokeWidth="3"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
       </span>
-      {checked ? '동의 완료' : '위 약관에 동의합니다'}
+      <span className="toss-agree-label">
+        <span className="toss-agree-label-pre">위 약관에 동의합니다</span>
+        <span className="toss-agree-label-post">동의 완료</span>
+      </span>
+      {PARTICLES.map((p, i) => (
+        <span
+          key={i}
+          className="toss-agree-particle"
+          style={
+            {
+              ['--tx' as string]: `calc(-50% + ${p.x}px)`,
+              ['--ty' as string]: `calc(-50% + ${p.y}px)`,
+            } as React.CSSProperties
+          }
+        />
+      ))}
     </button>
   );
 }
@@ -1249,11 +1266,11 @@ function SequentialAgreeFlow({
   const handleAgreeTap = () => {
     if (!currentItem || !reachedBottom || checked) return;
     setChecked(true);
-    // Visual hold, then advance
+    // Hold long enough to play shimmer/particle animation (~900ms) before advancing
     setTimeout(() => {
       setSignedIds((prev) => [...prev, currentItem.id]);
       setStepIdx((idx) => idx + 1);
-    }, 520);
+    }, 950);
   };
 
   const handleSignatureComplete = (dataUrl: string | null) => {
