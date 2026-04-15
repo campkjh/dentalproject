@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Check,
@@ -40,12 +40,19 @@ const treatmentsBySpecialty: Record<string, string[]> = {
 
 const defaultTreatments = treatmentsBySpecialty['dental'];
 
+interface AgreementTable {
+  title?: string;
+  headers: string[];
+  rows: string[][];
+}
+
 interface AgreementItem {
   id: string;
   label: string;
   required?: boolean;
   isAll?: boolean;
   body?: string;
+  tables?: AgreementTable[];
 }
 
 const agreementItems: AgreementItem[] = [
@@ -110,6 +117,18 @@ const agreementItems: AgreementItem[] = [
 4. 동의 거부권 및 거부 시 불이익
    이용자는 개인정보 수집·이용 동의를 거부할 권리가 있습니다. 다만 필수 항목에 대한
    동의를 거부하시는 경우 회원 가입 및 예약·결제 등 핵심 서비스 이용이 제한됩니다.`,
+    tables: [
+      {
+        title: '수집 항목 및 보유 기간',
+        headers: ['구분', '수집 항목', '보유 기간'],
+        rows: [
+          ['회원 가입', '이름, 휴대전화, 생년월일, 성별, 로그인 ID', '회원 탈퇴 시까지'],
+          ['예약·결제', '예약일, 결제수단, 결제금액', '전자상거래법 5년'],
+          ['기기 정보', 'OS·IP 주소·광고식별자', '서비스 이용 종료 3개월'],
+          ['의료기관 회원', '대표자명, 사업자번호, 개설허가번호', '탈퇴 후 3년'],
+        ],
+      },
+    ],
   },
   {
     id: 'sensitive',
@@ -134,6 +153,18 @@ const agreementItems: AgreementItem[] = [
 4. 동의 거부권 및 거부 시 불이익
    민감정보 수집에 동의하지 않을 권리가 있습니다. 거부 시 상담·예약 서비스 이용이
    제한될 수 있습니다.`,
+    tables: [
+      {
+        title: '민감정보 수집 항목',
+        headers: ['구분', '세부 항목'],
+        rows: [
+          ['진료 정보', '진료 희망 과목, 증상, 치료 이력'],
+          ['수술/시술', '수술명, 일자, 담당 의료기관'],
+          ['건강 상태', '알레르기, 복용 약물, 기저질환'],
+          ['시각 자료', '시술 전·후 사진 (리뷰 작성 시 본인 선택)'],
+        ],
+      },
+    ],
   },
   {
     id: 'third-party',
@@ -159,6 +190,17 @@ const agreementItems: AgreementItem[] = [
 
 이용자는 제3자 제공에 대한 동의를 거부할 권리가 있으며, 거부 시 예약·결제 관련 핵심
 서비스 이용이 제한됩니다.`,
+    tables: [
+      {
+        title: '제3자 제공 현황',
+        headers: ['제공받는 자', '제공 항목', '이용 목적', '보유 기간'],
+        rows: [
+          ['예약 의료기관', '이름·연락처·예약내용', '진료 예약 접수', '진료기록 10년 (의료법 22조)'],
+          ['결제대행사(PG사)', '결제정보 일부', '결제 승인·환불', '전자금융거래법 5년'],
+          ['본인확인기관', '휴대폰·CI/DI', '본인·연령 확인', '인증 후 즉시 파기'],
+        ],
+      },
+    ],
   },
   {
     id: 'location',
@@ -307,14 +349,19 @@ export default function HospitalRegisterPage() {
     });
   };
 
+  const [showAgreeFlow, setShowAgreeFlow] = useState(false);
+  const [signatureDataUrl, setSignatureDataUrl] = useState<string | null>(null);
+
   const toggleAgreement = (id: string) => {
     if (id === 'all') {
       const nonAllItems = agreementItems.filter((a) => !a.isAll);
       const allChecked = nonAllItems.every((a) => agreements.has(a.id));
       if (allChecked) {
         setAgreements(new Set());
+        setSignatureDataUrl(null);
       } else {
-        setAgreements(new Set(nonAllItems.map((a) => a.id)));
+        // Open sequential read-and-agree flow instead of instant toggle
+        setShowAgreeFlow(true);
       }
     } else {
       setAgreements((prev) => {
@@ -606,11 +653,11 @@ export default function HospitalRegisterPage() {
                         className="flex items-center gap-3 flex-1 min-w-0 text-left"
                       >
                         <div
-                          className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${
+                          className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 transition-colors duration-200 ${
                             isChecked ? 'bg-[#7C3AED]' : 'border-2 border-gray-300'
                           }`}
                         >
-                          <Check size={12} className="text-white" />
+                          {isChecked && <Check size={12} className="text-white check-pop" />}
                         </div>
                         <span
                           className={`text-sm ${
@@ -964,7 +1011,7 @@ export default function HospitalRegisterPage() {
         </button>
       </div>
 
-      {/* Agreement terms bottom sheet */}
+      {/* Agreement terms bottom sheet (single item view) */}
       {viewingAgreement && (
         <AgreementSheet
           item={viewingAgreement}
@@ -975,6 +1022,66 @@ export default function HospitalRegisterPage() {
           }}
         />
       )}
+
+      {/* Sequential agree flow (triggered by 모두 동의합니다) */}
+      {showAgreeFlow && (
+        <SequentialAgreeFlow
+          items={agreementItems.filter((a) => !a.isAll)}
+          existingSignature={signatureDataUrl}
+          onClose={() => setShowAgreeFlow(false)}
+          onComplete={(signedIds, sigUrl) => {
+            setAgreements(new Set(signedIds));
+            setSignatureDataUrl(sigUrl);
+            setShowAgreeFlow(false);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+// ===== Table renderer =====
+function AgreementTables({ tables }: { tables?: AgreementTable[] }) {
+  if (!tables || tables.length === 0) return null;
+  return (
+    <div className="mt-4 space-y-4">
+      {tables.map((t, i) => (
+        <div key={i}>
+          {t.title && (
+            <p className="text-[13px] font-semibold text-gray-900 mb-2">{t.title}</p>
+          )}
+          <div className="overflow-x-auto rounded-lg border border-gray-200">
+            <table className="w-full text-[12px]">
+              <thead>
+                <tr className="bg-gray-50 border-b border-gray-200">
+                  {t.headers.map((h, hi) => (
+                    <th
+                      key={hi}
+                      className="px-2.5 py-2 text-left font-semibold text-gray-600"
+                    >
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {t.rows.map((row, ri) => (
+                  <tr
+                    key={ri}
+                    className={ri < t.rows.length - 1 ? 'border-b border-gray-100' : ''}
+                  >
+                    {row.map((cell, ci) => (
+                      <td key={ci} className="px-2.5 py-2 text-gray-700 align-top">
+                        {cell}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
@@ -1018,6 +1125,7 @@ function AgreementSheet({
           <p className="text-[13px] leading-relaxed text-gray-700 whitespace-pre-line">
             {item.body}
           </p>
+          <AgreementTables tables={item.tables} />
         </div>
 
         {/* Footer button */}
@@ -1033,3 +1141,333 @@ function AgreementSheet({
     </div>
   );
 }
+
+// ===== Sequential agree flow with signature =====
+function SequentialAgreeFlow({
+  items,
+  existingSignature,
+  onClose,
+  onComplete,
+}: {
+  items: AgreementItem[];
+  existingSignature: string | null;
+  onClose: () => void;
+  onComplete: (signedIds: string[], signatureDataUrl: string | null) => void;
+}) {
+  const totalSteps = items.length + 1; // +1 for signature step
+  const [stepIdx, setStepIdx] = useState(0);
+  const [reachedBottom, setReachedBottom] = useState(false);
+  const [signedIds, setSignedIds] = useState<string[]>([]);
+  const [sigUrl, setSigUrl] = useState<string | null>(existingSignature);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, []);
+
+  const isSignatureStep = stepIdx >= items.length;
+  const currentItem = isSignatureStep ? null : items[stepIdx];
+  const currentNumber = stepIdx + 1;
+  const progressPct = (currentNumber / totalSteps) * 100;
+
+  const handleScroll = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 12;
+    if (atBottom && !reachedBottom) setReachedBottom(true);
+  };
+
+  const resetScroll = () => {
+    setReachedBottom(false);
+    requestAnimationFrame(() => {
+      scrollRef.current?.scrollTo({ top: 0 });
+    });
+  };
+
+  const handleAgree = () => {
+    if (!currentItem) return;
+    const next = [...signedIds, currentItem.id];
+    setSignedIds(next);
+    setStepIdx(stepIdx + 1);
+    resetScroll();
+  };
+
+  const handleSignatureComplete = (dataUrl: string | null) => {
+    setSigUrl(dataUrl);
+  };
+
+  const handleFinalSubmit = () => {
+    if (!sigUrl) return;
+    onComplete(signedIds, sigUrl);
+  };
+
+  return (
+    <div className="fixed inset-0 z-[110] bg-black/40 modal-overlay-enter">
+      <div
+        className="absolute bottom-0 left-0 right-0 bg-white rounded-t-2xl h-[92vh] flex flex-col modal-content-enter lg:top-1/2 lg:bottom-auto lg:left-1/2 lg:-translate-x-1/2 lg:-translate-y-1/2 lg:max-w-lg lg:h-[90vh] lg:rounded-2xl"
+      >
+        {/* Header with progress */}
+        <div className="px-5 pt-4 pb-3 border-b border-gray-100">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-bold text-[#7C3AED] bg-[#EDE9FE] px-2 py-0.5 rounded-full">
+                {currentNumber} / {totalSteps}
+              </span>
+              <h3 className="text-[15px] font-bold text-gray-900">
+                {isSignatureStep ? '서명 및 직인' : '필수 약관 확인'}
+              </h3>
+            </div>
+            <button onClick={onClose} className="p-1 -m-1">
+              <X size={20} className="text-gray-400" />
+            </button>
+          </div>
+          {/* Progress bar */}
+          <div className="relative h-1 bg-gray-100 rounded-full overflow-hidden">
+            <div
+              className="absolute inset-y-0 left-0 bg-[#7C3AED] rounded-full"
+              style={{
+                width: `${progressPct}%`,
+                transition: 'width 380ms cubic-bezier(0.22, 1, 0.36, 1)',
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Body */}
+        {isSignatureStep ? (
+          <SignatureStep onChange={handleSignatureComplete} initial={sigUrl} />
+        ) : (
+          <div
+            ref={scrollRef}
+            onScroll={handleScroll}
+            className="flex-1 overflow-y-auto px-5 py-4"
+          >
+            <h4 className="text-[15px] font-bold text-gray-900 mb-3">
+              {currentItem?.label.replace(/^\(필수\)\s*|^\(선택\)\s*/, '')}
+            </h4>
+            <p className="text-[13px] leading-relaxed text-gray-700 whitespace-pre-line">
+              {currentItem?.body}
+            </p>
+            <AgreementTables tables={currentItem?.tables} />
+            <div className="mt-6 mb-2 py-3 text-center text-[11px] text-gray-400 border-t border-dashed border-gray-200">
+              — 약관 끝 —
+            </div>
+          </div>
+        )}
+
+        {/* Footer */}
+        <div className="px-5 py-3.5 border-t border-gray-100 bg-white">
+          {!isSignatureStep && !reachedBottom && (
+            <p className="text-[11px] text-gray-400 text-center mb-2">
+              아래까지 스크롤해서 약관을 모두 확인해주세요
+            </p>
+          )}
+          {isSignatureStep ? (
+            <button
+              disabled={!sigUrl}
+              onClick={handleFinalSubmit}
+              className={`w-full py-3.5 rounded-xl text-base font-bold transition-colors ${
+                sigUrl
+                  ? 'bg-[#7C3AED] text-white btn-press'
+                  : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+              }`}
+            >
+              제출하고 완료하기
+            </button>
+          ) : (
+            <button
+              disabled={!reachedBottom}
+              onClick={handleAgree}
+              className={`w-full py-3.5 rounded-xl text-base font-bold transition-colors ${
+                reachedBottom
+                  ? 'bg-[#7C3AED] text-white btn-press'
+                  : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+              }`}
+            >
+              동의합니다
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ===== Signature canvas step =====
+function SignatureStep({
+  onChange,
+  initial,
+}: {
+  onChange: (dataUrl: string | null) => void;
+  initial: string | null;
+}) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const drawing = useRef(false);
+  const lastPoint = useRef<{ x: number; y: number } | null>(null);
+  const [hasDrawn, setHasDrawn] = useState(!!initial);
+  const [sealPreview, setSealPreview] = useState<string | null>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.scale(dpr, dpr);
+      ctx.lineWidth = 2.2;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.strokeStyle = '#111827';
+    }
+    if (initial) {
+      const img = new Image();
+      img.onload = () => {
+        ctx?.drawImage(img, 0, 0, rect.width, rect.height);
+      };
+      img.src = initial;
+    }
+  }, [initial]);
+
+  const getPoint = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return null;
+    const rect = canvas.getBoundingClientRect();
+    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+  };
+
+  const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    const p = getPoint(e);
+    if (!p) return;
+    drawing.current = true;
+    lastPoint.current = p;
+    (e.target as HTMLCanvasElement).setPointerCapture(e.pointerId);
+  };
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    if (!drawing.current) return;
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    const p = getPoint(e);
+    if (!ctx || !p || !lastPoint.current) return;
+    ctx.beginPath();
+    ctx.moveTo(lastPoint.current.x, lastPoint.current.y);
+    ctx.lineTo(p.x, p.y);
+    ctx.stroke();
+    lastPoint.current = p;
+    if (!hasDrawn) setHasDrawn(true);
+  };
+
+  const handlePointerUp = () => {
+    if (!drawing.current) return;
+    drawing.current = false;
+    lastPoint.current = null;
+    const canvas = canvasRef.current;
+    if (canvas) onChange(canvas.toDataURL('image/png'));
+  };
+
+  const handleClear = () => {
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (canvas && ctx) {
+      const rect = canvas.getBoundingClientRect();
+      ctx.clearRect(0, 0, rect.width, rect.height);
+      setHasDrawn(false);
+      setSealPreview(null);
+      onChange(null);
+    }
+  };
+
+  const handleSealUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      setSealPreview(dataUrl);
+      setHasDrawn(true);
+      onChange(dataUrl);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  return (
+    <div className="flex-1 overflow-y-auto px-5 py-5">
+      <p className="text-[13px] text-gray-700 leading-relaxed mb-4">
+        위의 모든 약관을 확인하셨습니다. 신청 완료를 위해 아래에 직접 서명하시거나
+        병원 직인 이미지를 업로드해 주세요.
+      </p>
+
+      <div className="mb-2 flex items-center justify-between">
+        <p className="text-[13px] font-semibold text-gray-900">서명</p>
+        <button
+          onClick={handleClear}
+          className="text-[12px] text-gray-500 hover:text-gray-700"
+        >
+          다시 쓰기
+        </button>
+      </div>
+      <div className="relative">
+        <canvas
+          ref={canvasRef}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerUp}
+          style={{
+            width: '100%',
+            height: 180,
+            backgroundColor: '#FAFAFA',
+            border: '1px dashed #D1D5DB',
+            borderRadius: 12,
+            touchAction: 'none',
+            cursor: 'crosshair',
+          }}
+        />
+        {!hasDrawn && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <p className="text-[13px] text-gray-400">이곳에 서명해 주세요</p>
+          </div>
+        )}
+        {sealPreview && (
+          <img
+            src={sealPreview}
+            alt="직인"
+            className="absolute top-2 right-2 w-16 h-16 object-contain rounded border border-gray-200 bg-white"
+          />
+        )}
+      </div>
+
+      <div className="mt-4">
+        <p className="text-[13px] font-semibold text-gray-900 mb-2">직인 이미지 첨부 (선택)</p>
+        <label
+          className="flex items-center gap-2 px-3 py-2.5 rounded-xl border border-dashed border-gray-300 text-[13px] text-gray-600 cursor-pointer hover:border-[#7C3AED] transition-colors"
+        >
+          <Upload size={16} className="text-gray-400" />
+          {sealPreview ? '직인 이미지 변경' : '직인/인감 이미지 업로드'}
+          <input
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handleSealUpload}
+          />
+        </label>
+        {sealPreview && (
+          <p className="text-[11px] text-gray-500 mt-1.5">직인 이미지가 첨부되었습니다.</p>
+        )}
+      </div>
+
+      <div className="mt-5 p-3 rounded-xl bg-gray-50 text-[11px] text-gray-500 leading-relaxed">
+        본 서명은 전자서명법 제3조에 따라 당사자의 동의 의사로 간주됩니다.
+        서명 또는 직인 이미지는 제출일로부터 3년간 보관되며, 탈퇴 시 즉시 파기됩니다.
+      </div>
+    </div>
+  );
+}
+
