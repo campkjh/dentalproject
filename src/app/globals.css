@@ -315,176 +315,66 @@ body {
   to   { transform: scale(1); border-radius: 50%; }
 }
 
-/* ===== Toss-style premium agree button ===== */
-.toss-agree {
+/* ===== Toss-style agree button ===== */
+.agree-check-btn {
   position: relative;
-  overflow: hidden;
   width: 100%;
-  height: 58px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
-  border-radius: 16px;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: 14px;
   font-size: 15px;
   font-weight: 700;
-  letter-spacing: -0.01em;
-  color: #7C3AED;
-  background: linear-gradient(135deg, #F4EFFF 0%, #EDE4FF 100%);
-  box-shadow: 0 1px 3px rgba(124, 58, 237, 0.06);
   transition:
-    color 0.35s cubic-bezier(0.22, 1, 0.36, 1),
-    background 0.45s cubic-bezier(0.22, 1, 0.36, 1),
-    box-shadow 0.4s cubic-bezier(0.22, 1, 0.36, 1),
-    transform 0.18s ease;
+    background-color 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    color 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.15s ease;
 }
-.toss-agree:disabled {
-  cursor: not-allowed;
-  color: #A4ABBA;
-  background: #F3F4F6;
-  box-shadow: none;
-}
-.toss-agree:not(:disabled):not(.is-checked):hover {
-  box-shadow: 0 6px 18px rgba(124, 58, 237, 0.12);
-  transform: translateY(-1px);
-}
-.toss-agree:not(:disabled):not(.is-checked):active { transform: scale(0.985); }
+.agree-check-btn:disabled { cursor: not-allowed; }
+.agree-check-btn:not(:disabled):active { transform: scale(0.98); }
 
-/* Checked state: purple fill sweeps in */
-.toss-agree.is-checked {
-  color: #fff;
-  background: linear-gradient(135deg, #7C3AED 0%, #A259FF 100%);
-  box-shadow: 0 10px 28px rgba(124, 58, 237, 0.4);
-  animation: tossAgreeGlow 0.7s cubic-bezier(0.22, 1, 0.36, 1);
-}
-@keyframes tossAgreeGlow {
-  0%   { box-shadow: 0 0 0 0 rgba(124, 58, 237, 0.55); }
-  55%  { box-shadow: 0 0 0 14px rgba(124, 58, 237, 0); }
-  100% { box-shadow: 0 10px 28px rgba(124, 58, 237, 0.4); }
-}
-
-/* Sweeping shimmer once on check */
-.toss-agree.is-checked::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    110deg,
-    transparent 0%,
-    transparent 30%,
-    rgba(255, 255, 255, 0.35) 50%,
-    transparent 70%,
-    transparent 100%
-  );
-  transform: translateX(-120%);
-  animation: tossShimmer 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.2s 1 forwards;
-  pointer-events: none;
-}
-@keyframes tossShimmer {
-  from { transform: translateX(-120%); }
-  to   { transform: translateX(120%); }
-}
-
-/* Ring (check target) */
-.toss-agree-ring {
+.agree-check-ring {
   position: relative;
-  width: 26px;
-  height: 26px;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.92);
-  border: 2px solid #C4B5FD;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
   transition:
-    background 0.35s cubic-bezier(0.22, 1, 0.36, 1),
-    border-color 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+    background-color 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
-.toss-agree:disabled .toss-agree-ring { background: #fff; border-color: #E5E7EB; }
-.toss-agree.is-checked .toss-agree-ring {
-  background: #fff;
-  border-color: #fff;
-  animation: tossRingPop 0.58s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-@keyframes tossRingPop {
+.agree-check-ring.is-checked { animation: agreeFill 0.45s cubic-bezier(0.34, 1.56, 0.64, 1); }
+@keyframes agreeFill {
   0%   { transform: scale(1); }
-  25%  { transform: scale(0.7); }
-  55%  { transform: scale(1.25); }
-  80%  { transform: scale(0.95); }
+  40%  { transform: scale(1.35); }
+  75%  { transform: scale(0.92); }
   100% { transform: scale(1); }
 }
 
-/* SVG stroke draw for check */
-.toss-agree-check {
-  width: 14px;
-  height: 14px;
-  opacity: 0;
-  transition: opacity 0.1s;
-}
-.toss-agree.is-checked .toss-agree-check { opacity: 1; }
-.toss-agree-check path {
-  stroke-dasharray: 26;
-  stroke-dashoffset: 26;
-}
-.toss-agree.is-checked .toss-agree-check path {
-  animation: tossDraw 0.4s cubic-bezier(0.22, 1, 0.36, 1) 0.18s forwards;
-}
-@keyframes tossDraw {
-  to { stroke-dashoffset: 0; }
-}
-
-/* Label crossfade */
-.toss-agree-label {
-  position: relative;
-  height: 20px;
-  overflow: hidden;
-  display: inline-flex;
-  align-items: center;
-}
-.toss-agree-label-pre,
-.toss-agree-label-post {
-  display: block;
-  transition:
-    transform 0.45s cubic-bezier(0.22, 1, 0.36, 1),
-    opacity 0.35s cubic-bezier(0.22, 1, 0.36, 1);
-  white-space: nowrap;
-}
-.toss-agree-label-post {
+.agree-check-ripple {
   position: absolute;
   inset: 0;
-  transform: translateY(120%);
-  opacity: 0;
-}
-.toss-agree.is-checked .toss-agree-label-pre {
-  transform: translateY(-120%);
-  opacity: 0;
-}
-.toss-agree.is-checked .toss-agree-label-post {
-  transform: translateY(0);
-  opacity: 1;
-  transition-delay: 0.12s;
-}
-
-/* Confetti particles */
-.toss-agree-particle {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 6px;
-  height: 6px;
   border-radius: 50%;
-  background: #fff;
+  background: currentColor;
   opacity: 0;
   pointer-events: none;
-  transform: translate(-50%, -50%) scale(0);
 }
-.toss-agree.is-checked .toss-agree-particle {
-  animation: tossParticle 0.85s cubic-bezier(0.22, 1, 0.36, 1) 0.15s forwards;
+.agree-check-ripple.fire { animation: agreeRipple 0.6s cubic-bezier(0.22, 1, 0.36, 1); }
+@keyframes agreeRipple {
+  0%   { transform: scale(1); opacity: 0.35; }
+  100% { transform: scale(2.4); opacity: 0; }
 }
-@keyframes tossParticle {
-  0%   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-  100% { opacity: 0; transform: translate(var(--tx, -50%), var(--ty, -50%)) scale(0); }
+
+.agree-check-icon { animation: agreeIconPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
+@keyframes agreeIconPop {
+  0%   { transform: scale(0); opacity: 0; }
+  60%  { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
 }
 
 /* ===== Directional tab-slide for tabbed content ===== */
