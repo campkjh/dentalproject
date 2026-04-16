@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Search, Send, ChevronRight, Star } from 'lucide-react';
+import { Search, Send, ChevronRight, Star, MapPin } from 'lucide-react';
 import ProductCard from '@/components/common/ProductCard';
 import { useStore } from '@/store';
 import { categories, reviews, hospitals, products as allMockProducts } from '@/lib/mock-data';
@@ -112,23 +112,41 @@ export default function HomePage() {
           )}
         </div>
 
-        {/* Scrolled Header (search bar) */}
+        {/* Scrolled Header (pill search bar + location) */}
         <div className={`px-2.5 transition-all duration-300 ${scrolled ? 'py-2 opacity-100' : 'h-0 overflow-hidden opacity-0 py-0'}`}>
           <button
             onClick={() => router.push('/search')}
-            style={{ height: 46, borderRadius: 10, borderWidth: 1.4, borderColor: '#C8CEDA', backgroundColor: '#F9F9F9' }}
-            className="w-full flex items-center gap-3 px-2.5 text-left border-solid"
+            style={{
+              height: 44,
+              borderRadius: 9999,
+              border: '1.4px solid #E5E7EB',
+              backgroundColor: '#F9F9F9',
+            }}
+            className="w-full flex items-center gap-2 pl-1.5 pr-4 text-left"
           >
-            <Search size={18} className="text-gray-400 flex-shrink-0" />
-            <div style={{ fontSize: 16, height: 22, overflow: 'hidden' }} className="flex-1 relative">
+            {/* Location chip */}
+            <span
+              className="flex items-center gap-1 flex-shrink-0 bg-white rounded-full px-2.5"
+              style={{ height: 32, border: '1px solid #E5E7EB' }}
+            >
+              <MapPin size={12} className="text-[#7C3AED]" />
+              <span className="text-[12px] font-semibold text-gray-800 whitespace-nowrap leading-none">
+                강남구 논현동
+              </span>
+            </span>
+            {/* Divider */}
+            <span className="flex-shrink-0 w-px h-4 bg-gray-200" />
+            {/* Rotating placeholder */}
+            <div style={{ fontSize: 14, height: 20, overflow: 'hidden' }} className="flex-1 relative min-w-0">
               <span
-                className={`block text-gray-400 transition-all duration-300 ${
+                className={`block text-gray-400 truncate transition-all duration-300 ${
                   animating ? '-translate-y-full opacity-0' : 'translate-y-0 opacity-100'
                 }`}
               >
                 {searchPlaceholders[placeholderIdx]}
               </span>
             </div>
+            <Search size={18} className="text-gray-400 flex-shrink-0" />
           </button>
         </div>
 
