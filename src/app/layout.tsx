@@ -24,12 +24,13 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <body className="bg-gray-50">
-        <DesktopHeader />
-        <div className="max-w-[480px] lg:max-w-none mx-auto bg-white lg:bg-gray-50 w-full min-h-dvh shadow-xl lg:shadow-none lg:pt-[112px]">
-          {children}
-        </div>
-        <Footer />
-        <Providers />
+        <Providers>
+          <DesktopHeader />
+          <div className="max-w-[480px] lg:max-w-none mx-auto bg-white lg:bg-gray-50 w-full min-h-dvh shadow-xl lg:shadow-none lg:pt-[112px]">
+            {children}
+          </div>
+          <Footer />
+        </Providers>
       </body>
     </html>
   );
