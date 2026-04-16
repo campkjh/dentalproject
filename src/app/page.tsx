@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation';
 import { Search, Send, ChevronRight, Star, MapPin, X } from 'lucide-react';
 import ProductCard from '@/components/common/ProductCard';
 import { useStore } from '@/store';
-import { useSession } from '@/lib/supabase/SessionProvider';
 import { categories, reviews, hospitals, products as allMockProducts } from '@/lib/mock-data';
 
 const searchPlaceholders = [
@@ -20,8 +19,6 @@ const searchPlaceholders = [
 export default function HomePage() {
   const router = useRouter();
   const { products, isLoggedIn, recentlyViewed, recentSearches, removeRecentSearch } = useStore();
-  const { signInWithOAuth } = useSession();
-  const login = (p: 'kakao' | 'apple') => signInWithOAuth(p);
   const [scrolled, setScrolled] = useState(false);
   const [placeholderIdx, setPlaceholderIdx] = useState(0);
   const [animating, setAnimating] = useState(false);
@@ -107,9 +104,9 @@ export default function HomePage() {
             </div>
           ) : (
             <div className="flex items-center gap-3">
-              <button onClick={() => login('kakao')} className="bg-[#7C3AED] text-white text-sm px-2.5 py-2 rounded-full font-medium">
-                테스트 로그인
-              </button>
+              <Link href="/login" className="bg-[#7C3AED] text-white text-sm px-2.5 py-2 rounded-full font-medium">
+                로그인
+              </Link>
               <Link href="/search"><Search size={22} /></Link>
             </div>
           )}

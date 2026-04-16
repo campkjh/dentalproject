@@ -17,8 +17,7 @@ const navItems = [
 export default function DesktopHeader() {
   const pathname = usePathname();
   const { isLoggedIn, user, wishlist } = useStore();
-  const { signInWithOAuth, signOut } = useSession();
-  const login = (p: 'kakao' | 'apple') => signInWithOAuth(p);
+  const { signOut } = useSession();
   const logout = () => signOut();
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -101,10 +100,10 @@ export default function DesktopHeader() {
               </>
             ) : (
               <div className="flex items-center gap-2">
-                <button onClick={() => login('kakao')} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 transition-colors">
+                <Link href="/login" className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 transition-colors">
                   로그인
-                </button>
-                <Link href="/login" className="px-5 py-2 bg-[#7C3AED] text-white text-sm font-medium rounded-full hover:bg-[#6D28D9] transition-colors">
+                </Link>
+                <Link href="/login?mode=signup" className="px-5 py-2 bg-[#7C3AED] text-white text-sm font-medium rounded-full hover:bg-[#6D28D9] transition-colors">
                   회원가입
                 </Link>
               </div>

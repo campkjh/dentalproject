@@ -9,6 +9,8 @@ type Ctx = {
   session: Session | null;
   authUser: User | null;
   loading: boolean;
+  signInWithEmail: (email: string, password: string) => Promise<{ error: string | null }>;
+  signUpWithEmail: (email: string, password: string, name?: string) => Promise<{ error: string | null; needsConfirm: boolean }>;
   signInWithOAuth: (provider: 'kakao' | 'apple') => Promise<void>;
   signOut: () => Promise<void>;
 };
@@ -83,6 +85,27 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     session,
     authUser: session?.user ?? null,
     loading,
+    async signInWithEmail(email, password) {
+      if (!supabase) return { error: 'Supabase not configured' };
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      return { error: error?.message ?? null };
+    },
+    async signUpWithEmail(email, password, name) {
+      if (!supabase) return { error: 'Supabase not configured', needsConfirm: false };
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { name: name ?? '' },
+          emailRedirectTo: `${
+            process.env.NEXT_PUBLIC_SITE_URL ?? window.location.origin
+          }/auth/callback`,
+        },
+      });
+      // session === null when email confirmation is required
+      const needsConfirm = !error && !data.session;
+      return { error: error?.message ?? null, needsConfirm };
+    },
     async signInWithOAuth(provider) {
       if (!supabase) {
         storeLogin(provider);
