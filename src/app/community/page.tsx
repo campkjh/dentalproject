@@ -296,7 +296,7 @@ export default function CommunityPage() {
             </div>
 
             <Link
-              href={`/community/write?board=question`}
+              href={`/community/live`}
               className="mt-3 flex items-center justify-between w-full px-3 py-3 rounded-xl border border-gray-200 text-gray-700"
             >
               <span className="text-sm font-medium">질문 전체 보기</span>
