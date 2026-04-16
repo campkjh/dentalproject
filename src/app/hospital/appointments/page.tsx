@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   ChevronLeft,
   ChevronRight,
@@ -10,9 +10,6 @@ import {
 } from 'lucide-react';
 import TabBar from '@/components/common/TabBar';
 import { useStore } from '@/store';
-import { hospitals } from '@/lib/mock-data';
-
-const hospital = hospitals[0];
 
 interface TimeSlot {
   time: string;
@@ -45,88 +42,74 @@ interface AppointmentData {
   date: number;
 }
 
-const mockAppointments: AppointmentData[] = [
-  {
-    id: 'apt1',
-    time: '10:00',
-    patientName: '홍길동',
-    gender: '남',
-    age: 32,
-    phone: '010-1245-2189',
-    treatmentName: '원데이 치아미백 3회',
-    paymentType: '앱결제',
-    bookingType: '앱예약',
-    assignedDoctor: '이양구',
-    memo: '',
-    date: 6,
-  },
-  {
-    id: 'apt2',
-    time: '11:00',
-    patientName: '김영희',
-    gender: '여',
-    age: 28,
-    phone: '010-9876-5432',
-    treatmentName: '무삭제로네이트 라미네이트',
-    paymentType: '현장결제',
-    bookingType: '앱예약',
-    assignedDoctor: '김민수',
-    memo: '첫 방문 환자',
-    date: 6,
-  },
-  {
-    id: 'apt3',
-    time: '14:00',
-    patientName: '박철수',
-    gender: '남',
-    age: 45,
-    phone: '010-5555-1234',
-    treatmentName: '디데이 치아미백 11',
-    paymentType: '앱결제',
-    bookingType: '전화예약',
-    assignedDoctor: '이양구',
-    memo: '',
-    date: 8,
-  },
-  {
-    id: 'apt4',
-    time: '15:30',
-    patientName: '최수정',
-    gender: '여',
-    age: 35,
-    phone: '010-3333-7777',
-    treatmentName: '원데이 치아미백 3회',
-    paymentType: '앱결제',
-    bookingType: '앱예약',
-    assignedDoctor: '송지혜',
-    memo: '',
-    date: 14,
-  },
-];
-
 const DAYS = ['일', '월', '화', '수', '목', '금', '토'];
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+function reservationToAppointment(r: any): AppointmentData {
+  const visitDate = r.visit_at ? new Date(r.visit_at) : null;
+  return {
+    id: r.id,
+    time: visitDate
+      ? visitDate.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false })
+      : '',
+    patientName: r.user?.name ?? r.customer_name ?? '환자',
+    gender: '',
+    age: 0,
+    phone: r.user?.phone ?? r.customer_phone ?? '',
+    treatmentName: r.product?.title ?? '',
+    paymentType: r.payment_type ?? '현장결제',
+    bookingType: '앱예약',
+    assignedDoctor: r.doctor?.name ?? '미지정',
+    memo: '',
+    date: visitDate ? visitDate.getDate() : 0,
+  };
+}
 
 export default function AppointmentsPage() {
   const { showModal, showToast } = useStore();
+  const today = new Date();
   const [activeTab, setActiveTab] = useState('병원예약');
-  const [selectedDate, setSelectedDate] = useState(6);
-  const [currentMonth] = useState(3); // April (0-indexed)
-  const [currentYear] = useState(2026);
+  const [selectedDate, setSelectedDate] = useState(today.getDate());
+  const [currentMonth] = useState(today.getMonth());
+  const [currentYear] = useState(today.getFullYear());
   const [memos, setMemos] = useState<Record<string, string>>({});
   const [timeSlots, setTimeSlots] = useState<Record<number, TimeSlot[]>>({});
   const [disabledDays, setDisabledDays] = useState<Set<number>>(new Set());
+  const [appointments, setAppointments] = useState<AppointmentData[]>([]);
 
   const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
   const firstDayOfMonth = new Date(currentYear, currentMonth, 1).getDay();
 
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/my-hospital', { cache: 'no-store' });
+        if (!res.ok) return;
+        const { reservations } = await res.json();
+        if (cancelled) return;
+        const monthAppts = (reservations ?? [])
+          .map(reservationToAppointment)
+          .filter((a: AppointmentData) => {
+            const visitDate = (reservations as { id: string; visit_at?: string }[]).find((r) => r.id === a.id)?.visit_at;
+            if (!visitDate) return false;
+            const d = new Date(visitDate);
+            return d.getFullYear() === currentYear && d.getMonth() === currentMonth;
+          });
+        setAppointments(monthAppts);
+      } catch {/* ignore */}
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [currentYear, currentMonth]);
+
   const appointmentDates = useMemo(
-    () => new Set(mockAppointments.map((a) => a.date)),
-    []
+    () => new Set(appointments.map((a) => a.date)),
+    [appointments]
   );
 
-  const selectedAppointments = mockAppointments.filter(
-    (a) => a.date === selectedDate
-  );
+  const selectedAppointments = appointments.filter((a) => a.date === selectedDate);
 
   const getSlotsForDate = (date: number): TimeSlot[] => {
     if (timeSlots[date]) return timeSlots[date];

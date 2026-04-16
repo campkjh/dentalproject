@@ -1,13 +1,10 @@
 'use client';
 
-import { useState, Suspense } from 'react';
+import { useState, Suspense, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Check, Phone, User } from 'lucide-react';
 import TopBar from '@/components/common/TopBar';
 import { useStore } from '@/store';
-import { hospitals } from '@/lib/mock-data';
-
-const hospital = hospitals[0];
 
 interface DoctorOption {
   id: string;
@@ -17,16 +14,6 @@ interface DoctorOption {
   isOwner: boolean;
   available: boolean;
 }
-
-const doctorOptions: DoctorOption[] = hospital.doctors.map((d, idx) => ({
-  id: d.id,
-  name: d.name,
-  title: d.title,
-  specialty: d.specialty,
-  isOwner: d.isOwner || false,
-  // Some doctors are unavailable for the time slot
-  available: idx !== 3 && idx !== 5,
-}));
 
 export default function DoctorAssignPageWrapper() {
   return (
@@ -42,25 +29,70 @@ function DoctorAssignPage() {
   const aptId = searchParams.get('apt');
   const { showToast } = useStore();
 
-  // Mock appointment info
-  const appointment = {
-    time: '10:00',
-    patientName: '홍길동',
-    gender: '남',
-    age: 32,
-    phone: '010-1245-2189',
-    treatmentName: '원데이 치아미백 3회',
-    paymentType: '앱결제',
-    bookingType: '앱예약',
-    currentDoctor: aptId ? '이양구' : null,
-  };
+  const [doctorOptions, setDoctorOptions] = useState<DoctorOption[]>([]);
+  const [appointment, setAppointment] = useState<{
+    time: string;
+    patientName: string;
+    phone: string;
+    treatmentName: string;
+    paymentType: string;
+    bookingType: string;
+    currentDoctorId: string | null;
+  } | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const isChanging = !!appointment.currentDoctor;
-  const [selectedDoctor, setSelectedDoctor] = useState<string | null>(
-    appointment.currentDoctor
-      ? doctorOptions.find((d) => d.name === appointment.currentDoctor)?.id || null
-      : null
-  );
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/my-hospital', { cache: 'no-store' });
+        if (!res.ok) return;
+        const { hospital, reservations } = await res.json();
+        if (cancelled) return;
+        if (!hospital) {
+          showToast('등록된 병원이 없습니다.');
+          router.push('/hospital/register');
+          return;
+        }
+        setDoctorOptions(
+          (hospital.doctors ?? []).map((d: { id: string; name: string; title?: string; specialty?: string; is_owner?: boolean }) => ({
+            id: d.id,
+            name: d.name,
+            title: d.title ?? '원장',
+            specialty: d.specialty ?? '',
+            isOwner: d.is_owner ?? false,
+            available: true,
+          }))
+        );
+        if (aptId) {
+          const apt = (reservations ?? []).find((r: { id: string }) => r.id === aptId);
+          if (apt) {
+            setAppointment({
+              time: apt.visit_at ? new Date(apt.visit_at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }) : '',
+              patientName: apt.user?.name ?? apt.customer_name ?? '',
+              phone: apt.user?.phone ?? apt.customer_phone ?? '',
+              treatmentName: apt.product?.title ?? '',
+              paymentType: apt.payment_type ?? '',
+              bookingType: '앱예약',
+              currentDoctorId: apt.doctor_id ?? null,
+            });
+          }
+        }
+      } finally {
+        setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [aptId, router, showToast]);
+
+  const isChanging = !!appointment?.currentDoctorId;
+  const [selectedDoctor, setSelectedDoctor] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (appointment?.currentDoctorId) setSelectedDoctor(appointment.currentDoctorId);
+  }, [appointment?.currentDoctorId]);
 
   const handleSelectDoctor = (doctor: DoctorOption) => {
     if (!doctor.available) {
@@ -70,9 +102,18 @@ function DoctorAssignPage() {
     setSelectedDoctor(doctor.id);
   };
 
-  const handleComplete = () => {
+  const handleComplete = async () => {
     if (!selectedDoctor) return;
     const doctor = doctorOptions.find((d) => d.id === selectedDoctor);
+    if (aptId) {
+      try {
+        await fetch(`/api/reservations/${aptId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ doctorId: selectedDoctor }),
+        });
+      } catch {/* ignore */}
+    }
     showToast(`${doctor?.name} 원장님이 지정되었습니다.`);
     router.back();
   };
@@ -82,34 +123,41 @@ function DoctorAssignPage() {
       <TopBar title="담당지정" />
 
       {/* Patient info */}
-      <div className="px-2.5 py-4 bg-gray-50 border-b border-gray-100">
-        <div className="space-y-2">
-          <div className="flex items-center gap-3">
-            <span className="text-sm font-bold text-[#7C3AED]">
-              {appointment.time}
-            </span>
-            <span className="font-bold text-sm">{appointment.patientName}</span>
-            <span className="text-xs text-gray-500">
-              {appointment.gender}/{appointment.age}세
-            </span>
-          </div>
-          <div className="flex items-center gap-1 text-xs text-gray-500">
-            <Phone size={12} />
-            <span>{appointment.phone}</span>
-          </div>
-          <p className="text-sm text-gray-700 font-medium">
-            {appointment.treatmentName}
-          </p>
-          <div className="flex gap-2">
-            <span className="px-2 py-0.5 bg-blue-50 text-blue-600 text-xs rounded-full font-medium">
-              {appointment.paymentType}
-            </span>
-            <span className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded-full font-medium">
-              {appointment.bookingType}
-            </span>
+      {appointment ? (
+        <div className="px-2.5 py-4 bg-gray-50 border-b border-gray-100">
+          <div className="space-y-2">
+            <div className="flex items-center gap-3">
+              {appointment.time && (
+                <span className="text-sm font-bold text-[#7C3AED]">{appointment.time}</span>
+              )}
+              <span className="font-bold text-sm">{appointment.patientName}</span>
+            </div>
+            {appointment.phone && (
+              <div className="flex items-center gap-1 text-xs text-gray-500">
+                <Phone size={12} />
+                <span>{appointment.phone}</span>
+              </div>
+            )}
+            {appointment.treatmentName && (
+              <p className="text-sm text-gray-700 font-medium">{appointment.treatmentName}</p>
+            )}
+            <div className="flex gap-2">
+              {appointment.paymentType && (
+                <span className="px-2 py-0.5 bg-blue-50 text-blue-600 text-xs rounded-full font-medium">
+                  {appointment.paymentType}
+                </span>
+              )}
+              <span className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded-full font-medium">
+                {appointment.bookingType}
+              </span>
+            </div>
           </div>
         </div>
-      </div>
+      ) : (
+        <div className="px-2.5 py-3 bg-gray-50 border-b border-gray-100">
+          <p className="text-xs text-gray-500">의료진을 선택해주세요</p>
+        </div>
+      )}
 
       {/* Doctor list */}
       <div className="flex-1 px-2.5 py-4">
