@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { User, Reservation, Product, Post, Comment, Review, Hospital } from '@/types';
+import { User, Reservation, Product, Post, Comment, Review, Hospital, Notification, PointHistory } from '@/types';
 import {
   products as mockProducts,
   hospitals as mockHospitals,
@@ -9,6 +9,9 @@ import {
   reviews as mockReviews,
   coupons,
   categories as mockCategories,
+  notifications as mockNotifications,
+  pointHistory as mockPointHistory,
+  announcements as mockAnnouncements,
 } from '@/lib/mock-data';
 
 interface Category {
@@ -75,6 +78,27 @@ function couponFromRow(c: any) {
     status: c.status as 'available' | 'used' | 'expired',
   };
 }
+
+function notificationFromRow(n: any): Notification {
+  return {
+    id: n.id,
+    type: n.type,
+    title: n.title,
+    content: n.content ?? '',
+    date: n.created_at ? new Date(n.created_at).toLocaleDateString('ko-KR') : '',
+    isRead: n.is_read ?? false,
+  };
+}
+
+function pointFromRow(p: any): PointHistory {
+  return {
+    id: p.id,
+    type: p.type,
+    description: p.description ?? '',
+    amount: p.amount,
+    date: p.created_at ? new Date(p.created_at).toLocaleDateString('ko-KR') : '',
+  };
+}
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
 interface AppState {
@@ -132,6 +156,13 @@ interface AppState {
   reviews: Review[];
   addReview: (review: Review) => void;
 
+  // Notifications & point history (hydrated from /api/me)
+  notifications: Notification[];
+  pointHistory: PointHistory[];
+
+  // Announcements (public)
+  announcements: { id: string; title: string; date: string; content: string }[];
+
   // Search
   recentSearches: string[];
   addRecentSearch: (keyword: string) => void;
@@ -160,6 +191,9 @@ export const useStore = create<AppState>((set, get) => ({
         products: data.products?.length ? data.products : get().products,
         reviews: data.reviews?.length ? data.reviews : get().reviews,
         categories: data.categories?.length ? data.categories : get().categories,
+        posts: data.posts?.length ? data.posts : get().posts,
+        comments: data.comments?.length ? data.comments : get().comments,
+        announcements: data.announcements?.length ? data.announcements : get().announcements,
         catalogHydrated: true,
       });
     } catch {
@@ -185,6 +219,14 @@ export const useStore = create<AppState>((set, get) => ({
             ? (data.reservations ?? []).map(reservationFromRow)
             : get().reservations,
         interestedCategories: data.interestedCategories ?? [],
+        notifications:
+          (data.notifications ?? []).length > 0
+            ? (data.notifications ?? []).map(notificationFromRow)
+            : get().notifications,
+        pointHistory:
+          (data.pointHistory ?? []).length > 0
+            ? (data.pointHistory ?? []).map(pointFromRow)
+            : get().pointHistory,
         meHydrated: true,
       });
       // patch coupons + points into user
@@ -208,6 +250,8 @@ export const useStore = create<AppState>((set, get) => ({
       recentlyViewed: [],
       reservations: mockReservations,
       interestedCategories: [],
+      notifications: mockNotifications,
+      pointHistory: mockPointHistory,
       meHydrated: false,
     });
   },
@@ -399,6 +443,10 @@ export const useStore = create<AppState>((set, get) => ({
       }
     }
   },
+
+  notifications: mockNotifications,
+  pointHistory: mockPointHistory,
+  announcements: mockAnnouncements,
 
   reviews: mockReviews,
   addReview: (review) => {

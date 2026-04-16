@@ -5,13 +5,12 @@ import { useStore } from '@/store';
 import TopBar from '@/components/common/TopBar';
 import EmptyState from '@/components/common/EmptyState';
 import LoginRequired from '@/components/common/LoginRequired';
-import { pointHistory } from '@/lib/mock-data';
 import { Coins } from 'lucide-react';
 
 const tabs = ['전체', '적립', '사용'];
 
 export default function PointsPage() {
-  const { isLoggedIn, user } = useStore();
+  const { isLoggedIn, user, pointHistory } = useStore();
   const [activeTab, setActiveTab] = useState('전체');
   const [direction, setDirection] = useState<'left' | 'right'>('right');
   const prevIdxRef = useRef(0);

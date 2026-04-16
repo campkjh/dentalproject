@@ -3,10 +3,11 @@
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import TopBar from '@/components/common/TopBar';
-import { announcements } from '@/lib/mock-data';
+import { useStore } from '@/store';
 
 export default function AnnouncementDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const announcements = useStore((s) => s.announcements);
   const announcement = announcements.find((a) => a.id === id);
 
   if (!announcement) {
