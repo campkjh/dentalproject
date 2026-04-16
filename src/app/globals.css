@@ -361,6 +361,42 @@ body {
   opacity: 1;
 }
 
+/* ===== Form input focus underline animation ===== */
+.input-line {
+  position: relative;
+}
+.input-line input,
+.input-line textarea {
+  transition: border-color 280ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.input-line::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  right: 50%;
+  bottom: 0;
+  height: 2px;
+  background: #7C3AED;
+  transition: left 280ms cubic-bezier(0.22, 1, 0.36, 1), right 280ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.input-line:focus-within::after {
+  left: 0;
+  right: 0;
+}
+
+/* ===== Tile select (radio-like) with scale + border ===== */
+.tile-select {
+  transition:
+    border-color 240ms cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 240ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 180ms ease,
+    box-shadow 280ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.tile-select:active { transform: scale(0.97); }
+.tile-select.is-active {
+  box-shadow: 0 6px 18px rgba(124, 58, 237, 0.15);
+}
+
 /* ===== Checkbox pop-in ===== */
 .check-pop {
   animation: checkPop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
