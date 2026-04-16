@@ -24,6 +24,9 @@ interface AppState {
   user: User | null;
   login: (type: 'kakao' | 'apple') => void;
   logout: () => void;
+  updateUser: (patch: Partial<User>) => void;
+  interestedCategories: string[];
+  toggleInterestedCategory: (id: string) => void;
 
   // Categories
   categories: Category[];
@@ -97,6 +100,15 @@ export const useStore = create<AppState>((set, get) => ({
   logout: () => {
     set({ isLoggedIn: false, user: null, isDoctor: false });
   },
+  updateUser: (patch) =>
+    set((state) => (state.user ? { user: { ...state.user, ...patch } } : {})),
+  interestedCategories: [],
+  toggleInterestedCategory: (id) =>
+    set((state) => ({
+      interestedCategories: state.interestedCategories.includes(id)
+        ? state.interestedCategories.filter((x) => x !== id)
+        : [...state.interestedCategories, id],
+    })),
 
   categories: mockCategories,
   addCategory: (cat) => set({ categories: [...get().categories, cat] }),

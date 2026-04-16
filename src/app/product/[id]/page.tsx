@@ -741,7 +741,7 @@ export default function ProductDetailPage() {
               <Phone size={18} style={{ color: '#51535C' }} />
             </button>
             <button
-              onClick={() => showToast('1:1 상담 기능은 곧 오픈됩니다.')}
+              onClick={() => router.push(`/consult/${product.hospitalId}`)}
               style={{ width: 48, height: 48, borderRadius: 10, border: '1px solid #C8CEDA' }} className="flex items-center justify-center btn-press">
               <MessageCircle size={18} style={{ color: '#51535C' }} />
             </button>
