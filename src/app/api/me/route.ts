@@ -11,7 +11,7 @@ export async function GET() {
   } = await sb.auth.getUser();
   if (!user) return NextResponse.json({ user: null });
 
-  const [profile, wishlist, recentlyViewed, reservations, coupons, notifications, pointHistory, interestedCats] =
+  const [profile, wishlist, recentlyViewed, reservations, coupons, notifications, pointHistory, interestedCats, recentSearches] =
     await Promise.all([
       sb.from('profiles').select('*').eq('id', user.id).maybeSingle(),
       sb.from('wishlists').select('product_id').eq('user_id', user.id),
@@ -29,6 +29,7 @@ export async function GET() {
       sb.from('notifications').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(50),
       sb.from('point_history').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(50),
       sb.from('interested_categories').select('category_id').eq('user_id', user.id),
+      sb.from('recent_searches').select('keyword').eq('user_id', user.id).order('created_at', { ascending: false }).limit(10),
     ]);
 
   return NextResponse.json({
@@ -44,5 +45,6 @@ export async function GET() {
     notifications: notifications.data ?? [],
     pointHistory: pointHistory.data ?? [],
     interestedCategories: (interestedCats.data ?? []).map((c: any) => c.category_id),
+    recentSearches: (recentSearches.data ?? []).map((r: any) => r.keyword),
   });
 }

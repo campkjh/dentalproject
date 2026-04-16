@@ -227,6 +227,8 @@ export const useStore = create<AppState>((set, get) => ({
           (data.pointHistory ?? []).length > 0
             ? (data.pointHistory ?? []).map(pointFromRow)
             : get().pointHistory,
+        recentSearches:
+          (data.recentSearches ?? []).length > 0 ? data.recentSearches : get().recentSearches,
         meHydrated: true,
       });
       // patch coupons + points into user
@@ -482,13 +484,15 @@ export const useStore = create<AppState>((set, get) => ({
     })();
   },
 
-  recentSearches: ['이빨', '임플란트', '치아교정'],
+  recentSearches: [],
   addRecentSearch: (keyword) => {
     const current = get().recentSearches.filter((s) => s !== keyword);
     set({ recentSearches: [keyword, ...current].slice(0, 10) });
+    void syncWrite('POST', '/api/recent-searches', { keyword });
   },
   removeRecentSearch: (keyword) => {
     set({ recentSearches: get().recentSearches.filter((s) => s !== keyword) });
+    void syncWrite('DELETE', '/api/recent-searches', { keyword });
   },
 
   toast: null,
