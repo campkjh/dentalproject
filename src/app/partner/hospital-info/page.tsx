@@ -113,7 +113,7 @@ export default function HospitalInfoPage() {
           onChange={(e) => setDescription(e.target.value)}
           rows={4}
           maxLength={300}
-          className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] outline-none focus:border-[#8DC63F] transition-colors resize-none"
+          className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] outline-none focus:border-[#7C3AED] transition-colors resize-none"
         />
         <p className="text-[11px] text-gray-400 mt-1 text-right">{description.length}/300</p>
       </Card>
@@ -126,7 +126,7 @@ export default function HospitalInfoPage() {
               readOnly
               className="flex-1 px-3 py-2.5 bg-gray-50 rounded-lg text-[13px] text-gray-700 cursor-not-allowed"
             />
-            <button className="px-3 py-2.5 rounded-lg bg-[#8DC63F] text-white text-[12px] font-semibold btn-press whitespace-nowrap">
+            <button className="px-3 py-2.5 rounded-lg bg-[#7C3AED] text-white text-[12px] font-semibold btn-press whitespace-nowrap">
               주소검색
             </button>
           </div>
@@ -134,7 +134,7 @@ export default function HospitalInfoPage() {
             value={detailAddress}
             onChange={(e) => setDetailAddress(e.target.value)}
             placeholder="상세주소 (건물명·층·호수)"
-            className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] outline-none focus:border-[#8DC63F] transition-colors"
+            className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] outline-none focus:border-[#7C3AED] transition-colors"
           />
           <input
             value={enAddress}
@@ -158,9 +158,9 @@ export default function HospitalInfoPage() {
                 onClick={() => toggleSet(selectedStations, setSelectedStations, s, 4)}
                 className="px-3 py-1.5 rounded-full text-[12px] font-semibold flex items-center gap-1"
                 style={{
-                  backgroundColor: sel ? '#F5FAEF' : '#fff',
-                  color: sel ? '#5B8B25' : '#51535C',
-                  border: `1px solid ${sel ? '#8DC63F' : '#E5E7EB'}`,
+                  backgroundColor: sel ? '#F4EFFF' : '#fff',
+                  color: sel ? '#7C3AED' : '#51535C',
+                  border: `1px solid ${sel ? '#7C3AED' : '#E5E7EB'}`,
                   transition: 'all 200ms ease',
                 }}
               >
@@ -210,8 +210,8 @@ export default function HospitalInfoPage() {
                 onClick={() => updateHour(idx, { closed: !h.closed })}
                 className="px-2 py-1 rounded text-[11px] font-semibold"
                 style={{
-                  backgroundColor: h.closed ? '#F3F4F6' : '#F5FAEF',
-                  color: h.closed ? '#51535C' : '#5B8B25',
+                  backgroundColor: h.closed ? '#F3F4F6' : '#F4EFFF',
+                  color: h.closed ? '#51535C' : '#7C3AED',
                 }}
               >
                 {h.closed ? '휴진' : '진료'}
@@ -227,7 +227,7 @@ export default function HospitalInfoPage() {
           onChange={(e) => setEtcInfo(e.target.value)}
           rows={2}
           placeholder="점심시간, 특별 운영 안내 등"
-          className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] outline-none focus:border-[#8DC63F] transition-colors resize-none"
+          className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] outline-none focus:border-[#7C3AED] transition-colors resize-none"
         />
       </Card>
 
@@ -325,7 +325,7 @@ export default function HospitalInfoPage() {
               <span className="text-[13px] text-gray-700">{s.label}</span>
               <div className="flex items-center gap-2">
                 <div className="h-1.5 rounded-full bg-gray-100 overflow-hidden" style={{ width: 140 }}>
-                  <div className="h-full bg-[#8DC63F]" style={{ width: `${(s.value / 5) * 100}%` }} />
+                  <div className="h-full bg-[#7C3AED]" style={{ width: `${(s.value / 5) * 100}%` }} />
                 </div>
                 <span className="text-[12px] font-bold text-gray-900 w-10 text-right">{s.value}</span>
                 <span className="text-[10px] text-gray-400 w-12 text-right">{s.count}명</span>
@@ -364,9 +364,9 @@ function Chip({ label, active, onClick }: { label: string; active: boolean; onCl
       onClick={onClick}
       className="px-3 py-1.5 rounded-full text-[12px] font-semibold flex items-center gap-1"
       style={{
-        backgroundColor: active ? '#F5FAEF' : '#fff',
-        color: active ? '#5B8B25' : '#51535C',
-        border: `1px solid ${active ? '#8DC63F' : '#E5E7EB'}`,
+        backgroundColor: active ? '#F4EFFF' : '#fff',
+        color: active ? '#7C3AED' : '#51535C',
+        border: `1px solid ${active ? '#7C3AED' : '#E5E7EB'}`,
         transition: 'all 200ms ease',
       }}
     >
@@ -380,7 +380,7 @@ function ImageUploadSlot({ aspect, hint, small }: { aspect: string; hint?: strin
   const [file, setFile] = useState<string | null>(null);
   return (
     <label
-      className="block relative rounded-lg border border-dashed border-gray-300 hover:border-[#8DC63F] transition-colors cursor-pointer bg-gray-50 overflow-hidden"
+      className="block relative rounded-lg border border-dashed border-gray-300 hover:border-[#7C3AED] transition-colors cursor-pointer bg-gray-50 overflow-hidden"
       style={{ aspectRatio: aspect }}
     >
       <input

@@ -298,6 +298,40 @@ body {
   to   { opacity: 1; transform: translateY(0); }
 }
 
+/* ===== Partner center shared animations ===== */
+.partner-page {
+  animation: partnerFadeIn 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes partnerFadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.partner-card {
+  transition:
+    box-shadow 0.24s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.24s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.18s ease;
+}
+.partner-card:hover {
+  box-shadow: 0 6px 18px rgba(124, 58, 237, 0.06);
+  border-color: #E5E7EB;
+}
+
+.partner-pill {
+  transition:
+    background-color 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+    color 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.14s ease;
+}
+.partner-pill:active { transform: scale(0.96); }
+
+.partner-row {
+  transition: background-color 0.18s ease;
+}
+.partner-row:hover { background-color: #FAFBFC; }
+
 /* ===== Agree button: check icon + label gap collapse on check ===== */
 .agree-btn { position: relative; }
 .agree-btn-inner {

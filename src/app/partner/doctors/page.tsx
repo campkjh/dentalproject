@@ -103,14 +103,14 @@ export default function DoctorsPage() {
           <button
             onClick={() => setReorderMode((v) => !v)}
             className="px-3 py-2 rounded-lg border border-gray-200 text-[12px] font-semibold text-gray-700 btn-press flex items-center gap-1"
-            style={{ backgroundColor: reorderMode ? '#F5FAEF' : '#fff' }}
+            style={{ backgroundColor: reorderMode ? '#F4EFFF' : '#fff' }}
           >
             <ArrowUpDown size={13} />
             {reorderMode ? '완료' : '순서 조정하기'}
           </button>
           <button
             onClick={() => setShowRegister(true)}
-            className="px-3 py-2 rounded-lg bg-[#8DC63F] text-white text-[12px] font-semibold btn-press flex items-center gap-1"
+            className="px-3 py-2 rounded-lg bg-[#7C3AED] text-white text-[12px] font-semibold btn-press flex items-center gap-1"
           >
             <Plus size={13} /> 의사 등록하기
           </button>
@@ -145,7 +145,7 @@ export default function DoctorsPage() {
                 </Td>
                 <Td>
                   {d.isLead ? (
-                    <span className="inline-flex px-2 py-0.5 rounded bg-[#F5FAEF] text-[#5B8B25] text-[11px] font-bold">
+                    <span className="inline-flex px-2 py-0.5 rounded bg-[#F4EFFF] text-[#7C3AED] text-[11px] font-bold">
                       대표원장
                     </span>
                   ) : (
@@ -280,7 +280,7 @@ function Toggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
       onClick={onToggle}
       className="relative w-9 h-5 rounded-full"
       style={{
-        backgroundColor: on ? '#8DC63F' : '#E5E7EB',
+        backgroundColor: on ? '#7C3AED' : '#E5E7EB',
         transition: 'background-color 220ms ease',
       }}
     >
@@ -333,7 +333,7 @@ function RegisterModal({
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="의사명을 정확하게 입력해주세요"
-            className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] outline-none focus:border-[#8DC63F]"
+            className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] outline-none focus:border-[#7C3AED]"
           />
         </Field>
         <Field label="의사 분류" required>
@@ -344,9 +344,9 @@ function RegisterModal({
                 onClick={() => setCategory(c)}
                 className="flex-1 py-2.5 rounded-lg text-[12px] font-semibold"
                 style={{
-                  backgroundColor: category === c ? '#F5FAEF' : '#fff',
-                  color: category === c ? '#5B8B25' : '#51535C',
-                  border: `1px solid ${category === c ? '#8DC63F' : '#E5E7EB'}`,
+                  backgroundColor: category === c ? '#F4EFFF' : '#fff',
+                  color: category === c ? '#7C3AED' : '#51535C',
+                  border: `1px solid ${category === c ? '#7C3AED' : '#E5E7EB'}`,
                 }}
               >
                 {c}
@@ -362,7 +362,7 @@ function RegisterModal({
             value={license}
             onChange={(e) => setLicense(e.target.value)}
             placeholder="의123456"
-            className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] outline-none focus:border-[#8DC63F]"
+            className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] outline-none focus:border-[#7C3AED]"
           />
           <p className="text-[11px] text-red-500 mt-1">
             * 의사면허번호는 등록 이후 수정이 불가합니다.
@@ -381,7 +381,7 @@ function RegisterModal({
           disabled={!canSave}
           className="flex-1 py-2.5 rounded-lg text-[13px] font-semibold"
           style={{
-            backgroundColor: canSave ? '#8DC63F' : '#E5E7EB',
+            backgroundColor: canSave ? '#7C3AED' : '#E5E7EB',
             color: canSave ? '#fff' : '#A4ABBA',
           }}
         >
@@ -450,7 +450,7 @@ function EditModal({
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] outline-none focus:border-[#8DC63F]"
+            className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] outline-none focus:border-[#7C3AED]"
           />
         </Field>
         <Field label="연혁">
@@ -458,7 +458,7 @@ function EditModal({
             value={history}
             onChange={(e) => setHistory(e.target.value)}
             rows={4}
-            className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] outline-none focus:border-[#8DC63F] resize-none"
+            className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] outline-none focus:border-[#7C3AED] resize-none"
           />
           <p className="text-[11px] text-gray-400 mt-1">
             정회원·회원 표시는 가능하나 평생회원·종신회원·최우수회원 등은 금지됩니다.
@@ -475,9 +475,9 @@ function EditModal({
                 onClick={() => setGender(g)}
                 className="flex-1 py-2.5 rounded-lg text-[12px] font-semibold"
                 style={{
-                  backgroundColor: gender === g ? '#F5FAEF' : '#fff',
-                  color: gender === g ? '#5B8B25' : '#51535C',
-                  border: `1px solid ${gender === g ? '#8DC63F' : '#E5E7EB'}`,
+                  backgroundColor: gender === g ? '#F4EFFF' : '#fff',
+                  color: gender === g ? '#7C3AED' : '#51535C',
+                  border: `1px solid ${gender === g ? '#7C3AED' : '#E5E7EB'}`,
                 }}
               >
                 {g}
@@ -492,7 +492,7 @@ function EditModal({
           <select
             value={specialtyCert}
             onChange={(e) => setSpecialtyCert(e.target.value)}
-            className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] outline-none focus:border-[#8DC63F]"
+            className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] outline-none focus:border-[#7C3AED]"
           >
             {SPECIALTY_OPTIONS.map((s) => (
               <option key={s} value={s}>{s}</option>
@@ -504,7 +504,7 @@ function EditModal({
             <Field label="전문의 자격번호">
               <input
                 placeholder="자격번호 입력 (등록 후 수정 불가)"
-                className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] outline-none focus:border-[#8DC63F]"
+                className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] outline-none focus:border-[#7C3AED]"
               />
             </Field>
             <Field label="전문의 자격증">
@@ -527,9 +527,9 @@ function EditModal({
                   }}
                   className="px-3 py-1.5 rounded-full text-[12px] font-semibold"
                   style={{
-                    backgroundColor: sel ? '#F5FAEF' : '#fff',
-                    color: sel ? '#5B8B25' : '#51535C',
-                    border: `1px solid ${sel ? '#8DC63F' : '#E5E7EB'}`,
+                    backgroundColor: sel ? '#F4EFFF' : '#fff',
+                    color: sel ? '#7C3AED' : '#51535C',
+                    border: `1px solid ${sel ? '#7C3AED' : '#E5E7EB'}`,
                   }}
                 >
                   {t}
@@ -555,7 +555,7 @@ function EditModal({
               treatments: Array.from(treatments),
             })
           }
-          className="flex-1 py-2.5 rounded-lg bg-[#8DC63F] text-white text-[13px] font-semibold"
+          className="flex-1 py-2.5 rounded-lg bg-[#7C3AED] text-white text-[13px] font-semibold"
         >
           저장
         </button>
@@ -617,7 +617,7 @@ function Field({
 function FileSlot({ accept = 'image/*,application/pdf' }: { accept?: string }) {
   const [fileName, setFileName] = useState<string | null>(null);
   return (
-    <label className="block rounded-lg border border-dashed border-gray-300 hover:border-[#8DC63F] bg-gray-50 cursor-pointer transition-colors px-3 py-3">
+    <label className="block rounded-lg border border-dashed border-gray-300 hover:border-[#7C3AED] bg-gray-50 cursor-pointer transition-colors px-3 py-3">
       <input
         type="file"
         accept={accept}

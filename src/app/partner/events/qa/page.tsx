@@ -77,7 +77,7 @@ export default function QaPage() {
             onClick={() => setQaEnabled((v) => !v)}
             className="relative w-9 h-5 rounded-full"
             style={{
-              backgroundColor: qaEnabled ? '#8DC63F' : '#E5E7EB',
+              backgroundColor: qaEnabled ? '#7C3AED' : '#E5E7EB',
               transition: 'background-color 220ms ease',
             }}
           >
@@ -92,7 +92,7 @@ export default function QaPage() {
         </label>
       </div>
 
-      <div className="rounded-lg bg-[#F5FAEF] text-[11px] text-[#5B8B25] px-3 py-2 flex items-start gap-1.5">
+      <div className="rounded-lg bg-[#F4EFFF] text-[11px] text-[#7C3AED] px-3 py-2 flex items-start gap-1.5">
         <Info size={11} className="mt-0.5 flex-shrink-0" />
         강남언니 앱 이외 채널로 소통을 유도하는 답변은 작성할 수 없습니다 (전화·홈페이지 안내 등).
       </div>
@@ -112,7 +112,7 @@ export default function QaPage() {
                     <span className="ml-auto flex-shrink-0">{q.createdAt}</span>
                   </div>
                   <p className="text-[13px] text-gray-900 leading-snug mb-2">
-                    <span className="text-[#8DC63F] font-bold mr-1.5">Q.</span>
+                    <span className="text-[#7C3AED] font-bold mr-1.5">Q.</span>
                     {q.question}
                   </p>
                   {q.answer ? (
@@ -146,7 +146,7 @@ export default function QaPage() {
                         rows={3}
                         maxLength={500}
                         placeholder="답변을 입력해주세요."
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-[12.5px] outline-none focus:border-[#8DC63F] resize-none"
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-[12.5px] outline-none focus:border-[#7C3AED] resize-none"
                       />
                       <div className="flex items-center justify-between">
                         <span className="text-[11px] text-gray-400">
@@ -161,7 +161,7 @@ export default function QaPage() {
                           </button>
                           <button
                             onClick={() => save(q.id)}
-                            className="px-3 py-1.5 rounded text-[11px] font-semibold bg-[#8DC63F] text-white"
+                            className="px-3 py-1.5 rounded text-[11px] font-semibold bg-[#7C3AED] text-white"
                           >
                             답변 등록
                           </button>
@@ -171,7 +171,7 @@ export default function QaPage() {
                   ) : (
                     <button
                       onClick={() => setOpenId(q.id)}
-                      className="text-[12px] font-semibold text-[#5B8B25] flex items-center gap-0.5"
+                      className="text-[12px] font-semibold text-[#7C3AED] flex items-center gap-0.5"
                     >
                       답변 작성하기 <ChevronDown size={12} />
                     </button>

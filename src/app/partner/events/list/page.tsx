@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { Plus, Star, Search } from 'lucide-react';
 
 type EventRow = {
@@ -80,9 +81,12 @@ export default function EventsListPage() {
           <h1 className="text-[18px] font-bold text-gray-900">이벤트 목록</h1>
           <p className="text-[12px] text-gray-500 mt-1">총 {items.length}건</p>
         </div>
-        <button className="px-3 py-2 rounded-lg bg-[#8DC63F] text-white text-[12px] font-semibold btn-press flex items-center gap-1">
+        <Link
+          href="/partner/events/new"
+          className="px-3 py-2 rounded-lg bg-[#7C3AED] text-white text-[12px] font-semibold btn-press flex items-center gap-1"
+        >
           <Plus size={13} /> 이벤트 등록
-        </button>
+        </Link>
       </div>
 
       <div className="bg-white rounded-xl border border-gray-200 p-3">

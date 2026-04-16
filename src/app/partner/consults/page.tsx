@@ -282,7 +282,7 @@ export default function ConsultsPage() {
                       <button
                         onClick={() => setSmsTarget(c)}
                         disabled={c.isOverseas || c.isInCall}
-                        className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#5B8B25] border border-[#8DC63F] rounded px-2 py-1 disabled:opacity-40 disabled:cursor-not-allowed"
+                        className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#7C3AED] border border-[#7C3AED] rounded px-2 py-1 disabled:opacity-40 disabled:cursor-not-allowed"
                       >
                         <MessageSquare size={11} /> 문자전송
                       </button>
@@ -373,10 +373,10 @@ function SmsModal({
             onChange={(e) => setMsg(e.target.value)}
             rows={6}
             maxLength={200}
-            className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] outline-none focus:border-[#8DC63F] resize-none"
+            className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] outline-none focus:border-[#7C3AED] resize-none"
           />
           <p className="text-[11px] text-gray-400 text-right">{msg.length}/200</p>
-          <div className="text-[11px] text-gray-500 bg-[#F5FAEF] rounded px-3 py-2">
+          <div className="text-[11px] text-gray-500 bg-[#F4EFFF] rounded px-3 py-2">
             해외 번호는 전송할 수 없으며, 국내 번호에 한해 문자 전송료는 무료입니다.
           </div>
         </div>
@@ -389,7 +389,7 @@ function SmsModal({
           </button>
           <button
             onClick={onSend}
-            className="flex-1 py-2.5 rounded-lg bg-[#8DC63F] text-white text-[13px] font-semibold"
+            className="flex-1 py-2.5 rounded-lg bg-[#7C3AED] text-white text-[13px] font-semibold"
           >
             전송
           </button>

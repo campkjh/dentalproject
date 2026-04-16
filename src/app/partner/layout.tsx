@@ -61,6 +61,12 @@ export default function PartnerLayout({ children }: { children: React.ReactNode 
   const [openItems, setOpenItems] = useState<Set<string>>(
     new Set(['병원 관리', '이벤트 관리', '앱결제 관리'])
   );
+
+  // Auth/landing pages render without the sidebar shell
+  const isAuth = pathname === '/partner/login' || pathname === '/partner/signup';
+  if (isAuth) {
+    return <>{children}</>;
+  }
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   const toggleItem = (label: string) => {
@@ -84,7 +90,7 @@ export default function PartnerLayout({ children }: { children: React.ReactNode 
       style={{ width: 220 }}
     >
       <div className="h-14 px-4 flex items-center gap-2 border-b border-gray-100">
-        <div className="w-6 h-6 rounded-md bg-[#8DC63F] flex items-center justify-center text-white text-xs font-black">
+        <div className="w-6 h-6 rounded-md bg-[#7C3AED] flex items-center justify-center text-white text-xs font-black">
           G
         </div>
         <span className="text-[13px] font-bold text-gray-900">강남언니 파트너센터</span>
@@ -101,7 +107,7 @@ export default function PartnerLayout({ children }: { children: React.ReactNode 
                 <button
                   onClick={() => toggleItem(item.label)}
                   className={`w-full flex items-center justify-between px-4 py-2 text-left text-[13px] ${
-                    active ? 'text-[#8DC63F] font-semibold' : 'text-gray-700'
+                    active ? 'text-[#7C3AED] font-semibold' : 'text-gray-700'
                   } hover:bg-gray-50`}
                 >
                   <span className="flex items-center gap-2">
@@ -128,7 +134,7 @@ export default function PartnerLayout({ children }: { children: React.ReactNode 
                       onClick={() => setDrawerOpen(false)}
                       className={`block pl-11 pr-4 py-2 text-[12.5px] ${
                         isActive(c.href)
-                          ? 'text-[#8DC63F] font-semibold bg-[#F5FAEF]'
+                          ? 'text-[#7C3AED] font-semibold bg-[#F4EFFF]'
                           : 'text-gray-600 hover:bg-gray-50'
                       }`}
                     >
@@ -145,7 +151,7 @@ export default function PartnerLayout({ children }: { children: React.ReactNode 
               href={item.href!}
               onClick={() => setDrawerOpen(false)}
               className={`flex items-center gap-2 px-4 py-2 text-[13px] ${
-                active ? 'text-[#8DC63F] font-semibold bg-[#F5FAEF]' : 'text-gray-700'
+                active ? 'text-[#7C3AED] font-semibold bg-[#F4EFFF]' : 'text-gray-700'
               } hover:bg-gray-50`}
             >
               <span className="text-base w-5 text-center">{item.icon}</span>
@@ -213,12 +219,12 @@ export default function PartnerLayout({ children }: { children: React.ReactNode 
             <button className="p-1.5 rounded-full hover:bg-gray-100">
               <Bell size={18} className="text-gray-700" />
             </button>
-            <div className="w-7 h-7 rounded-full bg-[#8DC63F] text-white flex items-center justify-center text-[11px] font-bold">
+            <div className="w-7 h-7 rounded-full bg-[#7C3AED] text-white flex items-center justify-center text-[11px] font-bold">
               H
             </div>
           </div>
         </header>
-        <div className="flex-1 p-3 lg:p-5">{children}</div>
+        <div key={pathname} className="flex-1 p-3 lg:p-5 partner-page">{children}</div>
       </main>
     </div>
   );

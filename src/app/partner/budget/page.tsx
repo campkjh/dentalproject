@@ -43,7 +43,7 @@ export default function BudgetPage() {
         <Stat label="잔여 예산" value={Math.max(0, totalMonthly - totalSpent)} sub="이번 달 남은 금액" />
       </div>
 
-      <div className="rounded-lg bg-[#F5FAEF] text-[11px] text-[#5B8B25] px-3 py-2 flex items-start gap-1.5">
+      <div className="rounded-lg bg-[#F4EFFF] text-[11px] text-[#7C3AED] px-3 py-2 flex items-start gap-1.5">
         <Info size={11} className="mt-0.5 flex-shrink-0" />
         일 한도에 도달하면 해당 채널은 자동으로 노출이 일시 정지되며, 자정에 리셋됩니다.
       </div>
@@ -71,8 +71,8 @@ export default function BudgetPage() {
                       <span
                         className="px-2 py-0.5 rounded text-[11px] font-semibold"
                         style={{
-                          backgroundColor: i.type === 'CPV' ? '#F5FAEF' : '#FFF8E1',
-                          color: i.type === 'CPV' ? '#5B8B25' : '#B45309',
+                          backgroundColor: i.type === 'CPV' ? '#F4EFFF' : '#FFF8E1',
+                          color: i.type === 'CPV' ? '#7C3AED' : '#B45309',
                         }}
                       >
                         {i.type}
@@ -103,7 +103,7 @@ export default function BudgetPage() {
                             className="h-full"
                             style={{
                               width: `${pct}%`,
-                              backgroundColor: pct > 85 ? '#E5484D' : '#8DC63F',
+                              backgroundColor: pct > 85 ? '#E5484D' : '#7C3AED',
                             }}
                           />
                         </div>
@@ -145,7 +145,7 @@ function Toggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
       onClick={onToggle}
       className="relative w-9 h-5 rounded-full"
       style={{
-        backgroundColor: on ? '#8DC63F' : '#E5E7EB',
+        backgroundColor: on ? '#7C3AED' : '#E5E7EB',
         transition: 'background-color 220ms ease',
       }}
     >

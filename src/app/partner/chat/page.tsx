@@ -134,7 +134,7 @@ export default function ChatPage() {
               key={t.id}
               onClick={() => markRead(t.id)}
               className="w-full flex items-start gap-2 px-3 py-3 text-left hover:bg-gray-50 border-b border-gray-50"
-              style={{ backgroundColor: t.id === activeId ? '#F5FAEF' : 'transparent' }}
+              style={{ backgroundColor: t.id === activeId ? '#F4EFFF' : 'transparent' }}
             >
               <div className="w-9 h-9 rounded-full bg-[#F4F5F7] text-gray-700 flex items-center justify-center text-[12px] font-bold flex-shrink-0">
                 {t.name[0]}
@@ -191,7 +191,7 @@ export default function ChatPage() {
                   <div
                     className="rounded-2xl px-3.5 py-2.5 text-[13px] leading-relaxed whitespace-pre-wrap"
                     style={{
-                      backgroundColor: m.from === 'me' ? '#8DC63F' : '#fff',
+                      backgroundColor: m.from === 'me' ? '#7C3AED' : '#fff',
                       color: m.from === 'me' ? '#fff' : '#2B313D',
                       border: m.from === 'me' ? 'none' : '1px solid #F2F3F5',
                       borderTopLeftRadius: m.from === 'me' ? 16 : 4,
@@ -244,7 +244,7 @@ export default function ChatPage() {
             disabled={!input.trim()}
             className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 btn-press"
             style={{
-              backgroundColor: input.trim() ? '#8DC63F' : '#E5E7EB',
+              backgroundColor: input.trim() ? '#7C3AED' : '#E5E7EB',
               color: '#fff',
             }}
           >

@@ -103,7 +103,7 @@ export default function ContactPage() {
               value={f.value}
               onChange={(e) => update(f.key, e.target.value)}
               placeholder={f.type === 'tel' ? '010 1234 5678' : 'email@example.com'}
-              className="flex-1 max-w-md px-0 py-2 bg-transparent text-[14px] border-0 border-b border-gray-200 focus:outline-none focus:border-[#8DC63F] transition-colors"
+              className="flex-1 max-w-md px-0 py-2 bg-transparent text-[14px] border-0 border-b border-gray-200 focus:outline-none focus:border-[#7C3AED] transition-colors"
             />
           </div>
         ))}

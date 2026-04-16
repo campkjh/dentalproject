@@ -58,7 +58,7 @@ export default function SettlementPage() {
         </p>
       </div>
 
-      <div className="rounded-lg bg-[#F5FAEF] text-[11px] text-[#5B8B25] px-3 py-2 flex items-start gap-1.5">
+      <div className="rounded-lg bg-[#F4EFFF] text-[11px] text-[#7C3AED] px-3 py-2 flex items-start gap-1.5">
         <Info size={12} className="mt-0.5 flex-shrink-0" />
         <p className="leading-snug">
           사용 완료처리가 진행된 날짜를 기준으로 차주 월요일에 정산 파일이 생성되며,
@@ -115,7 +115,7 @@ export default function SettlementPage() {
                     <td className="px-3 py-3 text-right">
                       <button
                         disabled={s.status !== '지급완료'}
-                        className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#5B8B25] disabled:text-gray-300"
+                        className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#7C3AED] disabled:text-gray-300"
                       >
                         <Download size={12} /> 정산서
                       </button>
@@ -144,7 +144,7 @@ function Stat({
 }) {
   const colors = {
     pending: { bg: '#FFF8E1', text: '#B45309' },
-    done: { bg: '#F5FAEF', text: '#5B8B25' },
+    done: { bg: '#F4EFFF', text: '#7C3AED' },
     total: { bg: '#F3F4F6', text: '#2B313D' },
   }[tone];
   return (
