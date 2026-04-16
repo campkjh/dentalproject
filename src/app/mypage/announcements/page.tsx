@@ -2,10 +2,11 @@
 
 import Link from 'next/link';
 import TopBar from '@/components/common/TopBar';
-import { announcements } from '@/lib/mock-data';
+import { useStore } from '@/store';
 import { ChevronRight } from 'lucide-react';
 
 export default function AnnouncementsPage() {
+  const announcements = useStore((s) => s.announcements);
   return (
     <div className="min-h-screen bg-white max-w-[480px] mx-auto">
       <TopBar title="공지사항" />

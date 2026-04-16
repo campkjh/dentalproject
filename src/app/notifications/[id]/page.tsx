@@ -2,7 +2,7 @@
 
 import { useParams } from 'next/navigation';
 import TopBar from '@/components/common/TopBar';
-import { notifications } from '@/lib/mock-data';
+import { useStore } from '@/store';
 
 const typeBadgeMap: Record<string, { label: string; className: string }> = {
   event: { label: '이벤트', className: 'bg-pink-100 text-pink-600' },
@@ -23,6 +23,7 @@ const notificationContent: Record<string, string> = {
 export default function NotificationDetailPage() {
   const params = useParams();
   const id = params.id as string;
+  const notifications = useStore((s) => s.notifications);
 
   const notification = notifications.find(n => n.id === id);
 

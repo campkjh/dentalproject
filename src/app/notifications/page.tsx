@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Search, Trash2, X, ChevronLeft } from 'lucide-react';
-import { notifications as initialNotifications } from '@/lib/mock-data';
+import { useStore } from '@/store';
 import { Notification } from '@/types';
 
 const typeBadgeMap: Record<string, { label: string; color: string; bg: string }> = {
@@ -17,7 +17,11 @@ const typeBadgeMap: Record<string, { label: string; color: string; bg: string }>
 
 export default function NotificationsPage() {
   const router = useRouter();
-  const [items, setItems] = useState<Notification[]>(initialNotifications);
+  const storeNotifications = useStore((s) => s.notifications);
+  const [items, setItems] = useState<Notification[]>(storeNotifications);
+  useEffect(() => {
+    setItems(storeNotifications);
+  }, [storeNotifications]);
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearch, setShowSearch] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
