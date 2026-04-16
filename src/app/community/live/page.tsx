@@ -171,7 +171,7 @@ export default function CommunityLivePage() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'instant' as ScrollBehavior });
   }, []);
 
-  const handleSend = () => {
+  const handleSend = async () => {
     const text = input.trim();
     if (!text) return;
     if (!authUser) {
@@ -179,7 +179,7 @@ export default function CommunityLivePage() {
       router.push('/login');
       return;
     }
-    addPost({
+    const result = await addPost({
       id: `q-${Date.now()}`,
       boardType: 'question',
       title: text.slice(0, 40),
@@ -195,6 +195,10 @@ export default function CommunityLivePage() {
       hasAnswer: false,
       answerCount: 0,
     });
+    if (result.error) {
+      showToast(result.error);
+      return;
+    }
     setInput('');
     showToast('질문이 등록되었습니다. 의사의 답변을 기다려주세요.');
     setTimeout(() => {
