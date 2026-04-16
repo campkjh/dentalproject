@@ -45,6 +45,29 @@ export default function HomePage() {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
+  // Category dock detection (when category section scrolls past the header)
+  const categorySectionRef = useRef<HTMLDivElement>(null);
+  const [dockProgress, setDockProgress] = useState(0);
+
+  useEffect(() => {
+    const onScroll = () => {
+      const el = categorySectionRef.current;
+      if (!el) {
+        setDockProgress(0);
+        return;
+      }
+      const rect = el.getBoundingClientRect();
+      // Start docking when the category bottom reaches y=120, finish by y=60
+      const start = 120;
+      const end = 60;
+      const p = (start - rect.bottom) / (start - end);
+      setDockProgress(Math.max(0, Math.min(1, p)));
+    };
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
   // Slot machine placeholder rotation
   useEffect(() => {
     const interval = setInterval(() => {
@@ -105,6 +128,48 @@ export default function HomePage() {
             </div>
           </button>
         </div>
+
+        {/* Docked compact category bar — shrinks in based on scroll progress */}
+        <div
+          style={{
+            maxHeight: dockProgress * 64,
+            opacity: dockProgress,
+            transform: `translateY(${(1 - dockProgress) * -8}px)`,
+            overflow: 'hidden',
+            borderTop: dockProgress > 0.3 ? '1px solid #F2F3F5' : '1px solid transparent',
+            transition: 'border-color 300ms ease',
+          }}
+        >
+          <div
+            className="flex items-center gap-3 overflow-x-auto hide-scrollbar px-2.5 py-2"
+            style={{ scrollBehavior: 'smooth' }}
+          >
+            {categories.map((cat) => (
+              <Link
+                key={cat.id}
+                href={`/search?category=${cat.id}`}
+                className="flex flex-col items-center gap-0.5 flex-shrink-0 card-press"
+                style={{ width: 48 }}
+              >
+                <div
+                  className="rounded-xl bg-[#F4F5F7] flex items-center justify-center"
+                  style={{
+                    width: 34 + dockProgress * 4,
+                    height: 34 + dockProgress * 4,
+                  }}
+                >
+                  <img src={cat.icon} alt={cat.name} className="w-7 h-7" />
+                </div>
+                <span
+                  className="text-[10px] text-gray-600 font-medium whitespace-nowrap"
+                  style={{ transform: `scale(${0.92 + dockProgress * 0.08})` }}
+                >
+                  {cat.name}
+                </span>
+              </Link>
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* Desktop content wrapper */}
@@ -123,7 +188,9 @@ export default function HomePage() {
         </div>
 
         {/* Categories — 5x2 pager (swipe horizontally) */}
-        <CategoryPager />
+        <div ref={categorySectionRef}>
+          <CategoryPager />
+        </div>
 
 
         {/* 치과 섹션 */}
