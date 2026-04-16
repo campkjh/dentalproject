@@ -1,356 +1,211 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { Upload, X, Plus, Info, ChevronLeft } from 'lucide-react';
+import { ChevronLeft } from 'lucide-react';
+import { useStore } from '@/store';
+import { useSession } from '@/lib/supabase/SessionProvider';
 
-const COUNTRIES = [
-  { code: 'KR', label: '🇰🇷 한국' },
-  { code: 'JP', label: '🇯🇵 일본' },
-  { code: 'CN', label: '🇨🇳 중국' },
-  { code: 'EN', label: '🇺🇸 글로벌' },
-];
-
-const CATEGORIES = [
-  '눈성형', '코성형', '안면윤곽', '가슴성형', '지방흡입', '리프팅',
-  '보톡스', '필러', '모발이식', '치아교정', '임플란트', '라미네이트',
-  '피부재생', '여드름', '기미·주근깨', '레이저',
-];
-
-const SURGEONS = ['김정우 대표원장', '이서연 원장', '박지훈 원장'];
-
-type Option = { id: string; name: string; price: number; desc: string };
-
-// Seeded mock for any event id
-const seed = (id: string) => ({
-  country: 'KR',
-  title: id === 'evt-1041' ? '눈매교정 + 쌍꺼풀 자연유착' : '등록된 이벤트',
-  category: '눈성형',
-  options: [
-    { id: 'o1', name: '기본형', price: 1800000, desc: '자연유착 + 부분절개' },
-    { id: 'o2', name: '프리미엄', price: 2400000, desc: '풀절개 + 지방재배치' },
-  ],
-  startDate: '2026-04-10',
-  endDate: '2026-05-10',
-  surgeons: new Set([SURGEONS[0]]),
-  description:
-    '눈매교정과 쌍꺼풀 자연유착을 함께 진행합니다. 시술 시간 약 60분, 회복 기간 2주 예상.\n\n심의 필증 번호: 의광-2026-00412',
-  region: '전국' as const,
-});
-
+/* eslint-disable @typescript-eslint/no-explicit-any */
 export default function EventEditPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const initial = seed(id || '');
+  const { authUser } = useSession();
+  const showToast = useStore((s) => s.showToast);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [evt, setEvt] = useState<any>(null);
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [imageUrl, setImageUrl] = useState('');
+  const [originalPrice, setOriginalPrice] = useState('');
+  const [salePrice, setSalePrice] = useState('');
+  const [startAt, setStartAt] = useState('');
+  const [endAt, setEndAt] = useState('');
 
-  const [country, setCountry] = useState(initial.country);
-  const [title, setTitle] = useState(initial.title);
-  const [category, setCategory] = useState(initial.category);
-  const [thumbnail, setThumbnail] = useState<string | null>(null);
-  const [options, setOptions] = useState<Option[]>(initial.options);
-  const [startDate, setStartDate] = useState(initial.startDate);
-  const [endDate, setEndDate] = useState(initial.endDate);
-  const [surgeons, setSurgeons] = useState<Set<string>>(initial.surgeons);
-  const [description, setDescription] = useState(initial.description);
-  const [region, setRegion] = useState<'전국' | '서울/수도권' | '해외'>(initial.region);
+  useEffect(() => {
+    if (!authUser) {
+      setLoading(false);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/my-hospital/events', { cache: 'no-store' });
+        if (!res.ok) return;
+        const { events } = await res.json();
+        const found = (events ?? []).find((e: any) => e.id === id);
+        if (cancelled || !found) {
+          if (!found) showToast('이벤트를 찾을 수 없습니다.');
+          return;
+        }
+        setEvt(found);
+        setTitle(found.title ?? '');
+        setDescription(found.description ?? '');
+        setImageUrl(found.image_url ?? '');
+        setOriginalPrice(found.original_price ?? '');
+        setSalePrice(found.sale_price ?? '');
+        setStartAt(found.start_at ? found.start_at.slice(0, 10) : '');
+        setEndAt(found.end_at ? found.end_at.slice(0, 10) : '');
+      } finally {
+        setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [authUser, id, showToast]);
 
-  const addOption = () =>
-    setOptions((p) => [...p, { id: `o-${Date.now()}`, name: '', price: 0, desc: '' }]);
-  const updateOption = (oid: string, patch: Partial<Option>) =>
-    setOptions((p) => p.map((o) => (o.id === oid ? { ...o, ...patch } : o)));
-  const removeOption = (oid: string) =>
-    setOptions((p) => (p.length > 1 ? p.filter((o) => o.id !== oid) : p));
+  const discountPercent =
+    originalPrice && salePrice && Number(originalPrice) > 0
+      ? Math.round((1 - Number(salePrice) / Number(originalPrice)) * 100)
+      : null;
+
+  const save = async () => {
+    if (saving) return;
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/my-hospital/events/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: title.trim(),
+          description: description.trim() || null,
+          imageUrl: imageUrl.trim() || null,
+          originalPrice: originalPrice ? Number(originalPrice) : null,
+          salePrice: salePrice ? Number(salePrice) : null,
+          discountPercent,
+          startAt: startAt ? new Date(startAt).toISOString() : null,
+          endAt: endAt ? new Date(endAt).toISOString() : null,
+        }),
+      });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        showToast(j.error || '저장 실패');
+      } else {
+        showToast('저장되었습니다.');
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const remove = async () => {
+    if (!confirm('이 이벤트를 삭제할까요?')) return;
+    const res = await fetch(`/api/my-hospital/events/${id}`, { method: 'DELETE' });
+    if (res.ok) {
+      showToast('삭제되었습니다.');
+      router.push('/partner/events/list');
+    } else {
+      showToast('삭제 실패');
+    }
+  };
+
+  if (!authUser) {
+    return (
+      <div className="bg-white rounded-xl p-10 text-center">
+        <p className="text-sm text-gray-500 mb-4">로그인이 필요합니다.</p>
+        <Link href="/login" className="inline-block px-5 py-2.5 bg-[#7C3AED] text-white text-sm font-bold rounded-xl">
+          로그인
+        </Link>
+      </div>
+    );
+  }
+
+  if (loading) return <div className="text-center py-20 text-sm text-gray-400">불러오는 중…</div>;
+  if (!evt) {
+    return (
+      <div className="bg-white rounded-xl p-10 text-center">
+        <p className="text-sm text-gray-500 mb-4">이벤트를 찾을 수 없습니다.</p>
+        <Link href="/partner/events/list" className="text-[#7C3AED] text-sm font-bold">목록으로</Link>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4 max-w-3xl">
-      <Link
-        href="/partner/events/list"
-        className="inline-flex items-center gap-1 text-[12px] text-gray-500 hover:text-gray-900"
-      >
+      <Link href="/partner/events/list" className="inline-flex items-center gap-1 text-[12px] text-gray-500 hover:text-gray-900">
         <ChevronLeft size={14} /> 이벤트 목록
       </Link>
 
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h1 className="text-[18px] font-bold text-gray-900">이벤트 수정</h1>
-          <p className="text-[12px] text-gray-500 mt-1">
-            ID <span className="font-semibold text-gray-700">{id}</span> · 수정 내용은 검수 완료 후 반영됩니다.
-          </p>
-        </div>
+      <div className="flex items-center justify-between">
+        <h1 className="text-[18px] font-bold text-gray-900">이벤트 편집</h1>
+        <span className="text-[10px] font-bold px-2 py-1 rounded bg-gray-100 text-gray-600">
+          {evt.status}
+        </span>
       </div>
 
-      <Card title="대상 국가">
-        <div className="flex flex-wrap gap-1.5">
-          {COUNTRIES.map((c) => (
-            <ChipBtn key={c.code} active={country === c.code} onClick={() => setCountry(c.code)}>
-              {c.label}
-            </ChipBtn>
-          ))}
+      {evt.reject_reason && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+          <p className="text-[12px] text-red-600 font-bold mb-1">반려 사유</p>
+          <p className="text-[12px] text-red-500">{evt.reject_reason}</p>
+        </div>
+      )}
+
+      <Card title="기본 정보">
+        <div className="space-y-3">
+          <Field label="이벤트명">
+            <input value={title} onChange={(e) => setTitle(e.target.value)} className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:border-[#7C3AED]" />
+          </Field>
+          <Field label="이벤트 소개">
+            <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={4} className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:border-[#7C3AED] resize-none" />
+          </Field>
+          <Field label="대표 이미지 URL">
+            <input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:border-[#7C3AED]" />
+          </Field>
         </div>
       </Card>
 
-      <Card title="이벤트명" required>
-        <input
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          maxLength={40}
-          className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] outline-none focus:border-[#7C3AED] transition-colors"
-        />
-        <p className="text-[11px] text-gray-400 mt-1 text-right">{title.length}/40</p>
+      <Card title="가격">
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="정가 (원)">
+            <input type="number" value={originalPrice} onChange={(e) => setOriginalPrice(e.target.value)} className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:border-[#7C3AED]" />
+          </Field>
+          <Field label="할인가 (원)">
+            <input type="number" value={salePrice} onChange={(e) => setSalePrice(e.target.value)} className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:border-[#7C3AED]" />
+          </Field>
+        </div>
+        {discountPercent !== null && discountPercent > 0 && (
+          <p className="text-[12px] text-[#7C3AED] mt-2 font-bold">할인율: {discountPercent}%</p>
+        )}
       </Card>
 
-      <Card title="시술 카테고리" required>
-        <div className="flex flex-wrap gap-1.5">
-          {CATEGORIES.map((c) => (
-            <ChipBtn key={c} active={category === c} onClick={() => setCategory(c)}>
-              {c}
-            </ChipBtn>
-          ))}
+      <Card title="기간">
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="시작일">
+            <input type="date" value={startAt} onChange={(e) => setStartAt(e.target.value)} className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:border-[#7C3AED]" />
+          </Field>
+          <Field label="종료일">
+            <input type="date" value={endAt} onChange={(e) => setEndAt(e.target.value)} className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:border-[#7C3AED]" />
+          </Field>
         </div>
       </Card>
 
-      <Card title="대표 이미지">
-        <div className="max-w-xs">
-          <ImageSlot value={thumbnail} onChange={setThumbnail} aspect="1 / 1" />
-        </div>
-        <p className="text-[11px] text-gray-400 mt-2">현재 이미지는 유지되며, 새 이미지 업로드 시 교체됩니다.</p>
-      </Card>
-
-      <Card
-        title="가격 옵션"
-        required
-        right={
-          <button
-            onClick={addOption}
-            className="text-[11px] font-semibold text-[#7C3AED] flex items-center gap-0.5"
-          >
-            <Plus size={12} /> 옵션 추가
-          </button>
-        }
-      >
-        <div className="space-y-2">
-          {options.map((o, idx) => (
-            <div key={o.id} className="rounded-lg border border-gray-200 p-3 flex gap-2">
-              <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#F4EFFF] text-[#7C3AED] flex items-center justify-center text-[11px] font-bold">
-                {idx + 1}
-              </span>
-              <div className="flex-1 space-y-2">
-                <input
-                  value={o.name}
-                  onChange={(e) => updateOption(o.id, { name: e.target.value })}
-                  placeholder="옵션명"
-                  className="w-full px-2.5 py-2 border border-gray-200 rounded text-[12px] outline-none focus:border-[#7C3AED]"
-                />
-                <div className="flex items-center gap-2">
-                  <input
-                    type="number"
-                    value={o.price || ''}
-                    onChange={(e) => updateOption(o.id, { price: Number(e.target.value) || 0 })}
-                    placeholder="가격"
-                    className="flex-1 px-2.5 py-2 border border-gray-200 rounded text-[12px] outline-none focus:border-[#7C3AED]"
-                  />
-                  <span className="text-[11px] text-gray-500">원</span>
-                </div>
-                <input
-                  value={o.desc}
-                  onChange={(e) => updateOption(o.id, { desc: e.target.value })}
-                  placeholder="옵션 설명"
-                  className="w-full px-2.5 py-2 border border-gray-200 rounded text-[12px] outline-none focus:border-[#7C3AED]"
-                />
-              </div>
-              {options.length > 1 && (
-                <button
-                  onClick={() => removeOption(o.id)}
-                  className="text-gray-400 hover:text-red-500 p-1 flex-shrink-0"
-                >
-                  <X size={14} />
-                </button>
-              )}
-            </div>
-          ))}
-        </div>
-      </Card>
-
-      <Card title="노출 기간">
-        <div className="flex items-center gap-3">
-          <input
-            type="date"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-            className="flex-1 px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] outline-none focus:border-[#7C3AED]"
-          />
-          <span className="text-gray-400">~</span>
-          <input
-            type="date"
-            value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
-            className="flex-1 px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] outline-none focus:border-[#7C3AED]"
-          />
-        </div>
-      </Card>
-
-      <Card title="집도의">
-        <div className="flex flex-wrap gap-1.5">
-          {SURGEONS.map((s) => {
-            const sel = surgeons.has(s);
-            return (
-              <ChipBtn
-                key={s}
-                active={sel}
-                onClick={() => {
-                  const next = new Set(surgeons);
-                  if (next.has(s)) next.delete(s);
-                  else next.add(s);
-                  setSurgeons(next);
-                }}
-              >
-                {s}
-              </ChipBtn>
-            );
-          })}
-        </div>
-      </Card>
-
-      <Card title="상세 설명">
-        <textarea
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          rows={6}
-          maxLength={2000}
-          className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] outline-none focus:border-[#7C3AED] resize-none"
-        />
-        <p className="text-[11px] text-gray-400 mt-1 text-right">{description.length}/2000</p>
-      </Card>
-
-      <Card title="노출 지역">
-        <div className="flex gap-1.5">
-          {(['전국', '서울/수도권', '해외'] as const).map((r) => (
-            <ChipBtn key={r} active={region === r} onClick={() => setRegion(r)}>
-              {r}
-            </ChipBtn>
-          ))}
-        </div>
-      </Card>
-
-      <div className="bg-[#FFF8E1] rounded-lg px-3 py-3 flex items-start gap-2">
-        <Info size={14} className="text-[#B45309] mt-0.5 flex-shrink-0" />
-        <div className="text-[11px] text-[#B45309] leading-relaxed">
-          수정 내용은 저장 즉시 검수 대기 상태로 전환되며, 승인 완료까지 기존 내용이 유지됩니다.
-        </div>
-      </div>
-
-      <div className="sticky bottom-0 -mx-3 lg:-mx-5 px-3 lg:px-5 py-3 bg-white border-t border-gray-200 flex gap-2">
-        <button
-          onClick={() => router.push('/partner/events/list')}
-          className="px-5 py-2.5 rounded-lg border border-gray-200 text-[13px] font-semibold text-gray-700"
-        >
-          취소
-        </button>
-        <button
-          onClick={() => router.push('/partner/events/approval')}
-          className="flex-1 py-2.5 rounded-lg text-[13px] font-bold btn-press bg-[#7C3AED] text-white"
-          style={{ boxShadow: '0 6px 16px rgba(124, 58, 237, 0.3)' }}
-        >
-          수정 저장 및 검수 요청
+      <div className="flex gap-2">
+        <button onClick={remove} className="flex-1 py-3.5 rounded-xl text-sm font-bold border border-red-200 text-red-600">삭제</button>
+        <button onClick={save} disabled={saving} className="flex-1 py-3.5 rounded-xl text-sm font-bold bg-[#7C3AED] text-white disabled:opacity-50">
+          {saving ? '저장 중…' : '저장하기'}
         </button>
       </div>
     </div>
   );
 }
 
-function Card({
-  title,
-  required,
-  right,
-  children,
-}: {
-  title: string;
-  required?: boolean;
-  right?: React.ReactNode;
-  children: React.ReactNode;
-}) {
+function Card({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="bg-white rounded-xl border border-gray-200 p-4 partner-card">
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-[13px] font-bold text-gray-900">
-          {title}
-          {required && <span className="text-red-500 ml-0.5">*</span>}
-        </h3>
-        {right}
-      </div>
+    <section className="bg-white rounded-xl border border-gray-200 p-5">
+      <h2 className="text-[14px] font-bold text-gray-900 mb-3">{title}</h2>
       {children}
     </section>
   );
 }
 
-function ChipBtn({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <button
-      onClick={onClick}
-      className="partner-pill px-3 py-1.5 rounded-full text-[12px] font-semibold"
-      style={{
-        backgroundColor: active ? '#F4EFFF' : '#fff',
-        color: active ? '#7C3AED' : '#51535C',
-        border: `1px solid ${active ? '#7C3AED' : '#E5E7EB'}`,
-      }}
-    >
+    <div>
+      <label className="block text-[12px] font-bold text-gray-700 mb-1.5">{label}</label>
       {children}
-    </button>
-  );
-}
-
-function ImageSlot({
-  value,
-  onChange,
-  aspect,
-}: {
-  value: string | null;
-  onChange: (v: string | null) => void;
-  aspect: string;
-}) {
-  return (
-    <label
-      className="block relative rounded-lg border border-dashed border-gray-300 hover:border-[#7C3AED] bg-gray-50 cursor-pointer overflow-hidden"
-      style={{ aspectRatio: aspect }}
-    >
-      <input
-        type="file"
-        accept="image/*"
-        className="sr-only"
-        onChange={(e) => {
-          const f = e.target.files?.[0];
-          if (f) onChange(URL.createObjectURL(f));
-        }}
-      />
-      {value ? (
-        <>
-          <img src={value} alt="" className="absolute inset-0 w-full h-full object-cover" />
-          <button
-            type="button"
-            onClick={(e) => {
-              e.preventDefault();
-              onChange(null);
-            }}
-            className="absolute top-1.5 right-1.5 w-7 h-7 rounded-full bg-black/60 text-white flex items-center justify-center"
-          >
-            <X size={13} />
-          </button>
-        </>
-      ) : (
-        <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-400">
-          <Upload size={22} />
-          <p className="text-[12px] font-semibold mt-2 text-gray-600">이미지 업로드</p>
-        </div>
-      )}
-    </label>
+    </div>
   );
 }

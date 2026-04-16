@@ -1,158 +1,204 @@
 'use client';
 
-import { useState } from 'react';
-import { Info } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { Coins } from 'lucide-react';
+import { useStore } from '@/store';
+import { useSession } from '@/lib/supabase/SessionProvider';
 
-type Allocation = {
+/* eslint-disable @typescript-eslint/no-explicit-any */
+type Tx = {
   id: string;
-  name: string;
-  type: 'CPV' | '부가광고';
-  daily: number;
-  monthly: number;
-  spentMonth: number;
-  active: boolean;
+  type: 'charge' | 'spend' | 'refund';
+  description: string | null;
+  amount: number;
+  balance_after: number;
+  created_at: string;
 };
 
-const INITIAL: Allocation[] = [
-  { id: 'b1', name: '전체 이벤트 (CPV)', type: 'CPV', daily: 200000, monthly: 5000000, spentMonth: 3280000, active: true },
-  { id: 'b2', name: '홈 배너 (부가광고)', type: '부가광고', daily: 50000, monthly: 1500000, spentMonth: 420000, active: true },
-  { id: 'b3', name: '카테고리 프리미엄', type: '부가광고', daily: 30000, monthly: 900000, spentMonth: 220000, active: false },
-];
+const TYPE_LABEL: Record<Tx['type'], { label: string; color: string }> = {
+  charge: { label: '충전', color: '#15803D' },
+  spend: { label: '소진', color: '#E5484D' },
+  refund: { label: '환불', color: '#7C3AED' },
+};
+
+const PRESET = [50000, 100000, 300000, 500000, 1000000, 3000000];
 
 export default function BudgetPage() {
-  const [items, setItems] = useState<Allocation[]>(INITIAL);
-  const totalMonthly = items.filter((i) => i.active).reduce((s, i) => s + i.monthly, 0);
-  const totalSpent = items.reduce((s, i) => s + i.spentMonth, 0);
+  const { authUser } = useSession();
+  const showToast = useStore((s) => s.showToast);
+  const [balance, setBalance] = useState(0);
+  const [txs, setTxs] = useState<Tx[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [chargeAmount, setChargeAmount] = useState('');
+  const [charging, setCharging] = useState(false);
 
-  const update = (id: string, patch: Partial<Allocation>) => {
-    setItems((prev) => prev.map((i) => (i.id === id ? { ...i, ...patch } : i)));
+  const reload = async () => {
+    const res = await fetch('/api/my-hospital/budget', { cache: 'no-store' });
+    if (!res.ok) return;
+    const { balance: b, transactions } = await res.json();
+    setBalance(b ?? 0);
+    setTxs(transactions ?? []);
   };
+
+  useEffect(() => {
+    if (!authUser) {
+      setLoading(false);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        await reload();
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [authUser]);
+
+  const handleCharge = async () => {
+    const amount = Number(chargeAmount);
+    if (!amount || amount < 1000) {
+      showToast('1,000원 이상 입력해주세요.');
+      return;
+    }
+    setCharging(true);
+    try {
+      const res = await fetch('/api/my-hospital/budget', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount }),
+      });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        showToast(j.error || '충전 실패');
+      } else {
+        showToast('포인트가 충전되었습니다.');
+        setChargeAmount('');
+        await reload();
+      }
+    } finally {
+      setCharging(false);
+    }
+  };
+
+  if (!authUser) {
+    return (
+      <div className="bg-white rounded-xl p-10 text-center">
+        <p className="text-sm text-gray-500 mb-4">로그인이 필요합니다.</p>
+        <Link href="/login" className="inline-block px-5 py-2.5 bg-[#7C3AED] text-white text-sm font-bold rounded-xl">
+          로그인
+        </Link>
+      </div>
+    );
+  }
+
+  const totalSpent = txs.filter((t) => t.amount < 0).reduce((s, t) => s + -t.amount, 0);
 
   return (
     <div className="space-y-4">
       <div>
         <h1 className="text-[18px] font-bold text-gray-900">예산 관리</h1>
-        <p className="text-[12px] text-gray-500 mt-1">
-          채널별 일 한도·월 한도를 설정해 포인트 소진을 제어할 수 있습니다.
+        <p className="text-[12px] text-gray-500 mt-1">광고 캠페인에 사용할 병원 포인트를 충전하고 사용 내역을 확인합니다.</p>
+      </div>
+
+      {/* Balance card */}
+      <div className="bg-gradient-to-br from-[#7C3AED] to-[#5B2BB5] rounded-2xl p-6 text-white">
+        <div className="flex items-center gap-3 mb-2">
+          <Coins size={20} />
+          <span className="text-[13px] font-bold opacity-90">현재 잔액</span>
+        </div>
+        <p className="text-[36px] font-extrabold leading-none">
+          {loading ? '—' : balance.toLocaleString()}
+          <span className="text-[18px] font-bold ml-1 opacity-80">P</span>
         </p>
-      </div>
-
-      <div className="grid md:grid-cols-3 gap-3">
-        <Stat label="이번 달 예산" value={totalMonthly} sub="활성 채널 합산" />
-        <Stat label="이번 달 소진" value={totalSpent} sub={`${Math.round((totalSpent / totalMonthly) * 100)}% 사용`} />
-        <Stat label="잔여 예산" value={Math.max(0, totalMonthly - totalSpent)} sub="이번 달 남은 금액" />
-      </div>
-
-      <div className="rounded-lg bg-[#F4EFFF] text-[11px] text-[#7C3AED] px-3 py-2 flex items-start gap-1.5">
-        <Info size={11} className="mt-0.5 flex-shrink-0" />
-        일 한도에 도달하면 해당 채널은 자동으로 노출이 일시 정지되며, 자정에 리셋됩니다.
-      </div>
-
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-[12px] min-w-[760px]">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="px-3 py-2.5 text-left font-semibold text-gray-600">채널</th>
-                <th className="px-3 py-2.5 text-left font-semibold text-gray-600">유형</th>
-                <th className="px-3 py-2.5 text-right font-semibold text-gray-600">일 한도</th>
-                <th className="px-3 py-2.5 text-right font-semibold text-gray-600">월 한도</th>
-                <th className="px-3 py-2.5 text-left font-semibold text-gray-600">월 소진</th>
-                <th className="px-3 py-2.5 text-center font-semibold text-gray-600">활성</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((i) => {
-                const pct = Math.min(100, (i.spentMonth / i.monthly) * 100);
-                return (
-                  <tr key={i.id} className="border-b border-gray-100 last:border-0">
-                    <td className="px-3 py-3 text-gray-900 font-semibold">{i.name}</td>
-                    <td className="px-3 py-3">
-                      <span
-                        className="px-2 py-0.5 rounded text-[11px] font-semibold"
-                        style={{
-                          backgroundColor: i.type === 'CPV' ? '#F4EFFF' : '#FFF8E1',
-                          color: i.type === 'CPV' ? '#7C3AED' : '#B45309',
-                        }}
-                      >
-                        {i.type}
-                      </span>
-                    </td>
-                    <td className="px-3 py-3 text-right">
-                      <input
-                        type="number"
-                        value={i.daily}
-                        onChange={(e) => update(i.id, { daily: Number(e.target.value) || 0 })}
-                        className="w-28 text-right text-[12px] border border-gray-200 rounded px-2 py-1 outline-none"
-                      />
-                      <span className="ml-1 text-gray-500">원</span>
-                    </td>
-                    <td className="px-3 py-3 text-right">
-                      <input
-                        type="number"
-                        value={i.monthly}
-                        onChange={(e) => update(i.id, { monthly: Number(e.target.value) || 0 })}
-                        className="w-32 text-right text-[12px] border border-gray-200 rounded px-2 py-1 outline-none"
-                      />
-                      <span className="ml-1 text-gray-500">원</span>
-                    </td>
-                    <td className="px-3 py-3 min-w-[180px]">
-                      <div className="flex items-center gap-2">
-                        <div className="flex-1 h-1.5 rounded-full bg-gray-100 overflow-hidden">
-                          <div
-                            className="h-full"
-                            style={{
-                              width: `${pct}%`,
-                              backgroundColor: pct > 85 ? '#E5484D' : '#7C3AED',
-                            }}
-                          />
-                        </div>
-                        <span className="text-[11px] font-semibold text-gray-700 w-16 text-right">
-                          {i.spentMonth.toLocaleString()}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-3 py-3 text-center">
-                      <Toggle on={i.active} onToggle={() => update(i.id, { active: !i.active })} />
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+        <div className="mt-4 pt-4 border-t border-white/20 flex justify-between text-[12px] opacity-80">
+          <span>누적 사용액</span>
+          <span className="font-bold">{totalSpent.toLocaleString()}원</span>
         </div>
       </div>
-    </div>
-  );
-}
 
-function Stat({ label, value, sub }: { label: string; value: number; sub: string }) {
-  return (
-    <div className="bg-white rounded-xl border border-gray-200 p-4">
-      <p className="text-[11px] text-gray-500">{label}</p>
-      <p className="text-[22px] font-extrabold text-gray-900 mt-1">
-        {value.toLocaleString()}
-        <span className="text-[12px] font-semibold text-gray-600 ml-1">원</span>
-      </p>
-      <p className="text-[11px] text-gray-400 mt-0.5">{sub}</p>
-    </div>
-  );
-}
+      {/* Charge */}
+      <section className="bg-white rounded-xl border border-gray-200 p-5">
+        <h2 className="text-[14px] font-bold text-gray-900 mb-3">포인트 충전</h2>
+        <div className="grid grid-cols-3 gap-2 mb-3">
+          {PRESET.map((amt) => (
+            <button
+              key={amt}
+              onClick={() => setChargeAmount(String(amt))}
+              className="py-2.5 rounded-lg border text-[12px] font-semibold transition-colors"
+              style={{
+                borderColor: chargeAmount === String(amt) ? '#7C3AED' : '#E5E7EB',
+                color: chargeAmount === String(amt) ? '#7C3AED' : '#374151',
+              }}
+            >
+              {amt.toLocaleString()}원
+            </button>
+          ))}
+        </div>
+        <div className="flex gap-2">
+          <input
+            type="number"
+            value={chargeAmount}
+            onChange={(e) => setChargeAmount(e.target.value)}
+            placeholder="직접 입력 (1,000원 이상)"
+            className="flex-1 px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:border-[#7C3AED]"
+          />
+          <button
+            onClick={handleCharge}
+            disabled={charging || !chargeAmount}
+            className="px-5 py-2.5 bg-[#7C3AED] text-white text-sm font-bold rounded-lg disabled:opacity-50"
+          >
+            {charging ? '처리 중…' : '충전'}
+          </button>
+        </div>
+        <p className="text-[11px] text-gray-400 mt-2">
+          ⚠ 데모용 즉시 충전입니다. 실서비스 시 결제 PG 연동 필요.
+        </p>
+      </section>
 
-function Toggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
-  return (
-    <button
-      onClick={onToggle}
-      className="relative w-9 h-5 rounded-full"
-      style={{
-        backgroundColor: on ? '#7C3AED' : '#E5E7EB',
-        transition: 'background-color 220ms ease',
-      }}
-    >
-      <span
-        className="absolute top-0.5 w-4 h-4 rounded-full bg-white shadow"
-        style={{ left: on ? 18 : 2, transition: 'left 240ms cubic-bezier(0.22, 1, 0.36, 1)' }}
-      />
-    </button>
+      {/* Transactions */}
+      <section className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <div className="px-5 py-4 border-b border-gray-100">
+          <h2 className="text-[14px] font-bold text-gray-900">사용 내역</h2>
+        </div>
+        {txs.length === 0 ? (
+          <div className="py-16 text-center text-[12px] text-gray-400">
+            아직 거래 내역이 없습니다.
+          </div>
+        ) : (
+          <ul className="divide-y divide-gray-100">
+            {txs.map((t) => {
+              const cfg = TYPE_LABEL[t.type];
+              return (
+                <li key={t.id} className="px-5 py-3 flex items-center justify-between">
+                  <div>
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <span
+                        className="text-[10px] font-bold px-1.5 py-0.5 rounded"
+                        style={{ backgroundColor: '#F4F5F7', color: cfg.color }}
+                      >
+                        {cfg.label}
+                      </span>
+                      <span className="text-[12px] text-gray-700">{t.description ?? '-'}</span>
+                    </div>
+                    <p className="text-[10px] text-gray-400">{new Date(t.created_at).toLocaleString('ko-KR')}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[14px] font-extrabold" style={{ color: cfg.color }}>
+                      {t.amount > 0 ? '+' : ''}{t.amount.toLocaleString()}P
+                    </p>
+                    <p className="text-[10px] text-gray-400">잔액 {t.balance_after.toLocaleString()}P</p>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
+    </div>
   );
 }

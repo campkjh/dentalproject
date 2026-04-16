@@ -1,187 +1,179 @@
 'use client';
 
-import { useState } from 'react';
-import { ChevronDown, ChevronUp, Info } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { MessageSquare } from 'lucide-react';
+import { useStore } from '@/store';
+import { useSession } from '@/lib/supabase/SessionProvider';
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 type Qa = {
-  id: number;
-  eventId: string;
-  eventTitle: string;
-  createdAt: string;
+  id: string;
+  event_id: string;
+  user_id: string;
   question: string;
-  answer?: string;
-  answeredAt?: string;
+  answer: string | null;
+  answered_at: string | null;
+  created_at: string;
+  user?: { name?: string } | null;
+  event?: { title?: string } | null;
 };
 
-const INITIAL: Qa[] = [
-  {
-    id: 1041,
-    eventId: 'evt-1041',
-    eventTitle: '눈매교정 + 쌍꺼풀 자연유착',
-    createdAt: '2026-04-16 11:30',
-    question: '제가 쌍꺼풀이 짝짝이인데 눈매교정과 같이 할 수 있을까요? 회복 기간도 궁금합니다.',
-  },
-  {
-    id: 1040,
-    eventId: 'evt-1039',
-    eventTitle: '코끝 재수술 3D',
-    createdAt: '2026-04-15 19:08',
-    question: '이전에 다른 병원에서 코수술을 받았는데 재수술 가능 여부 확인 부탁드립니다.',
-    answer: '재수술은 이전 수술의 회복 상태에 따라 결정됩니다. 상담 시 엑스레이 확인 후 안내드리겠습니다. 감사합니다.',
-    answeredAt: '2026-04-15 21:40',
-  },
-  {
-    id: 1039,
-    eventId: 'evt-1035',
-    eventTitle: '리프팅 올드클래식',
-    createdAt: '2026-04-14 10:22',
-    question: '시술 당일 바로 출근 가능한가요?',
-  },
-];
+export default function PartnerQaPage() {
+  const { authUser } = useSession();
+  const showToast = useStore((s) => s.showToast);
+  const [items, setItems] = useState<Qa[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<'전체' | '미답변' | '답변완료'>('전체');
+  const [draftAnswer, setDraftAnswer] = useState<Record<string, string>>({});
+  const [pending, setPending] = useState<Set<string>>(new Set());
 
-export default function QaPage() {
-  const [items, setItems] = useState<Qa[]>(INITIAL);
-  const [qaEnabled, setQaEnabled] = useState(true);
-  const [openId, setOpenId] = useState<number | null>(null);
-  const [drafts, setDrafts] = useState<Record<number, string>>({});
+  const reload = async () => {
+    const res = await fetch('/api/my-hospital/event-qa', { cache: 'no-store' });
+    if (!res.ok) return;
+    const { qa } = await res.json();
+    setItems(qa ?? []);
+  };
 
-  const save = (id: number) => {
-    const a = drafts[id]?.trim();
-    if (!a) return;
-    setItems((prev) =>
-      prev.map((q) => (q.id === id ? { ...q, answer: a, answeredAt: '방금 전' } : q))
+  useEffect(() => {
+    if (!authUser) {
+      setLoading(false);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        await reload();
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [authUser]);
+
+  const filtered = items.filter((q) => {
+    if (filter === '미답변') return !q.answer;
+    if (filter === '답변완료') return !!q.answer;
+    return true;
+  });
+
+  const submitAnswer = async (id: string) => {
+    const text = (draftAnswer[id] ?? '').trim();
+    if (!text) {
+      showToast('답변을 입력해주세요.');
+      return;
+    }
+    setPending((p) => new Set(p).add(id));
+    try {
+      const res = await fetch(`/api/event-qa/${id}/answer`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ answer: text }),
+      });
+      if (!res.ok) {
+        showToast('답변 등록 실패');
+      } else {
+        showToast('답변이 등록되었습니다.');
+        setDraftAnswer((d) => ({ ...d, [id]: '' }));
+        await reload();
+      }
+    } finally {
+      setPending((p) => {
+        const next = new Set(p);
+        next.delete(id);
+        return next;
+      });
+    }
+  };
+
+  if (!authUser) {
+    return (
+      <div className="bg-white rounded-xl p-10 text-center">
+        <p className="text-sm text-gray-500 mb-4">로그인이 필요합니다.</p>
+        <Link href="/login" className="inline-block px-5 py-2.5 bg-[#7C3AED] text-white text-sm font-bold rounded-xl">
+          로그인
+        </Link>
+      </div>
     );
-    setDrafts((prev) => ({ ...prev, [id]: '' }));
-    setOpenId(null);
-  };
-
-  const remove = (id: number) => {
-    setItems((prev) => prev.map((q) => (q.id === id ? { ...q, answer: undefined, answeredAt: undefined } : q)));
-  };
-
-  const pending = items.filter((i) => !i.answer).length;
+  }
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-[18px] font-bold text-gray-900">이벤트 Q&A 관리</h1>
-          <p className="text-[12px] text-gray-500 mt-1">
-            미답변 <span className="text-red-500 font-semibold">{pending}</span>건 ·
-            총 {items.length}건
-          </p>
-        </div>
-        <label className="flex items-center gap-2 text-[12px]">
-          <span className="font-semibold text-gray-700">Q&A 노출</span>
+      <div>
+        <h1 className="text-[18px] font-bold text-gray-900">이벤트 Q&amp;A</h1>
+        <p className="text-[12px] text-gray-500 mt-1">환자가 이벤트에 남긴 질문에 응답합니다.</p>
+      </div>
+
+      <div className="bg-white rounded-xl border border-gray-200 p-3 flex gap-1">
+        {(['전체', '미답변', '답변완료'] as const).map((f) => (
           <button
-            onClick={() => setQaEnabled((v) => !v)}
-            className="relative w-9 h-5 rounded-full"
+            key={f}
+            onClick={() => setFilter(f)}
+            className="px-3 py-1.5 rounded-full text-[12px] font-semibold"
             style={{
-              backgroundColor: qaEnabled ? '#7C3AED' : '#E5E7EB',
-              transition: 'background-color 220ms ease',
+              backgroundColor: filter === f ? '#2B313D' : '#F4F5F7',
+              color: filter === f ? '#fff' : '#51535C',
             }}
           >
-            <span
-              className="absolute top-0.5 w-4 h-4 rounded-full bg-white shadow"
-              style={{
-                left: qaEnabled ? 18 : 2,
-                transition: 'left 240ms cubic-bezier(0.22, 1, 0.36, 1)',
-              }}
-            />
+            {f}
           </button>
-        </label>
+        ))}
       </div>
 
-      <div className="rounded-lg bg-[#F4EFFF] text-[11px] text-[#7C3AED] px-3 py-2 flex items-start gap-1.5">
-        <Info size={11} className="mt-0.5 flex-shrink-0" />
-        강남언니 앱 이외 채널로 소통을 유도하는 답변은 작성할 수 없습니다 (전화·홈페이지 안내 등).
-      </div>
+      {loading ? (
+        <div className="text-center py-20 text-sm text-gray-400">불러오는 중…</div>
+      ) : filtered.length === 0 ? (
+        <div className="bg-white rounded-xl border border-gray-200 py-16 text-center">
+          <MessageSquare size={32} className="text-gray-300 mx-auto mb-3" />
+          <p className="text-sm text-gray-400">해당하는 질문이 없습니다.</p>
+        </div>
+      ) : (
+        <ul className="space-y-3">
+          {filtered.map((q) => (
+            <li key={q.id} className="bg-white rounded-xl border border-gray-200 p-5">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-[12px] font-bold text-gray-900">{q.user?.name ?? '익명'}</span>
+                <span className="text-[10px] text-gray-400">{new Date(q.created_at).toLocaleString('ko-KR')}</span>
+                {q.event?.title && (
+                  <span className="ml-auto text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#F4EFFF] text-[#7C3AED]">
+                    {q.event.title}
+                  </span>
+                )}
+              </div>
+              <p className="text-[13px] text-gray-700 mb-3">{q.question}</p>
 
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden divide-y divide-gray-100">
-        {items.map((q) => {
-          const isOpen = openId === q.id;
-          return (
-            <div key={q.id} className="p-4">
-              <div className="flex items-start gap-3">
-                <span className="text-[11px] text-gray-400 font-semibold w-12">#{q.id}</span>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 text-[11px] text-gray-500 mb-0.5">
-                    <span className="font-semibold text-gray-700">{q.eventId}</span>
-                    <span>·</span>
-                    <span className="line-clamp-1">{q.eventTitle}</span>
-                    <span className="ml-auto flex-shrink-0">{q.createdAt}</span>
-                  </div>
-                  <p className="text-[13px] text-gray-900 leading-snug mb-2">
-                    <span className="text-[#7C3AED] font-bold mr-1.5">Q.</span>
-                    {q.question}
-                  </p>
-                  {q.answer ? (
-                    <div className="rounded-lg bg-gray-50 p-3 text-[12.5px] text-gray-700 leading-relaxed">
-                      <p>
-                        <span className="text-[#7C3AED] font-bold mr-1.5">A.</span>
-                        {q.answer}
-                      </p>
-                      <div className="flex items-center gap-2 mt-2 text-[11px] text-gray-400">
-                        <span>{q.answeredAt}</span>
-                        <button
-                          onClick={() => {
-                            setDrafts((p) => ({ ...p, [q.id]: q.answer || '' }));
-                            setOpenId(q.id);
-                            setItems((prev) => prev.map((i) => i.id === q.id ? { ...i, answer: undefined } : i));
-                          }}
-                          className="text-gray-500 hover:text-gray-800 font-semibold"
-                        >
-                          수정
-                        </button>
-                        <button onClick={() => remove(q.id)} className="text-red-500 hover:underline">
-                          삭제
-                        </button>
-                      </div>
-                    </div>
-                  ) : isOpen ? (
-                    <div className="space-y-2">
-                      <textarea
-                        value={drafts[q.id] ?? ''}
-                        onChange={(e) => setDrafts((p) => ({ ...p, [q.id]: e.target.value }))}
-                        rows={3}
-                        maxLength={500}
-                        placeholder="답변을 입력해주세요."
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-[12.5px] outline-none focus:border-[#7C3AED] resize-none"
-                      />
-                      <div className="flex items-center justify-between">
-                        <span className="text-[11px] text-gray-400">
-                          {(drafts[q.id] ?? '').length}/500
-                        </span>
-                        <div className="flex gap-1.5">
-                          <button
-                            onClick={() => setOpenId(null)}
-                            className="px-3 py-1.5 rounded text-[11px] font-semibold text-gray-600 border border-gray-200"
-                          >
-                            취소
-                          </button>
-                          <button
-                            onClick={() => save(q.id)}
-                            className="px-3 py-1.5 rounded text-[11px] font-semibold bg-[#7C3AED] text-white"
-                          >
-                            답변 등록
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => setOpenId(q.id)}
-                      className="text-[12px] font-semibold text-[#7C3AED] flex items-center gap-0.5"
-                    >
-                      답변 작성하기 <ChevronDown size={12} />
-                    </button>
+              {q.answer ? (
+                <div className="bg-[#F4EFFF] rounded-lg p-3">
+                  <p className="text-[11px] font-bold text-[#7C3AED] mb-1">병원 답변</p>
+                  <p className="text-[12px] text-gray-700">{q.answer}</p>
+                  {q.answered_at && (
+                    <p className="text-[10px] text-gray-400 mt-1">{new Date(q.answered_at).toLocaleString('ko-KR')}</p>
                   )}
                 </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
+              ) : (
+                <div className="space-y-2">
+                  <textarea
+                    value={draftAnswer[q.id] ?? ''}
+                    onChange={(e) => setDraftAnswer((d) => ({ ...d, [q.id]: e.target.value }))}
+                    placeholder="답변을 입력해주세요"
+                    rows={3}
+                    className="w-full px-3 py-2.5 text-sm bg-gray-50 rounded-lg outline-none focus:bg-white focus:border-[#7C3AED] border border-transparent resize-none"
+                  />
+                  <button
+                    onClick={() => submitAnswer(q.id)}
+                    disabled={pending.has(q.id)}
+                    className="ml-auto block px-4 py-1.5 bg-[#7C3AED] text-white text-[12px] font-bold rounded-lg disabled:opacity-50"
+                  >
+                    {pending.has(q.id) ? '등록 중…' : '답변 등록'}
+                  </button>
+                </div>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
