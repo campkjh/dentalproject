@@ -14,11 +14,9 @@ import {
 } from 'lucide-react';
 import TopBar from '@/components/common/TopBar';
 import { useStore } from '@/store';
+import { useSession } from '@/lib/supabase/SessionProvider';
 
 const TOTAL_STEPS = 8;
-
-import { categories } from '@/lib/mock-data';
-const specialties = categories;
 
 const treatmentsBySpecialty: Record<string, string[]> = {
   'dental': ['임플란트', '충치치료', '스케일링', '치아교정', '라미네이트', '미백', '잇몸치료', '사랑니발치', '턱관절치료', '보철치료', '치아성형', '소아치과'],
@@ -304,7 +302,10 @@ const agreementItems: AgreementItem[] = [
 
 export default function HospitalRegisterPage() {
   const router = useRouter();
-  const { showToast } = useStore();
+  const { showToast, categories } = useStore();
+  const specialties = categories;
+  const { authUser } = useSession();
+  const [submitting, setSubmitting] = useState(false);
 
   const [step, setStep] = useState(1);
   const [selectedSpecialty, setSelectedSpecialty] = useState<string | null>(null);
@@ -1137,21 +1138,53 @@ export default function HospitalRegisterPage() {
           중간저장
         </button>
         <button
-          onClick={() => {
+          onClick={async () => {
             if (step === TOTAL_STEPS) {
-              setStep(TOTAL_STEPS + 1);
+              if (!authUser) {
+                showToast('로그인 후 신청이 가능합니다.');
+                router.push('/login');
+                return;
+              }
+              setSubmitting(true);
+              try {
+                const res = await fetch('/api/hospital-applications', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    registerType,
+                    specialty: selectedSpecialty,
+                    treatments: Array.from(selectedTreatments),
+                    hospitalInfo,
+                    operatingHours,
+                    doctorInfo,
+                  }),
+                });
+                if (!res.ok) {
+                  const j = await res.json().catch(() => ({}));
+                  showToast(j.error || '신청에 실패했습니다.');
+                  return;
+                }
+                try {
+                  localStorage.removeItem('hospitalRegisterDraft');
+                } catch {}
+                setStep(TOTAL_STEPS + 1);
+              } catch {
+                showToast('네트워크 오류가 발생했습니다.');
+              } finally {
+                setSubmitting(false);
+              }
             } else {
               handleNext();
             }
           }}
-          disabled={!canProceed()}
+          disabled={!canProceed() || submitting}
           className={`flex-1 py-3.5 rounded-xl text-base font-bold btn-press transition-all duration-300 ${
-            canProceed()
+            canProceed() && !submitting
               ? 'bg-[#7C3AED] text-white shadow-[0_6px_16px_rgba(124,58,237,0.3)]'
               : 'bg-gray-200 text-gray-400 cursor-not-allowed'
           }`}
         >
-          {step === TOTAL_STEPS ? '완료' : '다음'}
+          {submitting ? '제출 중…' : step === TOTAL_STEPS ? '완료' : '다음'}
         </button>
       </div>
 
