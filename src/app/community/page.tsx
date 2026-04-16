@@ -144,7 +144,7 @@ export default function CommunityPage() {
         title="커뮤니티"
         showBack={false}
         rightContent={
-          <Link href="/search">
+          <Link href="/community/search">
             <IconSearch size={22} />
           </Link>
         }
