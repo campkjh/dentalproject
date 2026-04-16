@@ -219,9 +219,13 @@ export default function PartnerLayout({ children }: { children: React.ReactNode 
             <button className="p-1.5 rounded-full hover:bg-gray-100">
               <Bell size={18} className="text-gray-700" />
             </button>
-            <div className="w-7 h-7 rounded-full bg-[#7C3AED] text-white flex items-center justify-center text-[11px] font-bold">
+            <Link
+              href="/partner/account"
+              aria-label="계정 설정"
+              className="w-7 h-7 rounded-full bg-[#7C3AED] text-white flex items-center justify-center text-[11px] font-bold btn-press"
+            >
               H
-            </div>
+            </Link>
           </div>
         </header>
         <div key={pathname} className="flex-1 p-3 lg:p-5 partner-page">{children}</div>

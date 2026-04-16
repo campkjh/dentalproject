@@ -77,6 +77,14 @@ export default function PartnerHomePage() {
         </p>
       </section>
 
+      {/* KPI cards — quick glance of current state */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <KpiCard label="오늘 상담 신청" value="8" delta="+3" deltaTone="up" href="/partner/consults" />
+        <KpiCard label="미답변 Q&A" value="3" delta="+1" deltaTone="warn" href="/partner/events/qa" />
+        <KpiCard label="내일 예약" value="5" delta="확정 3" deltaTone="neutral" href="/partner/reservations" />
+        <KpiCard label="잔여 포인트" value="3,840,000" suffix="P" deltaTone="neutral" href="/partner/points" />
+      </div>
+
       {/* Hot link bar */}
       <div
         className="rounded-xl px-4 py-3 flex items-center gap-3"
@@ -204,5 +212,45 @@ export default function PartnerHomePage() {
         </aside>
       </div>
     </div>
+  );
+}
+
+function KpiCard({
+  label,
+  value,
+  suffix,
+  delta,
+  deltaTone,
+  href,
+}: {
+  label: string;
+  value: string;
+  suffix?: string;
+  delta?: string;
+  deltaTone: 'up' | 'down' | 'warn' | 'neutral';
+  href: string;
+}) {
+  const deltaColor = {
+    up: '#15803D',
+    down: '#E5484D',
+    warn: '#B45309',
+    neutral: '#6B7280',
+  }[deltaTone];
+  return (
+    <Link
+      href={href}
+      className="block bg-white rounded-xl border border-gray-200 p-4 partner-card"
+    >
+      <p className="text-[11px] text-gray-500">{label}</p>
+      <p className="text-[22px] font-extrabold text-gray-900 mt-1 leading-none">
+        {value}
+        {suffix && <span className="text-[12px] font-semibold text-gray-600 ml-1">{suffix}</span>}
+      </p>
+      {delta && (
+        <p className="text-[11px] font-semibold mt-1.5" style={{ color: deltaColor }}>
+          {delta}
+        </p>
+      )}
+    </Link>
   );
 }
