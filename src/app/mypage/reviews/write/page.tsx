@@ -142,7 +142,7 @@ ${hasAspectFeedback && aspects.kindness >= 4 ? '원장님과 스태프분들의 
   };
 
   return (
-    <div className="h-[100dvh] bg-white max-w-[480px] mx-auto flex flex-col">
+    <div className="h-[100dvh] bg-white w-full max-w-[480px] lg:max-w-[560px] mx-auto flex flex-col overflow-hidden">
       {/* Sticky header */}
       <header className="flex-shrink-0 h-12 flex items-center px-2.5 border-b border-gray-100 bg-white">
         <button onClick={() => router.back()} className="p-1 -ml-1">
@@ -241,36 +241,45 @@ ${hasAspectFeedback && aspects.kindness >= 4 ? '원장님과 스태프분들의 
               <span className="text-[11px] text-gray-400">리뷰 작성 혜택 +500P</span>
             }
           >
-            {/* Mode tabs */}
-            <div className="flex gap-1 mb-3 bg-gray-100 rounded-full p-1">
+            {/* Mode tabs — sliding pill indicator */}
+            <div
+              className="relative flex mb-3 bg-gray-100 rounded-full p-1"
+              style={{ height: 38 }}
+            >
+              <span
+                aria-hidden
+                className="absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-full bg-white"
+                style={{
+                  left: photoMode === 'before-after' ? 4 : 'calc(50%)',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                  transition: 'left 360ms cubic-bezier(0.22, 1, 0.36, 1)',
+                }}
+              />
               <button
                 onClick={() => setPhotoMode('before-after')}
-                className="flex-1 py-2 rounded-full text-[12px] font-semibold transition-all"
+                className="relative z-10 flex-1 text-[12px] font-semibold"
                 style={{
-                  backgroundColor: photoMode === 'before-after' ? '#fff' : 'transparent',
                   color: photoMode === 'before-after' ? '#2B313D' : '#9CA3AF',
-                  boxShadow:
-                    photoMode === 'before-after' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                  transition: 'color 360ms cubic-bezier(0.22, 1, 0.36, 1)',
                 }}
               >
                 전/후 비교
               </button>
               <button
                 onClick={() => setPhotoMode('single')}
-                className="flex-1 py-2 rounded-full text-[12px] font-semibold transition-all"
+                className="relative z-10 flex-1 text-[12px] font-semibold"
                 style={{
-                  backgroundColor: photoMode === 'single' ? '#fff' : 'transparent',
                   color: photoMode === 'single' ? '#2B313D' : '#9CA3AF',
-                  boxShadow:
-                    photoMode === 'single' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                  transition: 'color 360ms cubic-bezier(0.22, 1, 0.36, 1)',
                 }}
               >
                 단일 사진
               </button>
             </div>
 
+            {/* Directional slide based on tab direction */}
             {photoMode === 'before-after' ? (
-              <div className="grid grid-cols-2 gap-2 fade-in-up">
+              <div key="ba" className="grid grid-cols-2 gap-2 tab-slide-left">
                 <PhotoSlot
                   label="BEFORE"
                   badgeColor="#2B313D"
@@ -297,7 +306,7 @@ ${hasAspectFeedback && aspects.kindness >= 4 ? '원장님과 스태프분들의 
                 />
               </div>
             ) : (
-              <div className="fade-in-up">
+              <div key="single" className="tab-slide-right">
                 <PhotoSlot
                   label="사진"
                   badgeColor="#7C3AED"
