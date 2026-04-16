@@ -1,32 +1,9 @@
 'use client';
 
-import { useState } from 'react';
-import { X, Upload, MapPin, Info, Plus } from 'lucide-react';
-
-const SUBWAY_LINES = [
-  '신사역 3호선',
-  '압구정역 3호선',
-  '강남역 2호선',
-  '선릉역 2호선',
-  '역삼역 2호선',
-  '삼성역 2호선',
-  '논현역 7호선',
-  '학동역 7호선',
-];
-
-const TREATMENT_ITEMS = [
-  '눈성형', '코성형', '안면윤곽', '가슴성형', '지방흡입', '리프팅',
-  '보톡스', '필러', '모발이식', '치아교정', '임플란트', '라미네이트',
-  '스케일링', '라식/라섹', '피부재생', '여드름', '기미·주근깨', '레이저',
-];
-
-const LANGUAGES = ['한국어', '영어', '중국어', '일본어', '베트남어', '러시아어', '몽골어', '태국어'];
-
-const HOSPITAL_FEATURES = [
-  '야간진료', '주말진료', '주차가능', '발렛파킹', '여의사 상주',
-  '외국인 상담', '수면마취', '당일시술', '예약제', '무료주차',
-  '개별 회복실', '정수기 구비',
-];
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { useStore } from '@/store';
+import { useSession } from '@/lib/supabase/SessionProvider';
 
 const DAYS = ['월', '화', '수', '목', '금', '토', '일'] as const;
 
@@ -37,386 +14,277 @@ type OperatingHour = {
   closed: boolean;
 };
 
-export default function HospitalInfoPage() {
-  const [description, setDescription] = useState(
-    '고객 한 분 한 분께 맞춤 시술을 제공하는 병원입니다.'
-  );
-  const [address] = useState('서울 강남구 테헤란로 152');
-  const [detailAddress, setDetailAddress] = useState('10층 1001호');
-  const [enAddress] = useState('152 Teheran-ro, Gangnam-gu, Seoul');
-  const [selectedStations, setSelectedStations] = useState<Set<string>>(
-    new Set(['강남역 2호선', '역삼역 2호선'])
-  );
-  const [etcInfo, setEtcInfo] = useState('점심시간: 13:00 ~ 14:00');
-  const [selectedTreatments, setSelectedTreatments] = useState<Set<string>>(
-    new Set(['눈성형', '코성형', '리프팅'])
-  );
-  const [selectedLanguages, setSelectedLanguages] = useState<Set<string>>(
-    new Set(['한국어', '영어'])
-  );
-  const [selectedFeatures, setSelectedFeatures] = useState<Set<string>>(
-    new Set(['주차가능', '수면마취'])
-  );
-  const [operatingHours, setOperatingHours] = useState<OperatingHour[]>(
-    DAYS.map((day) => ({
-      day,
-      start: '10:00',
-      end: '19:00',
-      closed: day === '일',
-    }))
+/* eslint-disable @typescript-eslint/no-explicit-any */
+const COMMON_TAGS = [
+  '치아교정', '라미네이트', '미백제도포', '임플란트', '충치치료', '스케일링',
+  '눈성형', '코성형', '안면윤곽', '가슴성형', '지방흡입', '리프팅', '보톡스', '필러',
+];
+
+export default function PartnerHospitalInfoPage() {
+  const { authUser } = useSession();
+  const showToast = useStore((s) => s.showToast);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [hospital, setHospital] = useState<any>(null);
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [address, setAddress] = useState('');
+  const [addressDetail, setAddressDetail] = useState('');
+  const [introduction, setIntroduction] = useState('');
+  const [holidayNotice, setHolidayNotice] = useState('');
+  const [tags, setTags] = useState<string[]>([]);
+  const [hours, setHours] = useState<OperatingHour[]>(
+    DAYS.map((day) => ({ day, start: '10:00', end: '19:00', closed: day === '일' }))
   );
 
-  const toggleSet = (
-    set: Set<string>,
-    setter: (s: Set<string>) => void,
-    value: string,
-    max?: number
-  ) => {
-    const next = new Set(set);
-    if (next.has(value)) {
-      next.delete(value);
-    } else {
-      if (max && next.size >= max) return;
-      next.add(value);
+  useEffect(() => {
+    if (!authUser) {
+      setLoading(false);
+      return;
     }
-    setter(next);
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/my-hospital', { cache: 'no-store' });
+        if (!res.ok) return;
+        const { hospital: h } = await res.json();
+        if (cancelled) return;
+        if (!h) return;
+        setHospital(h);
+        setName(h.name ?? '');
+        setPhone(h.phone ?? '');
+        setAddress(h.address ?? '');
+        setAddressDetail(h.address_detail ?? '');
+        setIntroduction(h.introduction ?? '');
+        setHolidayNotice(h.holiday_notice ?? '');
+        setTags(h.tags ?? []);
+        const oh = h.operating_hours ?? [];
+        if (oh.length) {
+          setHours(
+            DAYS.map((d): OperatingHour => {
+              const found = oh.find((o: any) => o.day === d);
+              return found
+                ? { day: d, start: found.start_time ?? '10:00', end: found.end_time ?? '19:00', closed: !!found.is_closed }
+                : { day: d, start: '10:00', end: '19:00', closed: d === '일' };
+            })
+          );
+        }
+      } finally {
+        setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [authUser]);
+
+  const toggleTag = (t: string) => {
+    setTags((prev) => (prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]));
   };
 
   const updateHour = (idx: number, patch: Partial<OperatingHour>) => {
-    setOperatingHours((prev) => prev.map((h, i) => (i === idx ? { ...h, ...patch } : h)));
+    setHours((prev) => prev.map((h, i) => (i === idx ? { ...h, ...patch } : h)));
   };
+
+  const save = async () => {
+    if (saving) return;
+    setSaving(true);
+    try {
+      const [infoRes, hoursRes] = await Promise.all([
+        fetch('/api/my-hospital', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name,
+            phone,
+            address,
+            addressDetail,
+            introduction,
+            holidayNotice,
+            tags,
+          }),
+        }),
+        fetch('/api/my-hospital/hours', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            hours: hours.map((h) => ({
+              day: h.day,
+              start_time: h.start,
+              end_time: h.end,
+              is_closed: h.closed,
+            })),
+          }),
+        }),
+      ]);
+      if (!infoRes.ok || !hoursRes.ok) {
+        showToast('저장에 실패했습니다.');
+      } else {
+        showToast('병원 정보가 저장되었습니다.');
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (!authUser) {
+    return (
+      <div className="bg-white rounded-xl p-10 text-center">
+        <p className="text-sm text-gray-500 mb-4">로그인이 필요합니다.</p>
+        <Link href="/login" className="inline-block px-5 py-2.5 bg-[#7C3AED] text-white text-sm font-bold rounded-xl">
+          로그인
+        </Link>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return <div className="text-center py-20 text-sm text-gray-400">불러오는 중…</div>;
+  }
+
+  if (!hospital) {
+    return (
+      <div className="bg-white rounded-xl p-10 text-center">
+        <p className="text-sm text-gray-500 mb-2">등록된 병원이 없습니다.</p>
+        <Link href="/hospital/register" className="inline-block px-5 py-2.5 bg-[#7C3AED] text-white text-sm font-bold rounded-xl mt-2">
+          병원 등록하기
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-[18px] font-bold text-gray-900">병원 정보</h1>
-        <button className="px-4 py-2 rounded-lg bg-[#2B313D] text-white text-[13px] font-semibold btn-press">
-          저장하기
+        <div>
+          <h1 className="text-[18px] font-bold text-gray-900">병원 정보</h1>
+          <p className="text-[12px] text-gray-500 mt-1">환자에게 노출되는 병원 정보를 관리합니다.</p>
+        </div>
+        <button
+          onClick={save}
+          disabled={saving}
+          className="px-4 py-2 rounded-lg bg-[#7C3AED] text-white text-[13px] font-bold btn-press disabled:opacity-50"
+        >
+          {saving ? '저장 중…' : '저장하기'}
         </button>
       </div>
 
       <Card title="병원명">
         <input
-          value="오케이치과의원"
-          readOnly
-          className="w-full px-3 py-2.5 bg-gray-50 rounded-lg text-[13px] text-gray-700 cursor-not-allowed"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:border-[#7C3AED]"
         />
-        <p className="text-[11px] text-gray-400 mt-2 flex items-start gap-1">
-          <Info size={11} className="mt-0.5 flex-shrink-0" />
-          병원명은 의료기관개설신고증 내 명칭으로 등록됩니다. 변경 시 파트너 고객센터로 문의해 주세요.
-        </p>
       </Card>
 
-      <Card title="병원설명">
-        <textarea
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          rows={4}
-          maxLength={300}
-          className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] outline-none focus:border-[#7C3AED] transition-colors resize-none"
+      <Card title="연락처">
+        <input
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+          placeholder="02-1234-5678"
+          className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:border-[#7C3AED]"
         />
-        <p className="text-[11px] text-gray-400 mt-1 text-right">{description.length}/300</p>
       </Card>
 
       <Card title="주소">
         <div className="space-y-2">
-          <div className="flex gap-2">
-            <input
-              value={address}
-              readOnly
-              className="flex-1 px-3 py-2.5 bg-gray-50 rounded-lg text-[13px] text-gray-700 cursor-not-allowed"
-            />
-            <button className="px-3 py-2.5 rounded-lg bg-[#7C3AED] text-white text-[12px] font-semibold btn-press whitespace-nowrap">
-              주소검색
-            </button>
-          </div>
           <input
-            value={detailAddress}
-            onChange={(e) => setDetailAddress(e.target.value)}
-            placeholder="상세주소 (건물명·층·호수)"
-            className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] outline-none focus:border-[#7C3AED] transition-colors"
+            value={address}
+            onChange={(e) => setAddress(e.target.value)}
+            placeholder="기본 주소"
+            className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:border-[#7C3AED]"
           />
           <input
-            value={enAddress}
-            readOnly
-            className="w-full px-3 py-2.5 bg-gray-50 rounded-lg text-[13px] text-gray-500 cursor-not-allowed"
-            placeholder="영문주소 (자동 번역)"
+            value={addressDetail}
+            onChange={(e) => setAddressDetail(e.target.value)}
+            placeholder="상세 주소 (선택)"
+            className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:border-[#7C3AED]"
           />
         </div>
       </Card>
 
-      <Card
-        title="지하철역"
-        right={<span className="text-[11px] text-gray-400">{selectedStations.size}/4</span>}
-      >
-        <div className="flex flex-wrap gap-1.5">
-          {SUBWAY_LINES.map((s) => {
-            const sel = selectedStations.has(s);
+      <Card title="병원 소개">
+        <textarea
+          value={introduction}
+          onChange={(e) => setIntroduction(e.target.value)}
+          rows={5}
+          placeholder="환자에게 보여줄 병원 소개를 작성해 주세요"
+          className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:border-[#7C3AED] resize-none"
+        />
+      </Card>
+
+      <Card title="진료 키워드 (태그)">
+        <div className="flex flex-wrap gap-2">
+          {COMMON_TAGS.map((t) => {
+            const on = tags.includes(t);
             return (
               <button
-                key={s}
-                onClick={() => toggleSet(selectedStations, setSelectedStations, s, 4)}
-                className="px-3 py-1.5 rounded-full text-[12px] font-semibold flex items-center gap-1"
+                key={t}
+                onClick={() => toggleTag(t)}
+                className="px-3 py-1.5 rounded-full text-xs font-medium border"
                 style={{
-                  backgroundColor: sel ? '#F4EFFF' : '#fff',
-                  color: sel ? '#7C3AED' : '#51535C',
-                  border: `1px solid ${sel ? '#7C3AED' : '#E5E7EB'}`,
-                  transition: 'all 200ms ease',
+                  backgroundColor: on ? '#7C3AED' : '#fff',
+                  color: on ? '#fff' : '#6B7280',
+                  borderColor: on ? '#7C3AED' : '#E5E7EB',
                 }}
               >
-                <MapPin size={11} /> {s}
+                {t}
               </button>
             );
           })}
         </div>
       </Card>
 
-      <Card title="운영시간">
+      <Card title="운영 시간">
         <div className="space-y-2">
-          {operatingHours.map((h, idx) => (
-            <div
-              key={h.day}
-              className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2"
-            >
-              <span
-                className="w-6 text-[13px] font-bold text-center"
-                style={{
-                  color:
-                    h.day === '일' ? '#EF4444' : h.day === '토' ? '#3B82F6' : '#2B313D',
-                }}
-              >
-                {h.day}
-              </span>
-              {h.closed ? (
-                <span className="flex-1 text-[12px] text-gray-400 text-center">휴진</span>
-              ) : (
-                <div className="flex-1 flex items-center gap-2">
-                  <input
-                    type="time"
-                    value={h.start}
-                    onChange={(e) => updateHour(idx, { start: e.target.value })}
-                    className="flex-1 px-2 py-1.5 bg-white rounded border border-gray-200 text-[12px] text-center outline-none"
-                  />
-                  <span className="text-gray-400">~</span>
-                  <input
-                    type="time"
-                    value={h.end}
-                    onChange={(e) => updateHour(idx, { end: e.target.value })}
-                    className="flex-1 px-2 py-1.5 bg-white rounded border border-gray-200 text-[12px] text-center outline-none"
-                  />
-                </div>
-              )}
-              <button
-                onClick={() => updateHour(idx, { closed: !h.closed })}
-                className="px-2 py-1 rounded text-[11px] font-semibold"
-                style={{
-                  backgroundColor: h.closed ? '#F3F4F6' : '#F4EFFF',
-                  color: h.closed ? '#51535C' : '#7C3AED',
-                }}
-              >
-                {h.closed ? '휴진' : '진료'}
-              </button>
+          {hours.map((h, i) => (
+            <div key={h.day} className="grid grid-cols-[40px_1fr_1fr_70px] gap-2 items-center">
+              <span className="text-sm font-medium text-gray-700 text-center">{h.day}</span>
+              <input
+                type="time"
+                value={h.start}
+                onChange={(e) => updateHour(i, { start: e.target.value })}
+                disabled={h.closed}
+                className="px-2 py-2 text-sm border border-gray-200 rounded-lg outline-none disabled:bg-gray-50 disabled:text-gray-300"
+              />
+              <input
+                type="time"
+                value={h.end}
+                onChange={(e) => updateHour(i, { end: e.target.value })}
+                disabled={h.closed}
+                className="px-2 py-2 text-sm border border-gray-200 rounded-lg outline-none disabled:bg-gray-50 disabled:text-gray-300"
+              />
+              <label className="flex items-center justify-center gap-1 text-xs text-gray-600 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={h.closed}
+                  onChange={(e) => updateHour(i, { closed: e.target.checked })}
+                  className="w-3.5 h-3.5"
+                />
+                휴진
+              </label>
             </div>
           ))}
         </div>
       </Card>
 
-      <Card title="기타정보">
-        <textarea
-          value={etcInfo}
-          onChange={(e) => setEtcInfo(e.target.value)}
-          rows={2}
-          placeholder="점심시간, 특별 운영 안내 등"
-          className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] outline-none focus:border-[#7C3AED] transition-colors resize-none"
+      <Card title="휴진 안내">
+        <input
+          value={holidayNotice}
+          onChange={(e) => setHolidayNotice(e.target.value)}
+          placeholder="예) 공휴일 휴진, 설/추석 연휴 휴진"
+          className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:border-[#7C3AED]"
         />
-      </Card>
-
-      <Card
-        title="진료과목"
-        right={<span className="text-[11px] text-gray-400">{selectedTreatments.size}개 선택</span>}
-      >
-        <div className="flex flex-wrap gap-1.5">
-          {TREATMENT_ITEMS.map((t) => (
-            <Chip
-              key={t}
-              label={t}
-              active={selectedTreatments.has(t)}
-              onClick={() => toggleSet(selectedTreatments, setSelectedTreatments, t)}
-            />
-          ))}
-        </div>
-      </Card>
-
-      <Card title="통역 가능 언어">
-        <div className="flex flex-wrap gap-1.5">
-          {LANGUAGES.map((l) => (
-            <Chip
-              key={l}
-              label={l}
-              active={selectedLanguages.has(l)}
-              onClick={() => toggleSet(selectedLanguages, setSelectedLanguages, l)}
-            />
-          ))}
-        </div>
-      </Card>
-
-      <Card title="병원 특징">
-        <div className="flex flex-wrap gap-1.5">
-          {HOSPITAL_FEATURES.map((f) => (
-            <Chip
-              key={f}
-              label={f}
-              active={selectedFeatures.has(f)}
-              onClick={() => toggleSet(selectedFeatures, setSelectedFeatures, f)}
-            />
-          ))}
-        </div>
-      </Card>
-
-      <Card title="배너 이미지">
-        <ImageUploadSlot aspect="16 / 9" hint="권장 1280x720, 통합검색 병원 페이지 첫 화면" />
-      </Card>
-
-      <Card title="프로필 이미지">
-        <ImageUploadSlot aspect="1 / 1" hint="병원명 옆 원형 이미지 (권장 400x400)" />
-      </Card>
-
-      <Card title="병원 소개이미지" right={<span className="text-[11px] text-gray-400">0/10</span>}>
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-          {Array.from({ length: 10 }).map((_, i) => (
-            <ImageUploadSlot key={i} aspect="1 / 1" small />
-          ))}
-        </div>
-        <p className="text-[11px] text-gray-400 mt-2">
-          최대 10장까지 등록할 수 있으며, 병원 페이지 2페이지부터 노출됩니다.
-        </p>
-      </Card>
-
-      <Card title="후기가 많은 시술이에요!">
-        <p className="text-[12px] text-gray-500 mb-3">
-          상담 신청한 이벤트 후기 중 후기가 많은 순서대로 자동 노출됩니다.
-        </p>
-        <div className="grid grid-cols-3 gap-2">
-          {['쌍꺼풀 자연유착', '코 수술 3D', '리프팅 올드클래식'].map((t, i) => (
-            <div
-              key={t}
-              className="aspect-square rounded-lg bg-gray-100 flex flex-col items-center justify-center text-center px-2"
-            >
-              <p className="text-[11px] font-semibold text-gray-800 line-clamp-2 leading-snug">
-                {t}
-              </p>
-              <p className="text-[10px] text-gray-400 mt-1">후기 {320 - i * 45}건</p>
-            </div>
-          ))}
-        </div>
-      </Card>
-
-      <Card title="실제 방문한 분들의 이야기예요">
-        <p className="text-[12px] text-gray-500 mb-3">
-          후기 작성 시 수집된 응답을 요약하여 병원 페이지에 노출합니다.
-        </p>
-        <div className="space-y-2">
-          {[
-            { label: '만족도', value: 4.8, count: 320 },
-            { label: '시설 청결도', value: 4.9, count: 280 },
-            { label: '상담 친절도', value: 4.7, count: 302 },
-          ].map((s) => (
-            <div key={s.label} className="flex items-center justify-between">
-              <span className="text-[13px] text-gray-700">{s.label}</span>
-              <div className="flex items-center gap-2">
-                <div className="h-1.5 rounded-full bg-gray-100 overflow-hidden" style={{ width: 140 }}>
-                  <div className="h-full bg-[#7C3AED]" style={{ width: `${(s.value / 5) * 100}%` }} />
-                </div>
-                <span className="text-[12px] font-bold text-gray-900 w-10 text-right">{s.value}</span>
-                <span className="text-[10px] text-gray-400 w-12 text-right">{s.count}명</span>
-              </div>
-            </div>
-          ))}
-        </div>
       </Card>
     </div>
   );
 }
 
-function Card({
-  title,
-  right,
-  children,
-}: {
-  title: string;
-  right?: React.ReactNode;
-  children: React.ReactNode;
-}) {
+function Card({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="bg-white rounded-xl border border-gray-200 p-4">
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-[14px] font-bold text-gray-900">{title}</h3>
-        {right}
-      </div>
+    <section className="bg-white rounded-xl border border-gray-200 p-5">
+      <h2 className="text-[14px] font-bold text-gray-900 mb-3">{title}</h2>
       {children}
     </section>
-  );
-}
-
-function Chip({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
-  return (
-    <button
-      onClick={onClick}
-      className="px-3 py-1.5 rounded-full text-[12px] font-semibold flex items-center gap-1"
-      style={{
-        backgroundColor: active ? '#F4EFFF' : '#fff',
-        color: active ? '#7C3AED' : '#51535C',
-        border: `1px solid ${active ? '#7C3AED' : '#E5E7EB'}`,
-        transition: 'all 200ms ease',
-      }}
-    >
-      {active && <span className="text-[10px]">✓</span>}
-      {label}
-    </button>
-  );
-}
-
-function ImageUploadSlot({ aspect, hint, small }: { aspect: string; hint?: string; small?: boolean }) {
-  const [file, setFile] = useState<string | null>(null);
-  return (
-    <label
-      className="block relative rounded-lg border border-dashed border-gray-300 hover:border-[#7C3AED] transition-colors cursor-pointer bg-gray-50 overflow-hidden"
-      style={{ aspectRatio: aspect }}
-    >
-      <input
-        type="file"
-        accept="image/*"
-        className="sr-only"
-        onChange={(e) => {
-          const f = e.target.files?.[0];
-          if (f) setFile(URL.createObjectURL(f));
-        }}
-      />
-      {file ? (
-        <>
-          <img src={file} alt="" className="absolute inset-0 w-full h-full object-cover" />
-          <button
-            type="button"
-            onClick={(e) => {
-              e.preventDefault();
-              setFile(null);
-            }}
-            className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/60 text-white flex items-center justify-center"
-          >
-            <X size={12} />
-          </button>
-        </>
-      ) : (
-        <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-400">
-          {small ? <Plus size={18} /> : <Upload size={22} />}
-          {!small && (
-            <>
-              <p className="text-[12px] font-semibold mt-2 text-gray-600">이미지 업로드</p>
-              {hint && <p className="text-[10px] text-gray-400 mt-0.5 px-3 text-center">{hint}</p>}
-            </>
-          )}
-        </div>
-      )}
-    </label>
   );
 }
