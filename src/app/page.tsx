@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Search, Send, ChevronRight, Star, MapPin, X } from 'lucide-react';
 import ProductCard from '@/components/common/ProductCard';
 import { useStore } from '@/store';
-import { categories, reviews, hospitals, products as allMockProducts } from '@/lib/mock-data';
+import { products as allMockProducts } from '@/lib/mock-data';
 
 const searchPlaceholders = [
   '입술필러 검색해보세요',
@@ -18,7 +18,7 @@ const searchPlaceholders = [
 
 export default function HomePage() {
   const router = useRouter();
-  const { products, isLoggedIn, recentlyViewed, recentSearches, removeRecentSearch } = useStore();
+  const { products, hospitals, reviews, categories, isLoggedIn, recentlyViewed, recentSearches, removeRecentSearch } = useStore();
   const [scrolled, setScrolled] = useState(false);
   const [placeholderIdx, setPlaceholderIdx] = useState(0);
   const [animating, setAnimating] = useState(false);
@@ -488,6 +488,7 @@ export default function HomePage() {
 }
 
 function CategoryPager() {
+  const categories = useStore((s) => s.categories);
   const pageSize = 10; // 5 cols x 2 rows
   const totalPages = Math.ceil(categories.length / pageSize);
   const scrollerRef = useRef<HTMLDivElement>(null);

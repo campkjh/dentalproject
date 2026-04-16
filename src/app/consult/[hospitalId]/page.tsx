@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { ChevronLeft, Send, Paperclip, Phone, Info } from 'lucide-react';
 import Avatar from '@/components/common/Avatar';
-import { hospitals } from '@/lib/mock-data';
+import { useStore } from '@/store';
 
 type Msg = {
   id: string;
@@ -25,6 +25,7 @@ const QUICK_TEMPLATES = [
 export default function ConsultChatPage() {
   const { hospitalId } = useParams<{ hospitalId: string }>();
   const router = useRouter();
+  const hospitals = useStore((s) => s.hospitals);
   const hospital = hospitals.find((h) => h.id === hospitalId) ?? hospitals[0];
 
   const [msgs, setMsgs] = useState<Msg[]>([

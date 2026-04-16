@@ -1,7 +1,8 @@
 import { create } from 'zustand';
-import { User, Reservation, Product, Post, Comment, Review } from '@/types';
+import { User, Reservation, Product, Post, Comment, Review, Hospital } from '@/types';
 import {
   products as mockProducts,
+  hospitals as mockHospitals,
   reservations as mockReservations,
   posts as mockPosts,
   comments as mockComments,
@@ -18,6 +19,10 @@ interface Category {
 }
 
 interface AppState {
+  // Catalog hydration (DB-backed, replaces mock-data when loaded)
+  catalogHydrated: boolean;
+  hydrateCatalog: () => Promise<void>;
+
   // Auth
   isLoggedIn: boolean;
   isDoctor: boolean;
@@ -33,6 +38,9 @@ interface AppState {
   addCategory: (cat: Category) => void;
   updateCategory: (id: string, data: Partial<Category>) => void;
   removeCategory: (id: string) => void;
+
+  // Hospitals (DB-backed; mock fallback until hydrate)
+  hospitals: Hospital[];
 
   // Products
   products: Product[];
@@ -76,6 +84,25 @@ interface AppState {
 }
 
 export const useStore = create<AppState>((set, get) => ({
+  catalogHydrated: false,
+  hydrateCatalog: async () => {
+    if (get().catalogHydrated) return;
+    try {
+      const res = await fetch('/api/catalog', { cache: 'no-store' });
+      if (!res.ok) return;
+      const data = await res.json();
+      set({
+        hospitals: data.hospitals?.length ? data.hospitals : get().hospitals,
+        products: data.products?.length ? data.products : get().products,
+        reviews: data.reviews?.length ? data.reviews : get().reviews,
+        categories: data.categories?.length ? data.categories : get().categories,
+        catalogHydrated: true,
+      });
+    } catch {
+      // network down → keep mock data; app still works
+    }
+  },
+
   isLoggedIn: false,
   isDoctor: false,
   user: null,
@@ -114,6 +141,8 @@ export const useStore = create<AppState>((set, get) => ({
   addCategory: (cat) => set({ categories: [...get().categories, cat] }),
   updateCategory: (id, data) => set({ categories: get().categories.map(c => c.id === id ? { ...c, ...data } : c) }),
   removeCategory: (id) => set({ categories: get().categories.filter(c => c.id !== id) }),
+
+  hospitals: mockHospitals,
 
   products: mockProducts,
   wishlist: [],

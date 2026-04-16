@@ -15,7 +15,6 @@ import {
 } from 'lucide-react';
 import { useStore } from '@/store';
 import { Reservation } from '@/types';
-import { hospitals } from '@/lib/mock-data';
 
 const statusIconSrc: Record<Reservation['status'], string> = {
   pending: '/icons/status-pending.svg',
@@ -37,7 +36,7 @@ const statusStyle: Record<
 export default function ReservationDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const { reservations, updateReservationStatus, showModal, showToast } = useStore();
+  const { reservations, hospitals, updateReservationStatus, showModal, showToast } = useStore();
 
   const reservation = reservations.find((r) => r.id === id);
 

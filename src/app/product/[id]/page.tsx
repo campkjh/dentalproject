@@ -20,7 +20,6 @@ import {
 import TabBar from '@/components/common/TabBar';
 import FixedBar from '@/components/common/FixedBar';
 import { useStore } from '@/store';
-import { products, hospitals, reviews } from '@/lib/mock-data';
 
 const faqItems = [
   {
@@ -44,7 +43,7 @@ const faqItems = [
 export default function ProductDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const { wishlist, toggleWishlist, addRecentlyViewed, showToast } = useStore();
+  const { products, hospitals, reviews, wishlist, toggleWishlist, addRecentlyViewed, showToast } = useStore();
   const tabs = ['상품설명', '병원정보', '리뷰'];
   const [activeTab, setActiveTab] = useState('상품설명');
   const [tabDirection, setTabDirection] = useState<'left' | 'right'>('right');
