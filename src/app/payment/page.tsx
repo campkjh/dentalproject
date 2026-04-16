@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, Suspense, useMemo } from 'react';
+import { useState, Suspense, useMemo, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ChevronDown, ChevronUp, Check, X } from 'lucide-react';
 import TopBar from '@/components/common/TopBar';
@@ -109,7 +110,7 @@ function PaymentPage() {
   };
 
   return (
-    <div className="pb-40 bg-white min-h-screen lg:max-w-2xl lg:mx-auto lg:py-8 page-enter">
+    <div className="pb-40 bg-white min-h-screen lg:max-w-2xl lg:mx-auto lg:py-8">
       <TopBar title="결제하기" />
 
       {/* Product summary — line */}
@@ -481,7 +482,18 @@ function CouponSheet({
   onClose: () => void;
   onSelect: (id: string | null) => void;
 }) {
-  return (
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, []);
+  if (!mounted) return null;
+
+  return createPortal(
     <div
       className="fixed inset-0 z-[100] bg-black/40 modal-overlay-enter"
       onClick={onClose}
@@ -545,6 +557,7 @@ function CouponSheet({
           })}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
