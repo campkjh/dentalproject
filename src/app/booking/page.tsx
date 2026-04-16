@@ -113,33 +113,32 @@ function BookingPage() {
       <div className="lg:bg-white lg:rounded-2xl lg:shadow-sm lg:p-8">
         <TopBar title="내원일 선택" />
 
-        {/* Product summary card */}
+        {/* Product summary — line style */}
         {product && (
-          <div className="mx-2.5 mt-2 mb-5 rounded-2xl bg-gradient-to-br from-[#F4EFFF] to-[#FDF4FF] p-3.5 flex items-center gap-3 fade-in-up">
-            <div className="w-14 h-14 rounded-xl bg-white/70 flex items-center justify-center flex-shrink-0 overflow-hidden">
-              <span className="text-2xl">🦷</span>
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-[11px] text-[#7C3AED] font-semibold mb-0.5">
-                {product.hospitalName}
-              </p>
-              <p className="text-[14px] font-bold text-gray-900 line-clamp-1">
-                {product.title}
-              </p>
-              <p className="text-[13px] font-extrabold text-[#7C3AED] mt-0.5">
+          <div className="mx-2.5 mt-1 mb-4 py-3 border-y border-gray-100 fade-in-up">
+            <div className="flex items-center gap-3">
+              <div className="flex-1 min-w-0">
+                <p className="text-[11px] text-gray-500 leading-tight">
+                  {product.hospitalName}
+                </p>
+                <p className="text-[13px] font-semibold text-gray-900 line-clamp-1 leading-tight mt-0.5">
+                  {product.title}
+                </p>
+              </div>
+              <p className="text-[14px] font-bold text-gray-900 flex-shrink-0">
                 {product.price.toLocaleString()}
-                <span className="text-[11px] text-gray-500 font-semibold">원</span>
+                <span className="text-[11px] text-gray-500 font-medium ml-0.5">원</span>
               </p>
             </div>
           </div>
         )}
 
         {/* Step indicator */}
-        <div className="px-2.5 mb-4 flex items-center gap-2">
+        <div className="px-2.5 mb-3 flex items-center gap-2">
           <StepDot active label="1" title="날짜 선택" />
           <div className="flex-1 h-[2px] bg-gray-200 rounded-full relative overflow-hidden">
             <span
-              className="absolute inset-y-0 left-0 bg-[#7C3AED] rounded-full"
+              className="absolute inset-y-0 left-0 bg-gray-900 rounded-full"
               style={{
                 width: selectedDate ? '100%' : '0%',
                 transition: 'width 360ms cubic-bezier(0.22, 1, 0.36, 1)',
@@ -258,20 +257,20 @@ function BookingPage() {
         {/* Time Selection */}
         {selectedDate && (
           <div className="px-2.5 mb-6 fade-in-up">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-[15px] font-bold text-gray-900">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-[15px] font-bold text-gray-900 leading-tight">
                 {currentMonth}월 {selectedDate}일 ({selectedDayLabel}) 시간 선택
               </h3>
             </div>
 
-            <div className="space-y-5">
+            <div className="space-y-4">
               {timeGroups.map((group) => (
                 <div key={group.label}>
-                  <div className="flex items-center gap-2 mb-2.5">
-                    <span className="text-[12px] font-bold text-gray-600">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-[12px] font-semibold text-gray-700 leading-none">
                       {group.label}
                     </span>
-                    <span className="text-[11px] text-gray-400">
+                    <span className="text-[11px] text-gray-400 leading-none">
                       {group.slots.filter((t) => !unavailableTimes.has(t)).length}개 가능
                     </span>
                   </div>
@@ -323,9 +322,9 @@ function BookingPage() {
 
         {/* Notes */}
         <div className="px-2.5 mb-4">
-          <div className="bg-[#F9FAFB] rounded-xl p-4">
-            <h3 className="text-[13px] font-bold mb-2 text-gray-900">안내사항</h3>
-            <ul className="space-y-1.5">
+          <div className="bg-[#F9FAFB] rounded-xl p-3.5">
+            <h3 className="text-[13px] font-bold mb-1.5 text-gray-900 leading-tight">안내사항</h3>
+            <ul className="space-y-1">
               {[
                 '예약 시간 10분 전까지 내원해 주세요.',
                 '예약 변경 및 취소는 예약일 3일 전까지 가능합니다.',
@@ -333,9 +332,9 @@ function BookingPage() {
                 '공휴일은 예약이 불가합니다.',
                 '시술 전 주의사항은 예약 확정 후 문자로 안내드립니다.',
               ].map((note, i) => (
-                <li key={i} className="flex items-start gap-2">
-                  <span className="text-[#7C3AED] mt-0.5">•</span>
-                  <span className="text-[12px] text-gray-600 leading-relaxed">{note}</span>
+                <li key={i} className="flex items-start gap-1.5">
+                  <span className="text-gray-400 mt-0.5">•</span>
+                  <span className="text-[12px] text-gray-600 leading-snug">{note}</span>
                 </li>
               ))}
             </ul>
@@ -433,9 +432,9 @@ function StepDot({ active, label, title }: { active: boolean; label: string; tit
   return (
     <div className="flex items-center gap-1.5">
       <span
-        className="flex items-center justify-center w-6 h-6 rounded-full text-[11px] font-bold"
+        className="flex items-center justify-center w-6 h-6 rounded-full text-[11px] font-bold leading-none"
         style={{
-          backgroundColor: active ? '#7C3AED' : '#E5E7EB',
+          backgroundColor: active ? '#2B313D' : '#E5E7EB',
           color: active ? '#fff' : '#9CA3AF',
           transition: 'background-color 300ms ease',
         }}
@@ -443,7 +442,7 @@ function StepDot({ active, label, title }: { active: boolean; label: string; tit
         {label}
       </span>
       <span
-        className="text-[12px] font-semibold"
+        className="text-[12px] font-semibold leading-none"
         style={{ color: active ? '#2B313D' : '#9CA3AF' }}
       >
         {title}
