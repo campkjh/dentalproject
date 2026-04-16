@@ -28,5 +28,34 @@ export async function PATCH(
   }
   const { error } = await sb.from('hospitals').update({ status }).eq('id', id);
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+
+  // Notify owner of status change
+  const { data: hospital } = await sb
+    .from('hospitals')
+    .select('owner_id, name')
+    .eq('id', id)
+    .maybeSingle();
+  if (hospital?.owner_id) {
+    const titleMap: Record<string, string> = {
+      approved: '병원 등록이 승인되었습니다',
+      rejected: '병원 등록 신청이 반려되었습니다',
+      suspended: '병원이 일시 정지되었습니다',
+      pending: '병원 상태가 검토 중으로 변경되었습니다',
+    };
+    const typeMap: Record<string, string> = {
+      approved: 'important',
+      rejected: 'important',
+      suspended: 'important',
+      pending: 'info',
+    };
+    await sb.from('notifications').insert({
+      user_id: hospital.owner_id,
+      type: typeMap[status],
+      title: titleMap[status],
+      content: `${hospital.name}의 상태가 변경되었습니다.`,
+      link: '/hospital/manage',
+    });
+  }
+
   return NextResponse.json({ ok: true });
 }
