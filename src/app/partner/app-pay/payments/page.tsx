@@ -64,7 +64,7 @@ const INITIAL: Payment[] = [
 
 const STATUS_COLOR: Record<Payment['status'], { bg: string; text: string }> = {
   결제완료: { bg: '#E6F2FF', text: '#1E6FD9' },
-  사용완료: { bg: '#F5FAEF', text: '#5B8B25' },
+  사용완료: { bg: '#F4EFFF', text: '#7C3AED' },
   부분사용: { bg: '#FFF8E1', text: '#B45309' },
   환불: { bg: '#F3F4F6', text: '#6B7280' },
 };

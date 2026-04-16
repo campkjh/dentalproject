@@ -159,7 +159,7 @@ export default function ReservationsPage() {
                       <span
                         className="absolute bottom-0 text-[9px] font-bold px-1 rounded-sm"
                         style={{
-                          color: selected ? '#fff' : '#5B8B25',
+                          color: selected ? '#fff' : '#7C3AED',
                           backgroundColor: selected ? 'transparent' : 'transparent',
                         }}
                       >
@@ -216,7 +216,7 @@ export default function ReservationsPage() {
                         <p className="text-[11px] text-gray-500 mt-0.5">{r.surgeon}</p>
                       )}
                     </div>
-                    <button className="flex-shrink-0 text-[11px] font-semibold text-[#5B8B25] border border-[#8DC63F] rounded px-2 py-1">
+                    <button className="flex-shrink-0 text-[11px] font-semibold text-[#7C3AED] border border-[#7C3AED] rounded px-2 py-1">
                       문자발송
                     </button>
                   </li>

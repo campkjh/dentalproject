@@ -55,7 +55,7 @@ export default function PointsPage() {
           <p className="text-[11px] text-gray-400 mt-2">
             최근 30일 소진 {totalSpent.toLocaleString()}P
           </p>
-          <button className="mt-4 px-4 py-2 rounded-lg bg-[#8DC63F] text-white text-[12px] font-semibold btn-press">
+          <button className="mt-4 px-4 py-2 rounded-lg bg-[#7C3AED] text-white text-[12px] font-semibold btn-press">
             포인트 충전
           </button>
         </div>
@@ -117,7 +117,7 @@ export default function PointsPage() {
                   {total.toLocaleString()}
                 </span>
                 <div className="w-full max-w-[40px] flex flex-col-reverse rounded overflow-hidden">
-                  <div style={{ height: cpvH, backgroundColor: '#8DC63F' }} />
+                  <div style={{ height: cpvH, backgroundColor: '#7C3AED' }} />
                   <div style={{ height: adH, backgroundColor: '#FDCB6E' }} />
                 </div>
               </div>
@@ -133,7 +133,7 @@ export default function PointsPage() {
         </div>
         <div className="flex items-center gap-4 text-[11px] text-gray-600">
           <span className="flex items-center gap-1">
-            <span className="w-2.5 h-2.5 rounded-sm bg-[#8DC63F]" /> CPV 소진
+            <span className="w-2.5 h-2.5 rounded-sm bg-[#7C3AED]" /> CPV 소진
           </span>
           <span className="flex items-center gap-1">
             <span className="w-2.5 h-2.5 rounded-sm bg-[#FDCB6E]" /> 부가광고 소진
@@ -181,11 +181,11 @@ export default function PointsPage() {
                       className="inline-block px-2 py-0.5 rounded text-[11px] font-semibold"
                       style={{
                         backgroundColor:
-                          t.type === '충전' ? '#F5FAEF'
+                          t.type === '충전' ? '#F4EFFF'
                           : t.type === '환불' ? '#E6F7EB'
                           : '#FFF8E1',
                         color:
-                          t.type === '충전' ? '#5B8B25'
+                          t.type === '충전' ? '#7C3AED'
                           : t.type === '환불' ? '#15803D'
                           : '#B45309',
                       }}

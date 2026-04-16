@@ -194,8 +194,8 @@ export default function ReviewsPage() {
               )}
 
               {r.reply ? (
-                <div className="rounded-lg bg-[#F5FAEF] p-3 text-[12.5px] text-gray-800 leading-relaxed">
-                  <span className="text-[#5B8B25] font-bold mr-1.5">└ 병원 답글</span>
+                <div className="rounded-lg bg-[#F4EFFF] p-3 text-[12.5px] text-gray-800 leading-relaxed">
+                  <span className="text-[#7C3AED] font-bold mr-1.5">└ 병원 답글</span>
                   {r.reply}
                   <p className="text-[10px] text-gray-500 mt-1">{r.replyAt}</p>
                 </div>
@@ -207,7 +207,7 @@ export default function ReviewsPage() {
                     rows={3}
                     maxLength={500}
                     placeholder="후기에 대한 답글을 작성해주세요."
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-[12.5px] outline-none focus:border-[#8DC63F] resize-none"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-[12.5px] outline-none focus:border-[#7C3AED] resize-none"
                   />
                   <div className="flex items-center justify-end gap-1.5">
                     <button
@@ -218,7 +218,7 @@ export default function ReviewsPage() {
                     </button>
                     <button
                       onClick={() => saveReply(r.id)}
-                      className="px-3 py-1.5 rounded text-[11px] font-semibold bg-[#8DC63F] text-white"
+                      className="px-3 py-1.5 rounded text-[11px] font-semibold bg-[#7C3AED] text-white"
                     >
                       답글 등록
                     </button>
@@ -227,7 +227,7 @@ export default function ReviewsPage() {
               ) : (
                 <button
                   onClick={() => setOpenId(r.id)}
-                  className="text-[11px] font-semibold text-[#5B8B25] flex items-center gap-0.5"
+                  className="text-[11px] font-semibold text-[#7C3AED] flex items-center gap-0.5"
                 >
                   답글 작성 <ChevronDown size={11} />
                 </button>

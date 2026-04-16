@@ -129,7 +129,7 @@ export default function EventsApprovalPage() {
                   <td className="px-3 py-3">
                     <button
                       onClick={() => setSelected(a)}
-                      className="text-[11px] font-semibold text-[#5B8B25] flex items-center gap-0.5"
+                      className="text-[11px] font-semibold text-[#7C3AED] flex items-center gap-0.5"
                     >
                       상세 <ChevronRight size={12} />
                     </button>

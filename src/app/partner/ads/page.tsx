@@ -130,7 +130,7 @@ export default function AdsPage() {
         <section className="bg-white rounded-xl border border-gray-200 overflow-hidden">
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
             <h2 className="text-[14px] font-bold text-gray-900">진행 중인 캠페인</h2>
-            <button className="px-3 py-1.5 rounded-lg bg-[#8DC63F] text-white text-[12px] font-semibold btn-press flex items-center gap-1">
+            <button className="px-3 py-1.5 rounded-lg bg-[#7C3AED] text-white text-[12px] font-semibold btn-press flex items-center gap-1">
               <Plus size={13} /> 캠페인 만들기
             </button>
           </div>
@@ -217,7 +217,7 @@ export default function AdsPage() {
                   disabled={!s.active}
                   className="flex-1 py-2 rounded-lg text-[12px] font-semibold disabled:opacity-40"
                   style={{
-                    backgroundColor: s.active ? '#8DC63F' : '#E5E7EB',
+                    backgroundColor: s.active ? '#7C3AED' : '#E5E7EB',
                     color: '#fff',
                   }}
                 >

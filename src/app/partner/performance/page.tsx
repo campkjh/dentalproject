@@ -94,7 +94,7 @@ export default function PerformancePage() {
                 <span className="text-[10px] text-gray-500">{CONSULTS[i]}</span>
                 <div
                   className="w-full max-w-[40px] rounded-t"
-                  style={{ height: h, backgroundColor: '#8DC63F' }}
+                  style={{ height: h, backgroundColor: '#7C3AED' }}
                 />
               </div>
             );
@@ -128,7 +128,7 @@ export default function PerformancePage() {
               <tr key={e.title} className="border-b border-gray-100 last:border-0">
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">
-                    <span className="w-5 h-5 rounded-full bg-[#F5FAEF] text-[#5B8B25] flex items-center justify-center text-[10px] font-bold">
+                    <span className="w-5 h-5 rounded-full bg-[#F4EFFF] text-[#7C3AED] flex items-center justify-center text-[10px] font-bold">
                       {idx + 1}
                     </span>
                     <span className="text-gray-900 font-semibold">{e.title}</span>
@@ -137,7 +137,7 @@ export default function PerformancePage() {
                 <td className="px-4 py-3 text-right text-gray-700">{e.impressions.toLocaleString()}</td>
                 <td className="px-4 py-3 text-right text-gray-900 font-semibold">{e.consults}</td>
                 <td className="px-4 py-3 text-right">
-                  <span className="font-bold" style={{ color: e.rate >= 0.8 ? '#5B8B25' : '#B45309' }}>
+                  <span className="font-bold" style={{ color: e.rate >= 0.8 ? '#7C3AED' : '#B45309' }}>
                     {(e.rate * 100).toFixed(1)}%
                   </span>
                 </td>
