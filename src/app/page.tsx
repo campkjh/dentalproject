@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Search, Send, ChevronRight, Star, MapPin } from 'lucide-react';
+import { Search, Send, ChevronRight, Star, MapPin, X } from 'lucide-react';
 import ProductCard from '@/components/common/ProductCard';
 import { useStore } from '@/store';
 import { categories, reviews, hospitals, products as allMockProducts } from '@/lib/mock-data';
@@ -18,7 +18,7 @@ const searchPlaceholders = [
 
 export default function HomePage() {
   const router = useRouter();
-  const { products, isLoggedIn, login, recentlyViewed } = useStore();
+  const { products, isLoggedIn, login, recentlyViewed, recentSearches, removeRecentSearch } = useStore();
   const [scrolled, setScrolled] = useState(false);
   const [placeholderIdx, setPlaceholderIdx] = useState(0);
   const [animating, setAnimating] = useState(false);
@@ -225,6 +225,9 @@ export default function HomePage() {
         <div ref={categorySectionRef}>
           <CategoryPager />
         </div>
+
+        {/* 최근 본 태그 */}
+        <RecentTagsSection tags={recentSearches} onRemove={removeRecentSearch} />
 
         {/* 최근 본 상품 */}
         <RecentlyViewedSection
@@ -596,6 +599,54 @@ function RecentlyViewedSection({
               <ProductCard product={p} />
             </div>
           ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function RecentTagsSection({
+  tags,
+  onRemove,
+}: {
+  tags: string[];
+  onRemove: (tag: string) => void;
+}) {
+  if (!tags || tags.length === 0) return null;
+
+  return (
+    <div className="mb-6">
+      <div className="flex items-center justify-between px-2.5 lg:px-6 lg:max-w-7xl lg:mx-auto mb-2">
+        <h2 className="font-bold">최근 본 태그</h2>
+      </div>
+      <div className="px-2.5 lg:max-w-7xl lg:mx-auto">
+        <div className="flex gap-1.5 overflow-x-auto hide-scrollbar pb-1">
+          {tags.map((tag) => (
+            <div
+              key={tag}
+              className="flex-shrink-0 flex items-center gap-1 pl-3 pr-1.5 rounded-full bg-[#F4F5F7] card-press"
+              style={{ height: 32 }}
+            >
+              <Link
+                href={`/search?q=${encodeURIComponent(tag)}`}
+                className="text-[13px] font-medium text-gray-700 whitespace-nowrap"
+              >
+                {tag}
+              </Link>
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onRemove(tag);
+                }}
+                aria-label="삭제"
+                className="w-5 h-5 rounded-full flex items-center justify-center hover:bg-gray-200 transition-colors"
+              >
+                <X size={12} className="text-gray-400" />
+              </button>
+            </div>
+          ))}
+          <div className="flex-shrink-0" style={{ width: 4 }} />
         </div>
       </div>
     </div>
