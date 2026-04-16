@@ -43,5 +43,31 @@ export async function POST(req: NextRequest) {
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+
+  // Create notification for the user
+  await sb.from('notifications').insert({
+    user_id: user.id,
+    type: 'info',
+    title: '예약이 접수되었습니다',
+    content: `${body.customerName ?? '회원'}님의 예약이 접수되었습니다. 병원 확인 후 알려드릴게요.`,
+    link: `/reservations/${data.id}`,
+  });
+
+  // Notify hospital owner if exists
+  const { data: hospitalRow } = await sb
+    .from('hospitals')
+    .select('owner_id, name')
+    .eq('id', hospitalId)
+    .maybeSingle();
+  if (hospitalRow?.owner_id) {
+    await sb.from('notifications').insert({
+      user_id: hospitalRow.owner_id,
+      type: 'important',
+      title: '새 예약이 들어왔습니다',
+      content: `${body.customerName ?? '회원'}님이 ${hospitalRow.name}에 예약을 신청했습니다.`,
+      link: `/hospital/appointments`,
+    });
+  }
+
   return NextResponse.json({ id: data.id });
 }
