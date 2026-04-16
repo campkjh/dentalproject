@@ -36,13 +36,29 @@ update public.hospitals set status = 'approved' where id = '...';
 ```
 또는 관리자 계정으로 로그인 후 `/api/admin/hospitals/<id>` PATCH 호출.
 
-## 4. 시드 데이터 투입
+## 4. 데모 데이터 투입 (선택)
 
 ```bash
 npm run db:seed
 ```
 
-현재 `src/lib/mock-data.ts`의 카테고리 · 병원 · 의사 · 상품 · 공지를 DB에 업서트합니다. 사용자 종속 데이터(리뷰/예약/게시글 등)는 실제 사용자가 가입한 뒤에 자연스럽게 쌓이므로 스킵합니다.
+데모용 콘텐츠 한 번에 넣기:
+- 병원 사장 4명 (실제 auth.users 가입 — 로그인 가능)
+- 환자 22명 (실제 auth.users 가입 — 로그인 가능)
+- 병원 4개 (각 사장이 owner로 등록, status=approved)
+- 의료진 19명 + 영업시간 + 상품 6개 + 리뷰 22개 + 예약 11건 + 게시글 28개
+- 모든 콘텐츠가 위 실제 사용자 계정에 연결됨 (mockup 아님)
+
+**데모 계정 (비밀번호 모두 `Demo1234!`)**
+- 병원 사장: `owner.h1@kidoctor.demo` ~ `owner.h4@kidoctor.demo`
+- 환자(예약/쿠폰 보유): `u1@kidoctor.demo`
+- 환자(리뷰 작성자): `u2@kidoctor.demo` ~ `u22@kidoctor.demo`
+
+데모 데이터를 모두 지우고 빈 상태로 만들기:
+```bash
+npm run db:reset
+```
+(카테고리는 유지, `@kidoctor.demo` 사용자도 모두 삭제됩니다)
 
 ## 5. OAuth 연동 (Kakao / Apple)
 
@@ -81,6 +97,15 @@ const { signInWithOAuth, signOut } = useSession();
 `supabase/schema.sql`에 `consultation_rooms`, `consultation_messages`, `live_messages` 테이블이 이미 있습니다. `Database → Replication`에서 이 세 테이블을 Publication에 추가해 주세요. Stage 4에서 해당 페이지 이관 시 `supabase.channel()`로 구독을 붙입니다.
 
 ---
+
+## 출시 체크리스트 (실서비스 전환)
+
+1. `npm run db:reset` — 데모 데이터 전부 삭제
+2. Supabase 대시보드 → Authentication → Email Provider → **Confirm email = ON** 권장
+3. 본인 관리자 계정 생성 후 SQL로 `is_admin = true` 지정 (위 SETUP 3번 참고)
+4. 본인이나 입점 사장이 `/hospital/register`로 첫 병원 등록
+5. 관리자 계정으로 `/admin/hospitals`에서 승인
+6. `NEXT_PUBLIC_SITE_URL`을 실 도메인으로 교체 후 Vercel 배포
 
 ## Stage 진행 상황
 
