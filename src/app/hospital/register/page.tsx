@@ -1174,12 +1174,26 @@ function SequentialAgreeFlow({
   const currentNumber = stepIdx + 1;
   const progressPct = (currentNumber / totalSteps) * 100;
 
-  const handleScroll = () => {
+  const checkReachedBottom = () => {
     const el = scrollRef.current;
     if (!el) return;
+    const notScrollable = el.scrollHeight <= el.clientHeight + 12;
     const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 12;
-    if (atBottom && !reachedBottom) setReachedBottom(true);
+    if (notScrollable || atBottom) setReachedBottom(true);
   };
+
+  // Re-check on step change — short content auto-enables button
+  useEffect(() => {
+    if (isSignatureStep) return;
+    setReachedBottom(false);
+    const t = setTimeout(() => {
+      const el = scrollRef.current;
+      if (!el) return;
+      const notScrollable = el.scrollHeight <= el.clientHeight + 12;
+      if (notScrollable) setReachedBottom(true);
+    }, 60);
+    return () => clearTimeout(t);
+  }, [stepIdx, isSignatureStep]);
 
   const resetScroll = () => {
     setReachedBottom(false);
@@ -1249,7 +1263,7 @@ function SequentialAgreeFlow({
         ) : (
           <div
             ref={scrollRef}
-            onScroll={handleScroll}
+            onScroll={checkReachedBottom}
             className="flex-1 overflow-y-auto px-5 py-4"
           >
             <h4 className="text-[15px] font-bold text-gray-900 mb-3">
