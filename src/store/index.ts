@@ -18,10 +18,74 @@ interface Category {
   popular: boolean;
 }
 
+/* ---------------------- DB sync helpers ---------------------- */
+
+async function syncWrite(
+  method: 'POST' | 'PATCH' | 'DELETE',
+  path: string,
+  body: unknown,
+  onError?: () => void
+) {
+  try {
+    const res = await fetch(path, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body ?? {}),
+    });
+    if (!res.ok && res.status === 401) onError?.();
+  } catch {
+    onError?.();
+  }
+}
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+function reservationFromRow(r: any): Reservation {
+  return {
+    id: r.id,
+    status: r.status,
+    date: r.reservation_at ? new Date(r.reservation_at).toLocaleDateString('ko-KR') : '',
+    productTitle: r.product?.title ?? '',
+    productImage: r.product?.image_url ?? '',
+    hospitalName: r.hospital?.name ?? '',
+    hospitalId: r.hospital?.slug ?? r.hospital?.id ?? r.hospital_id,
+    location: r.hospital?.location ?? '',
+    visitDate: r.visit_at ? new Date(r.visit_at).toLocaleString('ko-KR') : '',
+    reservationDate: r.reservation_at ? new Date(r.reservation_at).toLocaleString('ko-KR') : '',
+    cancelDate: r.cancel_at ? new Date(r.cancel_at).toLocaleString('ko-KR') : undefined,
+    amount: r.amount ?? 0,
+    customerName: r.customer_name ?? '',
+    customerPhone: r.customer_phone ?? '',
+    cancelReason: r.cancel_reason ?? undefined,
+    assignedDoctor: r.doctor?.name ?? undefined,
+    paymentMethod: r.payment_method ?? undefined,
+    paymentType: r.payment_type ?? undefined,
+  };
+}
+
+function couponFromRow(c: any) {
+  return {
+    id: c.id,
+    name: c.name,
+    description: c.description ?? '',
+    discountAmount: c.discount_amount,
+    expiryDate: c.expiry_date ?? undefined,
+    daysLeft: c.expiry_date
+      ? Math.max(0, Math.ceil((new Date(c.expiry_date).getTime() - Date.now()) / 86400000))
+      : undefined,
+    status: c.status as 'available' | 'used' | 'expired',
+  };
+}
+/* eslint-enable @typescript-eslint/no-explicit-any */
+
 interface AppState {
   // Catalog hydration (DB-backed, replaces mock-data when loaded)
   catalogHydrated: boolean;
   hydrateCatalog: () => Promise<void>;
+
+  // User hydration on login (wishlist, reservations, coupons, etc.)
+  meHydrated: boolean;
+  hydrateMe: () => Promise<void>;
+  resetMe: () => void;
 
   // Auth
   isLoggedIn: boolean;
@@ -103,6 +167,51 @@ export const useStore = create<AppState>((set, get) => ({
     }
   },
 
+  meHydrated: false,
+  hydrateMe: async () => {
+    try {
+      const res = await fetch('/api/me', { cache: 'no-store' });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (!data.user) {
+        set({ meHydrated: true });
+        return;
+      }
+      set({
+        wishlist: data.wishlist ?? [],
+        recentlyViewed: data.recentlyViewed ?? [],
+        reservations:
+          (data.reservations ?? []).length > 0
+            ? (data.reservations ?? []).map(reservationFromRow)
+            : get().reservations,
+        interestedCategories: data.interestedCategories ?? [],
+        meHydrated: true,
+      });
+      // patch coupons + points into user
+      const u = get().user;
+      if (u) {
+        set({
+          user: {
+            ...u,
+            coupons: (data.coupons ?? []).map(couponFromRow),
+            points: data.user.profile?.points ?? u.points,
+          },
+        });
+      }
+    } catch {
+      // ignore
+    }
+  },
+  resetMe: () => {
+    set({
+      wishlist: [],
+      recentlyViewed: [],
+      reservations: mockReservations,
+      interestedCategories: [],
+      meHydrated: false,
+    });
+  },
+
   isLoggedIn: false,
   isDoctor: false,
   user: null,
@@ -127,15 +236,20 @@ export const useStore = create<AppState>((set, get) => ({
   logout: () => {
     set({ isLoggedIn: false, user: null, isDoctor: false });
   },
-  updateUser: (patch) =>
-    set((state) => (state.user ? { user: { ...state.user, ...patch } } : {})),
+  updateUser: (patch) => {
+    set((state) => (state.user ? { user: { ...state.user, ...patch } } : {}));
+    void syncWrite('PATCH', '/api/profile', patch);
+  },
   interestedCategories: [],
-  toggleInterestedCategory: (id) =>
+  toggleInterestedCategory: (id) => {
+    const wasIn = get().interestedCategories.includes(id);
     set((state) => ({
-      interestedCategories: state.interestedCategories.includes(id)
+      interestedCategories: wasIn
         ? state.interestedCategories.filter((x) => x !== id)
         : [...state.interestedCategories, id],
-    })),
+    }));
+    void syncWrite(wasIn ? 'DELETE' : 'POST', '/api/interested-categories', { categoryId: id });
+  },
 
   categories: mockCategories,
   addCategory: (cat) => set({ categories: [...get().categories, cat] }),
@@ -148,19 +262,22 @@ export const useStore = create<AppState>((set, get) => ({
   wishlist: [],
   toggleWishlist: (productId) => {
     const current = get().wishlist;
-    if (current.includes(productId)) {
-      set({ wishlist: current.filter((id) => id !== productId) });
-      get().showToast('찜목록에서 삭제되었습니다.');
-    } else {
-      set({ wishlist: [...current, productId] });
-      get().showToast('찜목록에 추가하였습니다!');
-    }
+    const wasIn = current.includes(productId);
+    set({
+      wishlist: wasIn ? current.filter((id) => id !== productId) : [...current, productId],
+    });
+    get().showToast(wasIn ? '찜목록에서 삭제되었습니다.' : '찜목록에 추가하였습니다!');
+    void syncWrite(wasIn ? 'DELETE' : 'POST', '/api/wishlist', { productId }, () => {
+      // rollback on auth/network error
+      set({ wishlist: wasIn ? [...get().wishlist, productId] : get().wishlist.filter((id) => id !== productId) });
+    });
   },
 
   recentlyViewed: [],
   addRecentlyViewed: (productId) => {
     const current = get().recentlyViewed.filter((id) => id !== productId);
     set({ recentlyViewed: [productId, ...current].slice(0, 20) });
+    void syncWrite('POST', '/api/recently-viewed', { productId });
   },
 
   reservations: mockReservations,
@@ -172,28 +289,101 @@ export const useStore = create<AppState>((set, get) => ({
           : r
       ),
     });
+    if (/^[0-9a-f]{8}-/.test(id)) {
+      void syncWrite('PATCH', `/api/reservations/${id}`, { status, cancelReason });
+    }
   },
   addReservation: (reservation) => {
     set({ reservations: [reservation, ...get().reservations] });
+    void (async () => {
+      try {
+        const res = await fetch('/api/reservations', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            hospitalId: reservation.hospitalId,
+            visitAt: reservation.visitDate,
+            amount: reservation.amount,
+            customerName: reservation.customerName,
+            customerPhone: reservation.customerPhone,
+            paymentType: reservation.paymentType,
+            paymentMethod: reservation.paymentMethod,
+          }),
+        });
+        if (res.ok) {
+          const { id } = await res.json();
+          set({
+            reservations: get().reservations.map((r) => (r.id === reservation.id ? { ...r, id } : r)),
+          });
+        }
+      } catch {
+        // ignore — optimistic UI keeps working
+      }
+    })();
   },
 
   posts: mockPosts,
   addPost: (post) => {
     set({ posts: [post, ...get().posts] });
+    void (async () => {
+      try {
+        const res = await fetch('/api/posts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            boardType: post.boardType,
+            title: post.title,
+            content: post.content,
+            isAnonymous: post.isAnonymous,
+            anonymousId: post.anonymousId,
+            imageUrl: post.imageUrl,
+            thumbnailUrl: post.thumbnailUrl,
+            tags: post.tags,
+          }),
+        });
+        if (res.ok) {
+          const { id } = await res.json();
+          set({ posts: get().posts.map((p) => (p.id === post.id ? { ...p, id } : p)) });
+        }
+      } catch {/* ignore */}
+    })();
   },
   deletePost: (id) => {
     set({ posts: get().posts.filter((p) => p.id !== id) });
+    if (/^[0-9a-f]{8}-/.test(id)) {
+      void syncWrite('DELETE', `/api/posts/${id}`, {});
+    }
   },
 
   comments: mockComments,
   addComment: (comment) => {
     set({ comments: [...get().comments, comment] });
-    // Update comment count on post
     set({
       posts: get().posts.map((p) =>
         p.id === comment.postId ? { ...p, commentCount: p.commentCount + 1 } : p
       ),
     });
+    if (/^[0-9a-f]{8}-/.test(comment.postId)) {
+      void (async () => {
+        try {
+          const res = await fetch('/api/comments', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              postId: comment.postId,
+              content: comment.content,
+              isAnonymous: comment.isAnonymous,
+              anonymousId: comment.anonymousId,
+              parentCommentId: comment.parentCommentId,
+            }),
+          });
+          if (res.ok) {
+            const { id } = await res.json();
+            set({ comments: get().comments.map((c) => (c.id === comment.id ? { ...c, id } : c)) });
+          }
+        } catch {/* ignore */}
+      })();
+    }
   },
   deleteComment: (id) => {
     const comment = get().comments.find((c) => c.id === id);
@@ -204,6 +394,9 @@ export const useStore = create<AppState>((set, get) => ({
           p.id === comment.postId ? { ...p, commentCount: Math.max(0, p.commentCount - 1) } : p
         ),
       });
+      if (/^[0-9a-f]{8}-/.test(id)) {
+        void syncWrite('DELETE', `/api/comments/${id}`, {});
+      }
     }
   },
 
@@ -215,6 +408,30 @@ export const useStore = create<AppState>((set, get) => ({
     if (user) {
       set({ user: { ...user, points: user.points + 500 } });
     }
+    void (async () => {
+      try {
+        const res = await fetch('/api/reviews', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            hospitalId: review.hospitalId,
+            productId: review.productId,
+            doctorId: review.doctorId,
+            rating: review.rating,
+            content: review.content,
+            treatmentName: review.treatmentName,
+            treatmentDate: review.treatmentDate,
+            totalCost: review.totalCost,
+            beforeImage: review.beforeImage,
+            afterImage: review.afterImage,
+          }),
+        });
+        if (res.ok) {
+          const { id } = await res.json();
+          set({ reviews: get().reviews.map((r) => (r.id === review.id ? { ...r, id } : r)) });
+        }
+      } catch {/* ignore */}
+    })();
   },
 
   recentSearches: ['이빨', '임플란트', '치아교정'],
