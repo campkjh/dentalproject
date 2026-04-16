@@ -152,7 +152,7 @@ ${hasAspectFeedback && aspects.kindness >= 4 ? '원장님과 스태프분들의 
       </header>
 
       {/* Scrollable content */}
-      <div className="flex-1 overflow-y-auto pb-4">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden pb-4 w-full">
         {/* Product header */}
         <div className="px-2.5 py-3 flex items-center gap-3 border-b border-gray-100">
           <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-100 to-blue-100 flex items-center justify-center flex-shrink-0">
@@ -278,6 +278,7 @@ ${hasAspectFeedback && aspects.kindness >= 4 ? '원장님과 스태프분들의 
             </div>
 
             {/* Directional slide based on tab direction */}
+            <div className="overflow-hidden">
             {photoMode === 'before-after' ? (
               <div key="ba" className="grid grid-cols-2 gap-2 tab-slide-left">
                 <PhotoSlot
@@ -322,6 +323,7 @@ ${hasAspectFeedback && aspects.kindness >= 4 ? '원장님과 스태프분들의 
                 />
               </div>
             )}
+            </div>
 
             <label className="mt-3 flex items-start gap-2 rounded-lg bg-gray-50 px-3 py-2.5 cursor-pointer">
               <input
