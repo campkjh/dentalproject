@@ -486,91 +486,145 @@ alter table public.categories enable row level security;
 alter table public.announcements enable row level security;
 
 -- Public read for catalog tables
-create policy if not exists "read_all_categories" on public.categories for select using (true);
-create policy if not exists "read_approved_hospitals" on public.hospitals
+drop policy if exists "read_all_categories" on public.categories;
+create policy "read_all_categories" on public.categories
+  for select using (true);
+drop policy if exists "read_approved_hospitals" on public.hospitals;
+create policy "read_approved_hospitals" on public.hospitals
   for select using (status = 'approved' or auth.uid() = owner_id);
-create policy if not exists "read_all_operating_hours" on public.operating_hours for select using (true);
-create policy if not exists "read_all_doctors" on public.doctors for select using (true);
-create policy if not exists "read_active_products" on public.products
+drop policy if exists "read_all_operating_hours" on public.operating_hours;
+create policy "read_all_operating_hours" on public.operating_hours
+  for select using (true);
+drop policy if exists "read_all_doctors" on public.doctors;
+create policy "read_all_doctors" on public.doctors
+  for select using (true);
+drop policy if exists "read_active_products" on public.products;
+create policy "read_active_products" on public.products
   for select using (status = 'active');
-create policy if not exists "read_all_product_options" on public.product_options for select using (true);
-create policy if not exists "read_all_reviews" on public.reviews for select using (true);
-create policy if not exists "read_all_posts" on public.posts for select using (true);
-create policy if not exists "read_all_comments" on public.comments for select using (true);
-create policy if not exists "read_all_announcements" on public.announcements for select using (true);
-create policy if not exists "read_all_live_messages" on public.live_messages for select using (true);
+drop policy if exists "read_all_product_options" on public.product_options;
+create policy "read_all_product_options" on public.product_options
+  for select using (true);
+drop policy if exists "read_all_reviews" on public.reviews;
+create policy "read_all_reviews" on public.reviews
+  for select using (true);
+drop policy if exists "read_all_posts" on public.posts;
+create policy "read_all_posts" on public.posts
+  for select using (true);
+drop policy if exists "read_all_comments" on public.comments;
+create policy "read_all_comments" on public.comments
+  for select using (true);
+drop policy if exists "read_all_announcements" on public.announcements;
+create policy "read_all_announcements" on public.announcements
+  for select using (true);
+drop policy if exists "read_all_live_messages" on public.live_messages;
+create policy "read_all_live_messages" on public.live_messages
+  for select using (true);
 
 -- Profiles — everyone can read minimal info, self-update only
-create policy if not exists "read_all_profiles" on public.profiles for select using (true);
-create policy if not exists "update_own_profile" on public.profiles
+drop policy if exists "read_all_profiles" on public.profiles;
+create policy "read_all_profiles" on public.profiles
+  for select using (true);
+drop policy if exists "update_own_profile" on public.profiles;
+create policy "update_own_profile" on public.profiles
   for update using (auth.uid() = id) with check (auth.uid() = id);
-create policy if not exists "insert_own_profile" on public.profiles
+drop policy if exists "insert_own_profile" on public.profiles;
+create policy "insert_own_profile" on public.profiles
   for insert with check (auth.uid() = id);
 
 -- Reviews — authored-only writes
-create policy if not exists "insert_own_review" on public.reviews
+drop policy if exists "insert_own_review" on public.reviews;
+create policy "insert_own_review" on public.reviews
   for insert with check (auth.uid() = author_id);
-create policy if not exists "update_own_review" on public.reviews
+drop policy if exists "update_own_review" on public.reviews;
+create policy "update_own_review" on public.reviews
   for update using (auth.uid() = author_id) with check (auth.uid() = author_id);
-create policy if not exists "delete_own_review" on public.reviews
+drop policy if exists "delete_own_review" on public.reviews;
+create policy "delete_own_review" on public.reviews
   for delete using (auth.uid() = author_id);
 
 -- Reservations — user owns their rows; hospital owner can read/update
-create policy if not exists "read_own_reservation" on public.reservations
+drop policy if exists "read_own_reservation" on public.reservations;
+create policy "read_own_reservation" on public.reservations
   for select using (
     auth.uid() = user_id
     or exists (select 1 from public.hospitals h where h.id = reservations.hospital_id and h.owner_id = auth.uid())
   );
-create policy if not exists "insert_own_reservation" on public.reservations
+drop policy if exists "insert_own_reservation" on public.reservations;
+create policy "insert_own_reservation" on public.reservations
   for insert with check (auth.uid() = user_id);
-create policy if not exists "update_own_reservation" on public.reservations
+drop policy if exists "update_own_reservation" on public.reservations;
+create policy "update_own_reservation" on public.reservations
   for update using (
     auth.uid() = user_id
     or exists (select 1 from public.hospitals h where h.id = reservations.hospital_id and h.owner_id = auth.uid())
   );
 
 -- Posts & comments — author writes own
-create policy if not exists "insert_own_post" on public.posts for insert with check (auth.uid() = author_id);
-create policy if not exists "update_own_post" on public.posts for update using (auth.uid() = author_id);
-create policy if not exists "delete_own_post" on public.posts for delete using (auth.uid() = author_id);
+drop policy if exists "insert_own_post" on public.posts;
+create policy "insert_own_post" on public.posts
+  for insert with check (auth.uid() = author_id);
+drop policy if exists "update_own_post" on public.posts;
+create policy "update_own_post" on public.posts
+  for update using (auth.uid() = author_id);
+drop policy if exists "delete_own_post" on public.posts;
+create policy "delete_own_post" on public.posts
+  for delete using (auth.uid() = author_id);
 
-create policy if not exists "insert_own_comment" on public.comments for insert with check (auth.uid() = author_id);
-create policy if not exists "update_own_comment" on public.comments for update using (auth.uid() = author_id);
-create policy if not exists "delete_own_comment" on public.comments for delete using (auth.uid() = author_id);
+drop policy if exists "insert_own_comment" on public.comments;
+create policy "insert_own_comment" on public.comments
+  for insert with check (auth.uid() = author_id);
+drop policy if exists "update_own_comment" on public.comments;
+create policy "update_own_comment" on public.comments
+  for update using (auth.uid() = author_id);
+drop policy if exists "delete_own_comment" on public.comments;
+create policy "delete_own_comment" on public.comments
+  for delete using (auth.uid() = author_id);
 
 -- Likes — self-owned
-create policy if not exists "manage_own_post_like" on public.post_likes
+drop policy if exists "manage_own_post_like" on public.post_likes;
+create policy "manage_own_post_like" on public.post_likes
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
-create policy if not exists "manage_own_comment_like" on public.comment_likes
+drop policy if exists "manage_own_comment_like" on public.comment_likes;
+create policy "manage_own_comment_like" on public.comment_likes
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
 -- Notifications / coupons / points — self only
-create policy if not exists "own_notifications" on public.notifications
+drop policy if exists "own_notifications" on public.notifications;
+create policy "own_notifications" on public.notifications
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
-create policy if not exists "own_coupons" on public.coupons
+drop policy if exists "own_coupons" on public.coupons;
+create policy "own_coupons" on public.coupons
   for select using (auth.uid() = user_id);
-create policy if not exists "own_point_history" on public.point_history
+drop policy if exists "own_point_history" on public.point_history;
+create policy "own_point_history" on public.point_history
   for select using (auth.uid() = user_id);
 
 -- Preferences — self only
-create policy if not exists "own_wishlist" on public.wishlists
+drop policy if exists "own_wishlist" on public.wishlists;
+create policy "own_wishlist" on public.wishlists
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
-create policy if not exists "own_recently_viewed" on public.recently_viewed
+drop policy if exists "own_recently_viewed" on public.recently_viewed;
+create policy "own_recently_viewed" on public.recently_viewed
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
-create policy if not exists "own_recent_searches" on public.recent_searches
+drop policy if exists "own_recent_searches" on public.recent_searches;
+create policy "own_recent_searches" on public.recent_searches
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
-create policy if not exists "own_interested_categories" on public.interested_categories
+drop policy if exists "own_interested_categories" on public.interested_categories;
+create policy "own_interested_categories" on public.interested_categories
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
 -- Consultation chat — only participants
-create policy if not exists "read_own_consult_room" on public.consultation_rooms
+drop policy if exists "read_own_consult_room" on public.consultation_rooms;
+create policy "read_own_consult_room" on public.consultation_rooms
   for select using (
     auth.uid() = user_id
     or exists (select 1 from public.hospitals h where h.id = consultation_rooms.hospital_id and h.owner_id = auth.uid())
   );
-create policy if not exists "insert_own_consult_room" on public.consultation_rooms
+drop policy if exists "insert_own_consult_room" on public.consultation_rooms;
+create policy "insert_own_consult_room" on public.consultation_rooms
   for insert with check (auth.uid() = user_id);
-create policy if not exists "read_consult_msg" on public.consultation_messages
+drop policy if exists "read_consult_msg" on public.consultation_messages;
+create policy "read_consult_msg" on public.consultation_messages
   for select using (
     exists (
       select 1 from public.consultation_rooms r
@@ -579,7 +633,8 @@ create policy if not exists "read_consult_msg" on public.consultation_messages
            or exists (select 1 from public.hospitals h where h.id = r.hospital_id and h.owner_id = auth.uid()))
     )
   );
-create policy if not exists "insert_consult_msg" on public.consultation_messages
+drop policy if exists "insert_consult_msg" on public.consultation_messages;
+create policy "insert_consult_msg" on public.consultation_messages
   for insert with check (
     exists (
       select 1 from public.consultation_rooms r
@@ -590,7 +645,8 @@ create policy if not exists "insert_consult_msg" on public.consultation_messages
   );
 
 -- Live messages — authenticated doctors only (enforced on write; read-all above)
-create policy if not exists "insert_live_message_doctor" on public.live_messages
+drop policy if exists "insert_live_message_doctor" on public.live_messages;
+create policy "insert_live_message_doctor" on public.live_messages
   for insert with check (
     auth.uid() = author_id
     and exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_doctor = true)
