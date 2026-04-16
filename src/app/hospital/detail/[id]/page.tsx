@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect, useLayoutEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -12,14 +12,43 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import TopBar from '@/components/common/TopBar';
-import TabBar from '@/components/common/TabBar';
 import ProductCard from '@/components/common/ProductCard';
 import { hospitals, products, reviews } from '@/lib/mock-data';
+
+const TABS = ['병원소개', '의료진', '진료시간', '리뷰'];
 
 export default function HospitalDetailPage() {
   const params = useParams();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('병원소개');
+  const [tabDir, setTabDir] = useState<'left' | 'right'>('right');
+  const prevIdxRef = useRef(0);
+  const tabBtnRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const [tabIndicator, setTabIndicator] = useState({ left: 0, width: 0 });
+  const activeIdx = TABS.indexOf(activeTab);
+
+  const changeTab = (t: string) => {
+    const next = TABS.indexOf(t);
+    setTabDir(next >= prevIdxRef.current ? 'right' : 'left');
+    prevIdxRef.current = next;
+    setActiveTab(t);
+  };
+
+  useLayoutEffect(() => {
+    const btn = tabBtnRefs.current[activeIdx];
+    if (!btn) return;
+    setTabIndicator({ left: btn.offsetLeft, width: btn.offsetWidth });
+  }, [activeIdx]);
+
+  useEffect(() => {
+    const onResize = () => {
+      const btn = tabBtnRefs.current[activeIdx];
+      if (!btn) return;
+      setTabIndicator({ left: btn.offsetLeft, width: btn.offsetWidth });
+    };
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, [activeIdx]);
 
   const hospital = useMemo(
     () => hospitals.find((h) => h.id === params.id),
@@ -124,18 +153,46 @@ export default function HospitalDetailPage() {
           </div>
         </div>
 
-        {/* Tabs */}
+        {/* Tabs with sliding indicator */}
         <div style={{ position: 'sticky', top: 0, zIndex: 30 }} className="bg-white">
-          <TabBar
-            tabs={['병원소개', '의료진', '진료시간', '리뷰']}
-            activeTab={activeTab}
-            onTabChange={setActiveTab}
-            variant="underline"
-          />
+          <div className="relative flex border-b border-gray-100">
+            {TABS.map((t, i) => {
+              const isActive = activeTab === t;
+              return (
+                <button
+                  key={t}
+                  ref={(el) => {
+                    tabBtnRefs.current[i] = el;
+                  }}
+                  onClick={() => changeTab(t)}
+                  className="flex-1 py-3 text-[14px] font-semibold"
+                  style={{
+                    color: isActive ? '#2B313D' : '#A4ABBA',
+                    transition: 'color 320ms cubic-bezier(0.22, 1, 0.36, 1)',
+                  }}
+                >
+                  {t}
+                </button>
+              );
+            })}
+            <span
+              aria-hidden
+              className="absolute bottom-0 h-[2px] bg-[#2B313D] pointer-events-none"
+              style={{
+                left: tabIndicator.left,
+                width: tabIndicator.width,
+                transition:
+                  'left 380ms cubic-bezier(0.22, 1, 0.36, 1), width 380ms cubic-bezier(0.22, 1, 0.36, 1)',
+              }}
+            />
+          </div>
         </div>
 
-        {/* Tab Content */}
-        <div className="px-2.5 py-4">
+        {/* Tab Content — directional slide on tab change */}
+        <div
+          key={activeTab}
+          className={`px-2.5 py-4 ${tabDir === 'right' ? 'tab-slide-right' : 'tab-slide-left'}`}
+        >
           {/* 병원소개 Tab */}
           {activeTab === '병원소개' && (
             <div>
