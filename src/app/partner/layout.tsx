@@ -39,8 +39,12 @@ const NAV: NavItem[] = [
     ],
   },
   { label: '이벤트 Q&A 관리', icon: '❓', href: '/partner/events/qa' },
+  { label: '예산 관리', icon: '📊', href: '/partner/budget' },
+  { label: '성과 관리', icon: '📈', href: '/partner/performance' },
   { label: '상담 관리', icon: '📞', href: '/partner/consults' },
+  { label: '예약 관리', icon: '📅', href: '/partner/reservations' },
   { label: '후기 관리', icon: '⭐', href: '/partner/reviews' },
+  { label: '부가광고 관리', icon: '📣', href: '/partner/ads' },
   {
     label: '앱결제 관리',
     icon: '💳',
