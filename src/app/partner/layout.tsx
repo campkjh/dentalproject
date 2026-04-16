@@ -63,8 +63,7 @@ export default function PartnerLayout({ children }: { children: React.ReactNode 
   );
 
   // Auth/landing pages render without the sidebar shell
-  const isAuth = pathname === '/partner/login' || pathname === '/partner/signup';
-  if (isAuth) {
+  if (pathname === '/partner/login') {
     return <>{children}</>;
   }
   const [drawerOpen, setDrawerOpen] = useState(false);
