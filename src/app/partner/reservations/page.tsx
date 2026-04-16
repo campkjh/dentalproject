@@ -1,33 +1,30 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import Link from 'next/link';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useStore } from '@/store';
+import { useSession } from '@/lib/supabase/SessionProvider';
 
-type Reservation = {
+/* eslint-disable @typescript-eslint/no-explicit-any */
+type ReservationRow = {
   id: string;
-  date: string; // YYYY-MM-DD
-  time: string;
-  customer: string;
-  phone: string;
-  procedure: string;
-  surgeon?: string;
-  status: '확정' | '대기' | '내원완료' | '취소';
-  memo?: string;
+  visit_at: string | null;
+  status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
+  customer_name: string;
+  customer_phone: string;
+  payment_type: string | null;
+  payment_method: string | null;
+  user?: { name?: string; phone?: string } | null;
+  product?: { title?: string } | null;
+  doctor?: { name?: string } | null;
 };
 
-const INITIAL: Reservation[] = [
-  { id: 'r1', date: '2026-04-20', time: '11:00', customer: '이지은', phone: '010-1234-5678', procedure: '쌍꺼풀 상담', surgeon: '김정우 원장', status: '확정' },
-  { id: 'r2', date: '2026-04-20', time: '14:30', customer: '박민수', phone: '010-2345-6789', procedure: '코 수술 상담', status: '대기' },
-  { id: 'r3', date: '2026-04-22', time: '10:00', customer: '김하늘', phone: '010-3456-7890', procedure: '리프팅 상담', surgeon: '이서연 원장', status: '확정' },
-  { id: 'r4', date: '2026-04-18', time: '16:00', customer: '정유나', phone: '010-4567-8901', procedure: '보톡스', surgeon: '김정우 원장', status: '내원완료' },
-  { id: 'r5', date: '2026-04-25', time: '15:30', customer: '유리', phone: '010-5678-9012', procedure: '필러', status: '확정' },
-];
-
-const STATUS_COLOR: Record<Reservation['status'], { bg: string; text: string }> = {
-  확정: { bg: '#E6F7EB', text: '#15803D' },
-  대기: { bg: '#FFF8E1', text: '#B45309' },
-  내원완료: { bg: '#E6F2FF', text: '#1E6FD9' },
-  취소: { bg: '#F3F4F6', text: '#6B7280' },
+const STATUS: Record<ReservationRow['status'], { label: string; bg: string; text: string }> = {
+  pending: { label: '확인 대기', bg: '#FFF8E1', text: '#B45309' },
+  confirmed: { label: '확정', bg: '#E6F7EB', text: '#15803D' },
+  completed: { label: '내원완료', bg: '#E6F2FF', text: '#1E6FD9' },
+  cancelled: { label: '취소', bg: '#F3F4F6', text: '#6B7280' },
 };
 
 const DAYS = ['일', '월', '화', '수', '목', '금', '토'];
@@ -52,23 +49,64 @@ function getMonthMatrix(year: number, month: number) {
   return weeks;
 }
 
-export default function ReservationsPage() {
-  const today = new Date('2026-04-16');
+export default function PartnerReservationsPage() {
+  const { authUser } = useSession();
+  const showToast = useStore((s) => s.showToast);
+  const today = new Date();
   const [year, setYear] = useState(today.getFullYear());
-  const [month, setMonth] = useState(today.getMonth()); // 0-indexed
-  const [selectedDate, setSelectedDate] = useState<string>('2026-04-20');
-  const [items, setItems] = useState<Reservation[]>(INITIAL);
+  const [month, setMonth] = useState(today.getMonth());
+  const [selectedDate, setSelectedDate] = useState<string>(
+    `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+  );
+  const [items, setItems] = useState<ReservationRow[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!authUser) {
+      setLoading(false);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/my-hospital', { cache: 'no-store' });
+        if (!res.ok) return;
+        const { reservations } = await res.json();
+        if (cancelled) return;
+        setItems(reservations ?? []);
+      } finally {
+        setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [authUser]);
 
   const weeks = getMonthMatrix(year, month);
   const monthStr = `${year}-${String(month + 1).padStart(2, '0')}`;
-  const countByDate = items.reduce<Record<string, number>>((acc, r) => {
-    if (r.date.startsWith(monthStr)) acc[r.date] = (acc[r.date] || 0) + 1;
-    return acc;
-  }, {});
 
-  const dayList = items
-    .filter((r) => r.date === selectedDate)
-    .sort((a, b) => a.time.localeCompare(b.time));
+  const countByDate = useMemo(() => {
+    const acc: Record<string, number> = {};
+    for (const r of items) {
+      if (!r.visit_at) continue;
+      const d = new Date(r.visit_at);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      if (key.startsWith(monthStr)) acc[key] = (acc[key] || 0) + 1;
+    }
+    return acc;
+  }, [items, monthStr]);
+
+  const dayList = useMemo(() => {
+    return items
+      .filter((r) => {
+        if (!r.visit_at) return false;
+        const d = new Date(r.visit_at);
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        return key === selectedDate;
+      })
+      .sort((a, b) => new Date(a.visit_at!).getTime() - new Date(b.visit_at!).getTime());
+  }, [items, selectedDate]);
 
   const prev = () => {
     if (month === 0) {
@@ -83,9 +121,40 @@ export default function ReservationsPage() {
     } else setMonth(month + 1);
   };
 
-  const updateStatus = (id: string, s: Reservation['status']) => {
-    setItems((prev) => prev.map((r) => (r.id === id ? { ...r, status: s } : r)));
+  const updateStatus = async (id: string, newStatus: ReservationRow['status']) => {
+    setItems((prev) =>
+      prev.map((r) => (r.id === id ? { ...r, status: newStatus } : r))
+    );
+    try {
+      const res = await fetch(`/api/reservations/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          status: newStatus,
+          ...(newStatus === 'cancelled' ? { cancelReason: '병원 사정으로 취소되었습니다.' } : {}),
+        }),
+      });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        showToast(j.error || '상태 변경 실패');
+      } else {
+        showToast('상태가 변경되었습니다.');
+      }
+    } catch {
+      showToast('네트워크 오류');
+    }
   };
+
+  if (!authUser) {
+    return (
+      <div className="bg-white rounded-xl p-10 text-center">
+        <p className="text-sm text-gray-500 mb-4">로그인이 필요합니다.</p>
+        <Link href="/login" className="inline-block px-5 py-2.5 bg-[#7C3AED] text-white text-sm font-bold rounded-xl">
+          로그인
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -156,13 +225,7 @@ export default function ReservationsPage() {
                       {d}
                     </span>
                     {n > 0 && (
-                      <span
-                        className="absolute bottom-0 text-[9px] font-bold px-1 rounded-sm"
-                        style={{
-                          color: selected ? '#fff' : '#7C3AED',
-                          backgroundColor: selected ? 'transparent' : 'transparent',
-                        }}
-                      >
+                      <span className="absolute bottom-0 text-[9px] font-bold text-[#7C3AED]">
                         {n}건
                       </span>
                     )}
@@ -176,49 +239,58 @@ export default function ReservationsPage() {
         {/* Day list */}
         <section className="bg-white rounded-xl border border-gray-200 overflow-hidden">
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-            <h2 className="text-[14px] font-bold text-gray-900">
-              {selectedDate} 일정
-            </h2>
+            <h2 className="text-[14px] font-bold text-gray-900">{selectedDate} 일정</h2>
             <span className="text-[11px] text-gray-500">{dayList.length}건</span>
           </div>
-          {dayList.length === 0 ? (
+          {loading ? (
+            <div className="py-16 text-center text-[12px] text-gray-400">불러오는 중…</div>
+          ) : dayList.length === 0 ? (
             <div className="py-16 text-center text-[12px] text-gray-400">
               해당 날짜에 예약이 없습니다.
             </div>
           ) : (
             <ul className="divide-y divide-gray-100">
               {dayList.map((r) => {
-                const sc = STATUS_COLOR[r.status];
+                const sc = STATUS[r.status];
+                const visitTime = r.visit_at
+                  ? new Date(r.visit_at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false })
+                  : '';
                 return (
                   <li key={r.id} className="p-4 flex items-start gap-3">
                     <div className="flex-shrink-0 w-14 text-center">
-                      <p className="text-[16px] font-extrabold text-gray-900">{r.time}</p>
+                      <p className="text-[16px] font-extrabold text-gray-900">{visitTime}</p>
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
-                        <span className="text-[13px] font-bold text-gray-900">{r.customer}</span>
-                        <span className="text-[11px] text-gray-500">{r.phone}</span>
+                        <span className="text-[13px] font-bold text-gray-900">
+                          {r.user?.name ?? r.customer_name ?? '환자'}
+                        </span>
+                        <span className="text-[11px] text-gray-500">
+                          {r.user?.phone ?? r.customer_phone}
+                        </span>
                         <select
                           value={r.status}
                           onChange={(e) =>
-                            updateStatus(r.id, e.target.value as Reservation['status'])
+                            updateStatus(r.id, e.target.value as ReservationRow['status'])
                           }
-                          className="text-[11px] font-bold rounded px-2 py-0.5 border-0 outline-none"
+                          className="text-[11px] font-bold rounded px-2 py-0.5 border-0 outline-none cursor-pointer"
                           style={{ backgroundColor: sc.bg, color: sc.text }}
                         >
-                          {(['확정', '대기', '내원완료', '취소'] as const).map((s) => (
-                            <option key={s} value={s}>{s}</option>
+                          {(['pending', 'confirmed', 'completed', 'cancelled'] as const).map((s) => (
+                            <option key={s} value={s}>
+                              {STATUS[s].label}
+                            </option>
                           ))}
                         </select>
                       </div>
-                      <p className="text-[12px] text-gray-700">{r.procedure}</p>
-                      {r.surgeon && (
-                        <p className="text-[11px] text-gray-500 mt-0.5">{r.surgeon}</p>
+                      <p className="text-[12px] text-gray-700">{r.product?.title ?? '예약'}</p>
+                      {r.doctor?.name && (
+                        <p className="text-[11px] text-gray-500 mt-0.5">{r.doctor.name} 원장</p>
+                      )}
+                      {r.payment_method && (
+                        <p className="text-[11px] text-gray-400 mt-0.5">결제: {r.payment_method}</p>
                       )}
                     </div>
-                    <button className="flex-shrink-0 text-[11px] font-semibold text-[#7C3AED] border border-[#7C3AED] rounded px-2 py-1">
-                      문자발송
-                    </button>
                   </li>
                 );
               })}

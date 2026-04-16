@@ -1,241 +1,190 @@
 'use client';
 
-import { useState } from 'react';
-import { Star, ChevronDown, ChevronUp } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import Link from 'next/link';
+import { Star } from 'lucide-react';
+import { useSession } from '@/lib/supabase/SessionProvider';
 
-type Review = {
-  id: number;
-  date: string;
-  author: string;
-  channel: '병원 페이지' | '이벤트' | '의사';
-  doctor?: string;
-  type: '일반후기' | '경과후기';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+type ReviewRow = {
+  id: string;
   rating: number;
   content: string;
-  reply?: string;
-  replyAt?: string;
-  progress?: {
-    lastDate: string;
-    total: number;
-    status: '진행중' | '완료';
-    completedAt?: string;
-  };
-  answeredOnly?: boolean;
+  treatment_name: string | null;
+  treatment_date: string | null;
+  total_cost: number;
+  before_image: string | null;
+  after_image: string | null;
+  created_at: string;
+  author?: { name?: string } | null;
+  doctor?: { name?: string } | null;
 };
 
-const INITIAL: Review[] = [
-  {
-    id: 2041,
-    date: '2026-04-15',
-    author: '지은***',
-    channel: '이벤트',
-    doctor: '김정우 원장',
-    type: '일반후기',
-    rating: 5,
-    content: '상담부터 시술까지 정말 만족스러웠어요. 회복도 빨랐고 결과도 자연스럽습니다.',
-  },
-  {
-    id: 2040,
-    date: '2026-04-12',
-    author: '민수***',
-    channel: '병원 페이지',
-    doctor: '이서연 원장',
-    type: '경과후기',
-    rating: 4,
-    content: '시술 2주차, 붓기는 많이 빠졌고 라인이 점점 자리잡는 느낌입니다.',
-    progress: { lastDate: '2026-04-12', total: 3, status: '진행중' },
-  },
-  {
-    id: 2039,
-    date: '2026-04-08',
-    author: '혜원***',
-    channel: '의사',
-    doctor: '김정우 원장',
-    type: '일반후기',
-    rating: 5,
-    content: '믿고 맡긴 결과 너무 만족합니다. 꼼꼼히 설명해주셔서 불안감이 없었어요.',
-    reply:
-      '소중한 후기 감사드립니다. 결과에 만족하셨다니 저희도 기쁩니다. 경과 관리 필요하시면 언제든 내원해 주세요.',
-    replyAt: '2026-04-09',
-  },
-  {
-    id: 2038,
-    date: '2026-04-05',
-    author: '유리***',
-    channel: '이벤트',
-    doctor: '이서연 원장',
-    type: '경과후기',
-    rating: 5,
-    content: '3개월 경과 후기 남겨요. 라인이 정말 예쁘게 자리 잡았어요.',
-    progress: {
-      lastDate: '2026-04-05',
-      total: 5,
-      status: '완료',
-      completedAt: '2026-04-05',
-    },
-  },
-];
+export default function PartnerReviewsPage() {
+  const { authUser } = useSession();
+  const [items, setItems] = useState<ReviewRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<'전체' | '5점' | '4점이하'>('전체');
 
-export default function ReviewsPage() {
-  const [channel, setChannel] = useState<'전체' | '상담신청' | '상담미신청'>('전체');
-  const [pendingOnly, setPendingOnly] = useState(false);
-  const [items, setItems] = useState<Review[]>(INITIAL);
-  const [openId, setOpenId] = useState<number | null>(null);
-  const [drafts, setDrafts] = useState<Record<number, string>>({});
+  useEffect(() => {
+    if (!authUser) {
+      setLoading(false);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/my-hospital', { cache: 'no-store' });
+        if (!res.ok) return;
+        const { reviews } = await res.json();
+        if (cancelled) return;
+        setItems(reviews ?? []);
+      } finally {
+        setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [authUser]);
 
-  const filtered = items.filter((r) => {
-    if (pendingOnly && r.reply) return false;
-    return true;
-  });
+  const filtered = useMemo(() => {
+    if (filter === '전체') return items;
+    if (filter === '5점') return items.filter((r) => Number(r.rating) >= 5);
+    return items.filter((r) => Number(r.rating) < 5);
+  }, [items, filter]);
 
-  const saveReply = (id: number) => {
-    const v = drafts[id]?.trim();
-    if (!v) return;
-    setItems((p) =>
-      p.map((r) => (r.id === id ? { ...r, reply: v, replyAt: '방금 전' } : r))
+  const avgRating = useMemo(() => {
+    if (!items.length) return 0;
+    return items.reduce((s, r) => s + Number(r.rating), 0) / items.length;
+  }, [items]);
+
+  if (!authUser) {
+    return (
+      <div className="bg-white rounded-xl p-10 text-center">
+        <p className="text-sm text-gray-500 mb-4">로그인이 필요합니다.</p>
+        <Link href="/login" className="inline-block px-5 py-2.5 bg-[#7C3AED] text-white text-sm font-bold rounded-xl">
+          로그인
+        </Link>
+      </div>
     );
-    setDrafts((p) => ({ ...p, [id]: '' }));
-    setOpenId(null);
-  };
+  }
 
   return (
     <div className="space-y-4">
       <div>
         <h1 className="text-[18px] font-bold text-gray-900">후기 관리</h1>
         <p className="text-[12px] text-gray-500 mt-1">
-          총 {items.length}건 · 미답변 {items.filter((i) => !i.reply).length}건
+          내 병원에 등록된 환자 후기를 확인하세요.
         </p>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 p-3 flex flex-wrap items-center gap-2">
-        <div className="flex gap-1">
-          {(['전체', '상담신청', '상담미신청'] as const).map((c) => (
-            <button
-              key={c}
-              onClick={() => setChannel(c)}
-              className="px-3 py-1.5 rounded-full text-[12px] font-semibold"
-              style={{
-                backgroundColor: channel === c ? '#2B313D' : '#F4F5F7',
-                color: channel === c ? '#fff' : '#51535C',
-              }}
-            >
-              {c}
-            </button>
-          ))}
+      {/* Stats */}
+      <div className="bg-white rounded-xl border border-gray-200 p-5 flex items-center gap-6">
+        <div className="text-center">
+          <div className="flex items-center gap-1 justify-center mb-1">
+            <Star size={20} fill="#FBBF24" stroke="#FBBF24" />
+            <span className="text-[24px] font-extrabold">{avgRating.toFixed(1)}</span>
+          </div>
+          <p className="text-[11px] text-gray-500">평균 평점</p>
         </div>
-        <label className="ml-auto text-[12px] flex items-center gap-1.5 text-gray-700">
-          <input
-            type="checkbox"
-            checked={pendingOnly}
-            onChange={(e) => setPendingOnly(e.target.checked)}
-          />
-          미답변만
-        </label>
+        <div className="w-px h-10 bg-gray-200" />
+        <div className="text-center">
+          <p className="text-[24px] font-extrabold">{items.length}</p>
+          <p className="text-[11px] text-gray-500">총 후기</p>
+        </div>
+        <div className="w-px h-10 bg-gray-200" />
+        <div className="text-center">
+          <p className="text-[24px] font-extrabold">
+            {items.filter((r) => Number(r.rating) >= 4.5).length}
+          </p>
+          <p className="text-[11px] text-gray-500">고평가 후기</p>
+        </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden divide-y divide-gray-100">
-        {filtered.map((r) => {
-          const isOpen = openId === r.id;
-          return (
-            <div key={r.id} className="p-4">
-              <div className="flex items-center gap-2 text-[11px] text-gray-500 mb-1 flex-wrap">
-                <span className="font-semibold text-gray-700">#{r.id}</span>
-                <span>·</span>
-                <span>{r.date}</span>
-                <span>·</span>
-                <span>{r.author}</span>
-                <span>·</span>
-                <span>{r.channel}</span>
-                {r.doctor && (
-                  <>
-                    <span>·</span>
-                    <span>{r.doctor}</span>
-                  </>
-                )}
-                <span
-                  className="ml-auto px-2 py-0.5 rounded text-[10px] font-bold"
-                  style={{
-                    backgroundColor: r.type === '경과후기' ? '#FFF8E1' : '#E6F2FF',
-                    color: r.type === '경과후기' ? '#B45309' : '#1E6FD9',
-                  }}
-                >
-                  {r.type}
-                </span>
-              </div>
-              <div className="flex items-center gap-0.5 mb-1">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <Star
-                    key={i}
-                    size={12}
-                    fill={i < r.rating ? '#FBBF24' : 'transparent'}
-                    stroke={i < r.rating ? '#FBBF24' : '#D1D5DB'}
-                  />
-                ))}
-                <span className="ml-1 text-[11px] font-semibold text-gray-700">
-                  {r.rating.toFixed(1)}
-                </span>
-              </div>
-              <p className="text-[13px] text-gray-800 leading-snug mb-2">{r.content}</p>
+      {/* Filter */}
+      <div className="flex gap-2">
+        {(['전체', '5점', '4점이하'] as const).map((f) => (
+          <button
+            key={f}
+            onClick={() => setFilter(f)}
+            className="px-3.5 py-1.5 rounded-full text-[12px] font-bold border"
+            style={{
+              backgroundColor: filter === f ? '#2B313D' : '#fff',
+              color: filter === f ? '#fff' : '#6B7280',
+              borderColor: filter === f ? '#2B313D' : '#E5E7EB',
+            }}
+          >
+            {f}
+          </button>
+        ))}
+      </div>
 
-              {r.progress && (
-                <div className="rounded-lg bg-gray-50 p-2.5 mb-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-gray-600">
-                  <span>최종 경과일: <span className="text-gray-900 font-semibold">{r.progress.lastDate}</span></span>
-                  <span>·</span>
-                  <span>총 {r.progress.total}회</span>
-                  <span>·</span>
-                  <span
-                    className="font-semibold"
-                    style={{ color: r.progress.status === '완료' ? '#15803D' : '#B45309' }}
-                  >
-                    {r.progress.status}
-                  </span>
-                  {r.progress.completedAt && <span>({r.progress.completedAt} 완료)</span>}
-                </div>
-              )}
-
-              {r.reply ? (
-                <div className="rounded-lg bg-[#F4EFFF] p-3 text-[12.5px] text-gray-800 leading-relaxed">
-                  <span className="text-[#7C3AED] font-bold mr-1.5">└ 병원 답글</span>
-                  {r.reply}
-                  <p className="text-[10px] text-gray-500 mt-1">{r.replyAt}</p>
-                </div>
-              ) : isOpen ? (
-                <div className="space-y-2">
-                  <textarea
-                    value={drafts[r.id] ?? ''}
-                    onChange={(e) => setDrafts((p) => ({ ...p, [r.id]: e.target.value }))}
-                    rows={3}
-                    maxLength={500}
-                    placeholder="후기에 대한 답글을 작성해주세요."
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-[12.5px] outline-none focus:border-[#7C3AED] resize-none"
-                  />
-                  <div className="flex items-center justify-end gap-1.5">
-                    <button
-                      onClick={() => setOpenId(null)}
-                      className="px-3 py-1.5 rounded text-[11px] font-semibold text-gray-600 border border-gray-200"
-                    >
-                      취소
-                    </button>
-                    <button
-                      onClick={() => saveReply(r.id)}
-                      className="px-3 py-1.5 rounded text-[11px] font-semibold bg-[#7C3AED] text-white"
-                    >
-                      답글 등록
-                    </button>
+      {/* List */}
+      {loading ? (
+        <div className="text-center py-20 text-sm text-gray-400">불러오는 중…</div>
+      ) : filtered.length === 0 ? (
+        <div className="bg-white rounded-xl border border-gray-200 py-16 text-center">
+          <p className="text-sm text-gray-400">등록된 후기가 없습니다.</p>
+        </div>
+      ) : (
+        <ul className="space-y-3">
+          {filtered.map((r) => (
+            <li key={r.id} className="bg-white rounded-xl border border-gray-200 p-5">
+              <div className="flex items-start justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-9 h-9 rounded-full bg-[#F4F5F7] text-gray-600 flex items-center justify-center text-[12px] font-bold">
+                    {r.author?.name?.[0] ?? '?'}
+                  </div>
+                  <div>
+                    <p className="text-[13px] font-bold text-gray-900">{r.author?.name ?? '익명'}</p>
+                    <p className="text-[10px] text-gray-400">
+                      {new Date(r.created_at).toLocaleDateString('ko-KR')}
+                      {r.doctor?.name && <> · {r.doctor.name} 원장</>}
+                    </p>
                   </div>
                 </div>
-              ) : (
-                <button
-                  onClick={() => setOpenId(r.id)}
-                  className="text-[11px] font-semibold text-[#7C3AED] flex items-center gap-0.5"
-                >
-                  답글 작성 <ChevronDown size={11} />
-                </button>
+                <div className="flex items-center gap-0.5">
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <Star
+                      key={i}
+                      size={14}
+                      fill={i <= Number(r.rating) ? '#FBBF24' : '#E5E7EB'}
+                      stroke={i <= Number(r.rating) ? '#FBBF24' : '#E5E7EB'}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {r.treatment_name && (
+                <div className="bg-gray-50 rounded-lg p-3 my-3 text-[12px] text-gray-600">
+                  <span className="font-medium text-gray-700">시술: {r.treatment_name}</span>
+                  {r.total_cost > 0 && (
+                    <span className="ml-2 text-gray-400">· {r.total_cost.toLocaleString()}원</span>
+                  )}
+                </div>
               )}
-            </div>
-          );
-        })}
-      </div>
+
+              {(r.before_image || r.after_image) && (
+                <div className="flex gap-2 mb-3">
+                  {r.before_image && (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img src={r.before_image} alt="Before" className="flex-1 h-32 object-cover rounded-lg" />
+                  )}
+                  {r.after_image && (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img src={r.after_image} alt="After" className="flex-1 h-32 object-cover rounded-lg" />
+                  )}
+                </div>
+              )}
+
+              <p className="text-[13px] text-gray-700 leading-relaxed whitespace-pre-line">
+                {r.content}
+              </p>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
