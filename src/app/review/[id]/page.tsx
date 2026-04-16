@@ -8,15 +8,6 @@ import TopBar from '@/components/common/TopBar';
 import Avatar from '@/components/common/Avatar';
 import { useStore } from '@/store';
 
-const FACE_PAIRS: Record<string, { before: string; after: string }> = {
-  r1: { before: '/images/face_1.jpeg', after: '/images/face_2.jpeg' },
-  r2: { before: '/images/face_3.jpeg', after: '/images/face_4.jpeg' },
-  r3: { before: '/images/face_5.jpeg', after: '/images/face_6.jpeg' },
-  r4: { before: '/images/face_7.jpeg', after: '/images/face_8.jpeg' },
-  r5: { before: '/images/face_9.jpeg', after: '/images/face_10.jpeg' },
-  r6: { before: '/images/face_11.jpeg', after: '/images/face_12.jpeg' },
-};
-
 export default function ReviewDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
@@ -42,10 +33,10 @@ export default function ReviewDetailPage() {
   const product = products.find((p) => p.id === review.productId);
   const hospital = hospitals.find((h) => h.id === review.hospitalId);
 
-  const imgs = FACE_PAIRS[review.id] ?? {
-    before: '/images/face_1.jpeg',
-    after: '/images/face_2.jpeg',
-  };
+  // Real DB images first, hide if author uploaded none
+  const imgs = review.beforeImage || review.afterImage
+    ? { before: review.beforeImage, after: review.afterImage }
+    : null;
 
   const relatedReviews = reviews
     .filter((r) => r.id !== review.id && (r.hospitalId === review.hospitalId || r.productId === review.productId))
@@ -122,26 +113,38 @@ export default function ReviewDetailPage() {
         </div>
       </div>
 
-      {/* Before / After */}
-      <div className="px-2.5 pt-4">
-        <div className="grid grid-cols-2 gap-2">
-          <div className="relative aspect-square rounded-xl overflow-hidden bg-gray-100">
-            <img src={imgs.before} alt="전" className="w-full h-full object-cover" />
-            <span
-              className="absolute top-2 left-2 px-2 py-0.5 text-[10px] font-bold rounded"
-              style={{ backgroundColor: 'rgba(0,0,0,0.6)', color: '#fff' }}
-            >
-              BEFORE
-            </span>
-          </div>
-          <div className="relative aspect-square rounded-xl overflow-hidden bg-gray-100">
-            <img src={imgs.after} alt="후" className="w-full h-full object-cover" />
-            <span className="absolute top-2 left-2 px-2 py-0.5 text-[10px] font-bold rounded bg-[#7C3AED] text-white">
-              AFTER
-            </span>
+      {/* Before / After (only when uploaded) */}
+      {imgs && (imgs.before || imgs.after) && (
+        <div className="px-2.5 pt-4">
+          <div className="grid grid-cols-2 gap-2">
+            {imgs.before ? (
+              <div className="relative aspect-square rounded-xl overflow-hidden bg-gray-100">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={imgs.before} alt="전" className="w-full h-full object-cover" />
+                <span
+                  className="absolute top-2 left-2 px-2 py-0.5 text-[10px] font-bold rounded"
+                  style={{ backgroundColor: 'rgba(0,0,0,0.6)', color: '#fff' }}
+                >
+                  BEFORE
+                </span>
+              </div>
+            ) : (
+              <div className="aspect-square rounded-xl bg-gray-50" />
+            )}
+            {imgs.after ? (
+              <div className="relative aspect-square rounded-xl overflow-hidden bg-gray-100">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={imgs.after} alt="후" className="w-full h-full object-cover" />
+                <span className="absolute top-2 left-2 px-2 py-0.5 text-[10px] font-bold rounded bg-[#7C3AED] text-white">
+                  AFTER
+                </span>
+              </div>
+            ) : (
+              <div className="aspect-square rounded-xl bg-gray-50" />
+            )}
           </div>
         </div>
-      </div>
+      )}
 
       {/* Treatment meta chips */}
       <div className="px-2.5 pt-3 flex flex-wrap gap-1.5">
@@ -211,21 +214,33 @@ export default function ReviewDetailPage() {
           </div>
           <div className="flex gap-2 overflow-x-auto hide-scrollbar px-2.5 pb-1">
             {relatedReviews.map((r) => {
-              const rImgs = FACE_PAIRS[r.id] ?? FACE_PAIRS.r1;
+              const hasImg = r.beforeImage || r.afterImage;
               return (
                 <Link
                   key={r.id}
                   href={`/review/${r.id}`}
                   className="flex-shrink-0 w-44 card-press"
                 >
-                  <div className="grid grid-cols-2 gap-1">
-                    <div className="aspect-square rounded-lg overflow-hidden bg-gray-100">
-                      <img src={rImgs.before} alt="" className="w-full h-full object-cover" />
+                  {hasImg ? (
+                    <div className="grid grid-cols-2 gap-1">
+                      <div className="aspect-square rounded-lg overflow-hidden bg-gray-100">
+                        {r.beforeImage && (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={r.beforeImage} alt="" className="w-full h-full object-cover" />
+                        )}
+                      </div>
+                      <div className="aspect-square rounded-lg overflow-hidden bg-gray-100">
+                        {r.afterImage && (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={r.afterImage} alt="" className="w-full h-full object-cover" />
+                        )}
+                      </div>
                     </div>
-                    <div className="aspect-square rounded-lg overflow-hidden bg-gray-100">
-                      <img src={rImgs.after} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="aspect-[2/1] rounded-lg bg-gradient-to-br from-purple-50 to-blue-50 flex items-center justify-center">
+                      <span className="text-2xl">🦷</span>
                     </div>
-                  </div>
+                  )}
                   <p className="text-[13px] font-semibold text-gray-900 mt-2 line-clamp-1">
                     {r.treatmentName}
                   </p>

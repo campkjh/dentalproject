@@ -87,6 +87,7 @@ function notificationFromRow(n: any): Notification {
     content: n.content ?? '',
     date: n.created_at ? new Date(n.created_at).toLocaleDateString('ko-KR') : '',
     isRead: n.is_read ?? false,
+    link: n.link ?? undefined,
   };
 }
 
