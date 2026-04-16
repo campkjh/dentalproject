@@ -7,13 +7,6 @@
 //     --schema public > src/lib/supabase/types.ts
 //
 // Until then we keep a permissive typing so the app compiles without a
-// connected DB.
-export type Database = {
-  public: {
-    Tables: Record<string, { Row: Record<string, unknown>; Insert: Record<string, unknown>; Update: Record<string, unknown> }>;
-    Views: Record<string, never>;
-    Functions: Record<string, never>;
-    Enums: Record<string, never>;
-    CompositeTypes: Record<string, never>;
-  };
-};
+// connected DB or generated types.
+/* eslint-disable @typescript-eslint/no-explicit-any */
+export type Database = any;

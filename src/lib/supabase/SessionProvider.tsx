@@ -22,8 +22,9 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const storeLogin = useStore((s) => s.login);
   const storeLogout = useStore((s) => s.logout);
-  const updateUser = useStore((s) => s.updateUser);
   const hydrateCatalog = useStore((s) => s.hydrateCatalog);
+  const hydrateMe = useStore((s) => s.hydrateMe);
+  const resetMe = useStore((s) => s.resetMe);
 
   const supabase = useMemo(() => (hasSupabaseEnv() ? createClient() : null), []);
 
@@ -46,6 +47,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       setLoading(false);
       if (data.session?.user) {
         await hydrateProfile(data.session.user.id);
+        await hydrateMe();
       }
     });
 
@@ -53,8 +55,10 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       setSession(s);
       if (s?.user) {
         await hydrateProfile(s.user.id);
+        await hydrateMe();
       } else {
         storeLogout();
+        resetMe();
       }
     });
 
@@ -72,20 +76,27 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         .maybeSingle();
       if (!profile) return;
       const p = profile as Record<string, unknown>;
-      storeLogin((p.login_type as 'kakao' | 'apple') ?? 'kakao');
-      updateUser({
-        id: userId,
-        name: (p.name as string) ?? '',
-        phone: (p.phone as string) ?? '',
-        gender: (p.gender as string) ?? undefined,
-        birthYear: (p.birth_year as string) ?? undefined,
-        country: (p.country as string) ?? '대한민국',
-        profileImage: (p.profile_image as string) ?? undefined,
-        points: (p.points as number) ?? 0,
+      const loginType = (p.login_type as 'kakao' | 'apple') ?? 'kakao';
+      // Set the store directly without triggering DB sync writes
+      useStore.setState({
+        isLoggedIn: true,
+        user: {
+          id: userId,
+          name: (p.name as string) ?? '',
+          phone: (p.phone as string) ?? '',
+          loginType,
+          gender: (p.gender as string) ?? undefined,
+          birthYear: (p.birth_year as string) ?? undefined,
+          country: (p.country as string) ?? '대한민국',
+          profileImage: (p.profile_image as string) ?? undefined,
+          points: (p.points as number) ?? 0,
+          coupons: [],
+          isDoctor: (p.is_doctor as boolean) ?? false,
+        },
         isDoctor: (p.is_doctor as boolean) ?? false,
       });
     }
-  }, [supabase, storeLogin, storeLogout, updateUser]);
+  }, [supabase, storeLogout, hydrateMe, resetMe]);
 
   const value: Ctx = {
     session,
