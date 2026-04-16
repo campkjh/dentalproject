@@ -226,6 +226,11 @@ export default function HomePage() {
           <CategoryPager />
         </div>
 
+        {/* 최근 본 상품 */}
+        <RecentlyViewedSection
+          recentProducts={recentProducts}
+          fallback={popularProducts}
+        />
 
         {/* 치과 섹션 */}
         {dentalProducts.length > 0 && (
@@ -266,27 +271,6 @@ export default function HomePage() {
             <div className="px-2.5 lg:max-w-7xl lg:mx-auto">
               <div className="flex gap-1.5 overflow-x-auto hide-scrollbar pb-2 lg:grid lg:grid-cols-4 lg:gap-1.5 lg:overflow-visible">
                 {plasticProducts.map((product) => (
-                  <div key={product.id} className="w-[42vw] max-w-[180px] flex-shrink-0 lg:w-auto lg:max-w-none lg:flex-shrink">
-                    <ProductCard product={product} />
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* 최근 본 상품 */}
-        {recentProducts.length > 0 && (
-          <div className="mb-8">
-            <div className="flex items-center justify-between px-2.5 lg:px-6 lg:max-w-7xl lg:mx-auto mb-3">
-              <div className="flex items-center gap-2">
-                <span className="text-lg">🕐</span>
-                <h2 className="font-bold">최근 본 상품</h2>
-              </div>
-            </div>
-            <div className="px-2.5 lg:max-w-7xl lg:mx-auto">
-              <div className="flex gap-3 overflow-x-auto hide-scrollbar pb-2 lg:grid lg:grid-cols-4 lg:gap-6 lg:overflow-visible">
-                {recentProducts.slice(0, 10).map((product) => (
                   <div key={product.id} className="w-[42vw] max-w-[180px] flex-shrink-0 lg:w-auto lg:max-w-none lg:flex-shrink">
                     <ProductCard product={product} />
                   </div>
@@ -567,6 +551,53 @@ function CategoryPager() {
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+type ProductType = React.ComponentProps<typeof ProductCard>['product'];
+
+function RecentlyViewedSection({
+  recentProducts,
+  fallback,
+}: {
+  recentProducts: ProductType[];
+  fallback: ProductType[];
+}) {
+  const hasRecent = recentProducts.length > 0;
+  const items = (hasRecent ? recentProducts : fallback).slice(0, 10);
+  if (items.length === 0) return null;
+
+  return (
+    <div className="mb-8">
+      <div className="flex items-center justify-between px-2.5 lg:px-6 lg:max-w-7xl lg:mx-auto mb-3">
+        <div className="flex items-center gap-2">
+          <h2 className="font-bold">최근 본 상품</h2>
+          {!hasRecent && (
+            <span className="text-[11px] text-gray-400 font-medium">
+              추천으로 보여드려요
+            </span>
+          )}
+        </div>
+        <Link
+          href="/wishlist"
+          className="flex items-center gap-0.5 text-sm text-[#7C3AED] hover:underline"
+        >
+          더보기 <ChevronRight size={14} />
+        </Link>
+      </div>
+      <div className="px-2.5 lg:max-w-7xl lg:mx-auto">
+        <div className="flex gap-3 overflow-x-auto hide-scrollbar pb-2 lg:grid lg:grid-cols-4 lg:gap-6 lg:overflow-visible">
+          {items.map((p) => (
+            <div
+              key={p.id}
+              className="w-[42vw] max-w-[180px] flex-shrink-0 lg:w-auto lg:max-w-none lg:flex-shrink"
+            >
+              <ProductCard product={p} />
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
