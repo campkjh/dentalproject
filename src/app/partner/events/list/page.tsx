@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Plus, Star, Search } from 'lucide-react';
+import { Plus, Star, Search, X } from 'lucide-react';
 
 type EventRow = {
   id: string;
@@ -63,6 +63,7 @@ const ITEMS: EventRow[] = [
 export default function EventsListPage() {
   const [items, setItems] = useState<EventRow[]>(ITEMS);
   const [q, setQ] = useState('');
+  const [periodEvt, setPeriodEvt] = useState<EventRow | null>(null);
 
   const filtered = items.filter(
     (i) => !q || i.title.includes(q) || i.id.includes(q)
@@ -166,10 +167,16 @@ export default function EventsListPage() {
                     >
                       노출 변경
                     </button>
-                    <button className="px-2 py-1 rounded text-[11px] font-semibold border border-gray-200 hover:bg-gray-50">
+                    <Link
+                      href={`/partner/events/${e.id}/edit`}
+                      className="px-2 py-1 rounded text-[11px] font-semibold border border-gray-200 hover:bg-gray-50"
+                    >
                       수정
-                    </button>
-                    <button className="px-2 py-1 rounded text-[11px] font-semibold border border-gray-200 hover:bg-gray-50">
+                    </Link>
+                    <button
+                      onClick={() => setPeriodEvt(e)}
+                      className="px-2 py-1 rounded text-[11px] font-semibold border border-gray-200 hover:bg-gray-50"
+                    >
                       기간변경
                     </button>
                   </div>
@@ -178,6 +185,91 @@ export default function EventsListPage() {
             ))}
           </tbody>
         </table>
+        </div>
+      </div>
+
+      {periodEvt && (
+        <PeriodModal
+          event={periodEvt}
+          onClose={() => setPeriodEvt(null)}
+          onSave={(newPeriod) => {
+            setItems((prev) =>
+              prev.map((i) => (i.id === periodEvt.id ? { ...i, period: newPeriod } : i))
+            );
+            setPeriodEvt(null);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+function PeriodModal({
+  event,
+  onClose,
+  onSave,
+}: {
+  event: EventRow;
+  onClose: () => void;
+  onSave: (period: string) => void;
+}) {
+  const [startDate, endDate] = event.period.split(' ~ ');
+  const [newEnd, setNewEnd] = useState(endDate);
+
+  return (
+    <div
+      className="fixed inset-0 z-[100] bg-black/40 flex items-center justify-center p-3 modal-overlay-enter"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-2xl w-full max-w-sm p-5 modal-content-enter"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-[15px] font-bold text-gray-900">기간 변경</h3>
+          <button onClick={onClose}>
+            <X size={18} className="text-gray-400" />
+          </button>
+        </div>
+        <div className="mb-4">
+          <p className="text-[11px] text-gray-500 mb-1">이벤트</p>
+          <p className="text-[13px] font-semibold text-gray-900 line-clamp-1">{event.title}</p>
+          <p className="text-[10px] text-gray-400 mt-0.5">{event.id}</p>
+        </div>
+        <div className="grid grid-cols-2 gap-3 mb-4">
+          <div>
+            <p className="text-[11px] text-gray-500 mb-1">시작일</p>
+            <input
+              type="date"
+              value={startDate}
+              readOnly
+              className="w-full px-2.5 py-2 bg-gray-50 border border-gray-200 rounded text-[12px] text-gray-500"
+            />
+            <p className="text-[10px] text-gray-400 mt-1">시작일은 수정 불가</p>
+          </div>
+          <div>
+            <p className="text-[11px] text-gray-500 mb-1">종료일</p>
+            <input
+              type="date"
+              value={newEnd}
+              onChange={(e) => setNewEnd(e.target.value)}
+              className="w-full px-2.5 py-2 border border-gray-200 rounded text-[12px] outline-none focus:border-[#7C3AED]"
+            />
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={onClose}
+            className="flex-1 py-2.5 rounded-lg border border-gray-200 text-[12px] font-semibold text-gray-700"
+          >
+            취소
+          </button>
+          <button
+            onClick={() => onSave(`${startDate} ~ ${newEnd}`)}
+            className="flex-1 py-2.5 rounded-lg bg-[#7C3AED] text-white text-[12px] font-bold btn-press"
+          >
+            변경 저장
+          </button>
         </div>
       </div>
     </div>
