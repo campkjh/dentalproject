@@ -13,13 +13,14 @@ import {
 } from 'lucide-react';
 import TopBar from '@/components/common/TopBar';
 import ProductCard from '@/components/common/ProductCard';
-import { hospitals, products, reviews } from '@/lib/mock-data';
+import { useStore } from '@/store';
 
 const TABS = ['병원소개', '의료진', '진료시간', '리뷰'];
 
 export default function HospitalDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const { hospitals, products, reviews } = useStore();
   const [activeTab, setActiveTab] = useState('병원소개');
   const [tabDir, setTabDir] = useState<'left' | 'right'>('right');
   const prevIdxRef = useRef(0);

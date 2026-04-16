@@ -12,10 +12,11 @@ import {
 } from 'lucide-react';
 import TopBar from '@/components/common/TopBar';
 import ProductCard from '@/components/common/ProductCard';
-import { hospitals, products, reviews } from '@/lib/mock-data';
+import { useStore } from '@/store';
 
 export default function DoctorDetailPage() {
   const params = useParams();
+  const { hospitals, products, reviews } = useStore();
 
   // Find the doctor across all hospitals
   const { doctor, hospital } = useMemo(() => {
@@ -24,7 +25,7 @@ export default function DoctorDetailPage() {
       if (d) return { doctor: d, hospital: h };
     }
     return { doctor: null, hospital: null };
-  }, [params.id]);
+  }, [params.id, hospitals]);
 
   const doctorReviews = useMemo(
     () => reviews.filter((r) => r.doctorId === doctor?.id),

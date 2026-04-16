@@ -6,7 +6,6 @@ import { Star, ChevronRight, Share2, Flag, MoreHorizontal } from 'lucide-react';
 import { useState } from 'react';
 import TopBar from '@/components/common/TopBar';
 import Avatar from '@/components/common/Avatar';
-import { reviews, products, hospitals } from '@/lib/mock-data';
 import { useStore } from '@/store';
 
 const FACE_PAIRS: Record<string, { before: string; after: string }> = {
@@ -21,7 +20,7 @@ const FACE_PAIRS: Record<string, { before: string; after: string }> = {
 export default function ReviewDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const { showToast } = useStore();
+  const { showToast, reviews, products, hospitals } = useStore();
   const [menuOpen, setMenuOpen] = useState(false);
 
   const review = reviews.find((r) => r.id === id);

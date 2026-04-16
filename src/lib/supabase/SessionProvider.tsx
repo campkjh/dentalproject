@@ -23,8 +23,14 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const storeLogin = useStore((s) => s.login);
   const storeLogout = useStore((s) => s.logout);
   const updateUser = useStore((s) => s.updateUser);
+  const hydrateCatalog = useStore((s) => s.hydrateCatalog);
 
   const supabase = useMemo(() => (hasSupabaseEnv() ? createClient() : null), []);
+
+  // Load real catalog data once, regardless of auth state
+  useEffect(() => {
+    hydrateCatalog();
+  }, [hydrateCatalog]);
 
   useEffect(() => {
     if (!supabase) {

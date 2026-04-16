@@ -4,7 +4,6 @@ import { useState, Suspense, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Camera, Star, X, Sparkles, ChevronLeft, Check, Stethoscope } from 'lucide-react';
 import { useStore } from '@/store';
-import { products, reservations, hospitals } from '@/lib/mock-data';
 import Avatar from '@/components/common/Avatar';
 
 export default function ReviewWritePageWrapper() {
@@ -38,7 +37,7 @@ function ReviewWritePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const productId = searchParams.get('productId');
-  const { user, addReview, showToast } = useStore();
+  const { user, addReview, showToast, products, reservations, hospitals } = useStore();
 
   const product = products.find((p) => p.id === productId) ?? products[0];
   const hospital = hospitals.find((h) => h.id === product.hospitalId);
