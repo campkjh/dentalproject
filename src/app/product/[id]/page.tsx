@@ -268,9 +268,10 @@ export default function ProductDetailPage() {
         {productReviews.length > 0 && (
           <div className="flex overflow-x-auto hide-scrollbar pb-2" style={{ gap: 6, scrollSnapType: 'x mandatory' }}>
             {productReviews.map((review) => (
-              <div
+              <Link
                 key={review.id}
-                className="flex-shrink-0 flex flex-col"
+                href={`/review/${review.id}`}
+                className="flex-shrink-0 flex flex-col card-press"
                 style={{ width: 288, height: 358, borderRadius: 12, backgroundColor: '#F6F6F6', padding: 12, overflow: 'hidden', scrollSnapAlign: 'start' }}
               >
                 {/* 전/후 이미지 - r값: 전=좌상좌하12, 후=우상우하12 */}
@@ -308,7 +309,7 @@ export default function ProductDetailPage() {
                 </div>
                 {/* 후기 */}
                 <p style={{ fontSize: 12, color: '#51535C', lineHeight: '17px', marginTop: 6, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical' as const }}>{review.content}</p>
-              </div>
+              </Link>
             ))}
           </div>
         )}
