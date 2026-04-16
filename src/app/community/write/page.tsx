@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Camera, ChevronDown, X } from 'lucide-react';
 import TopBar from '@/components/common/TopBar';
 import { useStore } from '@/store';
+import { useSession } from '@/lib/supabase/SessionProvider';
 import { communityTags } from '@/lib/mock-data';
 
 const boardOptions = [
@@ -26,6 +27,8 @@ function CommunityWritePage() {
   const searchParams = useSearchParams();
   const boardParam = searchParams.get('board') || 'question';
   const { user, addPost, showToast } = useStore();
+  const { authUser } = useSession();
+  const [submitting, setSubmitting] = useState(false);
 
   const [boardType, setBoardType] = useState<'question' | 'free' | 'dental'>(
     boardOptions.find((b) => b.value === boardParam)?.value || 'question'
@@ -74,7 +77,12 @@ function CommunityWritePage() {
     return String(Math.floor(1000 + Math.random() * 9000));
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    if (!authUser) {
+      showToast('로그인이 필요합니다.');
+      router.push('/login');
+      return;
+    }
     if (!title.trim()) {
       showToast('제목을 입력해주세요.');
       return;
@@ -83,7 +91,9 @@ function CommunityWritePage() {
       showToast('내용을 입력해주세요.');
       return;
     }
+    if (submitting) return;
 
+    setSubmitting(true);
     const isFreeBoard = boardType === 'free';
     const now = new Date();
     const dateStr = `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, '0')}.${String(now.getDate()).padStart(2, '0')}`;
@@ -110,7 +120,12 @@ function CommunityWritePage() {
       answerCount: 0,
     };
 
-    addPost(post);
+    const result = await addPost(post);
+    setSubmitting(false);
+    if (result.error) {
+      showToast(result.error);
+      return;
+    }
     showToast('게시글이 등록되었습니다.');
     router.push('/community');
   };
@@ -261,14 +276,14 @@ function CommunityWritePage() {
       <div className="px-2.5 py-6 mt-4">
         <button
           onClick={handleSubmit}
-          disabled={!isFormValid}
+          disabled={!isFormValid || submitting}
           className={`w-full py-3.5 rounded-xl font-bold text-sm transition-colors ${
-            isFormValid
+            isFormValid && !submitting
               ? 'bg-[#7C3AED] text-white'
               : 'bg-gray-200 text-gray-400 cursor-not-allowed'
           }`}
         >
-          게시글 등록
+          {submitting ? '등록 중…' : '게시글 등록'}
         </button>
       </div>
     </div>

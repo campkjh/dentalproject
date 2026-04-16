@@ -145,7 +145,7 @@ interface AppState {
 
   // Posts
   posts: Post[];
-  addPost: (post: Post) => void;
+  addPost: (post: Post) => Promise<{ error: string | null; id?: string }>;
   deletePost: (id: string) => void;
 
   // Comments
@@ -370,30 +370,36 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   posts: mockPosts,
-  addPost: (post) => {
+  addPost: async (post) => {
     set({ posts: [post, ...get().posts] });
-    void (async () => {
-      try {
-        const res = await fetch('/api/posts', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            boardType: post.boardType,
-            title: post.title,
-            content: post.content,
-            isAnonymous: post.isAnonymous,
-            anonymousId: post.anonymousId,
-            imageUrl: post.imageUrl,
-            thumbnailUrl: post.thumbnailUrl,
-            tags: post.tags,
-          }),
-        });
-        if (res.ok) {
-          const { id } = await res.json();
-          set({ posts: get().posts.map((p) => (p.id === post.id ? { ...p, id } : p)) });
-        }
-      } catch {/* ignore */}
-    })();
+    try {
+      const res = await fetch('/api/posts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          boardType: post.boardType,
+          title: post.title,
+          content: post.content,
+          isAnonymous: post.isAnonymous,
+          anonymousId: post.anonymousId,
+          imageUrl: post.imageUrl,
+          thumbnailUrl: post.thumbnailUrl,
+          tags: post.tags,
+        }),
+      });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        // rollback optimistic
+        set({ posts: get().posts.filter((p) => p.id !== post.id) });
+        return { error: j.error || `등록 실패 (${res.status})` };
+      }
+      const { id } = await res.json();
+      set({ posts: get().posts.map((p) => (p.id === post.id ? { ...p, id } : p)) });
+      return { error: null, id };
+    } catch (e) {
+      set({ posts: get().posts.filter((p) => p.id !== post.id) });
+      return { error: (e as Error).message || '네트워크 오류' };
+    }
   },
   deletePost: (id) => {
     set({ posts: get().posts.filter((p) => p.id !== id) });
