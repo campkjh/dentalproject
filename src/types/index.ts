@@ -148,6 +148,7 @@ export interface Notification {
   content: string;
   date: string;
   isRead: boolean;
+  link?: string;
 }
 
 export interface Coupon {

@@ -472,21 +472,18 @@ export default function ProductDetailPage() {
           <div className="bg-white px-2.5 py-5">
             <h3 style={{ fontSize: 20, fontWeight: 600, color: '#2B313D', marginBottom: 16 }}>의료진 소개</h3>
             {(() => {
-              const BLOB = 'https://4ipmgcqyzk6ysqa7.public.blob.vercel-storage.com';
-              const faceImages = [
-                `${BLOB}/face.jpeg`, `${BLOB}/face_1.jpeg`, `${BLOB}/face_2.jpeg`, `${BLOB}/face_3.jpeg`,
-                `${BLOB}/face_4.jpeg`, `${BLOB}/face_5.jpeg`, `${BLOB}/face_6.jpeg`, `${BLOB}/face_7.jpeg`,
-                `${BLOB}/face_8.jpeg`, `${BLOB}/face_9.jpeg`, `${BLOB}/face_10.jpeg`, `${BLOB}/face_11.jpeg`,
-                `${BLOB}/face_12.jpeg`, `${BLOB}/face_13.jpeg`, `${BLOB}/face_14.jpeg`, `${BLOB}/face_15.jpeg`,
-                `${BLOB}/face_16.jpeg`, `${BLOB}/face_17.jpeg`, `${BLOB}/face_18.jpeg`,
-              ];
               return hospital.doctors.map((doctor, idx) => (
               <Link key={doctor.id} href={`/doctor/${doctor.id}`}
                 className="flex items-center gap-3 py-3 hover:opacity-80 transition-opacity"
                 style={{ borderBottom: idx < hospital.doctors.length - 1 ? '1px solid #F2F3F5' : 'none' }}
               >
-                <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0" style={{ backgroundColor: '#F2F3F5' }}>
-                  <img src={faceImages[idx % faceImages.length]} alt={doctor.name} className="w-full h-full object-cover" />
+                <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0 flex items-center justify-center" style={{ backgroundColor: '#F4EFFF', color: '#7C3AED', fontWeight: 700, fontSize: 14 }}>
+                  {doctor.profileImage ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img src={doctor.profileImage} alt={doctor.name} className="w-full h-full object-cover" />
+                  ) : (
+                    doctor.name.slice(-2)
+                  )}
                 </div>
                 <div>
                   <div className="flex items-center gap-1.5">
