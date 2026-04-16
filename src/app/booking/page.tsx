@@ -2,15 +2,21 @@
 
 import { useState, useMemo, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Check } from 'lucide-react';
 import TopBar from '@/components/common/TopBar';
-
-const timeSlots = ['10:00', '11:00', '12:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00'];
-
-// Available dates in April 2026 (weekdays mostly, some excluded)
-const availableDates = [1, 2, 3, 6, 7, 8, 9, 10, 13, 14, 15, 16, 17, 20, 21, 22, 23, 24, 27, 28, 29, 30];
+import { products } from '@/lib/mock-data';
 
 const dayLabels = ['일', '월', '화', '수', '목', '금', '토'];
+
+const timeGroups: { label: string; slots: string[] }[] = [
+  { label: '오전', slots: ['10:00', '10:30', '11:00', '11:30', '12:00'] },
+  { label: '오후', slots: ['14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00'] },
+  { label: '저녁', slots: ['18:00', '18:30', '19:00', '19:30', '20:00'] },
+];
+
+const availableDates = [1, 2, 3, 6, 7, 8, 9, 10, 13, 14, 15, 16, 17, 20, 21, 22, 23, 24, 27, 28, 29, 30];
+
+const unavailableTimes = new Set(['12:00', '15:00', '18:30']);
 
 export default function BookingPageWrapper() {
   return (
@@ -24,8 +30,11 @@ function BookingPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const productId = searchParams.get('productId') ?? '1';
-  const [currentYear, setCurrentYear] = useState(2026);
-  const [currentMonth, setCurrentMonth] = useState(4); // April
+  const product = products.find((p) => p.id === productId);
+
+  const today = new Date();
+  const [currentYear, setCurrentYear] = useState(today.getFullYear());
+  const [currentMonth, setCurrentMonth] = useState(today.getMonth() + 1);
   const [selectedDate, setSelectedDate] = useState<number | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -36,11 +45,7 @@ function BookingPage() {
     const weeks: (number | null)[][] = [];
     let currentWeek: (number | null)[] = [];
 
-    // Fill leading empty cells
-    for (let i = 0; i < firstDay; i++) {
-      currentWeek.push(null);
-    }
-
+    for (let i = 0; i < firstDay; i++) currentWeek.push(null);
     for (let day = 1; day <= daysInMonth; day++) {
       currentWeek.push(day);
       if (currentWeek.length === 7) {
@@ -48,19 +53,19 @@ function BookingPage() {
         currentWeek = [];
       }
     }
-
-    // Fill trailing empty cells
     if (currentWeek.length > 0) {
-      while (currentWeek.length < 7) {
-        currentWeek.push(null);
-      }
+      while (currentWeek.length < 7) currentWeek.push(null);
       weeks.push(currentWeek);
     }
-
     return weeks;
   }, [currentYear, currentMonth]);
 
   const isAvailable = (day: number) => availableDates.includes(day);
+
+  const isToday = (day: number) =>
+    currentYear === today.getFullYear() &&
+    currentMonth === today.getMonth() + 1 &&
+    day === today.getDate();
 
   const handleDateSelect = (day: number) => {
     if (!isAvailable(day)) return;
@@ -68,14 +73,8 @@ function BookingPage() {
     setSelectedTime(null);
   };
 
-  const handleTimeSelect = (time: string) => {
-    setSelectedTime(time);
-  };
-
   const handleBooking = () => {
-    if (selectedDate && selectedTime) {
-      setShowConfirm(true);
-    }
+    if (selectedDate && selectedTime) setShowConfirm(true);
   };
 
   const handleConfirm = () => {
@@ -105,189 +104,350 @@ function BookingPage() {
     setSelectedTime(null);
   };
 
+  const selectedDayLabel = selectedDate
+    ? dayLabels[new Date(currentYear, currentMonth - 1, selectedDate).getDay()]
+    : '';
+
   return (
-    <div className="pb-28 bg-white min-h-screen lg:max-w-2xl lg:mx-auto lg:py-8 lg:bg-gray-50">
+    <div className="pb-32 bg-white min-h-screen lg:max-w-2xl lg:mx-auto lg:py-8">
       <div className="lg:bg-white lg:rounded-2xl lg:shadow-sm lg:p-8">
-      <TopBar title="내원일 선택" />
+        <TopBar title="내원일 선택" />
 
-      {/* Calendar Header */}
-      <div className="flex items-center justify-between px-2.5 py-3">
-        <button onClick={goToPrevMonth} className="p-1">
-          <ChevronLeft size={20} className="text-gray-600" />
-        </button>
-        <h2 className="text-base font-bold">
-          {currentYear}년 {currentMonth}월
-        </h2>
-        <button onClick={goToNextMonth} className="p-1">
-          <ChevronRight size={20} className="text-gray-600" />
-        </button>
-      </div>
-
-      {/* Day Labels */}
-      <div className="grid grid-cols-7 px-2.5 mb-1">
-        {dayLabels.map((label, i) => (
-          <div
-            key={label}
-            className={`text-center text-xs font-medium py-2 ${
-              i === 0 ? 'text-red-400' : i === 6 ? 'text-blue-400' : 'text-gray-500'
-            }`}
-          >
-            {label}
+        {/* Product summary card */}
+        {product && (
+          <div className="mx-2.5 mt-2 mb-5 rounded-2xl bg-gradient-to-br from-[#F4EFFF] to-[#FDF4FF] p-3.5 flex items-center gap-3 fade-in-up">
+            <div className="w-14 h-14 rounded-xl bg-white/70 flex items-center justify-center flex-shrink-0 overflow-hidden">
+              <span className="text-2xl">🦷</span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[11px] text-[#7C3AED] font-semibold mb-0.5">
+                {product.hospitalName}
+              </p>
+              <p className="text-[14px] font-bold text-gray-900 line-clamp-1">
+                {product.title}
+              </p>
+              <p className="text-[13px] font-extrabold text-[#7C3AED] mt-0.5">
+                {product.price.toLocaleString()}
+                <span className="text-[11px] text-gray-500 font-semibold">원</span>
+              </p>
+            </div>
           </div>
-        ))}
-      </div>
+        )}
 
-      {/* Calendar Grid */}
-      <div className="px-2.5 mb-4">
-        {calendarData.map((week, weekIdx) => (
-          <div key={weekIdx} className="grid grid-cols-7">
-            {week.map((day, dayIdx) => {
-              if (day === null) {
-                return <div key={dayIdx} className="aspect-square" />;
-              }
-
-              const available = isAvailable(day);
-              const isSelected = selectedDate === day;
-
-              return (
-                <button
-                  key={dayIdx}
-                  onClick={() => handleDateSelect(day)}
-                  disabled={!available}
-                  className={`aspect-square flex items-center justify-center text-sm relative ${
-                    isSelected
-                      ? 'bg-[#7C3AED] text-white rounded-full font-bold'
-                      : available
-                      ? 'text-gray-900 font-medium hover:bg-purple-50 rounded-full'
-                      : 'text-gray-300'
-                  }`}
-                >
-                  {day}
-                  {available && !isSelected && (
-                    <span className="absolute bottom-1 w-1 h-1 bg-[#7C3AED] rounded-full" />
-                  )}
-                </button>
-              );
-            })}
+        {/* Step indicator */}
+        <div className="px-2.5 mb-4 flex items-center gap-2">
+          <StepDot active label="1" title="날짜 선택" />
+          <div className="flex-1 h-[2px] bg-gray-200 rounded-full relative overflow-hidden">
+            <span
+              className="absolute inset-y-0 left-0 bg-[#7C3AED] rounded-full"
+              style={{
+                width: selectedDate ? '100%' : '0%',
+                transition: 'width 360ms cubic-bezier(0.22, 1, 0.36, 1)',
+              }}
+            />
           </div>
-        ))}
-      </div>
-
-      {/* Legend */}
-      <div className="flex items-center justify-center gap-6 px-2.5 mb-6">
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 bg-[#7C3AED] rounded-full" />
-          <span className="text-xs text-gray-500">예약가능</span>
+          <StepDot active={!!selectedDate} label="2" title="시간 선택" />
         </div>
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 bg-gray-200 rounded-full" />
-          <span className="text-xs text-gray-500">예약불가</span>
-        </div>
-      </div>
 
-      {/* Time Selection */}
-      {selectedDate && (
-        <div className="px-2.5 mb-6">
-          <h3 className="font-bold text-sm mb-3">
-            {currentMonth}월 {selectedDate}일 시간 선택
-          </h3>
-          <div className="grid grid-cols-4 gap-2">
-            {timeSlots.map((time) => (
-              <button
-                key={time}
-                onClick={() => handleTimeSelect(time)}
-                className={`py-3 rounded-xl text-sm font-medium transition-colors ${
-                  selectedTime === time
-                    ? 'bg-[#7C3AED] text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-purple-50'
-                }`}
-              >
-                {time}
-              </button>
-            ))}
+        {/* Calendar Header */}
+        <div className="flex items-center justify-between px-2.5 py-3 mb-1">
+          <button onClick={goToPrevMonth} className="p-1.5 -m-1.5 btn-press">
+            <ChevronLeft size={22} className="text-gray-700" />
+          </button>
+          <h2 className="text-[18px] font-bold text-gray-900">
+            {currentYear}년 {currentMonth}월
+          </h2>
+          <button onClick={goToNextMonth} className="p-1.5 -m-1.5 btn-press">
+            <ChevronRight size={22} className="text-gray-700" />
+          </button>
+        </div>
+
+        {/* Day Labels */}
+        <div className="grid grid-cols-7 px-2.5 mb-1">
+          {dayLabels.map((label, i) => (
+            <div
+              key={label}
+              className={`text-center text-[11px] font-semibold py-1.5 ${
+                i === 0 ? 'text-[#EF4444]' : i === 6 ? 'text-[#3B82F6]' : 'text-gray-400'
+              }`}
+            >
+              {label}
+            </div>
+          ))}
+        </div>
+
+        {/* Calendar Grid */}
+        <div className="px-2.5 mb-3">
+          {calendarData.map((week, weekIdx) => (
+            <div key={weekIdx} className="grid grid-cols-7">
+              {week.map((day, dayIdx) => {
+                if (day === null) return <div key={dayIdx} className="aspect-square" />;
+
+                const available = isAvailable(day);
+                const isSelected = selectedDate === day;
+                const today_ = isToday(day);
+
+                return (
+                  <button
+                    key={dayIdx}
+                    onClick={() => handleDateSelect(day)}
+                    disabled={!available}
+                    className="aspect-square flex items-center justify-center relative btn-press"
+                  >
+                    <span
+                      className="flex items-center justify-center font-semibold transition-all"
+                      style={{
+                        width: 38,
+                        height: 38,
+                        borderRadius: '50%',
+                        fontSize: 14,
+                        backgroundColor: isSelected ? '#7C3AED' : 'transparent',
+                        color: isSelected
+                          ? '#fff'
+                          : !available
+                          ? '#D1D5DB'
+                          : today_
+                          ? '#7C3AED'
+                          : '#2B313D',
+                        border: today_ && !isSelected ? '1.5px solid #C4B5FD' : '1.5px solid transparent',
+                        boxShadow: isSelected ? '0 4px 12px rgba(124,58,237,0.35)' : 'none',
+                        transition: 'background-color 240ms ease, color 240ms ease, box-shadow 240ms ease, transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1)',
+                        transform: isSelected ? 'scale(1.06)' : 'scale(1)',
+                      }}
+                    >
+                      {day}
+                    </span>
+                    {available && !isSelected && (
+                      <span className="absolute bottom-1 w-1 h-1 bg-[#7C3AED] rounded-full" />
+                    )}
+                    {!available && (
+                      <span
+                        className="absolute w-5 h-px bg-gray-200"
+                        style={{ transform: 'rotate(-30deg)' }}
+                      />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+
+        {/* Legend */}
+        <div className="flex items-center justify-center gap-5 px-2.5 mb-5">
+          <div className="flex items-center gap-1.5">
+            <div className="w-1.5 h-1.5 bg-[#7C3AED] rounded-full" />
+            <span className="text-[11px] text-gray-500 font-medium">예약가능</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span
+              className="inline-block w-3.5 h-px bg-gray-300"
+              style={{ transform: 'rotate(-30deg)' }}
+            />
+            <span className="text-[11px] text-gray-500 font-medium">예약불가</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div
+              className="w-2 h-2 rounded-full"
+              style={{ border: '1.5px solid #C4B5FD' }}
+            />
+            <span className="text-[11px] text-gray-500 font-medium">오늘</span>
           </div>
         </div>
-      )}
 
-      {/* Notes */}
-      <div className="px-2.5 mb-6">
-        <div className="bg-gray-50 rounded-xl p-4">
-          <h3 className="text-sm font-bold mb-2">안내사항</h3>
-          <ul className="space-y-1.5">
-            <li className="flex items-start gap-2">
-              <span className="text-[#7C3AED] mt-0.5">&#8226;</span>
-              <span className="text-xs text-gray-600">예약 시간 10분 전까지 내원해 주세요.</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-[#7C3AED] mt-0.5">&#8226;</span>
-              <span className="text-xs text-gray-600">예약 변경 및 취소는 예약일 3일 전까지 가능합니다.</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-[#7C3AED] mt-0.5">&#8226;</span>
-              <span className="text-xs text-gray-600">당일 취소 시 위약금이 발생할 수 있습니다.</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-[#7C3AED] mt-0.5">&#8226;</span>
-              <span className="text-xs text-gray-600">공휴일은 예약이 불가합니다.</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-[#7C3AED] mt-0.5">&#8226;</span>
-              <span className="text-xs text-gray-600">
-                시술 전 주의사항은 예약 확정 후 문자로 안내드립니다.
-              </span>
-            </li>
-          </ul>
+        {/* Time Selection */}
+        {selectedDate && (
+          <div className="px-2.5 mb-6 fade-in-up">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-[15px] font-bold text-gray-900">
+                {currentMonth}월 {selectedDate}일 ({selectedDayLabel}) 시간 선택
+              </h3>
+            </div>
+
+            <div className="space-y-5">
+              {timeGroups.map((group) => (
+                <div key={group.label}>
+                  <div className="flex items-center gap-2 mb-2.5">
+                    <span className="text-[12px] font-bold text-gray-600">
+                      {group.label}
+                    </span>
+                    <span className="text-[11px] text-gray-400">
+                      {group.slots.filter((t) => !unavailableTimes.has(t)).length}개 가능
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-4 gap-2">
+                    {group.slots.map((time) => {
+                      const unavailable = unavailableTimes.has(time);
+                      const isSelected = selectedTime === time;
+                      return (
+                        <button
+                          key={time}
+                          onClick={() => !unavailable && setSelectedTime(time)}
+                          disabled={unavailable}
+                          className="py-2.5 rounded-xl text-[13px] font-semibold btn-press relative"
+                          style={{
+                            backgroundColor: isSelected
+                              ? '#7C3AED'
+                              : unavailable
+                              ? '#F3F4F6'
+                              : '#fff',
+                            color: isSelected
+                              ? '#fff'
+                              : unavailable
+                              ? '#D1D5DB'
+                              : '#2B313D',
+                            border: `1.5px solid ${
+                              isSelected
+                                ? 'transparent'
+                                : unavailable
+                                ? '#F3F4F6'
+                                : '#E5E7EB'
+                            }`,
+                            boxShadow: isSelected
+                              ? '0 3px 10px rgba(124,58,237,0.25)'
+                              : 'none',
+                            textDecoration: unavailable ? 'line-through' : 'none',
+                            transition: 'all 220ms cubic-bezier(0.22, 1, 0.36, 1)',
+                          }}
+                        >
+                          {time}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Notes */}
+        <div className="px-2.5 mb-4">
+          <div className="bg-[#F9FAFB] rounded-xl p-4">
+            <h3 className="text-[13px] font-bold mb-2 text-gray-900">안내사항</h3>
+            <ul className="space-y-1.5">
+              {[
+                '예약 시간 10분 전까지 내원해 주세요.',
+                '예약 변경 및 취소는 예약일 3일 전까지 가능합니다.',
+                '당일 취소 시 위약금이 발생할 수 있습니다.',
+                '공휴일은 예약이 불가합니다.',
+                '시술 전 주의사항은 예약 확정 후 문자로 안내드립니다.',
+              ].map((note, i) => (
+                <li key={i} className="flex items-start gap-2">
+                  <span className="text-[#7C3AED] mt-0.5">•</span>
+                  <span className="text-[12px] text-gray-600 leading-relaxed">{note}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
       </div>
 
-      {/* Bottom Button */}
-      <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] bg-white border-t border-gray-100 px-2.5 py-3 z-50 lg:static lg:mt-6 lg:transform-none lg:left-auto lg:border-0 lg:px-2.5 lg:max-w-none">
-        <button
-          onClick={handleBooking}
-          disabled={!selectedDate || !selectedTime}
-          className={`w-full py-3.5 rounded-xl font-bold text-sm transition-colors ${
-            selectedDate && selectedTime
-              ? 'bg-[#7C3AED] text-white'
-              : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-          }`}
+      {/* Bottom CTA bar */}
+      <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] bg-white z-50 lg:static lg:mt-6 lg:transform-none lg:left-auto lg:max-w-none">
+        <div
+          className="px-2.5 pt-3 pb-3"
+          style={{
+            borderTop: '1px solid #F2F3F5',
+            boxShadow: '0 -4px 16px rgba(0,0,0,0.04)',
+          }}
         >
-          예약하기
-        </button>
-      </div>
+          {selectedDate && selectedTime && (
+            <div className="flex items-center justify-between mb-2.5 px-1 fade-in-up">
+              <div>
+                <p className="text-[11px] text-gray-500">선택한 일시</p>
+                <p className="text-[14px] font-bold text-gray-900">
+                  {currentMonth}월 {selectedDate}일 ({selectedDayLabel}) · {selectedTime}
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setSelectedDate(null);
+                  setSelectedTime(null);
+                }}
+                className="text-[11px] text-gray-400 underline"
+              >
+                다시 선택
+              </button>
+            </div>
+          )}
+          <button
+            onClick={handleBooking}
+            disabled={!selectedDate || !selectedTime}
+            className="w-full py-3.5 rounded-xl font-bold text-[15px] btn-press transition-colors"
+            style={{
+              backgroundColor: selectedDate && selectedTime ? '#7C3AED' : '#F3F4F6',
+              color: selectedDate && selectedTime ? '#fff' : '#A4ABBA',
+              boxShadow:
+                selectedDate && selectedTime
+                  ? '0 6px 16px rgba(124,58,237,0.3)'
+                  : 'none',
+            }}
+          >
+            {selectedDate && selectedTime ? '예약 확정하고 결제하기' : '날짜와 시간을 선택해 주세요'}
+          </button>
+        </div>
       </div>
 
-      {/* Confirmation Dialog */}
+      {/* Confirmation dialog */}
       {showConfirm && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50">
-          <div className="bg-white rounded-2xl mx-6 w-full max-w-sm overflow-hidden">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 modal-overlay-enter">
+          <div className="bg-white rounded-2xl mx-6 w-full max-w-sm overflow-hidden modal-content-enter">
             <div className="p-6 text-center">
-              <div className="w-14 h-14 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-2xl">📅</span>
+              <div className="w-14 h-14 bg-[#7C3AED] rounded-full flex items-center justify-center mx-auto mb-4">
+                <Check size={26} strokeWidth={3} className="text-white" />
               </div>
-              <h3 className="text-lg font-bold mb-2">예약 확인</h3>
+              <h3 className="text-lg font-bold mb-2">예약을 확정할까요?</h3>
               <p className="text-sm text-gray-600 mb-1">
-                {currentYear}년 {currentMonth}월 {selectedDate}일
+                {currentYear}년 {currentMonth}월 {selectedDate}일 ({selectedDayLabel})
               </p>
               <p className="text-lg font-bold text-[#7C3AED]">{selectedTime}</p>
-              <p className="text-sm text-gray-400 mt-2">위 일시로 예약하시겠습니까?</p>
+              {product && (
+                <p className="text-[12px] text-gray-500 mt-3 line-clamp-1">
+                  {product.title}
+                </p>
+              )}
             </div>
             <div className="flex border-t border-gray-100">
               <button
                 onClick={() => setShowConfirm(false)}
                 className="flex-1 py-3.5 text-sm font-medium text-gray-500"
               >
-                취소
+                다시 선택
               </button>
               <button
                 onClick={handleConfirm}
-                className="flex-1 py-3.5 text-sm font-bold text-[#7C3AED] border-l border-gray-100"
+                className="flex-1 py-3.5 text-sm font-bold text-white bg-[#7C3AED]"
               >
-                확인
+                결제하기
               </button>
             </div>
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function StepDot({ active, label, title }: { active: boolean; label: string; title: string }) {
+  return (
+    <div className="flex items-center gap-1.5">
+      <span
+        className="flex items-center justify-center w-6 h-6 rounded-full text-[11px] font-bold"
+        style={{
+          backgroundColor: active ? '#7C3AED' : '#E5E7EB',
+          color: active ? '#fff' : '#9CA3AF',
+          transition: 'background-color 300ms ease',
+        }}
+      >
+        {label}
+      </span>
+      <span
+        className="text-[12px] font-semibold"
+        style={{ color: active ? '#2B313D' : '#9CA3AF' }}
+      >
+        {title}
+      </span>
     </div>
   );
 }
