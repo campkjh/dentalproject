@@ -69,15 +69,28 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
     async function hydrateProfile(userId: string) {
       if (!supabase) return;
-      const { data: profile } = await supabase
+      const { data: existing } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .maybeSingle();
-      if (!profile) return;
-      const p = profile as Record<string, unknown>;
+
+      let p = existing as Record<string, unknown> | null;
+
+      // Auto-create profile if missing (trigger may not have fired for old accounts)
+      if (!p) {
+        await supabase.from('profiles').upsert({
+          id: userId,
+          name: '',
+          login_type: 'email',
+          country: '대한민국',
+        });
+        const { data: created } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle();
+        p = (created as Record<string, unknown> | null) ?? { id: userId };
+      }
+
       const loginType = (p.login_type as 'kakao' | 'apple') ?? 'kakao';
-      // Set the store directly without triggering DB sync writes
+      // Always set isLoggedIn=true if we have a session, regardless of profile completeness
       useStore.setState({
         isLoggedIn: true,
         user: {
