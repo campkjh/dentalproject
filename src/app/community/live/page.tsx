@@ -1,11 +1,11 @@
 'use client';
 
 import { useState, useRef, useEffect, useMemo } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft, Send, MoreHorizontal } from 'lucide-react';
 import Avatar from '@/components/common/Avatar';
 import { useStore } from '@/store';
+import { useSession } from '@/lib/supabase/SessionProvider';
 
 type Reply = {
   id: string;
@@ -113,14 +113,53 @@ const seedQuestions: LiveQuestion[] = [
 
 const categories = ['전체', '임플란트', '치아교정', '치아미백', '사랑니', '스케일링', '기타'];
 
+function relTime(dateStr: string) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return dateStr;
+  const diff = (Date.now() - d.getTime()) / 1000;
+  if (diff < 60) return '방금 전';
+  if (diff < 3600) return `${Math.floor(diff / 60)}분 전`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}시간 전`;
+  return d.toLocaleDateString('ko-KR');
+}
+
 export default function CommunityLivePage() {
   const router = useRouter();
-  const { showToast } = useStore();
-  const [questions, setQuestions] = useState<LiveQuestion[]>(seedQuestions);
+  const { showToast, addPost, posts, comments, user } = useStore();
+  const { authUser } = useSession();
   const [activeCategory, setActiveCategory] = useState('전체');
   const [input, setInput] = useState('');
   const [pickedCategory, setPickedCategory] = useState('기타');
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Build live Q&A feed from DB posts/comments (boardType='question' + doctor replies)
+  const questions = useMemo<LiveQuestion[]>(() => {
+    const qPosts = posts.filter((p) => p.boardType === 'question');
+    const liveFromDb = qPosts.map((p): LiveQuestion => {
+      const category = (p.tags && p.tags[0]) || '기타';
+      const replies: Reply[] = comments
+        .filter((c) => c.postId === p.id && c.authorTitle === '의사')
+        .map((c) => ({
+          id: c.id,
+          doctorName: c.authorName,
+          doctorTitle: c.authorTitle ?? '원장',
+          doctorHospital: c.authorHospital,
+          content: c.content,
+          time: relTime(c.date),
+        }));
+      return {
+        id: p.id,
+        user: { name: p.authorName, seed: p.authorId || p.id },
+        category,
+        content: p.content,
+        time: relTime(p.date),
+        replies,
+      };
+    });
+    // If DB has no questions yet, show seed placeholders for visual continuity
+    return liveFromDb.length > 0 ? liveFromDb : seedQuestions;
+  }, [posts, comments]);
 
   const filtered = useMemo(() => {
     if (activeCategory === '전체') return questions;
@@ -135,15 +174,27 @@ export default function CommunityLivePage() {
   const handleSend = () => {
     const text = input.trim();
     if (!text) return;
-    const q: LiveQuestion = {
+    if (!authUser) {
+      showToast('로그인이 필요합니다.');
+      router.push('/login');
+      return;
+    }
+    addPost({
       id: `q-${Date.now()}`,
-      user: { name: '나', seed: 'me' },
-      category: pickedCategory,
+      boardType: 'question',
+      title: text.slice(0, 40),
       content: text,
-      time: '방금 전',
-      replies: [],
-    };
-    setQuestions((prev) => [...prev, q]);
+      authorName: user?.name ?? '익명',
+      authorId: user?.id ?? '',
+      isAnonymous: false,
+      date: new Date().toISOString(),
+      viewCount: 0,
+      likeCount: 0,
+      commentCount: 0,
+      tags: [pickedCategory],
+      hasAnswer: false,
+      answerCount: 0,
+    });
     setInput('');
     showToast('질문이 등록되었습니다. 의사의 답변을 기다려주세요.');
     setTimeout(() => {
