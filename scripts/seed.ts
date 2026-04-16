@@ -277,30 +277,34 @@ async function seedPatientsAndContent() {
   }
   console.log(`✓ reviews: ${reviewRows.length}`);
 
-  // Reservations — assign first patient to each, only those with valid hospitalId+
+  // Reservations — only those that map to a seeded hospital (h1-h4)
   const firstPatientId = Object.values(patientUserIds)[0];
   if (firstPatientId) {
-    const reservationRows = reservations
-      .filter((rsv) => rsv.hospitalId)
-      .map((rsv) => ({
-        id: uuidFor(`reservation:${rsv.id}`),
-        user_id: firstPatientId,
-        hospital_id: uuidFor(`hospital:${rsv.hospitalId}`),
-        status: rsv.status,
-        visit_at: parseKoDateTime(rsv.visitDate),
-        reservation_at: parseKoDateTime(rsv.reservationDate) ?? new Date().toISOString(),
-        cancel_at: rsv.cancelDate ? parseKoDateTime(rsv.cancelDate) : null,
-        cancel_reason: rsv.cancelReason ?? null,
-        amount: rsv.amount,
-        customer_name: rsv.customerName,
-        customer_phone: rsv.customerPhone,
-        payment_type: rsv.paymentType ?? null,
-        payment_method: rsv.paymentMethod ?? null,
-      }));
+    const seededHospitalSlugs = new Set(hospitals.map((h) => h.id));
+    const validReservations = reservations.filter(
+      (rsv) => rsv.hospitalId && seededHospitalSlugs.has(rsv.hospitalId)
+    );
+    const reservationRows = validReservations.map((rsv) => ({
+      id: uuidFor(`reservation:${rsv.id}`),
+      user_id: firstPatientId,
+      hospital_id: uuidFor(`hospital:${rsv.hospitalId}`),
+      status: rsv.status,
+      visit_at: parseKoDateTime(rsv.visitDate),
+      reservation_at: parseKoDateTime(rsv.reservationDate) ?? new Date().toISOString(),
+      cancel_at: rsv.cancelDate ? parseKoDateTime(rsv.cancelDate) : null,
+      cancel_reason: rsv.cancelReason ?? null,
+      amount: rsv.amount,
+      customer_name: rsv.customerName,
+      customer_phone: rsv.customerPhone,
+      payment_type: rsv.paymentType ?? null,
+      payment_method: rsv.paymentMethod ?? null,
+    }));
+    const skipped = reservations.length - validReservations.length;
     if (reservationRows.length) {
-      await admin.from('reservations').upsert(reservationRows);
+      const { error } = await admin.from('reservations').upsert(reservationRows);
+      if (error) console.warn(`reservations upsert: ${error.message}`);
     }
-    console.log(`✓ reservations: ${reservationRows.length} (assigned to ${Object.values(patientUserIds)[0] === firstPatientId ? 'u1' : 'first user'})`);
+    console.log(`✓ reservations: ${reservationRows.length}${skipped ? ` (skipped ${skipped} for unknown hospitals)` : ''}`);
   }
 
   // Coupons + point history → first patient
