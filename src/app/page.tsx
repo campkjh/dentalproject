@@ -57,11 +57,14 @@ export default function HomePage() {
         return;
       }
       const rect = el.getBoundingClientRect();
-      // Start docking when the category bottom reaches y=120, finish by y=60
-      const start = 120;
-      const end = 60;
-      const p = (start - rect.bottom) / (start - end);
-      setDockProgress(Math.max(0, Math.min(1, p)));
+      // Start docking when category bottom approaches header (160→40px window)
+      const start = 160;
+      const end = 40;
+      const raw = (start - rect.bottom) / (start - end);
+      const clamped = Math.max(0, Math.min(1, raw));
+      // Ease-out for softer settle
+      const eased = 1 - Math.pow(1 - clamped, 2);
+      setDockProgress(eased);
     };
     onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
@@ -129,46 +132,59 @@ export default function HomePage() {
           </button>
         </div>
 
-        {/* Docked compact category bar — shrinks in based on scroll progress */}
+        {/* Docked compact category bar — pill style, shrinks in with scroll */}
         <div
+          className="relative"
           style={{
-            maxHeight: dockProgress * 64,
-            opacity: dockProgress,
-            transform: `translateY(${(1 - dockProgress) * -8}px)`,
+            maxHeight: dockProgress * 52,
+            opacity: Math.min(1, dockProgress * 1.6),
+            transform: `translateY(${(1 - dockProgress) * -6}px)`,
             overflow: 'hidden',
-            borderTop: dockProgress > 0.3 ? '1px solid #F2F3F5' : '1px solid transparent',
-            transition: 'border-color 300ms ease',
+            boxShadow: dockProgress > 0.4 ? '0 1px 0 #F2F3F5' : 'none',
+            transition: 'box-shadow 320ms ease',
           }}
         >
           <div
-            className="flex items-center gap-3 overflow-x-auto hide-scrollbar px-2.5 py-2"
+            className="flex items-center gap-1.5 overflow-x-auto hide-scrollbar px-2.5 py-2"
             style={{ scrollBehavior: 'smooth' }}
           >
             {categories.map((cat) => (
               <Link
                 key={cat.id}
                 href={`/search?category=${cat.id}`}
-                className="flex flex-col items-center gap-0.5 flex-shrink-0 card-press"
-                style={{ width: 48 }}
+                className="flex items-center gap-1.5 flex-shrink-0 card-press rounded-full bg-[#F4F5F7] hover:bg-gray-200 transition-colors"
+                style={{
+                  height: 34,
+                  paddingLeft: 6,
+                  paddingRight: 12,
+                  transform: `scale(${0.94 + dockProgress * 0.06})`,
+                  transformOrigin: 'center',
+                  transition: 'transform 280ms cubic-bezier(0.22, 1, 0.36, 1)',
+                }}
               >
-                <div
-                  className="rounded-xl bg-[#F4F5F7] flex items-center justify-center"
-                  style={{
-                    width: 34 + dockProgress * 4,
-                    height: 34 + dockProgress * 4,
-                  }}
-                >
-                  <img src={cat.icon} alt={cat.name} className="w-7 h-7" />
-                </div>
-                <span
-                  className="text-[10px] text-gray-600 font-medium whitespace-nowrap"
-                  style={{ transform: `scale(${0.92 + dockProgress * 0.08})` }}
-                >
+                <img
+                  src={cat.icon}
+                  alt=""
+                  className="flex-shrink-0"
+                  style={{ width: 22, height: 22 }}
+                />
+                <span className="text-[12px] text-gray-700 font-semibold whitespace-nowrap leading-none">
                   {cat.name}
                 </span>
               </Link>
             ))}
+            {/* Right spacer so last pill isn't cut off visually */}
+            <div className="flex-shrink-0" style={{ width: 8 }} />
           </div>
+          {/* Right-edge gradient fade */}
+          <div
+            className="absolute top-0 right-0 bottom-0 pointer-events-none"
+            style={{
+              width: 20,
+              background: 'linear-gradient(to left, #fff, rgba(255,255,255,0))',
+              opacity: dockProgress,
+            }}
+          />
         </div>
       </div>
 
