@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Search, Bell, User, Heart, ChevronDown } from 'lucide-react';
 import { useStore } from '@/store';
+import { useSession } from '@/lib/supabase/SessionProvider';
 import { useState } from 'react';
 import { categories } from '@/lib/mock-data';
 
@@ -15,7 +16,10 @@ const navItems = [
 
 export default function DesktopHeader() {
   const pathname = usePathname();
-  const { isLoggedIn, user, login, logout, wishlist } = useStore();
+  const { isLoggedIn, user, wishlist } = useStore();
+  const { signInWithOAuth, signOut } = useSession();
+  const login = (p: 'kakao' | 'apple') => signInWithOAuth(p);
+  const logout = () => signOut();
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
 

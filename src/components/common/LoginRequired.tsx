@@ -1,10 +1,11 @@
 'use client';
 
 import { Lock } from 'lucide-react';
-import { useStore } from '@/store';
+import { useSession } from '@/lib/supabase/SessionProvider';
 
 export default function LoginRequired() {
-  const { login } = useStore();
+  const { signInWithOAuth } = useSession();
+  const login = (p: 'kakao' | 'apple') => signInWithOAuth(p);
 
   return (
     <div className="flex flex-col items-center justify-center py-20 px-6">

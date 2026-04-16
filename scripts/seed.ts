@@ -9,7 +9,9 @@
  *
  * The script is idempotent: re-runs upsert by deterministic legacy id slugs.
  */
-import 'dotenv/config';
+import { config } from 'dotenv';
+config({ path: '.env.local' });
+config({ path: '.env' });
 import { createClient } from '@supabase/supabase-js';
 import {
   categories,
@@ -69,6 +71,16 @@ async function seedCategories() {
     popular: c.popular,
     sort_order: i,
   }));
+  // mock-data에 '치과'가 없어서 hospitals.category FK가 깨짐 → 보강
+  if (!rows.find((r) => r.id === 'dental')) {
+    rows.push({
+      id: 'dental',
+      name: '치과',
+      icon: '/icons/categories/dental.svg',
+      popular: true,
+      sort_order: rows.length,
+    });
+  }
   const { error } = await admin.from('categories').upsert(rows);
   if (error) throw error;
   console.log(`✓ categories: ${rows.length}`);
