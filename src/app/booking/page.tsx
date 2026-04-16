@@ -4,7 +4,7 @@ import { useState, useMemo, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ChevronLeft, ChevronRight, Check } from 'lucide-react';
 import TopBar from '@/components/common/TopBar';
-import { products } from '@/lib/mock-data';
+import { useStore } from '@/store';
 
 const dayLabels = ['일', '월', '화', '수', '목', '금', '토'];
 
@@ -30,6 +30,7 @@ function BookingPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const productId = searchParams.get('productId') ?? '1';
+  const products = useStore((s) => s.products);
   const product = products.find((p) => p.id === productId);
 
   const today = new Date();

@@ -5,7 +5,6 @@ import { useStore } from '@/store';
 import TopBar from '@/components/common/TopBar';
 import EmptyState from '@/components/common/EmptyState';
 import LoginRequired from '@/components/common/LoginRequired';
-import { reservations } from '@/lib/mock-data';
 import { IconMapPin, IconCalendarMini } from '@/components/icons/AppIcons';
 import { Reservation } from '@/types';
 
@@ -55,7 +54,7 @@ const statusStyle: Record<
 };
 
 export default function PaymentsPage() {
-  const { isLoggedIn } = useStore();
+  const { isLoggedIn, reservations } = useStore();
   const [activeTab, setActiveTab] = useState('전체');
   const [direction, setDirection] = useState<'left' | 'right'>('right');
   const prevIdxRef = useRef(0);

@@ -5,7 +5,6 @@ import { useStore } from '@/store';
 import TopBar from '@/components/common/TopBar';
 import EmptyState from '@/components/common/EmptyState';
 import LoginRequired from '@/components/common/LoginRequired';
-import { reviews } from '@/lib/mock-data';
 import { Star, MoreHorizontal } from 'lucide-react';
 
 // Mock before/after pairs for demo reviews
@@ -17,7 +16,7 @@ const mockBeforeAfter: Record<string, { before: string; after: string }> = {
 };
 
 export default function MyReviewsPage() {
-  const { isLoggedIn } = useStore();
+  const { isLoggedIn, reviews } = useStore();
   const [openMenu, setOpenMenu] = useState<string | null>(null);
 
   if (!isLoggedIn) {

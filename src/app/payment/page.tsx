@@ -5,7 +5,6 @@ import { createPortal } from 'react-dom';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ChevronDown, ChevronUp, ChevronLeft, Check, X } from 'lucide-react';
 import { useStore } from '@/store';
-import { products, coupons } from '@/lib/mock-data';
 
 const agreementTerms = [
   { id: 'ePayment', label: '(필수) 전자금융거래 이용약관' },
@@ -25,7 +24,8 @@ function PaymentPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const productId = searchParams.get('productId');
-  const { user, showToast, addReservation } = useStore();
+  const { user, showToast, addReservation, products } = useStore();
+  const coupons = user?.coupons ?? [];
 
   const [showCouponSheet, setShowCouponSheet] = useState(false);
   const [selectedCouponId, setSelectedCouponId] = useState<string | null>(null);
