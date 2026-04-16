@@ -345,13 +345,66 @@ export default function HospitalRegisterPage() {
     licenseNumber: '',
   });
 
+  // Step transition direction for slide animation
+  const [stepDir, setStepDir] = useState<'forward' | 'backward'>('forward');
+
+  // Draft restore on mount
+  const restoredRef = useRef(false);
+  useEffect(() => {
+    if (restoredRef.current) return;
+    restoredRef.current = true;
+    try {
+      const raw = localStorage.getItem('hospitalRegisterDraft');
+      if (!raw) return;
+      const d = JSON.parse(raw);
+      if (d.step) setStep(d.step);
+      if (d.selectedSpecialty) setSelectedSpecialty(d.selectedSpecialty);
+      if (Array.isArray(d.selectedTreatments))
+        setSelectedTreatments(new Set(d.selectedTreatments));
+      if (d.registerType) setRegisterType(d.registerType);
+      if (typeof d.hospitalSearch === 'string') setHospitalSearch(d.hospitalSearch);
+      if (Array.isArray(d.agreements)) setAgreements(new Set(d.agreements));
+      if (d.hospitalInfo) setHospitalInfo(d.hospitalInfo);
+      if (Array.isArray(d.operatingHours)) setOperatingHours(d.operatingHours);
+      if (d.doctorInfo) setDoctorInfo(d.doctorInfo);
+    } catch {}
+  }, []);
+
+  const hasDraft = (): boolean => {
+    if (typeof window === 'undefined') return false;
+    return !!localStorage.getItem('hospitalRegisterDraft');
+  };
+
+  const saveDraft = () => {
+    try {
+      const payload = {
+        step,
+        selectedSpecialty,
+        selectedTreatments: Array.from(selectedTreatments),
+        registerType,
+        hospitalSearch,
+        agreements: Array.from(agreements),
+        hospitalInfo,
+        operatingHours,
+        doctorInfo,
+        savedAt: new Date().toISOString(),
+      };
+      localStorage.setItem('hospitalRegisterDraft', JSON.stringify(payload));
+      showToast('입력한 내용이 저장되었습니다.');
+    } catch {
+      showToast('저장에 실패했습니다. 다시 시도해주세요.');
+    }
+  };
+
   const handleNext = () => {
+    setStepDir('forward');
     if (step < TOTAL_STEPS) {
       setStep(step + 1);
     }
   };
 
   const handleBack = () => {
+    setStepDir('backward');
     if (step > 1) {
       setStep(step - 1);
     } else {
@@ -794,30 +847,79 @@ export default function HospitalRegisterPage() {
                 />
               </div>
 
-              {/* Document uploads */}
+              {/* Document uploads — 의료법 관련 필수·선택 서류 */}
               <div>
-                <label className="text-sm font-medium text-gray-700 block mb-1.5">
-                  서류 첨부
-                </label>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-sm font-medium text-gray-700">
+                    서류 첨부
+                  </label>
+                  <span className="text-[11px] text-gray-400">
+                    PDF · JPG · PNG (각 10MB 이하)
+                  </span>
+                </div>
+
+                <p className="text-[11px] text-[#7C3AED] font-semibold mb-2">
+                  필수 서류
+                </p>
+                <div className="space-y-2 mb-4">
+                  {[
+                    {
+                      title: '사업자등록증',
+                      desc: '국세청 발급, 의료기관 명의',
+                    },
+                    {
+                      title: '의료기관 개설신고증',
+                      desc: '의료법 제33조 · 관할 보건소 발급',
+                    },
+                    {
+                      title: '의사 면허증',
+                      desc: '보건복지부 발급, 대표자 명의',
+                    },
+                    {
+                      title: '전문의 자격증',
+                      desc: '대표 원장 전문의 자격 (해당 진료과)',
+                    },
+                    {
+                      title: '대표자 신분증 사본',
+                      desc: '주민등록증 또는 운전면허증',
+                    },
+                  ].map((doc) => (
+                    <DocUploadRow key={doc.title} title={doc.title} desc={doc.desc} required />
+                  ))}
+                </div>
+
+                <p className="text-[11px] text-gray-500 font-semibold mb-2">
+                  선택 서류
+                </p>
                 <div className="space-y-2">
-                  <button className="w-full flex items-center gap-3 p-3 rounded-xl border border-dashed border-gray-300 hover:border-[#7C3AED] transition-colors">
-                    <Upload size={18} className="text-gray-400" />
-                    <div className="text-left">
-                      <p className="text-sm text-gray-600">사업자등록증</p>
-                      <p className="text-xs text-gray-400">
-                        PDF, JPG, PNG (10MB 이하)
-                      </p>
-                    </div>
-                  </button>
-                  <button className="w-full flex items-center gap-3 p-3 rounded-xl border border-dashed border-gray-300 hover:border-[#7C3AED] transition-colors">
-                    <Upload size={18} className="text-gray-400" />
-                    <div className="text-left">
-                      <p className="text-sm text-gray-600">의료기관개설신고증</p>
-                      <p className="text-xs text-gray-400">
-                        PDF, JPG, PNG (10MB 이하)
-                      </p>
-                    </div>
-                  </button>
+                  {[
+                    {
+                      title: '의료기관 대표자 인감증명서',
+                      desc: '3개월 이내 발급, 직인 대신 제출 가능',
+                    },
+                    {
+                      title: '의료광고 사전심의 필증',
+                      desc: '의료법 제57조 · 의사회 심의 필증',
+                    },
+                    {
+                      title: '법인 등기부등본',
+                      desc: '의료법인·상법법인일 때',
+                    },
+                    {
+                      title: '진료과목별 전문의 자격증',
+                      desc: '복수 전문의 운영 시 첨부',
+                    },
+                  ].map((doc) => (
+                    <DocUploadRow key={doc.title} title={doc.title} desc={doc.desc} />
+                  ))}
+                </div>
+
+                <div className="mt-3 px-3 py-2.5 rounded-lg bg-[#F4EFFF]">
+                  <p className="text-[11px] text-[#7C3AED] font-semibold leading-snug">
+                    * 의료법 제33조, 제57조 및 관련 고시에 따라 의료기관 운영 자격을 확인하기
+                    위해 상기 서류가 요구됩니다. 제출된 서류는 심사 목적 외에 사용되지 않으며
+                    승인 이후 안전하게 파기됩니다.
+                  </p>
                 </div>
               </div>
             </div>
@@ -1016,11 +1118,24 @@ export default function HospitalRegisterPage() {
         </div>
       </div>
 
-      {/* Step content */}
-      <div className="flex-1 overflow-y-auto">{renderStep()}</div>
+      {/* Step content with directional slide */}
+      <div className="flex-1 overflow-y-auto">
+        <div
+          key={step}
+          className={stepDir === 'forward' ? 'tab-slide-right' : 'tab-slide-left'}
+        >
+          {renderStep()}
+        </div>
+      </div>
 
-      {/* Bottom button */}
-      <div className="sticky bottom-0 bg-white px-2.5 py-4 border-t border-gray-100">
+      {/* Bottom button + draft save */}
+      <div className="sticky bottom-0 bg-white px-2.5 py-3 border-t border-gray-100 flex items-center gap-2">
+        <button
+          onClick={saveDraft}
+          className="flex-shrink-0 px-4 py-3.5 rounded-xl border border-gray-200 text-[13px] font-semibold text-gray-700 btn-press hover:bg-gray-50 transition-colors"
+        >
+          중간저장
+        </button>
         <button
           onClick={() => {
             if (step === TOTAL_STEPS) {
@@ -1030,9 +1145,9 @@ export default function HospitalRegisterPage() {
             }
           }}
           disabled={!canProceed()}
-          className={`w-full py-3.5 rounded-xl text-base font-bold transition-colors ${
+          className={`flex-1 py-3.5 rounded-xl text-base font-bold btn-press transition-all duration-300 ${
             canProceed()
-              ? 'bg-[#7C3AED] text-white'
+              ? 'bg-[#7C3AED] text-white shadow-[0_6px_16px_rgba(124,58,237,0.3)]'
               : 'bg-gray-200 text-gray-400 cursor-not-allowed'
           }`}
         >
@@ -1070,6 +1185,75 @@ export default function HospitalRegisterPage() {
 }
 
 // ===== Table renderer =====
+function DocUploadRow({
+  title,
+  desc,
+  required,
+}: {
+  title: string;
+  desc: string;
+  required?: boolean;
+}) {
+  const [fileName, setFileName] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    setFileName(f.name);
+  };
+
+  const handleReset = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setFileName(null);
+    if (inputRef.current) inputRef.current.value = '';
+    inputRef.current?.click();
+  };
+
+  const uploaded = !!fileName;
+  return (
+    <label
+      htmlFor={`doc-${title}`}
+      className="w-full flex items-center gap-3 p-3 rounded-xl border border-dashed transition-colors text-left cursor-pointer"
+      style={{
+        borderColor: uploaded ? '#7C3AED' : '#D1D5DB',
+        backgroundColor: uploaded ? '#F4EFFF' : 'transparent',
+      }}
+    >
+      <input
+        ref={inputRef}
+        id={`doc-${title}`}
+        type="file"
+        accept="application/pdf,image/*"
+        className="sr-only"
+        onChange={handleFile}
+      />
+      <Upload size={18} className={uploaded ? 'text-[#7C3AED]' : 'text-gray-400'} />
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-1.5">
+          <p className="text-sm text-gray-800 font-medium leading-tight">{title}</p>
+          {required && (
+            <span className="text-[10px] font-bold text-red-500 leading-none">*</span>
+          )}
+        </div>
+        <p className="text-[11px] text-gray-500 mt-0.5 leading-snug truncate">
+          {uploaded ? fileName : desc}
+        </p>
+      </div>
+      {uploaded && (
+        <button
+          type="button"
+          onClick={handleReset}
+          className="flex-shrink-0 text-[11px] font-semibold text-[#7C3AED] px-1.5 py-0.5"
+        >
+          다시 올리기
+        </button>
+      )}
+    </label>
+  );
+}
+
 function AgreementTables({ tables }: { tables?: AgreementTable[] }) {
   if (!tables || tables.length === 0) return null;
   return (
