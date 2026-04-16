@@ -40,6 +40,20 @@ const treatmentsBySpecialty: Record<string, string[]> = {
 
 const defaultTreatments = treatmentsBySpecialty['dental'];
 
+function formatPhone(raw: string): string {
+  const d = raw.replace(/\D/g, '').slice(0, 11);
+  if (d.length <= 3) return d;
+  if (d.length <= 7) return `${d.slice(0, 3)} ${d.slice(3)}`;
+  return `${d.slice(0, 3)} ${d.slice(3, 7)} ${d.slice(7)}`;
+}
+
+function formatBiznum(raw: string): string {
+  const d = raw.replace(/\D/g, '').slice(0, 10);
+  if (d.length <= 3) return d;
+  if (d.length <= 5) return `${d.slice(0, 3)} ${d.slice(3)}`;
+  return `${d.slice(0, 3)} ${d.slice(3, 5)} ${d.slice(5)}`;
+}
+
 interface AgreementTable {
   title?: string;
   headers: string[];
@@ -301,6 +315,14 @@ export default function HospitalRegisterPage() {
     null
   );
   const [hospitalSearch, setHospitalSearch] = useState('');
+
+  // Auto-fill hospital name into step 6 form when user arrives with a search value
+  useEffect(() => {
+    if (step === 6 && hospitalSearch && !hospitalInfo.name) {
+      setHospitalInfo((prev) => ({ ...prev, name: hospitalSearch }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step]);
   const [agreements, setAgreements] = useState<Set<string>>(new Set());
   const [viewingAgreement, setViewingAgreement] = useState<AgreementItem | null>(null);
   const [hospitalInfo, setHospitalInfo] = useState({
@@ -606,6 +628,7 @@ export default function HospitalRegisterPage() {
             {hospitalSearch.length > 0 && (
               <div className="space-y-2">
                 <button
+                  onClick={() => setHospitalSearch('참포도나무치과의원')}
                   className="w-full p-3 rounded-xl border border-gray-200 text-left hover:border-[#7C3AED] transition-colors"
                 >
                   <p className="font-medium text-sm text-gray-900">
@@ -715,20 +738,24 @@ export default function HospitalRegisterPage() {
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-700 block mb-1.5">
-                  대표자명
+                  대표자명 <span className="text-[11px] text-gray-400 font-normal">(최대 5자)</span>
                 </label>
                 <input
                   type="text"
                   value={hospitalInfo.ownerName}
+                  maxLength={5}
                   onChange={(e) =>
                     setHospitalInfo((prev) => ({
                       ...prev,
-                      ownerName: e.target.value,
+                      ownerName: e.target.value.slice(0, 5),
                     }))
                   }
                   placeholder="대표자명을 입력해주세요"
                   className="w-full px-2.5 py-3 bg-gray-50 rounded-xl text-sm border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#7C3AED] focus:border-[#7C3AED]"
                 />
+                <p className="text-[11px] text-gray-400 mt-1 text-right">
+                  {hospitalInfo.ownerName.length}/5
+                </p>
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-700 block mb-1.5">
@@ -736,15 +763,16 @@ export default function HospitalRegisterPage() {
                 </label>
                 <input
                   type="tel"
+                  inputMode="numeric"
                   value={hospitalInfo.phone}
                   onChange={(e) =>
                     setHospitalInfo((prev) => ({
                       ...prev,
-                      phone: e.target.value,
+                      phone: formatPhone(e.target.value),
                     }))
                   }
-                  placeholder="전화번호를 입력해주세요"
-                  className="w-full px-2.5 py-3 bg-gray-50 rounded-xl text-sm border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#7C3AED] focus:border-[#7C3AED]"
+                  placeholder="010 1234 5678"
+                  className="w-full px-0 py-3 bg-transparent text-[15px] text-gray-900 placeholder:text-gray-400 border-0 border-b border-gray-200 focus:outline-none focus:border-[#7C3AED] transition-colors"
                 />
               </div>
               <div>
@@ -753,15 +781,16 @@ export default function HospitalRegisterPage() {
                 </label>
                 <input
                   type="text"
+                  inputMode="numeric"
                   value={hospitalInfo.businessNumber}
                   onChange={(e) =>
                     setHospitalInfo((prev) => ({
                       ...prev,
-                      businessNumber: e.target.value,
+                      businessNumber: formatBiznum(e.target.value),
                     }))
                   }
-                  placeholder="사업자등록번호를 입력해주세요"
-                  className="w-full px-2.5 py-3 bg-gray-50 rounded-xl text-sm border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#7C3AED] focus:border-[#7C3AED]"
+                  placeholder="574 17 02394"
+                  className="w-full px-0 py-3 bg-transparent text-[15px] text-gray-900 placeholder:text-gray-400 border-0 border-b border-gray-200 focus:outline-none focus:border-[#7C3AED] transition-colors"
                 />
               </div>
 
