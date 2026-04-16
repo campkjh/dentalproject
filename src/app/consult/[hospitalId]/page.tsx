@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
-import Link from 'next/link';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { ChevronLeft, Send, Paperclip, Phone, Info } from 'lucide-react';
 import Avatar from '@/components/common/Avatar';
 import { useStore } from '@/store';
+import { useSession } from '@/lib/supabase/SessionProvider';
+import { createClient, hasSupabaseEnv } from '@/lib/supabase/client';
 
 type Msg = {
   id: string;
@@ -22,53 +23,166 @@ const QUICK_TEMPLATES = [
   '회복 기간이 궁금합니다.',
 ];
 
+function formatTime(iso?: string) {
+  if (!iso) return '방금';
+  const d = new Date(iso);
+  const now = new Date();
+  const diff = (now.getTime() - d.getTime()) / 1000;
+  if (diff < 60) return '방금';
+  if (diff < 3600) return `${Math.floor(diff / 60)}분 전`;
+  return d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+}
+
 export default function ConsultChatPage() {
   const { hospitalId } = useParams<{ hospitalId: string }>();
   const router = useRouter();
+  const { authUser } = useSession();
   const hospitals = useStore((s) => s.hospitals);
+  const showToast = useStore((s) => s.showToast);
   const hospital = hospitals.find((h) => h.id === hospitalId) ?? hospitals[0];
 
+  const [roomId, setRoomId] = useState<string | null>(null);
   const [msgs, setMsgs] = useState<Msg[]>([
     {
       id: 'welcome',
       from: 'hospital',
-      text: `안녕하세요! ${hospital.name}입니다. 궁금하신 점 편하게 남겨주세요. 보통 영업시간 내 30분 내 답변드려요. 🙌`,
+      text: hospital
+        ? `안녕하세요! ${hospital.name}입니다. 궁금하신 점 편하게 남겨주세요. 보통 영업시간 내 30분 내 답변드려요. 🙌`
+        : '안녕하세요! 곧 답변드리겠습니다.',
       time: '방금',
       sender: '상담 매니저',
     },
   ]);
   const [input, setInput] = useState('');
-  const [typing, setTyping] = useState(false);
+  const [pending, setPending] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // 1. Ensure room exists & load history
+  useEffect(() => {
+    if (!authUser || !hospitalId) return;
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const roomRes = await fetch('/api/consult/rooms', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ hospitalId }),
+        });
+        if (!roomRes.ok) {
+          const j = await roomRes.json().catch(() => ({}));
+          showToast(j.error || '채팅방을 열 수 없습니다.');
+          return;
+        }
+        const { id } = await roomRes.json();
+        if (cancelled) return;
+        setRoomId(id);
+
+        const msgRes = await fetch(`/api/consult/rooms/${id}/messages`, { cache: 'no-store' });
+        if (!msgRes.ok) return;
+        const { messages } = await msgRes.json();
+        if (cancelled) return;
+        if (messages?.length) {
+          setMsgs(
+            messages.map((m: { id: string; sender_type: string; content: string; created_at: string }) => ({
+              id: m.id,
+              from: m.sender_type === 'user' ? 'user' : 'hospital',
+              text: m.content,
+              time: formatTime(m.created_at),
+              sender: m.sender_type === 'hospital' ? '상담 매니저' : undefined,
+            }))
+          );
+        }
+      } catch {
+        showToast('연결에 문제가 있습니다.');
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [authUser, hospitalId, showToast]);
+
+  // 2. Subscribe to realtime inserts on this room
+  useEffect(() => {
+    if (!roomId || !hasSupabaseEnv()) return;
+    const sb = createClient();
+    const channel = sb
+      .channel(`consult-${roomId}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'consultation_messages', filter: `room_id=eq.${roomId}` },
+        (payload) => {
+          const m = payload.new as { id: string; sender_type: string; content: string; created_at: string };
+          setMsgs((prev) => {
+            if (prev.some((x) => x.id === m.id)) return prev;
+            return [
+              ...prev,
+              {
+                id: m.id,
+                from: m.sender_type === 'user' ? 'user' : 'hospital',
+                text: m.content,
+                time: formatTime(m.created_at),
+                sender: m.sender_type === 'hospital' ? '상담 매니저' : undefined,
+              },
+            ];
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      void sb.removeChannel(channel);
+    };
+  }, [roomId]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
-  }, [msgs.length, typing]);
+  }, [msgs.length]);
 
-  const send = (text?: string) => {
-    const body = (text ?? input).trim();
-    if (!body) return;
-    setMsgs((p) => [
-      ...p,
-      { id: `m-${Date.now()}`, from: 'user', text: body, time: '방금' },
-    ]);
-    setInput('');
-    setTyping(true);
-    setTimeout(() => {
-      setTyping(false);
-      setMsgs((p) => [
-        ...p,
-        {
-          id: `h-${Date.now()}`,
-          from: 'hospital',
-          text:
-            '문의해주셔서 감사합니다! 담당자가 확인 후 빠르게 답변드리겠습니다. 예약 원하시면 내원 가능 날짜를 알려주세요.',
-          time: '방금',
-          sender: '상담 매니저',
-        },
+  const send = useCallback(
+    async (text?: string) => {
+      const body = (text ?? input).trim();
+      if (!body || pending) return;
+      if (!authUser) {
+        showToast('로그인이 필요합니다.');
+        router.push('/login');
+        return;
+      }
+      if (!roomId) {
+        showToast('채팅방 준비 중입니다. 잠시 후 다시 시도해 주세요.');
+        return;
+      }
+      setInput('');
+      setPending(true);
+      // optimistic
+      const tempId = `tmp-${Date.now()}`;
+      setMsgs((prev) => [
+        ...prev,
+        { id: tempId, from: 'user', text: body, time: '방금' },
       ]);
-    }, 1400);
-  };
+      try {
+        const res = await fetch(`/api/consult/rooms/${roomId}/messages`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content: body }),
+        });
+        if (!res.ok) {
+          showToast('전송에 실패했습니다.');
+          setMsgs((prev) => prev.filter((m) => m.id !== tempId));
+        } else {
+          const { id } = await res.json();
+          setMsgs((prev) => prev.map((m) => (m.id === tempId ? { ...m, id } : m)));
+        }
+      } catch {
+        showToast('네트워크 오류');
+        setMsgs((prev) => prev.filter((m) => m.id !== tempId));
+      } finally {
+        setPending(false);
+      }
+    },
+    [input, pending, authUser, roomId, router, showToast]
+  );
 
   return (
     <div className="h-[100dvh] bg-white max-w-[480px] mx-auto flex flex-col">
@@ -78,22 +192,24 @@ export default function ConsultChatPage() {
           <ChevronLeft size={22} className="text-gray-900" />
         </button>
         <div className="flex-1 min-w-0">
-          <p className="text-[14px] font-bold text-gray-900 line-clamp-1">{hospital.name}</p>
+          <p className="text-[14px] font-bold text-gray-900 line-clamp-1">{hospital?.name ?? '채팅'}</p>
           <div className="flex items-center gap-1 mt-0.5">
             <span className="relative flex h-1.5 w-1.5">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
               <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-green-500" />
             </span>
-            <p className="text-[11px] text-gray-500">운영 중 · 평균 30분 내 답변</p>
+            <p className="text-[11px] text-gray-500">실시간 · 평균 30분 내 답변</p>
           </div>
         </div>
-        <a
-          href={`tel:${hospital.phone ?? ''}`}
-          className="p-2 rounded-full hover:bg-gray-100"
-          aria-label="전화"
-        >
-          <Phone size={18} className="text-gray-700" />
-        </a>
+        {hospital?.phone && (
+          <a
+            href={`tel:${hospital.phone}`}
+            className="p-2 rounded-full hover:bg-gray-100"
+            aria-label="전화"
+          >
+            <Phone size={18} className="text-gray-700" />
+          </a>
+        )}
       </header>
 
       {/* Info banner */}
@@ -108,18 +224,8 @@ export default function ConsultChatPage() {
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-3 py-4 bg-[#FAFBFC]">
         <div className="space-y-3">
           {msgs.map((m) => (
-            <Bubble key={m.id} msg={m} />
+            <Bubble key={m.id} msg={m} hospitalSeed={hospital?.id ?? ''} />
           ))}
-          {typing && (
-            <div className="flex items-start gap-2 fade-in-up">
-              <Avatar role="doctor" seed={hospital.id} size={28} className="flex-shrink-0" />
-              <div className="bg-white border border-gray-100 rounded-2xl rounded-tl-md px-3 py-2.5 flex items-center gap-1">
-                <Dot delay={0} />
-                <Dot delay={0.15} />
-                <Dot delay={0.3} />
-              </div>
-            </div>
-          )}
         </div>
       </div>
 
@@ -167,20 +273,21 @@ export default function ConsultChatPage() {
               }
             }}
             rows={1}
-            placeholder="메시지 입력 (Enter 전송)"
+            placeholder={authUser ? '메시지 입력 (Enter 전송)' : '로그인 후 이용 가능합니다'}
+            disabled={!authUser}
             className="w-full text-[13px] outline-none bg-transparent resize-none placeholder:text-gray-400"
             style={{ maxHeight: 100 }}
           />
         </div>
         <button
           type="submit"
-          disabled={!input.trim()}
+          disabled={!input.trim() || pending || !authUser}
           className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 btn-press"
           style={{
-            backgroundColor: input.trim() ? '#7C3AED' : '#E5E7EB',
+            backgroundColor: input.trim() && !pending && authUser ? '#7C3AED' : '#E5E7EB',
             color: '#fff',
             transition: 'background-color 220ms ease',
-            boxShadow: input.trim() ? '0 4px 12px rgba(124,58,237,0.3)' : 'none',
+            boxShadow: input.trim() && !pending && authUser ? '0 4px 12px rgba(124,58,237,0.3)' : 'none',
           }}
         >
           <Send size={15} />
@@ -190,11 +297,13 @@ export default function ConsultChatPage() {
   );
 }
 
-function Bubble({ msg }: { msg: Msg }) {
+function Bubble({ msg, hospitalSeed }: { msg: Msg; hospitalSeed: string }) {
   const isUser = msg.from === 'user';
   return (
     <div className={`flex items-start gap-2 ${isUser ? 'flex-row-reverse' : ''} fade-in-up`}>
-      {!isUser && <Avatar role="doctor" seed={msg.id} size={28} className="flex-shrink-0" />}
+      {!isUser && (
+        <Avatar role="doctor" seed={hospitalSeed || msg.id} size={28} className="flex-shrink-0" />
+      )}
       <div className="max-w-[78%]">
         {!isUser && msg.sender && (
           <p className="text-[10px] text-gray-500 mb-0.5">{msg.sender}</p>
@@ -219,16 +328,5 @@ function Bubble({ msg }: { msg: Msg }) {
         </p>
       </div>
     </div>
-  );
-}
-
-function Dot({ delay }: { delay: number }) {
-  return (
-    <span
-      className="w-1.5 h-1.5 rounded-full bg-gray-400"
-      style={{
-        animation: `typingDot 1.2s cubic-bezier(0.22, 1, 0.36, 1) ${delay}s infinite`,
-      }}
-    />
   );
 }
