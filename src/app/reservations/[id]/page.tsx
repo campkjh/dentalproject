@@ -1,388 +1,375 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { MapPin, Navigation, ChevronDown, ChevronUp, Calendar } from 'lucide-react';
-import TopBar from '@/components/common/TopBar';
+import {
+  ChevronLeft,
+  MapPin,
+  Navigation,
+  Phone,
+  MessageSquare,
+  Calendar,
+  Copy,
+  CheckCircle2,
+} from 'lucide-react';
 import { useStore } from '@/store';
 import { Reservation } from '@/types';
 import { hospitals } from '@/lib/mock-data';
 
-const statusLabel: Record<Reservation['status'], string> = {
-  pending: '예약확인중',
-  confirmed: '예약확정',
-  completed: '완료',
-  cancelled: '취소',
+const statusIconSrc: Record<Reservation['status'], string> = {
+  pending: '/icons/status-pending.svg',
+  confirmed: '/icons/status-confirmed.svg',
+  completed: '/icons/status-completed.svg',
+  cancelled: '/icons/status-cancelled.svg',
 };
 
-const statusColor: Record<Reservation['status'], string> = {
-  pending: 'bg-yellow-100 text-yellow-700',
-  confirmed: 'bg-[#EDE9FE] text-[#7C3AED]',
-  completed: 'bg-green-100 text-green-700',
-  cancelled: 'bg-gray-100 text-gray-500',
+const statusStyle: Record<
+  Reservation['status'],
+  { text: string; bg: string; label: string }
+> = {
+  pending: { text: 'text-[#FFA04E]', bg: 'bg-[#FFF4E6]', label: '예약확인중' },
+  confirmed: { text: 'text-[#38B369]', bg: 'bg-[#E6F7EB]', label: '예약확정' },
+  completed: { text: 'text-[#1084FD]', bg: 'bg-[#E6F2FF]', label: '시술완료' },
+  cancelled: { text: 'text-[#6B7280]', bg: 'bg-[#F3F4F6]', label: '예약취소' },
 };
 
 export default function ReservationDetailPage() {
-  const params = useParams();
+  const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const { reservations, showModal, showToast } = useStore();
-  const [showPolicy, setShowPolicy] = useState(false);
-  const [showSchedulePicker, setShowSchedulePicker] = useState(false);
-  const [selectedDate, setSelectedDate] = useState('');
-  const [selectedTime, setSelectedTime] = useState('');
+  const { reservations, updateReservationStatus, showModal, showToast } = useStore();
 
-  const reservation = reservations.find((r) => r.id === params.id);
+  const reservation = reservations.find((r) => r.id === id);
 
   if (!reservation) {
     return (
-      <div className="min-h-screen bg-white">
-        <TopBar title="정보" />
+      <div className="min-h-screen bg-white max-w-[480px] mx-auto">
+        <div className="sticky top-0 z-40 bg-white h-12 flex items-center px-2.5">
+          <button onClick={() => router.back()} className="p-1 -ml-1">
+            <ChevronLeft size={22} className="text-gray-900" />
+          </button>
+          <h1 className="text-[16px] font-bold ml-1">예약 상세</h1>
+        </div>
         <div className="flex items-center justify-center py-20">
-          <p className="text-gray-400">예약 정보를 찾을 수 없습니다.</p>
+          <p className="text-gray-400 text-sm">예약 정보를 찾을 수 없습니다.</p>
         </div>
       </div>
     );
   }
 
   const hospital = hospitals.find((h) => h.id === reservation.hospitalId);
+  const style = statusStyle[reservation.status];
+
+  const basePrice = reservation.amount;
+  const vat = Math.round(basePrice * 0.1);
+  const discount = 0;
+  const total = basePrice + vat - discount;
+
+  const copyAddr = async () => {
+    if (!reservation.location) return;
+    try {
+      await navigator.clipboard.writeText(reservation.location);
+      showToast('주소가 복사되었습니다.');
+    } catch {
+      showToast('복사에 실패했습니다.');
+    }
+  };
 
   const handleCancel = () => {
     showModal('예약 취소', '정말 예약을 취소하시겠습니까?', () => {
+      updateReservationStatus(reservation.id, 'cancelled');
       showToast('예약이 취소되었습니다.');
-      router.back();
+      router.push('/reservations');
     });
   };
 
-  const handleScheduleChange = () => {
-    if (!selectedDate || !selectedTime) {
-      showToast('날짜와 시간을 선택해주세요.');
-      return;
-    }
-    showToast('스케줄이 변경되었습니다.');
-    setShowSchedulePicker(false);
-  };
-
-  // Generate dates for calendar picker
-  const today = new Date();
-  const dates = Array.from({ length: 14 }, (_, i) => {
-    const d = new Date(today);
-    d.setDate(d.getDate() + i);
-    return d;
-  });
-
-  const timeSlots = [
-    '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
-    '13:00', '13:30', '14:00', '14:30', '15:00', '15:30',
-    '16:00', '16:30', '17:00', '17:30',
-  ];
-
-  const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
+  const canCancel = reservation.status === 'pending' || reservation.status === 'confirmed';
+  const canReview = reservation.status === 'completed';
 
   return (
-    <div className="min-h-screen bg-white pb-10">
-      <TopBar title="정보" />
+    <div className="min-h-screen bg-white max-w-[480px] mx-auto pb-32 page-enter">
+      {/* Custom header */}
+      <header className="sticky top-0 z-40 bg-white h-12 flex items-center px-2.5">
+        <button onClick={() => router.back()} className="p-1 -ml-1">
+          <ChevronLeft size={22} className="text-gray-900" />
+        </button>
+        <h1 className="text-[16px] font-bold ml-1">예약 상세</h1>
+      </header>
 
-      {/* Status + date */}
-      <div className="bg-white px-2.5 py-4">
-        <div className="flex items-center gap-3">
+      {/* Status hero */}
+      <section className="px-2.5 pb-6 fade-in-up">
+        <div className="flex items-center gap-2 mb-2">
+          <img src={statusIconSrc[reservation.status]} alt="" width={28} height={28} />
           <span
-            className={`px-3 py-1 rounded-full text-xs font-medium ${
-              statusColor[reservation.status]
-            }`}
+            className={`inline-flex items-center text-[12px] font-bold px-2.5 py-1 rounded-full ${style.bg} ${style.text}`}
           >
-            {statusLabel[reservation.status]}
+            {style.label}
           </span>
-          <span className="text-sm text-gray-500">{reservation.date}</span>
         </div>
-      </div>
+        <p className="text-[22px] font-extrabold text-gray-900 leading-tight">
+          {reservation.productTitle}
+        </p>
+        <p className="text-[13px] text-gray-500 mt-1">{reservation.hospitalName}</p>
+      </section>
 
-      {/* Product card */}
-      <div className="bg-white mx-4 mt-3 rounded-2xl p-4 shadow-sm">
-        <div className="flex gap-3">
-          <div className="w-20 h-20 rounded-xl bg-gray-100 overflow-hidden flex-shrink-0 relative">
-            <div className="w-full h-full bg-gradient-to-br from-purple-100 to-blue-100 flex items-center justify-center"><span className="text-2xl">🦷</span></div>
+      {/* Product line */}
+      <div className="mx-2.5 py-3 border-y border-gray-100 fade-in-up">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-100 to-blue-100 flex items-center justify-center flex-shrink-0">
+            <span className="text-xl">🦷</span>
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-gray-900 line-clamp-2">
+            <p className="text-[11px] text-gray-500 leading-tight">{reservation.hospitalName}</p>
+            <p className="text-[13px] font-semibold text-gray-900 line-clamp-1 leading-tight mt-0.5">
               {reservation.productTitle}
             </p>
-            <p className="text-xs text-gray-500 mt-1">
-              {reservation.hospitalName}
-            </p>
-            <div className="flex items-center gap-1 mt-1">
-              <MapPin size={12} className="text-gray-400 flex-shrink-0" />
-              <p className="text-xs text-gray-400 truncate">
-                {reservation.location}
-              </p>
-            </div>
           </div>
+          <p className="text-[14px] font-bold text-gray-900 flex-shrink-0">
+            {basePrice.toLocaleString()}
+            <span className="text-[11px] text-gray-500 font-medium ml-0.5">원</span>
+          </p>
         </div>
       </div>
 
-      {/* Dates info */}
-      <div className="bg-white mx-4 mt-3 rounded-2xl p-4 shadow-sm">
-        <h3 className="text-sm font-bold text-gray-900 mb-3">날짜 정보</h3>
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-gray-500">방문일시</span>
-            <span className="text-sm text-gray-700">{reservation.visitDate}</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-gray-500">예약일시</span>
-            <span className="text-sm text-gray-700">
-              {reservation.reservationDate}
-            </span>
-          </div>
-          {reservation.status === 'cancelled' && reservation.cancelDate && (
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-500">취소일시</span>
-              <span className="text-sm text-red-500">
-                {reservation.cancelDate}
-              </span>
-            </div>
+      <div className="stagger-children">
+        {/* 예약 정보 */}
+        <Section title="예약 정보">
+          <Row label="예약자" value={reservation.customerName} />
+          <Row label="연락처" value={reservation.customerPhone} />
+          <Row label="내원일시" value={reservation.reservationDate || reservation.visitDate || '-'} highlight />
+          {reservation.visitDate && (
+            <Row label="방문 일시" value={reservation.visitDate} />
           )}
-        </div>
-      </div>
+          <Row label="예약번호" value={reservation.id} mono />
+        </Section>
 
-      {/* Amount */}
-      <div className="bg-white mx-4 mt-3 rounded-2xl p-4 shadow-sm">
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-bold text-gray-900">금액</span>
-          <span className="text-lg font-bold text-gray-900">
-            {reservation.amount.toLocaleString()}원
-          </span>
-        </div>
-      </div>
+        <Divider />
 
-      {/* Cancel button or disabled state */}
-      {(reservation.status === 'pending' ||
-        reservation.status === 'confirmed') && (
-        <div className="mx-4 mt-3">
-          {reservation.status === 'pending' ? (
-            <button
-              onClick={handleCancel}
-              className="w-full py-3 border border-red-400 text-red-500 rounded-xl text-sm font-medium bg-white"
-            >
-              취소하기
-            </button>
-          ) : (
-            <button
-              disabled
-              className="w-full py-3 border border-gray-200 text-gray-400 rounded-xl text-sm font-medium bg-gray-50 cursor-not-allowed"
-            >
-              취소불가
-            </button>
-          )}
-        </div>
-      )}
-
-      {/* Cancel reason for cancelled */}
-      {reservation.status === 'cancelled' && reservation.cancelReason && (
-        <div className="bg-white mx-4 mt-3 rounded-2xl p-4 shadow-sm">
-          <h3 className="text-sm font-bold text-gray-900 mb-2">취소내용</h3>
-          <div className="bg-gray-50 rounded-xl p-3">
-            <p className="text-sm text-gray-600 leading-relaxed">
-              {reservation.cancelReason}
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* Schedule change for confirmed */}
-      {reservation.status === 'confirmed' && (
-        <div className="bg-white mx-4 mt-3 rounded-2xl p-4 shadow-sm">
-          <button
-            onClick={() => setShowSchedulePicker(!showSchedulePicker)}
-            className="flex items-center justify-between w-full"
-          >
-            <div className="flex items-center gap-2">
-              <Calendar size={18} className="text-[#7C3AED]" />
-              <span className="text-sm font-bold text-gray-900">
-                스케줄 변경
-              </span>
-            </div>
-            {showSchedulePicker ? (
-              <ChevronUp size={18} className="text-gray-400" />
-            ) : (
-              <ChevronDown size={18} className="text-gray-400" />
-            )}
-          </button>
-
-          {showSchedulePicker && (
-            <div className="mt-4">
-              {/* Date picker */}
-              <p className="text-xs text-gray-500 mb-2">날짜 선택</p>
-              <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-2">
-                {dates.map((date) => {
-                  const key = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
-                  const isSelected = selectedDate === key;
-                  const dayName = dayNames[date.getDay()];
-                  const isSunday = date.getDay() === 0;
-                  return (
-                    <button
-                      key={key}
-                      onClick={() => setSelectedDate(key)}
-                      className={`flex flex-col items-center px-3 py-2 rounded-xl min-w-[52px] text-xs transition-colors ${
-                        isSelected
-                          ? 'bg-[#7C3AED] text-white'
-                          : 'bg-gray-50 text-gray-600'
-                      }`}
-                    >
-                      <span
-                        className={`text-[10px] ${
-                          isSelected
-                            ? 'text-white/80'
-                            : isSunday
-                            ? 'text-red-400'
-                            : 'text-gray-400'
-                        }`}
-                      >
-                        {dayName}
-                      </span>
-                      <span className="font-bold mt-0.5">
-                        {date.getDate()}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Time picker */}
-              <p className="text-xs text-gray-500 mb-2 mt-3">시간 선택</p>
-              <div className="grid grid-cols-4 gap-2">
-                {timeSlots.map((time) => (
-                  <button
-                    key={time}
-                    onClick={() => setSelectedTime(time)}
-                    className={`py-2 rounded-lg text-xs font-medium transition-colors ${
-                      selectedTime === time
-                        ? 'bg-[#7C3AED] text-white'
-                        : 'bg-gray-50 text-gray-600'
-                    }`}
-                  >
-                    {time}
-                  </button>
-                ))}
-              </div>
-
-              <button
-                onClick={handleScheduleChange}
-                className="w-full mt-4 py-3 bg-[#7C3AED] text-white rounded-xl text-sm font-medium"
-              >
-                스케줄변경
-              </button>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Hospital info */}
-      <div className="bg-white mx-4 mt-3 rounded-2xl p-4 shadow-sm">
-        <h3 className="text-sm font-bold text-gray-900 mb-3">병원정보</h3>
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-gray-500">병원명</span>
-            <span className="text-sm text-gray-700">
-              {reservation.hospitalName}
-            </span>
-          </div>
-          <div className="flex items-start justify-between">
-            <span className="text-sm text-gray-500 flex-shrink-0">위치</span>
-            <span className="text-sm text-gray-700 text-right ml-4">
-              {reservation.location}
-            </span>
-          </div>
-          {hospital?.tags && (
-            <div className="flex flex-wrap gap-1.5 pt-1">
-              {hospital.tags.map((tag) => (
-                <span
-                  key={tag}
-                  className="px-2.5 py-1 bg-[#EDE9FE] text-[#7C3AED] text-xs rounded-full"
+        {/* 병원 정보 */}
+        {hospital && (
+          <>
+            <Section
+              title="병원 정보"
+              right={
+                <Link
+                  href={`/hospital/detail/${hospital.id}`}
+                  className="text-[12px] text-[#7C3AED] font-semibold"
                 >
-                  {tag}
-                </span>
-              ))}
-            </div>
-          )}
-          <button className="w-full mt-2 py-2.5 border border-[#7C3AED] text-[#7C3AED] rounded-xl text-sm font-medium flex items-center justify-center gap-1.5">
-            <Navigation size={14} />
-            찾아가는길
-          </button>
-        </div>
-      </div>
+                  병원 상세
+                </Link>
+              }
+            >
+              <div className="flex gap-3 mb-3">
+                <div className="w-10 h-10 rounded-full bg-gray-100 flex-shrink-0 flex items-center justify-center text-gray-500 text-sm font-bold">
+                  {reservation.hospitalName.charAt(0)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[14px] font-bold text-gray-900 line-clamp-1">
+                    {reservation.hospitalName}
+                  </p>
+                  {hospital.address && (
+                    <p className="text-[11px] text-gray-500 mt-0.5 line-clamp-1">
+                      {hospital.address}
+                    </p>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-start gap-2 bg-gray-50 rounded-lg px-3 py-2.5">
+                <MapPin size={14} className="text-gray-400 mt-0.5 flex-shrink-0" />
+                <p className="flex-1 text-[12px] text-gray-700 leading-snug">
+                  {reservation.location}
+                </p>
+                <button
+                  onClick={copyAddr}
+                  className="text-[11px] text-gray-500 font-semibold btn-press flex items-center gap-0.5 flex-shrink-0"
+                >
+                  <Copy size={11} /> 복사
+                </button>
+              </div>
+              <div className="grid grid-cols-2 gap-2 mt-2.5">
+                <a
+                  href={`tel:${hospital.phone ?? ''}`}
+                  className="flex items-center justify-center gap-1.5 py-2.5 rounded-lg border border-gray-200 text-[12px] font-semibold text-gray-700 btn-press"
+                >
+                  <Phone size={13} /> 전화
+                </a>
+                <button
+                  onClick={() => {
+                    const q = encodeURIComponent(reservation.location || hospital.name);
+                    window.open(`https://map.naver.com/p?q=${q}`, '_blank');
+                  }}
+                  className="flex items-center justify-center gap-1.5 py-2.5 rounded-lg bg-gray-900 text-white text-[12px] font-semibold btn-press"
+                >
+                  <Navigation size={13} /> 길찾기
+                </button>
+              </div>
+            </Section>
+            <Divider />
+          </>
+        )}
 
-      {/* Customer info */}
-      <div className="bg-white mx-4 mt-3 rounded-2xl p-4 shadow-sm">
-        <h3 className="text-sm font-bold text-gray-900 mb-3">고객정보</h3>
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-gray-500">이름</span>
-            <span className="text-sm text-gray-700">
-              {reservation.customerName}
-            </span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-gray-500">휴대폰</span>
-            <span className="text-sm text-gray-700">
-              {reservation.customerPhone}
-            </span>
-          </div>
-          {reservation.paymentType && (
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-500">결제유형</span>
-              <span className="px-2.5 py-0.5 bg-[#EDE9FE] text-[#7C3AED] text-xs rounded-full font-medium">
-                {reservation.paymentType}
-              </span>
-            </div>
+        {/* 집도의 */}
+        {reservation.assignedDoctor && (
+          <>
+            <Section title="집도의">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-[#F4EFFF] text-[#7C3AED] flex-shrink-0 flex items-center justify-center text-sm font-bold">
+                  {reservation.assignedDoctor.charAt(0)}
+                </div>
+                <p className="text-[14px] font-semibold text-gray-900">
+                  {reservation.assignedDoctor}
+                </p>
+              </div>
+            </Section>
+            <Divider />
+          </>
+        )}
+
+        {/* 결제 정보 */}
+        <Section title="결제 정보">
+          <Row label="상품 금액" value={`${basePrice.toLocaleString()}원`} />
+          <Row label="부가세 VAT" value={`${vat.toLocaleString()}원`} />
+          {discount > 0 && (
+            <Row label="할인" value={`-${discount.toLocaleString()}원`} accentColor="#7C3AED" />
           )}
+          <div
+            className="mt-3 pt-3 flex items-end justify-between"
+            style={{ borderTop: '1px solid #F2F3F5' }}
+          >
+            <span className="text-[13px] font-bold text-gray-900">총 결제금액</span>
+            <span className="text-[20px] font-extrabold text-gray-900 leading-none">
+              {total.toLocaleString()}
+              <span className="text-[13px] font-semibold text-gray-600 ml-0.5">원</span>
+            </span>
+          </div>
           {reservation.paymentMethod && (
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-500">결제수단</span>
-              <span className="text-sm text-gray-700">
-                {reservation.paymentMethod}
-              </span>
-            </div>
+            <p className="text-[11px] text-gray-400 mt-2 text-right">
+              {reservation.paymentMethod} 결제
+            </p>
           )}
-        </div>
-      </div>
+        </Section>
 
-      {/* Hospital policy */}
-      <div className="bg-white mx-4 mt-3 rounded-2xl p-4 shadow-sm">
-        <button
-          onClick={() => setShowPolicy(!showPolicy)}
-          className="flex items-center justify-between w-full"
-        >
-          <h3 className="text-sm font-bold text-gray-900">병원정책</h3>
-          {showPolicy ? (
-            <ChevronUp size={18} className="text-gray-400" />
-          ) : (
-            <ChevronDown size={18} className="text-gray-400" />
-          )}
-        </button>
-        {showPolicy && (
-          <div className="mt-3 bg-gray-50 rounded-xl p-3">
-            <p className="text-xs text-gray-500 leading-relaxed">
-              - 예약 확정 후 취소 시 취소 수수료가 발생할 수 있습니다.
-            </p>
-            <p className="text-xs text-gray-500 leading-relaxed mt-1">
-              - 방문일 기준 3일 전까지 무료 취소 가능합니다.
-            </p>
-            <p className="text-xs text-gray-500 leading-relaxed mt-1">
-              - 방문일 기준 2일 전: 예약금의 50% 차감
-            </p>
-            <p className="text-xs text-gray-500 leading-relaxed mt-1">
-              - 방문일 기준 1일 전 ~ 당일: 예약금 전액 차감
-            </p>
-            <p className="text-xs text-gray-500 leading-relaxed mt-1">
-              - 노쇼(No-show) 시 예약금 전액 차감 및 향후 예약이 제한될 수
-              있습니다.
-            </p>
-            <p className="text-xs text-gray-500 leading-relaxed mt-1">
-              - 병원 사정에 의한 취소 시 전액 환불됩니다.
+        <Divider />
+
+        {/* 안내 */}
+        <Section title="안내사항">
+          <ul className="space-y-1.5">
+            {[
+              '예약 시간 10분 전까지 내원해 주세요.',
+              '예약 변경 및 취소는 예약일 3일 전까지 가능합니다.',
+              '당일 취소 시 위약금이 발생할 수 있습니다.',
+            ].map((note, i) => (
+              <li key={i} className="flex items-start gap-1.5">
+                <span className="text-gray-400 mt-0.5">•</span>
+                <span className="text-[12px] text-gray-600 leading-snug">{note}</span>
+              </li>
+            ))}
+          </ul>
+        </Section>
+
+        {/* 취소 사유 (취소된 경우) */}
+        {reservation.status === 'cancelled' && reservation.cancelReason && (
+          <div className="mx-2.5 my-2 px-3 py-3 rounded-lg bg-gray-50 fade-in-up">
+            <p className="text-[12px] font-bold text-gray-700 mb-1">취소 사유</p>
+            <p className="text-[12px] text-gray-600 leading-relaxed whitespace-pre-line">
+              {reservation.cancelReason}
             </p>
           </div>
         )}
       </div>
+
+      {/* Bottom CTA */}
+      <div
+        className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] bg-white z-50"
+        style={{
+          borderTop: '1px solid #F2F3F5',
+          boxShadow: '0 -4px 16px rgba(0,0,0,0.04)',
+        }}
+      >
+        <div className="px-2.5 py-3 flex gap-2">
+          {canCancel && (
+            <button
+              onClick={handleCancel}
+              className="flex-1 py-3.5 rounded-xl border border-gray-200 text-[14px] font-bold text-gray-700 btn-press"
+            >
+              예약 취소
+            </button>
+          )}
+          {canReview && (
+            <button
+              onClick={() =>
+                router.push(`/mypage/reviews/write?productId=${reservation.hospitalId}`)
+              }
+              className="flex-1 py-3.5 rounded-xl bg-[#7C3AED] text-white text-[14px] font-bold btn-press"
+              style={{ boxShadow: '0 6px 16px rgba(124,58,237,0.3)' }}
+            >
+              리뷰 작성하고 500P 받기
+            </button>
+          )}
+          {!canCancel && !canReview && (
+            <Link
+              href="/reservations"
+              className="flex-1 py-3.5 rounded-xl bg-gray-900 text-white text-[14px] font-bold text-center btn-press"
+            >
+              예약내역으로
+            </Link>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Section({
+  title,
+  right,
+  children,
+}: {
+  title: string;
+  right?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="px-2.5 py-4">
+      <div className="flex items-center justify-between mb-2.5">
+        <h3 className="text-[14px] font-bold text-gray-900 leading-tight">{title}</h3>
+        {right}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function Divider() {
+  return <div className="h-1 bg-gray-50" />;
+}
+
+function Row({
+  label,
+  value,
+  highlight,
+  mono,
+  accentColor,
+}: {
+  label: string;
+  value: string;
+  highlight?: boolean;
+  mono?: boolean;
+  accentColor?: string;
+}) {
+  return (
+    <div className="flex items-start justify-between py-1.5">
+      <span className="text-[12px] text-gray-500">{label}</span>
+      <span
+        className="text-[13px] font-semibold text-right break-all"
+        style={{
+          color: accentColor ?? (highlight ? '#7C3AED' : '#2B313D'),
+          fontFamily: mono ? 'ui-monospace, SFMono-Regular, monospace' : undefined,
+          fontSize: highlight ? 14 : undefined,
+        }}
+      >
+        {value}
+      </span>
     </div>
   );
 }
