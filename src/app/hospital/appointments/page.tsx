@@ -40,7 +40,15 @@ interface AppointmentData {
   assignedDoctor: string;
   memo: string;
   date: number;
+  status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
 }
+
+const statusLabel: Record<AppointmentData['status'], { label: string; bg: string; text: string }> = {
+  pending: { label: '확인 대기', bg: 'bg-[#FFF4E6]', text: 'text-[#FFA04E]' },
+  confirmed: { label: '확정', bg: 'bg-[#E6F7EB]', text: 'text-[#38B369]' },
+  completed: { label: '시술 완료', bg: 'bg-[#E6F2FF]', text: 'text-[#1084FD]' },
+  cancelled: { label: '취소됨', bg: 'bg-[#F3F4F6]', text: 'text-[#6B7280]' },
+};
 
 const DAYS = ['일', '월', '화', '수', '목', '금', '토'];
 
@@ -56,12 +64,13 @@ function reservationToAppointment(r: any): AppointmentData {
     gender: '',
     age: 0,
     phone: r.user?.phone ?? r.customer_phone ?? '',
-    treatmentName: r.product?.title ?? '',
+    treatmentName: r.product?.title ?? '예약',
     paymentType: r.payment_type ?? '현장결제',
     bookingType: '앱예약',
     assignedDoctor: r.doctor?.name ?? '미지정',
     memo: '',
     date: visitDate ? visitDate.getDate() : 0,
+    status: (r.status as AppointmentData['status']) ?? 'pending',
   };
 }
 
@@ -110,6 +119,31 @@ export default function AppointmentsPage() {
   );
 
   const selectedAppointments = appointments.filter((a) => a.date === selectedDate);
+
+  const updateApptStatus = async (id: string, status: AppointmentData['status'], cancelReason?: string) => {
+    // Optimistic
+    setAppointments((prev) => prev.map((a) => (a.id === id ? { ...a, status } : a)));
+    try {
+      const res = await fetch(`/api/reservations/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status, cancelReason }),
+      });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        showToast(j.error || '상태 변경 실패');
+      } else {
+        showToast(
+          status === 'confirmed' ? '예약을 확정했습니다.'
+            : status === 'cancelled' ? '예약을 취소했습니다.'
+            : status === 'completed' ? '시술 완료 처리했습니다.'
+            : '상태가 변경되었습니다.'
+        );
+      }
+    } catch {
+      showToast('네트워크 오류');
+    }
+  };
 
   const getSlotsForDate = (date: number): TimeSlot[] => {
     if (timeSlots[date]) return timeSlots[date];
@@ -273,16 +307,18 @@ export default function AppointmentsPage() {
                       </span>
                     </div>
                     <div className="flex-1 space-y-2">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-bold text-sm">{apt.patientName}</span>
-                        <span className="text-xs text-gray-500">
-                          {apt.gender}/{apt.age}세
+                        <span className={`px-2 py-0.5 text-[10px] font-bold rounded-full ${statusLabel[apt.status].bg} ${statusLabel[apt.status].text}`}>
+                          {statusLabel[apt.status].label}
                         </span>
                       </div>
-                      <div className="flex items-center gap-1 text-xs text-gray-500">
-                        <Phone size={12} />
-                        <span>{apt.phone}</span>
-                      </div>
+                      {apt.phone && (
+                        <div className="flex items-center gap-1 text-xs text-gray-500">
+                          <Phone size={12} />
+                          <span>{apt.phone}</span>
+                        </div>
+                      )}
                       <p className="text-sm text-gray-700 font-medium">
                         {apt.treatmentName}
                       </p>
@@ -296,6 +332,40 @@ export default function AppointmentsPage() {
                       </div>
                     </div>
                   </div>
+
+                  {/* Action buttons by status */}
+                  {apt.status === 'pending' && (
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => updateApptStatus(apt.id, 'cancelled', '병원 사정으로 거절되었습니다.')}
+                        className="flex-1 py-2 rounded-lg text-xs font-bold border border-red-300 text-red-600 btn-press"
+                      >
+                        거절
+                      </button>
+                      <button
+                        onClick={() => updateApptStatus(apt.id, 'confirmed')}
+                        className="flex-1 py-2 rounded-lg text-xs font-bold bg-[#7C3AED] text-white btn-press"
+                      >
+                        예약 확정
+                      </button>
+                    </div>
+                  )}
+                  {apt.status === 'confirmed' && (
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => updateApptStatus(apt.id, 'cancelled', '병원 사정으로 취소되었습니다.')}
+                        className="flex-1 py-2 rounded-lg text-xs font-bold border border-gray-200 text-gray-600 btn-press"
+                      >
+                        취소
+                      </button>
+                      <button
+                        onClick={() => updateApptStatus(apt.id, 'completed')}
+                        className="flex-1 py-2 rounded-lg text-xs font-bold bg-[#1084FD] text-white btn-press"
+                      >
+                        시술 완료 처리
+                      </button>
+                    </div>
+                  )}
 
                   {/* Assigned doctor */}
                   <div className="flex items-center justify-between bg-gray-50 rounded-lg p-3">

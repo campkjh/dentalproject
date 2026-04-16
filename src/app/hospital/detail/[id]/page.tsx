@@ -53,17 +53,17 @@ export default function HospitalDetailPage() {
 
   const hospital = useMemo(
     () => hospitals.find((h) => h.id === params.id),
-    [params.id]
+    [params.id, hospitals]
   );
 
   const hospitalReviews = useMemo(
     () => reviews.filter((r) => r.hospitalId === hospital?.id),
-    [hospital]
+    [hospital, reviews]
   );
 
   const hospitalProducts = useMemo(
     () => products.filter((p) => p.hospitalId === hospital?.id),
-    [hospital]
+    [hospital, products]
   );
 
   const avgRating = useMemo(() => {

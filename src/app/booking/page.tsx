@@ -8,15 +8,23 @@ import { useStore } from '@/store';
 
 const dayLabels = ['일', '월', '화', '수', '목', '금', '토'];
 
-const timeGroups: { label: string; slots: string[] }[] = [
-  { label: '오전', slots: ['10:00', '10:30', '11:00', '11:30', '12:00'] },
-  { label: '오후', slots: ['14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00'] },
-  { label: '저녁', slots: ['18:00', '18:30', '19:00', '19:30', '20:00'] },
-];
-
-const availableDates = [1, 2, 3, 6, 7, 8, 9, 10, 13, 14, 15, 16, 17, 20, 21, 22, 23, 24, 27, 28, 29, 30];
-
-const unavailableTimes = new Set(['12:00', '15:00', '18:30']);
+function generateTimeSlotsForDay(startTime?: string, endTime?: string) {
+  if (!startTime || !endTime) return { '오전': [] as string[], '오후': [] as string[], '저녁': [] as string[] };
+  const [sh, sm] = startTime.split(':').map(Number);
+  const [eh, em] = endTime.split(':').map(Number);
+  const startMin = sh * 60 + (sm || 0);
+  const endMin = eh * 60 + (em || 0);
+  const groups: Record<string, string[]> = { '오전': [], '오후': [], '저녁': [] };
+  for (let m = startMin; m < endMin; m += 30) {
+    const h = Math.floor(m / 60);
+    const min = m % 60;
+    const t = `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
+    if (h < 12) groups['오전'].push(t);
+    else if (h < 18) groups['오후'].push(t);
+    else groups['저녁'].push(t);
+  }
+  return groups;
+}
 
 export default function BookingPageWrapper() {
   return (
@@ -31,9 +39,25 @@ function BookingPage() {
   const searchParams = useSearchParams();
   const productId = searchParams.get('productId') ?? '1';
   const products = useStore((s) => s.products);
+  const hospitals = useStore((s) => s.hospitals);
   const product = products.find((p) => p.id === productId);
+  const hospital = hospitals.find((h) => h.id === product?.hospitalId);
+
+  // Map operating hours by weekday index (0=Sun, 1=Mon...)
+  const dayMap: Record<string, number> = { '일': 0, '월': 1, '화': 2, '수': 3, '목': 4, '금': 5, '토': 6 };
+  const hoursByDow = useMemo(() => {
+    const map: Record<number, { start?: string; end?: string; closed?: boolean }> = {};
+    (hospital?.operatingHours ?? []).forEach((oh) => {
+      const idx = dayMap[oh.day];
+      if (idx === undefined) return;
+      map[idx] = { start: oh.startTime, end: oh.endTime, closed: oh.isClosed };
+    });
+    return map;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hospital?.operatingHours]);
 
   const today = new Date();
+  const todayMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
   const [currentYear, setCurrentYear] = useState(today.getFullYear());
   const [currentMonth, setCurrentMonth] = useState(today.getMonth() + 1);
   const [selectedDate, setSelectedDate] = useState<number | null>(null);
@@ -61,12 +85,32 @@ function BookingPage() {
     return weeks;
   }, [currentYear, currentMonth]);
 
-  const isAvailable = (day: number) => availableDates.includes(day);
+  const isAvailable = (day: number) => {
+    const d = new Date(currentYear, currentMonth - 1, day);
+    if (d.getTime() < todayMidnight) return false;
+    const dow = d.getDay();
+    const hour = hoursByDow[dow];
+    return !!hour && !hour.closed && !!hour.start && !!hour.end;
+  };
 
   const isToday = (day: number) =>
     currentYear === today.getFullYear() &&
     currentMonth === today.getMonth() + 1 &&
     day === today.getDate();
+
+  // Build time slots for the selected day from hospital operating hours
+  const timeGroups = useMemo(() => {
+    if (!selectedDate) return [{ label: '오전', slots: [] }, { label: '오후', slots: [] }, { label: '저녁', slots: [] }];
+    const dow = new Date(currentYear, currentMonth - 1, selectedDate).getDay();
+    const hour = hoursByDow[dow];
+    if (!hour || hour.closed) return [{ label: '오전', slots: [] }, { label: '오후', slots: [] }, { label: '저녁', slots: [] }];
+    const groups = generateTimeSlotsForDay(hour.start, hour.end);
+    return [
+      { label: '오전', slots: groups['오전'] },
+      { label: '오후', slots: groups['오후'] },
+      { label: '저녁', slots: groups['저녁'] },
+    ];
+  }, [selectedDate, currentYear, currentMonth, hoursByDow]);
 
   const handleDateSelect = (day: number) => {
     if (!isAvailable(day)) return;
@@ -80,7 +124,9 @@ function BookingPage() {
 
   const handleConfirm = () => {
     setShowConfirm(false);
-    router.push(`/payment?productId=${productId}`);
+    if (!selectedDate || !selectedTime) return;
+    const dateStr = `${currentYear}-${String(currentMonth).padStart(2, '0')}-${String(selectedDate).padStart(2, '0')}`;
+    router.push(`/payment?productId=${productId}&date=${dateStr}&time=${encodeURIComponent(selectedTime)}`);
   };
 
   const goToPrevMonth = () => {
@@ -272,41 +318,22 @@ function BookingPage() {
                       {group.label}
                     </span>
                     <span className="text-[11px] text-gray-400 leading-none">
-                      {group.slots.filter((t) => !unavailableTimes.has(t)).length}개 가능
+                      {group.slots.length}개 가능
                     </span>
                   </div>
                   <div className="grid grid-cols-4 gap-2">
                     {group.slots.map((time) => {
-                      const unavailable = unavailableTimes.has(time);
                       const isSelected = selectedTime === time;
                       return (
                         <button
                           key={time}
-                          onClick={() => !unavailable && setSelectedTime(time)}
-                          disabled={unavailable}
+                          onClick={() => setSelectedTime(time)}
                           className="py-2.5 rounded-xl text-[13px] font-semibold btn-press relative"
                           style={{
-                            backgroundColor: isSelected
-                              ? '#7C3AED'
-                              : unavailable
-                              ? '#F3F4F6'
-                              : '#fff',
-                            color: isSelected
-                              ? '#fff'
-                              : unavailable
-                              ? '#D1D5DB'
-                              : '#2B313D',
-                            border: `1.5px solid ${
-                              isSelected
-                                ? 'transparent'
-                                : unavailable
-                                ? '#F3F4F6'
-                                : '#E5E7EB'
-                            }`,
-                            boxShadow: isSelected
-                              ? '0 3px 10px rgba(124,58,237,0.25)'
-                              : 'none',
-                            textDecoration: unavailable ? 'line-through' : 'none',
+                            backgroundColor: isSelected ? '#7C3AED' : '#fff',
+                            color: isSelected ? '#fff' : '#2B313D',
+                            border: `1.5px solid ${isSelected ? 'transparent' : '#E5E7EB'}`,
+                            boxShadow: isSelected ? '0 3px 10px rgba(124,58,237,0.25)' : 'none',
                             transition: 'all 220ms cubic-bezier(0.22, 1, 0.36, 1)',
                           }}
                         >
