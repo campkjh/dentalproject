@@ -141,7 +141,7 @@ interface AppState {
   // Reservations
   reservations: Reservation[];
   updateReservationStatus: (id: string, status: Reservation['status'], cancelReason?: string) => void;
-  addReservation: (reservation: Reservation) => void;
+  addReservation: (reservation: Reservation, opts?: { visitAtIso?: string }) => Promise<{ error: string | null; id?: string }>;
 
   // Posts
   posts: Post[];
@@ -340,33 +340,37 @@ export const useStore = create<AppState>((set, get) => ({
       void syncWrite('PATCH', `/api/reservations/${id}`, { status, cancelReason });
     }
   },
-  addReservation: (reservation) => {
+  addReservation: async (reservation, opts) => {
     set({ reservations: [reservation, ...get().reservations] });
-    void (async () => {
-      try {
-        const res = await fetch('/api/reservations', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            hospitalId: reservation.hospitalId,
-            visitAt: reservation.visitDate,
-            amount: reservation.amount,
-            customerName: reservation.customerName,
-            customerPhone: reservation.customerPhone,
-            paymentType: reservation.paymentType,
-            paymentMethod: reservation.paymentMethod,
-          }),
-        });
-        if (res.ok) {
-          const { id } = await res.json();
-          set({
-            reservations: get().reservations.map((r) => (r.id === reservation.id ? { ...r, id } : r)),
-          });
-        }
-      } catch {
-        // ignore — optimistic UI keeps working
+    try {
+      const res = await fetch('/api/reservations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          hospitalId: reservation.hospitalId,
+          visitAt: opts?.visitAtIso ?? reservation.visitDate,
+          amount: reservation.amount,
+          customerName: reservation.customerName,
+          customerPhone: reservation.customerPhone,
+          paymentType: reservation.paymentType,
+          paymentMethod: reservation.paymentMethod,
+        }),
+      });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        // rollback optimistic
+        set({ reservations: get().reservations.filter((r) => r.id !== reservation.id) });
+        return { error: j.error || `예약 실패 (${res.status})` };
       }
-    })();
+      const { id } = await res.json();
+      set({
+        reservations: get().reservations.map((r) => (r.id === reservation.id ? { ...r, id } : r)),
+      });
+      return { error: null, id };
+    } catch (e) {
+      set({ reservations: get().reservations.filter((r) => r.id !== reservation.id) });
+      return { error: (e as Error).message || '네트워크 오류' };
+    }
   },
 
   posts: mockPosts,

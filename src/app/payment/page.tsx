@@ -24,8 +24,11 @@ function PaymentPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const productId = searchParams.get('productId');
+  const dateParam = searchParams.get('date'); // YYYY-MM-DD
+  const timeParam = searchParams.get('time'); // HH:mm
   const { user, showToast, addReservation, products } = useStore();
   const coupons = user?.coupons ?? [];
+  const [submitting, setSubmitting] = useState(false);
 
   const [showCouponSheet, setShowCouponSheet] = useState(false);
   const [selectedCouponId, setSelectedCouponId] = useState<string | null>(null);
@@ -79,7 +82,7 @@ function PaymentPage() {
     }
   };
 
-  const handleCta = () => {
+  const handleCta = async () => {
     if (!agreedFlow) {
       setAgreedFlow(true);
       setAgreed(new Set(agreementTerms.map((t) => t.id)));
@@ -93,6 +96,22 @@ function PaymentPage() {
       showToast('필수 약관에 동의해주세요.');
       return;
     }
+    if (!user) {
+      showToast('로그인이 필요합니다.');
+      router.push('/login');
+      return;
+    }
+    if (submitting) return;
+    setSubmitting(true);
+
+    // Build the actual visit timestamp from URL params (set by booking page)
+    const visitIso = dateParam && timeParam
+      ? `${dateParam}T${timeParam}:00+09:00`
+      : new Date().toISOString();
+    const visitDateLabel = dateParam && timeParam
+      ? `${dateParam.replaceAll('-', '.')} ${timeParam}`
+      : new Date().toLocaleString('ko-KR');
+
     const newReservation = {
       id: `res-${Date.now()}`,
       status: 'pending' as const,
@@ -102,14 +121,19 @@ function PaymentPage() {
       hospitalName: product.hospitalName,
       hospitalId: product.hospitalId,
       location: product.location,
-      visitDate: '2026년 4월 15일',
-      reservationDate: '2026년 4월 15일 17:00',
+      visitDate: visitDateLabel,
+      reservationDate: visitDateLabel,
       amount: totalPrice,
-      customerName: user?.name ?? '홍길동',
-      customerPhone: user?.phone ?? '010-0000-0000',
+      customerName: user.name ?? '',
+      customerPhone: user.phone ?? '',
       paymentMethod: '카드결제',
     };
-    addReservation(newReservation);
+    const result = await addReservation(newReservation, { visitAtIso: visitIso });
+    setSubmitting(false);
+    if (result?.error) {
+      showToast(result.error);
+      return;
+    }
     showToast('결제가 완료되었습니다!');
     router.push('/payment/success');
   };
