@@ -22,6 +22,20 @@ cp .env.local.example .env.local
 
 Supabase 대시보드 `SQL Editor`를 열고 [`supabase/schema.sql`](./supabase/schema.sql) 전체 내용을 붙여넣어 실행합니다. 13개 엔티티 + 트리거 + RLS 정책이 한 번에 생성됩니다.
 
+이후 같은 SQL Editor에서 [`supabase/migrations/0001_admin.sql`](./supabase/migrations/0001_admin.sql)도 실행해 주세요. `profiles.is_admin` 컬럼 + 관리자 정책이 추가됩니다.
+
+본인을 관리자로 지정하려면:
+```sql
+update public.profiles set is_admin = true
+where id = (select id from auth.users where email = 'your@email.com');
+```
+
+병원 신청 승인은 SQL로:
+```sql
+update public.hospitals set status = 'approved' where id = '...';
+```
+또는 관리자 계정으로 로그인 후 `/api/admin/hospitals/<id>` PATCH 호출.
+
 ## 4. 시드 데이터 투입
 
 ```bash
