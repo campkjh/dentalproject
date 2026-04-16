@@ -1,26 +1,63 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import TopBar from '@/components/common/TopBar';
 import { useStore } from '@/store';
-import { hospitals } from '@/lib/mock-data';
 
-const hospital = hospitals[0];
 const MAX_LENGTH = 220;
 
 export default function IntroEditPage() {
+  const router = useRouter();
   const { showToast } = useStore();
-  const [text, setText] = useState(
-    hospital.introduction ||
-      '참포도나무치과의원은 서울 서초구에 위치한 치과 전문 의원으로, 치아교정, 임플란트, 라미네이트 등 다양한 진료를 제공합니다. 환자 한 분 한 분에게 최선의 진료를 약속드리며, 편안하고 정확한 치료를 위해 항상 노력하겠습니다.'
-  );
+  const [text, setText] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/my-hospital', { cache: 'no-store' });
+        if (!res.ok) return;
+        const { hospital } = await res.json();
+        if (cancelled) return;
+        if (!hospital) {
+          showToast('등록된 병원이 없습니다.');
+          router.push('/hospital/register');
+          return;
+        }
+        setText(hospital.introduction ?? '');
+      } finally {
+        setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [router, showToast]);
 
   const charCount = text.length;
   const isOverLimit = charCount > MAX_LENGTH;
 
-  const handleSave = () => {
-    if (isOverLimit) return;
-    showToast('병원소개가 저장되었습니다.');
+  const handleSave = async () => {
+    if (isOverLimit || saving) return;
+    setSaving(true);
+    try {
+      const res = await fetch('/api/my-hospital', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ introduction: text }),
+      });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        showToast(j.error || '저장에 실패했습니다.');
+      } else {
+        showToast('병원소개가 저장되었습니다.');
+      }
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -47,7 +84,8 @@ export default function IntroEditPage() {
           <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder="병원소개를 입력해주세요"
+            placeholder={loading ? '불러오는 중…' : '병원소개를 입력해주세요'}
+            disabled={loading}
             className={`w-full h-48 p-4 bg-gray-50 rounded-xl text-sm leading-relaxed border resize-none focus:outline-none focus:ring-1 ${
               isOverLimit
                 ? 'border-red-300 focus:ring-red-400 focus:border-red-400'
@@ -67,14 +105,14 @@ export default function IntroEditPage() {
       <div className="sticky bottom-0 bg-white px-2.5 py-4 border-t border-gray-100">
         <button
           onClick={handleSave}
-          disabled={isOverLimit}
+          disabled={isOverLimit || saving || loading}
           className={`w-full py-3.5 rounded-xl text-base font-bold transition-colors ${
-            isOverLimit
+            isOverLimit || saving || loading
               ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
               : 'bg-[#7C3AED] text-white'
           }`}
         >
-          저장하기
+          {saving ? '저장 중…' : '저장하기'}
         </button>
       </div>
     </div>

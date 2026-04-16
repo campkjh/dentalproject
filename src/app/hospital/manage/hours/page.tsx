@@ -1,11 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import TopBar from '@/components/common/TopBar';
 import { useStore } from '@/store';
-import { hospitals } from '@/lib/mock-data';
-
-const hospital = hospitals[0];
 
 interface DaySchedule {
   day: string;
@@ -14,21 +12,59 @@ interface DaySchedule {
   isClosed: boolean;
 }
 
+const DEFAULT_SCHEDULE: DaySchedule[] = ['월', '화', '수', '목', '금', '토', '일'].map((day) => ({
+  day,
+  startTime: '10:00',
+  endTime: '19:00',
+  isClosed: day === '일',
+}));
+
 export default function HoursEditPage() {
+  const router = useRouter();
   const { showToast } = useStore();
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [holidayNotice, setHolidayNotice] = useState('');
+  const [schedule, setSchedule] = useState<DaySchedule[]>(DEFAULT_SCHEDULE);
 
-  const [holidayNotice, setHolidayNotice] = useState(
-    hospital.holidayNotice || ''
-  );
-
-  const [schedule, setSchedule] = useState<DaySchedule[]>(
-    hospital.operatingHours.map((oh) => ({
-      day: oh.day,
-      startTime: oh.startTime || '10:00',
-      endTime: oh.endTime || '19:00',
-      isClosed: oh.isClosed || false,
-    }))
-  );
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/my-hospital', { cache: 'no-store' });
+        if (!res.ok) return;
+        const { hospital } = await res.json();
+        if (cancelled) return;
+        if (!hospital) {
+          showToast('등록된 병원이 없습니다.');
+          router.push('/hospital/register');
+          return;
+        }
+        setHolidayNotice(hospital.holiday_notice ?? '');
+        const oh = hospital.operating_hours ?? [];
+        if (oh.length) {
+          const ordered = ['월', '화', '수', '목', '금', '토', '일']
+            .map((d): DaySchedule => {
+              const found = oh.find((o: { day: string }) => o.day === d);
+              return found
+                ? {
+                    day: d,
+                    startTime: found.start_time ?? '10:00',
+                    endTime: found.end_time ?? '19:00',
+                    isClosed: !!found.is_closed,
+                  }
+                : { day: d, startTime: '10:00', endTime: '19:00', isClosed: d === '일' };
+            });
+          setSchedule(ordered);
+        }
+      } finally {
+        setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [router, showToast]);
 
   const [editingCell, setEditingCell] = useState<{
     dayIndex: number;
@@ -60,8 +96,37 @@ export default function HoursEditPage() {
     );
   };
 
-  const handleSave = () => {
-    showToast('운영시간이 저장되었습니다.');
+  const handleSave = async () => {
+    if (saving) return;
+    setSaving(true);
+    try {
+      const [hoursRes, infoRes] = await Promise.all([
+        fetch('/api/my-hospital/hours', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            hours: schedule.map((s) => ({
+              day: s.day,
+              start_time: s.startTime,
+              end_time: s.endTime,
+              is_closed: s.isClosed,
+            })),
+          }),
+        }),
+        fetch('/api/my-hospital', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ holidayNotice }),
+        }),
+      ]);
+      if (!hoursRes.ok || !infoRes.ok) {
+        showToast('저장에 실패했습니다.');
+      } else {
+        showToast('운영시간이 저장되었습니다.');
+      }
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -196,9 +261,14 @@ export default function HoursEditPage() {
       <div className="sticky bottom-0 bg-white px-2.5 py-4 border-t border-gray-100">
         <button
           onClick={handleSave}
-          className="w-full py-3.5 bg-[#7C3AED] text-white rounded-xl text-base font-bold"
+          disabled={saving || loading}
+          className={`w-full py-3.5 rounded-xl text-base font-bold transition-colors ${
+            saving || loading
+              ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+              : 'bg-[#7C3AED] text-white'
+          }`}
         >
-          저장하기
+          {saving ? '저장 중…' : loading ? '불러오는 중…' : '저장하기'}
         </button>
       </div>
     </div>

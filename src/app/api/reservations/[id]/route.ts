@@ -17,6 +17,10 @@ export async function PATCH(
     patch.cancel_reason = body.cancelReason;
     patch.cancel_at = new Date().toISOString();
   }
+  if (body.doctorId !== undefined) {
+    patch.doctor_id =
+      body.doctorId && /^[0-9a-f]{8}-/.test(body.doctorId) ? body.doctorId : null;
+  }
 
   const { error } = await sb.from('reservations').update(patch).eq('id', id);
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
