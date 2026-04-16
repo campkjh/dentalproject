@@ -2,9 +2,10 @@
 
 import { useState, Suspense, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Camera, Star, X, Sparkles, ChevronLeft, Check } from 'lucide-react';
+import { Camera, Star, X, Sparkles, ChevronLeft, Check, Stethoscope } from 'lucide-react';
 import { useStore } from '@/store';
-import { products, reservations } from '@/lib/mock-data';
+import { products, reservations, hospitals } from '@/lib/mock-data';
+import Avatar from '@/components/common/Avatar';
 
 export default function ReviewWritePageWrapper() {
   return (
@@ -40,6 +41,8 @@ function ReviewWritePage() {
   const { user, addReview, showToast } = useStore();
 
   const product = products.find((p) => p.id === productId) ?? products[0];
+  const hospital = hospitals.find((h) => h.id === product.hospitalId);
+  const doctors = hospital?.doctors ?? [];
 
   // Auto-filled from reservation
   const paidReservation = useMemo(() => {
@@ -64,6 +67,7 @@ function ReviewWritePage() {
   const [hasDiscountCheck, setHasDiscountCheck] = useState(hasDiscount);
   const [treatmentTiming, setTreatmentTiming] = useState<string>('');
   const [treatmentDate, setTreatmentDate] = useState('');
+  const [selectedDoctorId, setSelectedDoctorId] = useState<string>('');
   const [photoMode, setPhotoMode] = useState<PhotoMode>('before-after');
   const [beforeImage, setBeforeImage] = useState<string | null>(null);
   const [beforeDate, setBeforeDate] = useState('');
@@ -130,6 +134,8 @@ ${hasAspectFeedback && aspects.kindness >= 4 ? '원장님과 스태프분들의 
       treatmentDate: treatmentTiming || treatmentDate,
       productId: product.id,
       hospitalId: product.hospitalId,
+      doctorId: selectedDoctorId || undefined,
+      doctorName: doctors.find((d) => d.id === selectedDoctorId)?.name,
     });
     showToast('리뷰가 작성되었습니다!');
     router.push('/mypage/reviews');
@@ -322,6 +328,81 @@ ${hasAspectFeedback && aspects.kindness >= 4 ? '원장님과 스태프분들의 
                 </p>
               </div>
             </label>
+          </Section>
+
+          {/* 담당 의사 */}
+          <Section
+            title="담당 의사"
+            right={<span className="text-[11px] text-gray-400">선택</span>}
+          >
+            {doctors.length === 0 ? (
+              <p className="text-[12px] text-gray-400 text-center py-4">
+                등록된 의사가 없습니다.
+              </p>
+            ) : (
+              <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-1">
+                {doctors.map((d) => {
+                  const selected = selectedDoctorId === d.id;
+                  return (
+                    <button
+                      key={d.id}
+                      onClick={() => setSelectedDoctorId(selected ? '' : d.id)}
+                      className="flex-shrink-0 flex flex-col items-center gap-1.5 card-press relative"
+                      style={{ width: 72 }}
+                    >
+                      <div
+                        className="relative w-[60px] h-[60px] rounded-full flex items-center justify-center overflow-hidden"
+                        style={{
+                          backgroundColor: selected ? '#F4EFFF' : '#F3F4F6',
+                          boxShadow: selected
+                            ? '0 4px 12px rgba(124,58,237,0.2)'
+                            : 'none',
+                          transform: selected ? 'scale(1.05)' : 'scale(1)',
+                          transition:
+                            'all 240ms cubic-bezier(0.22, 1, 0.36, 1)',
+                        }}
+                      >
+                        {d.profileImage ? (
+                          <img
+                            src={d.profileImage}
+                            alt={d.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <Avatar role="doctor" seed={d.id} size={52} />
+                        )}
+                        {selected && (
+                          <span
+                            className="absolute inset-0 rounded-full border-2 check-pop"
+                            style={{ borderColor: '#7C3AED' }}
+                          />
+                        )}
+                      </div>
+                      <p
+                        className="text-[12px] font-semibold line-clamp-1 w-full text-center"
+                        style={{ color: selected ? '#7C3AED' : '#2B313D' }}
+                      >
+                        {d.name}
+                      </p>
+                      {d.isOwner && (
+                        <span className="text-[9px] text-gray-500 bg-gray-100 rounded px-1 py-0.5 leading-none">
+                          대표원장
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+            {selectedDoctorId && (
+              <div className="mt-2 flex items-center gap-1.5 rounded-lg bg-[#F4EFFF] px-3 py-2 fade-in-up">
+                <Stethoscope size={12} className="text-[#7C3AED]" />
+                <p className="text-[11px] text-[#7C3AED] font-semibold">
+                  {doctors.find((d) => d.id === selectedDoctorId)?.name} 원장
+                  지정하여 리뷰합니다.
+                </p>
+              </div>
+            )}
           </Section>
 
           {/* 시술 정보 */}
