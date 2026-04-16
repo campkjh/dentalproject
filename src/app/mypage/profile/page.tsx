@@ -3,7 +3,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useStore } from '@/store';
-import { categories } from '@/lib/mock-data';
 import TopBar from '@/components/common/TopBar';
 import LoginRequired from '@/components/common/LoginRequired';
 import Avatar from '@/components/common/Avatar';
@@ -40,6 +39,7 @@ export default function ProfilePage() {
     updateUser,
     interestedCategories,
     toggleInterestedCategory,
+    categories,
   } = useStore();
 
   const [sheet, setSheet] = useState<SheetType>(null);

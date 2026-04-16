@@ -3,7 +3,7 @@
 import { Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { CreditCard } from 'lucide-react';
-import { products } from '@/lib/mock-data';
+import { useStore } from '@/store';
 
 export default function PaymentSuccessPageWrapper() {
   return (
@@ -17,7 +17,7 @@ function PaymentSuccessPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const productId = searchParams.get('productId');
-
+  const products = useStore((s) => s.products);
   const product = products.find((p) => p.id === productId) ?? products[0];
 
   return (

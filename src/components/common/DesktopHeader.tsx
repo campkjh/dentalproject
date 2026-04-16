@@ -6,7 +6,6 @@ import { Search, Bell, User, Heart, ChevronDown } from 'lucide-react';
 import { useStore } from '@/store';
 import { useSession } from '@/lib/supabase/SessionProvider';
 import { useState } from 'react';
-import { categories } from '@/lib/mock-data';
 
 const navItems = [
   { href: '/', label: '홈' },
@@ -16,7 +15,7 @@ const navItems = [
 
 export default function DesktopHeader() {
   const pathname = usePathname();
-  const { isLoggedIn, user, wishlist } = useStore();
+  const { isLoggedIn, user, wishlist, categories } = useStore();
   const { signOut } = useSession();
   const logout = () => signOut();
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
