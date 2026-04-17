@@ -13,7 +13,8 @@ export const revalidate = 60; // ISR: 60초 캐시
 export async function GET() {
   const sb = await createClient();
 
-  const [hospitalsRes, productsRes, categoriesRes, reviewsRes, postsRes, commentsRes, announcementsRes] = await Promise.all([
+  // Essential data only — posts/comments/announcements load on their own pages
+  const [hospitalsRes, productsRes, categoriesRes, reviewsRes, postsRes, announcementsRes] = await Promise.all([
     sb
       .from('hospitals')
       .select(
@@ -28,31 +29,26 @@ export async function GET() {
       .select(
         `id, title, location, price, original_price, discount, rating, review_count, like_count,
          image_url, tags, category, sub_category, hospital_id,
-         hospitals (id, name, location),
-         product_options (id, name, price, sort_order)`
+         hospitals (id, name, location)`
       )
       .eq('status', 'active'),
     sb.from('categories').select('*').order('sort_order'),
     sb
       .from('reviews')
       .select(
-        `*,
-         author:profiles!reviews_author_id_fkey (id, name, profile_image),
-         doctor:doctors (id, name, title)`
+        `id, author_id, hospital_id, doctor_id, product_id, rating, content, treatment_name, total_cost, treatment_date, created_at,
+         author:profiles!reviews_author_id_fkey (name),
+         doctor:doctors (name, title)`
       )
       .order('created_at', { ascending: false })
-      .limit(200),
+      .limit(50),
     sb
       .from('posts')
-      .select(`*, author:profiles!posts_author_id_fkey (id, name, profile_image, is_doctor)`)
+      .select(`id, board_type, title, content, author_id, view_count, like_count, comment_count, tags, has_answer, answer_count, is_anonymous, anonymous_id, created_at,
+         author:profiles!posts_author_id_fkey (name, is_doctor)`)
       .order('created_at', { ascending: false })
-      .limit(100),
-    sb
-      .from('comments')
-      .select(`*, author:profiles!comments_author_id_fkey (id, name, profile_image, is_doctor)`)
-      .order('created_at', { ascending: true })
-      .limit(500),
-    sb.from('announcements').select('*').order('published_at', { ascending: false }).limit(20),
+      .limit(50),
+    sb.from('announcements').select('id, title, content, published_at').order('published_at', { ascending: false }).limit(10),
   ]);
 
   if (hospitalsRes.error) return NextResponse.json({ error: hospitalsRes.error.message }, { status: 500 });
@@ -111,21 +107,6 @@ export async function GET() {
     answerCount: p.answer_count ?? 0,
   }));
 
-  const comments = (commentsRes.data as any[] | null ?? []).map((c) => ({
-    id: c.id,
-    postId: c.post_id,
-    authorName: c.author?.name ?? '익명',
-    authorTitle: c.author?.is_doctor ? '의사' : undefined,
-    authorId: c.author_id,
-    isAnonymous: c.is_anonymous,
-    anonymousId: c.anonymous_id ?? undefined,
-    content: c.content,
-    date: c.created_at ? new Date(c.created_at).toLocaleDateString('ko-KR') : '',
-    likeCount: c.like_count ?? 0,
-    isReply: !!c.parent_comment_id,
-    parentCommentId: c.parent_comment_id ?? undefined,
-  }));
-
   const announcements = (announcementsRes.data as any[] | null ?? []).map((a) => ({
     id: a.id,
     title: a.title,
@@ -134,7 +115,7 @@ export async function GET() {
   }));
 
   return NextResponse.json(
-    { hospitals, products, reviews, categories, posts, comments, announcements },
+    { hospitals, products, reviews, categories, posts, comments: [], announcements },
     {
       headers: {
         'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',

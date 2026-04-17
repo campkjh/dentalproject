@@ -46,8 +46,11 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       setSession(data.session);
       setLoading(false);
       if (data.session?.user) {
-        await hydrateProfile(data.session.user.id);
-        await hydrateMe();
+        // Profile + me data in parallel (not sequential)
+        await Promise.all([
+          hydrateProfile(data.session.user.id),
+          hydrateMe(),
+        ]);
       }
     });
 
