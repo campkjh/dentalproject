@@ -316,7 +316,10 @@ export default function CommunityLivePage() {
       >
         <div
           key={activeCategory}
-          className={`space-y-5 ${tabDir === 'right' ? 'tab-slide-right' : 'tab-slide-left'}`}
+          className="space-y-5"
+          style={{
+            animation: 'liveFadeIn 0.35s cubic-bezier(0.22, 1, 0.36, 1) both',
+          }}
         >
           {loading && (
             <div className="py-16 text-center">
@@ -332,7 +335,7 @@ export default function CommunityLivePage() {
             </div>
           )}
           {filtered.map((q) => (
-            <QuestionThread key={q.id} question={q} />
+            <QuestionThread key={q.id} question={q} currentUserId={user?.id} />
           ))}
         </div>
         {/* Anchor — always scroll here */}
@@ -418,18 +421,19 @@ export default function CommunityLivePage() {
   );
 }
 
-function QuestionThread({ question }: { question: LiveQuestion }) {
+function QuestionThread({ question, currentUserId }: { question: LiveQuestion; currentUserId?: string }) {
   const [expanded, setExpanded] = useState(question.replies.length <= 2);
   const visibleReplies = expanded ? question.replies : question.replies.slice(0, 1);
+  const isMine = currentUserId && question.user.seed === currentUserId;
 
   return (
     <div className="fade-in-up">
-      {/* User question bubble (right-aligned) */}
-      <div className="flex justify-end gap-2">
+      {/* User question bubble */}
+      <div className={`flex gap-2 ${isMine ? 'justify-end' : 'justify-end'}`}>
         <div className="max-w-[78%] flex flex-col items-end">
           <div className="flex items-center gap-1.5 mb-1">
             <span className="text-[10px] text-gray-500 font-medium">
-              {question.user.name} · {question.time}
+              {isMine ? '나' : question.user.name} · {question.time}
             </span>
             <span className="text-[10px] font-semibold text-[#7C3AED] bg-[#EDE9FE] rounded px-1.5 py-0.5 leading-none">
               {question.category}
@@ -437,11 +441,24 @@ function QuestionThread({ question }: { question: LiveQuestion }) {
           </div>
           <div
             className="rounded-2xl rounded-tr-md px-3.5 py-2.5"
-            style={{ backgroundColor: '#2B313D', color: '#fff' }}
+            style={{
+              backgroundColor: isMine ? '#7C3AED' : '#2B313D',
+              color: '#fff',
+            }}
           >
             <p className="text-[13px] leading-relaxed whitespace-pre-wrap">
               {question.content}
             </p>
+            {/* 답변 대기 중 — 말풍선 안 */}
+            {question.replies.length === 0 && (
+              <div className="flex items-center gap-1.5 mt-2 pt-2" style={{ borderTop: '1px solid rgba(255,255,255,0.15)' }}>
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-300 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-400" />
+                </span>
+                <span className="text-[10px] font-medium text-white/70">답변 대기 중</span>
+              </div>
+            )}
           </div>
         </div>
         <Avatar seed={question.user.seed} size={28} className="flex-shrink-0" />
@@ -473,12 +490,7 @@ function QuestionThread({ question }: { question: LiveQuestion }) {
                     {r.content}
                   </p>
                 </div>
-                <div className="flex items-center gap-2 mt-1">
-                  <span className="text-[10px] text-gray-400">{r.time}</span>
-                  <button className="text-[10px] text-gray-400">
-                    <MoreHorizontal size={10} />
-                  </button>
-                </div>
+                <span className="text-[10px] text-gray-400 mt-1 block">{r.time}</span>
               </div>
             </div>
           ))}
@@ -490,21 +502,6 @@ function QuestionThread({ question }: { question: LiveQuestion }) {
               답변 {question.replies.length - 1}개 더 보기
             </button>
           )}
-        </div>
-      )}
-
-      {question.replies.length === 0 && (
-        <div className="mt-2 pl-10">
-          <div
-            className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1"
-            style={{ backgroundColor: '#FFFBEB', color: '#B45309' }}
-          >
-            <span className="relative flex h-1.5 w-1.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-500"></span>
-            </span>
-            <span className="text-[11px] font-semibold">답변 대기 중</span>
-          </div>
         </div>
       )}
     </div>
