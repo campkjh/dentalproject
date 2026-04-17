@@ -255,13 +255,18 @@ export default function CommunityLivePage() {
         </div>
       </header>
 
-      {/* Chat feed */}
+      {/* Chat feed — flex column-reverse for natural bottom-anchored scroll */}
       <div
         ref={scrollRef}
-        className="flex-1 overflow-y-auto px-2.5 pt-3 pb-4"
-        style={{ backgroundColor: '#FAFBFC' }}
+        className="flex-1 overflow-y-auto px-2.5"
+        style={{
+          backgroundColor: '#FAFBFC',
+          display: 'flex',
+          flexDirection: 'column-reverse',
+        }}
       >
-        <div className="space-y-5">
+        {/* column-reverse flips visual order, so we reverse the array to compensate */}
+        <div className="space-y-5 pt-3 pb-4">
           {filtered.length === 0 && (
             <div className="py-16 text-center">
               <p className="text-2xl mb-3">💬</p>
