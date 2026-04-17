@@ -42,7 +42,7 @@ function detectDistrict(lat: number, lng: number): string {
 
 export default function HomePage() {
   const router = useRouter();
-  const { products, hospitals, reviews, categories, isLoggedIn, recentlyViewed, recentSearches, removeRecentSearch } = useStore();
+  const { products, hospitals, reviews, categories, isLoggedIn, recentlyViewed, recentSearches, removeRecentSearch, catalogHydrated } = useStore();
   const [scrolled, setScrolled] = useState(false);
   const [placeholderIdx, setPlaceholderIdx] = useState(0);
   const [animating, setAnimating] = useState(false);
@@ -274,6 +274,9 @@ export default function HomePage() {
 
         {/* 최근 본 태그 */}
         <RecentTagsSection tags={recentSearches} onRemove={removeRecentSearch} />
+
+        {/* 스켈레톤 — catalog hydrate 전 */}
+        {!catalogHydrated && products.length === 0 && <HomeSkeleton />}
 
         {/* 최근 본 상품 */}
         <RecentlyViewedSection
@@ -595,6 +598,92 @@ const HOTSPOTS = [
     color: '#06B6D4',
   },
 ];
+
+/* ===================== Home Skeleton ===================== */
+function HomeSkeleton() {
+  return (
+    <div className="px-2.5 lg:px-6 lg:max-w-7xl lg:mx-auto space-y-8 mb-8">
+      {/* 핫플레이스 skeleton */}
+      <div>
+        <div className="skeleton h-5 w-48 mb-2" />
+        <div className="skeleton h-3 w-64 mb-4" />
+        <div className="flex gap-5">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="flex-shrink-0 flex flex-col items-center" style={{ width: 140 }}>
+              <div className="skeleton h-5 w-24 rounded-full mb-2" />
+              <div
+                className="skeleton"
+                style={{
+                  width: 140,
+                  height: 140,
+                  borderRadius: '100px 100px 100px 12px',
+                }}
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* 상품 카드 skeleton */}
+      <div>
+        <div className="skeleton h-5 w-44 mb-3" />
+        <div className="flex gap-1.5">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="flex-shrink-0 space-y-2" style={{ width: 'calc(42vw)' }}>
+              <div className="skeleton aspect-square rounded-xl" />
+              <div className="skeleton h-3 w-3/4" />
+              <div className="skeleton h-3 w-1/2" />
+              <div className="skeleton h-4 w-2/3" />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* 두 번째 상품 라인 */}
+      <div>
+        <div className="skeleton h-5 w-52 mb-3" />
+        <div className="flex gap-1.5">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="flex-shrink-0 space-y-2" style={{ width: 'calc(42vw)' }}>
+              <div className="skeleton aspect-square rounded-xl" />
+              <div className="skeleton h-3 w-3/4" />
+              <div className="skeleton h-3 w-1/2" />
+              <div className="skeleton h-4 w-2/3" />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* 후기 skeleton */}
+      <div>
+        <div className="skeleton h-5 w-40 mb-3" />
+        <div className="flex gap-2.5">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="flex-shrink-0 space-y-2" style={{ width: 286 }}>
+              <div className="skeleton h-36 rounded-xl" />
+              <div className="skeleton h-3 w-full" />
+              <div className="skeleton h-3 w-2/3" />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* 병원 skeleton */}
+      <div>
+        <div className="skeleton h-5 w-36 mb-3" />
+        <div className="flex gap-2.5">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="flex-shrink-0 space-y-2" style={{ width: 286 }}>
+              <div className="skeleton rounded-2xl" style={{ aspectRatio: '64/26' }} />
+              <div className="skeleton h-4 w-3/4" />
+              <div className="skeleton h-3 w-1/2" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function NearbyHotPlaces({
   currentLocation,
