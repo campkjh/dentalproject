@@ -622,10 +622,10 @@ function NearbyHotPlaces({
               key={spot.id}
               href={`/search?region=${encodeURIComponent(spot.region)}`}
               className="flex-shrink-0 flex flex-col items-center card-press"
-              style={{ width: 110 }}
+              style={{ width: 140 }}
             >
-              {/* Tag bubble above circle */}
-              <div className="relative mb-1.5" style={{ width: 100 }}>
+              {/* Tag bubble above shape */}
+              <div className="relative mb-1.5" style={{ width: 140 }}>
                 <div className="flex justify-center">
                   {spot.tags.map((tag) => (
                     <span
@@ -650,45 +650,22 @@ function NearbyHotPlaces({
                 </div>
               </div>
 
-              {/* Open circle with image */}
-              <div className="relative" style={{ width: 96, height: 96 }}>
-                {/* Arc ring (SVG) — open at top-right */}
-                <svg
-                  viewBox="0 0 100 100"
-                  className="absolute inset-0"
-                  style={{ width: 96, height: 96 }}
-                >
-                  <circle
-                    cx="50"
-                    cy="50"
-                    r="46"
-                    fill="none"
-                    stroke={spot.color}
-                    strokeWidth="3"
-                    strokeDasharray="260 29"
-                    strokeDashoffset="-14"
-                    strokeLinecap="round"
-                    style={{ transform: 'rotate(-90deg)', transformOrigin: '50% 50%' }}
-                  />
-                </svg>
-                {/* Photo */}
-                <div
-                  className="absolute overflow-hidden"
-                  style={{
-                    top: 6,
-                    left: 6,
-                    width: 84,
-                    height: 84,
-                    borderRadius: '50%',
-                  }}
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={spot.image}
-                    alt={spot.name}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
+              {/* Rounded shape with open corner */}
+              <div
+                className="relative overflow-hidden"
+                style={{
+                  width: 140,
+                  height: 140,
+                  aspectRatio: '1/1',
+                  borderRadius: '100px 100px 100px 12px',
+                }}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={spot.image}
+                  alt={spot.name}
+                  className="w-full h-full object-cover"
+                />
               </div>
 
               {/* Name */}
