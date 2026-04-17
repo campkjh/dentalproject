@@ -372,21 +372,34 @@ export default function CommunityLivePage() {
           paddingBottom: 'env(safe-area-inset-bottom)',
         }}
       >
-        {/* Auto-detected tag indicator */}
-        {input.trim() && (
-          <div className="px-3 pt-2 pb-1 flex items-center gap-1.5">
-            <span className="text-[10px] text-gray-400">자동 태그:</span>
+        {/* Auto-detected tag indicator with slide-down animation */}
+        <div
+          className="overflow-hidden transition-all"
+          style={{
+            maxHeight: input.trim() ? 36 : 0,
+            opacity: input.trim() ? 1 : 0,
+            paddingTop: input.trim() ? 6 : 0,
+            transition: 'max-height 280ms cubic-bezier(0.22, 1, 0.36, 1), opacity 200ms ease, padding-top 280ms ease',
+          }}
+        >
+          <div className="px-3 pb-1 flex items-center gap-1.5">
+            <span className="text-[10px] text-gray-400">자동 태그</span>
             <span
-              className="text-[11px] font-bold px-2 py-0.5 rounded-full transition-all"
+              key={detectedTag}
+              className="text-[11px] font-bold px-2 py-0.5 rounded-full"
               style={{
                 backgroundColor: detectedTag === '기타' ? '#F3F4F6' : '#EDE9FE',
                 color: detectedTag === '기타' ? '#6B7280' : '#7C3AED',
+                animation: 'liveFadeIn 0.25s cubic-bezier(0.22, 1, 0.36, 1) both',
               }}
             >
               #{detectedTag}
             </span>
           </div>
-        )}
+        </div>
+
+        {/* 인풋 상단 여백 */}
+        <div style={{ height: 6 }} />
         {/* Input bar */}
         <form
           onSubmit={(e) => {
