@@ -162,8 +162,9 @@ export default function CommunityLivePage() {
   }, [posts, comments]);
 
   const filtered = useMemo(() => {
-    if (activeCategory === '전체') return questions;
-    return questions.filter((q) => q.category === activeCategory);
+    const list = activeCategory === '전체' ? questions : questions.filter((q) => q.category === activeCategory);
+    // 채팅 순서: 오래된 글 위 → 최신 글 아래 (API는 DESC라 reverse)
+    return [...list].reverse();
   }, [questions, activeCategory]);
 
   // Scroll to bottom — on mount + whenever questions change
