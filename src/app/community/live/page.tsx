@@ -126,50 +126,55 @@ function relTime(dateStr: string) {
 
 export default function CommunityLivePage() {
   const router = useRouter();
-  const { showToast, addPost, posts, comments, user } = useStore();
+  const { showToast, addPost, user } = useStore();
   const { authUser } = useSession();
   const [activeCategory, setActiveCategory] = useState('전체');
   const [input, setInput] = useState('');
   const [pickedCategory, setPickedCategory] = useState('기타');
   const scrollRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const [questions, setQuestions] = useState<LiveQuestion[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Build live Q&A feed from DB posts/comments (boardType='question' + doctor replies)
-  const questions = useMemo<LiveQuestion[]>(() => {
-    const qPosts = posts.filter((p) => p.boardType === 'question');
-    const liveFromDb = qPosts.map((p): LiveQuestion => {
-      const category = (p.tags && p.tags[0]) || '기타';
-      const replies: Reply[] = comments
-        .filter((c) => c.postId === p.id && c.authorTitle === '의사')
-        .map((c) => ({
-          id: c.id,
-          doctorName: c.authorName,
-          doctorTitle: c.authorTitle ?? '원장',
-          doctorHospital: c.authorHospital,
-          content: c.content,
-          time: relTime(c.date),
-        }));
-      return {
-        id: p.id,
-        user: { name: p.authorName, seed: p.authorId || p.id },
-        category,
-        content: p.content,
-        time: relTime(p.date),
-        replies,
-      };
-    });
-    return liveFromDb;
-  }, [posts, comments]);
+  // Fetch from dedicated lightweight endpoint (not full catalog)
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/live-questions');
+        if (!res.ok) return;
+        const { questions: raw } = await res.json();
+        if (cancelled) return;
+        setQuestions(
+          (raw ?? []).map((q: { id: string; content: string; category: string; authorName: string; authorId: string; createdAt: string; replies: { id: string; doctorName: string; content: string; createdAt: string }[] }): LiveQuestion => ({
+            id: q.id,
+            user: { name: q.authorName, seed: q.authorId || q.id },
+            category: q.category,
+            content: q.content,
+            time: relTime(q.createdAt),
+            replies: q.replies.map((r) => ({
+              id: r.id,
+              doctorName: r.doctorName,
+              doctorTitle: '원장',
+              content: r.content,
+              time: relTime(r.createdAt),
+            })),
+          }))
+        );
+      } finally {
+        setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   const filtered = useMemo(() => {
     const list = activeCategory === '전체' ? questions : questions.filter((q) => q.category === activeCategory);
-    // 채팅 순서: 오래된 글 위 → 최신 글 아래 (API는 DESC라 reverse)
-    return [...list].reverse();
+    return list; // API already returns ascending order
   }, [questions, activeCategory]);
 
-  // Scroll to bottom — on mount + whenever questions change
+  // Scroll to bottom on data load + new messages
   useEffect(() => {
-    // Small delay to ensure DOM has rendered
     const timer = setTimeout(() => {
       bottomRef.current?.scrollIntoView({ behavior: 'instant' as ScrollBehavior });
     }, 100);
@@ -204,8 +209,20 @@ export default function CommunityLivePage() {
       showToast(result.error);
       return;
     }
+    // Add locally for instant feedback
+    setQuestions((prev) => [
+      ...prev,
+      {
+        id: result.id ?? `q-${Date.now()}`,
+        user: { name: user?.name ?? '익명', seed: user?.id ?? '' },
+        category: pickedCategory,
+        content: text,
+        time: '방금',
+        replies: [],
+      },
+    ]);
     setInput('');
-    showToast('질문이 등록되었습니다. 의사의 답변을 기다려주세요.');
+    showToast('질문이 등록되었습니다.');
   };
 
   return (
@@ -266,7 +283,13 @@ export default function CommunityLivePage() {
         style={{ backgroundColor: '#FAFBFC' }}
       >
         <div className="space-y-5">
-          {filtered.length === 0 && (
+          {loading && (
+            <div className="py-16 text-center">
+              <div className="w-8 h-8 border-2 border-[#7C3AED] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+              <p className="text-xs text-gray-400">질문을 불러오는 중...</p>
+            </div>
+          )}
+          {!loading && filtered.length === 0 && (
             <div className="py-16 text-center">
               <p className="text-2xl mb-3">💬</p>
               <p className="text-sm font-bold text-gray-700 mb-1">아직 질문이 없어요</p>
