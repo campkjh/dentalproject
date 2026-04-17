@@ -132,6 +132,7 @@ export default function CommunityLivePage() {
   const [input, setInput] = useState('');
   const [pickedCategory, setPickedCategory] = useState('기타');
   const scrollRef = useRef<HTMLDivElement>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
 
   // Build live Q&A feed from DB posts/comments (boardType='question' + doctor replies)
   const questions = useMemo<LiveQuestion[]>(() => {
@@ -165,11 +166,13 @@ export default function CommunityLivePage() {
     return questions.filter((q) => q.category === activeCategory);
   }, [questions, activeCategory]);
 
-  // Always scroll to bottom — on mount + whenever questions change
+  // Scroll to bottom — on mount + whenever questions change
   useEffect(() => {
-    requestAnimationFrame(() => {
-      scrollRef.current?.scrollTo({ top: scrollRef.current?.scrollHeight ?? 0, behavior: 'instant' as ScrollBehavior });
-    });
+    // Small delay to ensure DOM has rendered
+    const timer = setTimeout(() => {
+      bottomRef.current?.scrollIntoView({ behavior: 'instant' as ScrollBehavior });
+    }, 100);
+    return () => clearTimeout(timer);
   }, [filtered.length]);
 
   const handleSend = async () => {
@@ -255,18 +258,13 @@ export default function CommunityLivePage() {
         </div>
       </header>
 
-      {/* Chat feed — flex column-reverse for natural bottom-anchored scroll */}
+      {/* Chat feed */}
       <div
         ref={scrollRef}
-        className="flex-1 overflow-y-auto px-2.5"
-        style={{
-          backgroundColor: '#FAFBFC',
-          display: 'flex',
-          flexDirection: 'column-reverse',
-        }}
+        className="flex-1 overflow-y-auto px-2.5 pt-3 pb-4"
+        style={{ backgroundColor: '#FAFBFC' }}
       >
-        {/* column-reverse flips visual order, so we reverse the array to compensate */}
-        <div className="space-y-5 pt-3 pb-4">
+        <div className="space-y-5">
           {filtered.length === 0 && (
             <div className="py-16 text-center">
               <p className="text-2xl mb-3">💬</p>
@@ -278,6 +276,8 @@ export default function CommunityLivePage() {
             <QuestionThread key={q.id} question={q} />
           ))}
         </div>
+        {/* Anchor — always scroll here */}
+        <div ref={bottomRef} />
       </div>
 
       {/* Composer */}
