@@ -157,8 +157,7 @@ export default function CommunityLivePage() {
         replies,
       };
     });
-    // If DB has no questions yet, show seed placeholders for visual continuity
-    return liveFromDb.length > 0 ? liveFromDb : seedQuestions;
+    return liveFromDb;
   }, [posts, comments]);
 
   const filtered = useMemo(() => {
@@ -166,10 +165,12 @@ export default function CommunityLivePage() {
     return questions.filter((q) => q.category === activeCategory);
   }, [questions, activeCategory]);
 
+  // Always scroll to bottom — on mount + whenever questions change
   useEffect(() => {
-    // scroll to bottom on mount
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'instant' as ScrollBehavior });
-  }, []);
+    requestAnimationFrame(() => {
+      scrollRef.current?.scrollTo({ top: scrollRef.current?.scrollHeight ?? 0, behavior: 'instant' as ScrollBehavior });
+    });
+  }, [filtered.length]);
 
   const handleSend = async () => {
     const text = input.trim();
@@ -201,12 +202,6 @@ export default function CommunityLivePage() {
     }
     setInput('');
     showToast('질문이 등록되었습니다. 의사의 답변을 기다려주세요.');
-    setTimeout(() => {
-      scrollRef.current?.scrollTo({
-        top: scrollRef.current.scrollHeight,
-        behavior: 'smooth',
-      });
-    }, 50);
   };
 
   return (
@@ -269,7 +264,9 @@ export default function CommunityLivePage() {
         <div className="space-y-5">
           {filtered.length === 0 && (
             <div className="py-16 text-center">
-              <p className="text-sm text-gray-500">해당 카테고리의 질문이 없어요.</p>
+              <p className="text-2xl mb-3">💬</p>
+              <p className="text-sm font-bold text-gray-700 mb-1">아직 질문이 없어요</p>
+              <p className="text-xs text-gray-400">아래에서 첫 질문을 남겨보세요!</p>
             </div>
           )}
           {filtered.map((q) => (
