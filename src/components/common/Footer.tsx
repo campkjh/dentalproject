@@ -26,7 +26,7 @@ export default function Footer() {
   const pathname = usePathname();
 
   // Hide on admin and mobile-only paths
-  if (pathname.startsWith('/admin')) return null;
+  if (pathname.startsWith('/admin') || pathname.startsWith('/partner')) return null;
 
   return (
     <footer className="hidden lg:block bg-gray-900 text-gray-400 mt-auto">

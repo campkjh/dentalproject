@@ -22,7 +22,7 @@ export default function DesktopHeader() {
   const [showUserMenu, setShowUserMenu] = useState(false);
 
   // Hide on admin pages
-  if (pathname.startsWith('/admin')) return null;
+  if (pathname.startsWith('/admin') || pathname.startsWith('/partner')) return null;
 
   return (
     <header style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 9998 }} className="hidden lg:block bg-white border-b border-gray-100 shadow-sm">
