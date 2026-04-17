@@ -7,20 +7,27 @@ import ProductCard from '@/components/common/ProductCard';
 import { useStore } from '@/store';
 import { regions, dentalSubCategories } from '@/lib/mock-data';
 
-const subRegions: Record<string, string[]> = {
-  '서울시 강남구': ['전체', '압구정동', '청담동', '신사동', '논현동', '역삼동', '삼성동', '대치동'],
-  '서울시 서초구': ['전체', '서초동', '반포동', '잠원동', '양재동', '방배동'],
-  '서울시 동작구': ['전체', '사당동', '노량진동', '흑석동', '상도동'],
-  '서울시 금천구': ['전체', '가산동', '독산동', '시흥동'],
-  '서울시 양천구': ['전체', '목동', '신월동', '신정동'],
-  '서울시 마포구': ['전체', '합정동', '서교동', '연남동', '상수동', '망원동'],
-  '서울시 종로구': ['전체', '종로동', '인사동', '삼청동', '북촌', '서촌'],
-  '서울시 중구': ['전체', '명동', '을지로', '충무로', '남산동'],
-  '서울시 강동구': ['전체', '천호동', '길동', '둔촌동', '명일동'],
-  '서울시 송파구': ['전체', '잠실동', '방이동', '석촌동', '문정동'],
-  '서울시 관악구': ['전체', '신림동', '봉천동', '남현동'],
-  '서울시 영등포구': ['전체', '여의도동', '영등포동', '당산동', '문래동'],
+const PROVINCES: Record<string, string[]> = {
+  '서울': ['전체', '강남구', '서초구', '송파구', '강동구', '마포구', '용산구', '성동구', '광진구', '동대문구', '중랑구', '성북구', '강북구', '도봉구', '노원구', '은평구', '서대문구', '종로구', '중구', '동작구', '관악구', '금천구', '구로구', '영등포구', '양천구'],
+  '경기': ['전체', '수원시', '성남시', '고양시', '용인시', '부천시', '안산시', '안양시', '남양주시', '화성시', '평택시', '의정부시', '시흥시', '파주시', '광명시', '김포시', '군포시', '광주시', '이천시', '양주시', '오산시', '구리시', '안성시', '포천시', '의왕시', '하남시', '여주시', '동두천시', '과천시'],
+  '인천': ['전체', '중구', '동구', '미추홀구', '연수구', '남동구', '부평구', '계양구', '서구', '강화군', '옹진군'],
+  '부산': ['전체', '중구', '서구', '동구', '영도구', '부산진구', '동래구', '남구', '북구', '해운대구', '사하구', '금정구', '강서구', '연제구', '수영구', '사상구', '기장군'],
+  '대구': ['전체', '중구', '동구', '서구', '남구', '북구', '수성구', '달서구', '달성군'],
+  '대전': ['전체', '동구', '중구', '서구', '유성구', '대덕구'],
+  '광주': ['전체', '동구', '서구', '남구', '북구', '광산구'],
+  '울산': ['전체', '중구', '남구', '동구', '북구', '울주군'],
+  '세종': ['전체', '세종시'],
+  '강원': ['전체', '춘천시', '원주시', '강릉시', '동해시', '태백시', '속초시', '삼척시', '홍천군', '횡성군', '영월군', '평창군', '정선군', '철원군', '화천군', '양구군', '인제군', '고성군', '양양군'],
+  '충북': ['전체', '청주시', '충주시', '제천시', '보은군', '옥천군', '영동군', '증평군', '진천군', '괴산군', '음성군', '단양군'],
+  '충남': ['전체', '천안시', '공주시', '보령시', '아산시', '서산시', '논산시', '계룡시', '당진시', '금산군', '부여군', '서천군', '청양군', '홍성군', '예산군', '태안군'],
+  '전북': ['전체', '전주시', '군산시', '익산시', '정읍시', '남원시', '김제시', '완주군', '진안군', '무주군', '장수군', '임실군', '순창군', '고창군', '부안군'],
+  '전남': ['전체', '목포시', '여수시', '순천시', '나주시', '광양시', '담양군', '곡성군', '구례군', '고흥군', '보성군', '화순군', '장흥군', '강진군', '해남군', '영암군', '무안군', '함평군', '영광군', '장성군', '완도군', '진도군', '신안군'],
+  '경북': ['전체', '포항시', '경주시', '김천시', '안동시', '구미시', '영주시', '영천시', '상주시', '문경시', '경산시', '군위군', '의성군', '청송군', '영양군', '영덕군', '청도군', '고령군', '성주군', '칠곡군', '예천군', '봉화군', '울진군', '울릉군'],
+  '경남': ['전체', '창원시', '진주시', '통영시', '사천시', '김해시', '밀양시', '거제시', '양산시', '의령군', '함안군', '창녕군', '고성군', '남해군', '하동군', '산청군', '함양군', '거창군', '합천군'],
+  '제주': ['전체', '제주시', '서귀포시'],
 };
+
+const provinceKeys = Object.keys(PROVINCES);
 
 const relatedTags: Record<string, string[]> = {
   dental: ['임플란트', '치아교정', '라미네이트', '치아미백', '스케일링', '충치치료', '사랑니발치', '턱관절치료'],
@@ -218,16 +225,24 @@ function SearchPage() {
     return { region: closest.region, sub: closest.sub };
   }
 
+  const [activeProvince, setActiveProvince] = useState('서울');
+
   const handleSelectRegion = (region: string) => {
     setTempRegion(region);
-    if (subRegions[region]) setRegionStep('sub');
-    else { setSelectedRegion(region); setSelectedSubRegion(''); setShowRegionModal(false); }
+    // Provinces always have sub-regions
+    setActiveProvince(region);
+    setRegionStep('sub');
   };
 
   const handleSelectSubRegion = (sub: string) => {
-    setSelectedRegion(tempRegion);
-    setSelectedSubRegion(sub);
+    // Build region string like "서울시 강남구" or "경기 수원시"
+    const regionStr = sub === '전체'
+      ? activeProvince
+      : `${activeProvince} ${sub}`;
+    setSelectedRegion(regionStr);
+    setSelectedSubRegion(sub === '전체' ? '' : sub);
     setShowRegionModal(false);
+    setRegionStep('region');
   };
 
   // ========== CATEGORY MODE ==========
@@ -401,46 +416,70 @@ function SearchPage() {
         {/* ===== MODALS ===== */}
         {/* Region Modal */}
         {showRegionModal && (
-          <FilterModal title={regionStep === 'region' ? '지역 선택' : tempRegion} onClose={() => setShowRegionModal(false)}>
+          <FilterModal title="지역 선택" onClose={() => { setShowRegionModal(false); setRegionStep('region'); }}>
+            {/* 현재 위치 */}
             <button
               onClick={handleCurrentLocation}
-              className="flex items-center gap-3 px-5 py-3.5 border-b border-gray-50 text-[#7C3AED] hover:bg-purple-50 transition-colors"
+              className="flex items-center gap-3 px-4 py-3 border-b border-gray-100 text-[#7C3AED] hover:bg-purple-50 transition-colors"
             >
-              <div className="w-8 h-8 bg-[#EDE9FE] rounded-full flex items-center justify-center">
-                <Locate size={16} />
+              <div className="w-7 h-7 bg-[#EDE9FE] rounded-full flex items-center justify-center">
+                <Locate size={14} />
               </div>
-              <span className="text-sm font-medium">{locating ? '위치 찾는 중...' : '현재 위치로 설정'}</span>
+              <span className="text-[13px] font-medium">{locating ? '위치 찾는 중...' : '현재 위치로 설정'}</span>
             </button>
-            <div className="flex-1 overflow-y-auto">
-              {regionStep === 'region' ? (
-                <>
-                  <button onClick={() => { setSelectedRegion(''); setSelectedSubRegion(''); setShowRegionModal(false); }}
-                    className={`w-full flex items-center justify-between px-5 py-3.5 text-sm hover:bg-gray-50 ${!selectedRegion ? 'text-[#7C3AED] font-medium bg-purple-50' : 'text-gray-700'}`}>
-                    <span>전체 지역</span>
-                    {!selectedRegion && <Check size={16} className="text-[#7C3AED]" />}
-                  </button>
-                  {regions.map((region) => (
-                    <button key={region} onClick={() => handleSelectRegion(region)}
-                      className={`w-full flex items-center justify-between px-5 py-3.5 text-sm hover:bg-gray-50 transition-colors ${selectedRegion === region ? 'text-[#7C3AED] font-medium bg-purple-50' : 'text-gray-700'}`}>
-                      <span>{region}</span>
-                      {selectedRegion === region && <Check size={16} className="text-[#7C3AED]" />}
+            {/* 전체 지역 초기화 */}
+            <button
+              onClick={() => { setSelectedRegion(''); setSelectedSubRegion(''); setShowRegionModal(false); }}
+              className={`w-full flex items-center justify-between px-4 py-3 text-[13px] border-b border-gray-100 ${!selectedRegion ? 'text-[#7C3AED] font-bold bg-purple-50' : 'text-gray-600'}`}
+            >
+              <span>전체 지역</span>
+              {!selectedRegion && <Check size={14} className="text-[#7C3AED]" />}
+            </button>
+            {/* 좌: 시/도 | 우: 구/시 */}
+            <div className="flex flex-1 overflow-hidden">
+              {/* Left: provinces */}
+              <div className="w-[110px] flex-shrink-0 border-r border-gray-100 overflow-y-auto bg-gray-50">
+                {provinceKeys.map((prov) => {
+                  const isActive = activeProvince === prov;
+                  return (
+                    <button
+                      key={prov}
+                      onClick={() => setActiveProvince(prov)}
+                      className="w-full text-left px-3 py-3 text-[13px] transition-colors"
+                      style={{
+                        backgroundColor: isActive ? '#fff' : 'transparent',
+                        color: isActive ? '#7C3AED' : '#4B5563',
+                        fontWeight: isActive ? 700 : 500,
+                        borderRight: isActive ? '2px solid #7C3AED' : '2px solid transparent',
+                      }}
+                    >
+                      {prov}
                     </button>
-                  ))}
-                </>
-              ) : (
-                <>
-                  <button onClick={() => setRegionStep('region')} className="w-full flex items-center gap-2 px-5 py-3 text-sm text-[#7C3AED] hover:bg-gray-50 border-b border-gray-50">
-                    ← 지역 다시 선택
-                  </button>
-                  {(subRegions[tempRegion] ?? ['전체']).map((sub) => (
-                    <button key={sub} onClick={() => handleSelectSubRegion(sub)}
-                      className={`w-full flex items-center justify-between px-5 py-3.5 text-sm hover:bg-gray-50 ${selectedSubRegion === sub && selectedRegion === tempRegion ? 'text-[#7C3AED] font-medium bg-purple-50' : 'text-gray-700'}`}>
-                      <span>{sub}</span>
-                      {selectedSubRegion === sub && selectedRegion === tempRegion && <Check size={16} className="text-[#7C3AED]" />}
+                  );
+                })}
+              </div>
+              {/* Right: districts */}
+              <div className="flex-1 overflow-y-auto">
+                {(PROVINCES[activeProvince] ?? []).map((district) => {
+                  const fullRegion = district === '전체' ? activeProvince : `${activeProvince} ${district}`;
+                  const isSelected = selectedRegion === fullRegion || (district === '전체' && selectedRegion === activeProvince);
+                  return (
+                    <button
+                      key={district}
+                      onClick={() => handleSelectSubRegion(district)}
+                      className="w-full flex items-center justify-between px-4 py-3 text-[13px] hover:bg-gray-50 transition-colors"
+                      style={{
+                        color: isSelected ? '#7C3AED' : '#374151',
+                        fontWeight: isSelected ? 600 : 400,
+                        backgroundColor: isSelected ? '#F4EFFF' : 'transparent',
+                      }}
+                    >
+                      <span>{district}</span>
+                      {isSelected && <Check size={14} className="text-[#7C3AED]" />}
                     </button>
-                  ))}
-                </>
-              )}
+                  );
+                })}
+              </div>
             </div>
           </FilterModal>
         )}
@@ -614,38 +653,43 @@ function SearchPage() {
         </div>
       </div>
 
-      {/* Shared Modals for normal search mode */}
+      {/* Shared Region Modal for normal search mode — same split design */}
       {showRegionModal && (
-        <FilterModal title={regionStep === 'region' ? '지역 선택' : tempRegion} onClose={() => setShowRegionModal(false)}>
-          <button onClick={handleCurrentLocation} className="flex items-center gap-3 px-5 py-3.5 border-b border-gray-50 text-[#7C3AED] hover:bg-purple-50 transition-colors">
-            <div className="w-8 h-8 bg-[#EDE9FE] rounded-full flex items-center justify-center"><Locate size={16} /></div>
-            <span className="text-sm font-medium">{locating ? '위치 찾는 중...' : '현재 위치로 설정'}</span>
+        <FilterModal title="지역 선택" onClose={() => { setShowRegionModal(false); setRegionStep('region'); }}>
+          <button onClick={handleCurrentLocation} className="flex items-center gap-3 px-4 py-3 border-b border-gray-100 text-[#7C3AED] hover:bg-purple-50 transition-colors">
+            <div className="w-7 h-7 bg-[#EDE9FE] rounded-full flex items-center justify-center"><Locate size={14} /></div>
+            <span className="text-[13px] font-medium">{locating ? '위치 찾는 중...' : '현재 위치로 설정'}</span>
           </button>
-          <div className="flex-1 overflow-y-auto">
-            {regionStep === 'region' ? (
-              <>
-                <button onClick={() => { setSelectedRegion(''); setSelectedSubRegion(''); setShowRegionModal(false); }}
-                  className={`w-full flex items-center justify-between px-5 py-3.5 text-sm hover:bg-gray-50 ${!selectedRegion ? 'text-[#7C3AED] font-medium bg-purple-50' : 'text-gray-700'}`}>
-                  <span>전체 지역</span>{!selectedRegion && <Check size={16} className="text-[#7C3AED]" />}
-                </button>
-                {regions.map((r) => (
-                  <button key={r} onClick={() => handleSelectRegion(r)}
-                    className={`w-full flex items-center justify-between px-5 py-3.5 text-sm hover:bg-gray-50 ${selectedRegion === r ? 'text-[#7C3AED] font-medium bg-purple-50' : 'text-gray-700'}`}>
-                    <span>{r}</span>{selectedRegion === r && <Check size={16} className="text-[#7C3AED]" />}
+          <button onClick={() => { setSelectedRegion(''); setSelectedSubRegion(''); setShowRegionModal(false); }}
+            className={`w-full flex items-center justify-between px-4 py-3 text-[13px] border-b border-gray-100 ${!selectedRegion ? 'text-[#7C3AED] font-bold bg-purple-50' : 'text-gray-600'}`}>
+            <span>전체 지역</span>{!selectedRegion && <Check size={14} className="text-[#7C3AED]" />}
+          </button>
+          <div className="flex flex-1 overflow-hidden">
+            <div className="w-[110px] flex-shrink-0 border-r border-gray-100 overflow-y-auto bg-gray-50">
+              {provinceKeys.map((prov) => {
+                const isActive = activeProvince === prov;
+                return (
+                  <button key={prov} onClick={() => setActiveProvince(prov)}
+                    className="w-full text-left px-3 py-3 text-[13px] transition-colors"
+                    style={{ backgroundColor: isActive ? '#fff' : 'transparent', color: isActive ? '#7C3AED' : '#4B5563', fontWeight: isActive ? 700 : 500, borderRight: isActive ? '2px solid #7C3AED' : '2px solid transparent' }}>
+                    {prov}
                   </button>
-                ))}
-              </>
-            ) : (
-              <>
-                <button onClick={() => setRegionStep('region')} className="w-full flex items-center gap-2 px-5 py-3 text-sm text-[#7C3AED] hover:bg-gray-50 border-b border-gray-50">← 지역 다시 선택</button>
-                {(subRegions[tempRegion] ?? ['전체']).map((s) => (
-                  <button key={s} onClick={() => handleSelectSubRegion(s)}
-                    className={`w-full flex items-center justify-between px-5 py-3.5 text-sm hover:bg-gray-50 ${selectedSubRegion === s && selectedRegion === tempRegion ? 'text-[#7C3AED] font-medium bg-purple-50' : 'text-gray-700'}`}>
-                    <span>{s}</span>{selectedSubRegion === s && selectedRegion === tempRegion && <Check size={16} className="text-[#7C3AED]" />}
+                );
+              })}
+            </div>
+            <div className="flex-1 overflow-y-auto">
+              {(PROVINCES[activeProvince] ?? []).map((district) => {
+                const fullRegion = district === '전체' ? activeProvince : `${activeProvince} ${district}`;
+                const isSelected = selectedRegion === fullRegion || (district === '전체' && selectedRegion === activeProvince);
+                return (
+                  <button key={district} onClick={() => handleSelectSubRegion(district)}
+                    className="w-full flex items-center justify-between px-4 py-3 text-[13px] hover:bg-gray-50 transition-colors"
+                    style={{ color: isSelected ? '#7C3AED' : '#374151', fontWeight: isSelected ? 600 : 400, backgroundColor: isSelected ? '#F4EFFF' : 'transparent' }}>
+                    <span>{district}</span>{isSelected && <Check size={14} className="text-[#7C3AED]" />}
                   </button>
-                ))}
-              </>
-            )}
+                );
+              })}
+            </div>
           </div>
         </FilterModal>
       )}
