@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import Providers from "@/components/common/Providers";
-import DesktopHeader from "@/components/common/DesktopHeader";
-import Footer from "@/components/common/Footer";
+import LayoutShell from "@/components/common/LayoutShell";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -25,11 +24,7 @@ export default function RootLayout({
     <html lang="ko">
       <body className="bg-gray-50">
         <Providers>
-          <DesktopHeader />
-          <div className="max-w-[480px] lg:max-w-none mx-auto bg-white lg:bg-gray-50 w-full min-h-dvh shadow-xl lg:shadow-none lg:pt-[112px]">
-            {children}
-          </div>
-          <Footer />
+          <LayoutShell>{children}</LayoutShell>
         </Providers>
       </body>
     </html>
