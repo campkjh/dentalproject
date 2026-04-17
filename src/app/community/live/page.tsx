@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useRef, useEffect, useLayoutEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft, Send, MoreHorizontal } from 'lucide-react';
 import Avatar from '@/components/common/Avatar';
@@ -133,6 +133,27 @@ export default function CommunityLivePage() {
   const [pickedCategory, setPickedCategory] = useState('기타');
   const scrollRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  // Tab sliding indicator
+  const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const [tabIndicator, setTabIndicator] = useState({ left: 0, width: 0 });
+  const [tabDir, setTabDir] = useState<'right' | 'left'>('right');
+  const prevTabIdx = useRef(0);
+
+  const activeTabIdx = categories.indexOf(activeCategory);
+
+  const changeCategory = (c: string) => {
+    const next = categories.indexOf(c);
+    setTabDir(next >= prevTabIdx.current ? 'right' : 'left');
+    prevTabIdx.current = next;
+    setActiveCategory(c);
+  };
+
+  useLayoutEffect(() => {
+    const btn = tabRefs.current[activeTabIdx];
+    if (!btn) return;
+    setTabIndicator({ left: btn.offsetLeft, width: btn.offsetWidth });
+  }, [activeTabIdx]);
   const [questions, setQuestions] = useState<LiveQuestion[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -254,19 +275,30 @@ export default function CommunityLivePage() {
             <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
           </span>
         </div>
-        {/* Category pills */}
-        <div className="flex gap-1.5 px-2.5 pb-2 overflow-x-auto hide-scrollbar">
-          {categories.map((c) => {
+        {/* Category pills with sliding indicator */}
+        <div className="relative flex gap-1.5 px-2.5 pb-2 overflow-x-auto hide-scrollbar">
+          {/* Sliding pill bg */}
+          <span
+            aria-hidden
+            className="absolute top-0 rounded-full bg-[#2B313D] pointer-events-none"
+            style={{
+              left: tabIndicator.left,
+              width: tabIndicator.width,
+              height: 28,
+              transition: 'left 320ms cubic-bezier(0.22, 1, 0.36, 1), width 320ms cubic-bezier(0.22, 1, 0.36, 1)',
+            }}
+          />
+          {categories.map((c, i) => {
             const active = activeCategory === c;
             return (
               <button
                 key={c}
-                onClick={() => setActiveCategory(c)}
-                className="pill-tab px-3 py-1 rounded-full text-[12px] font-semibold whitespace-nowrap"
+                ref={(el) => { tabRefs.current[i] = el; }}
+                onClick={() => changeCategory(c)}
+                className="relative z-10 px-3 py-1 rounded-full text-[12px] font-semibold whitespace-nowrap"
                 style={{
-                  backgroundColor: active ? '#2B313D' : '#F4F5F7',
                   color: active ? '#fff' : '#51535C',
-                  transition: 'all 220ms cubic-bezier(0.22, 1, 0.36, 1)',
+                  transition: 'color 280ms ease',
                 }}
               >
                 {c}
@@ -282,7 +314,10 @@ export default function CommunityLivePage() {
         className="flex-1 overflow-y-auto px-2.5 pt-3 pb-4"
         style={{ backgroundColor: '#FAFBFC' }}
       >
-        <div className="space-y-5">
+        <div
+          key={activeCategory}
+          className={`space-y-5 ${tabDir === 'right' ? 'tab-slide-right' : 'tab-slide-left'}`}
+        >
           {loading && (
             <div className="py-16 text-center">
               <div className="w-8 h-8 border-2 border-[#7C3AED] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
