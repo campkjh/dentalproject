@@ -27,7 +27,7 @@ const boardTypeMap: Record<string, Post['boardType']> = {
 };
 
 export default function CommunityPage() {
-  const { isLoggedIn, posts } = useStore();
+  const { isLoggedIn, posts, catalogHydrated } = useStore();
   const [activeBoard, setActiveBoard] = useState('질문게시판');
   const [sortBy, setSortBy] = useState('최신순');
   const [showSortDropdown, setShowSortDropdown] = useState(false);
@@ -175,6 +175,9 @@ export default function CommunityPage() {
         className="flex-1 overflow-y-auto lg:max-w-7xl lg:mx-auto lg:px-6 lg:py-6 page-enter"
         style={{ paddingBottom: 86 }}
       >
+        {/* Skeleton */}
+        {!catalogHydrated && posts.length === 0 && <CommunitySkeleton />}
+
         {/* Popular posts - horizontal scroll */}
         {popularPosts.length > 0 && (
           <div className="bg-white px-2.5 py-4 mb-2">
@@ -560,6 +563,49 @@ export default function CommunityPage() {
         </button>
       )}
 
+    </div>
+  );
+}
+
+function CommunitySkeleton() {
+  return (
+    <div className="px-2.5 py-4 space-y-5">
+      {/* 인기글 skeleton */}
+      <div>
+        <div className="skeleton h-5 w-16 mb-3" />
+        <div className="flex gap-3">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="flex-shrink-0 w-52 bg-gray-50 rounded-xl p-3.5 space-y-2">
+              <div className="skeleton h-4 w-full" />
+              <div className="skeleton h-4 w-3/4" />
+              <div className="skeleton h-3 w-1/2 mt-2" />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* 라이브 Q&A skeleton */}
+      <div className="skeleton h-24 rounded-xl" />
+
+      {/* 게시글 리스트 skeleton */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <div className="skeleton h-5 w-32" />
+          <div className="skeleton h-4 w-16 rounded-full" />
+        </div>
+        {[...Array(5)].map((_, i) => (
+          <div key={i} className="py-4 border-b border-gray-50 space-y-2">
+            <div className="flex items-center gap-2 mb-1">
+              <div className="skeleton w-6 h-6 rounded-full" />
+              <div className="skeleton h-3 w-20" />
+              <div className="skeleton h-3 w-12" />
+            </div>
+            <div className="skeleton h-4 w-full" />
+            <div className="skeleton h-4 w-4/5" />
+            <div className="skeleton h-3 w-2/5 mt-1" />
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

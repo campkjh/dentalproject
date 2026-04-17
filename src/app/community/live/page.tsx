@@ -344,9 +344,19 @@ export default function CommunityLivePage() {
           }}
         >
           {loading && (
-            <div className="py-16 text-center">
-              <div className="w-8 h-8 border-2 border-[#7C3AED] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-              <p className="text-xs text-gray-400">질문을 불러오는 중...</p>
+            <div className="space-y-5 py-4">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="flex justify-end gap-2">
+                  <div className="max-w-[78%] space-y-1.5">
+                    <div className="flex justify-end gap-1.5">
+                      <div className="skeleton h-3 w-16 rounded" />
+                      <div className="skeleton h-3 w-12 rounded-full" />
+                    </div>
+                    <div className="skeleton rounded-2xl rounded-tr-md" style={{ height: 60 + i * 20, width: 200 + i * 20 }} />
+                  </div>
+                  <div className="skeleton w-7 h-7 rounded-full flex-shrink-0" />
+                </div>
+              ))}
             </div>
           )}
           {!loading && filtered.length === 0 && (
