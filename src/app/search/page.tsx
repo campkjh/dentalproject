@@ -178,8 +178,15 @@ function SearchPage() {
         setShowRegionModal(false);
         showToast(`현재 위치: ${detected.region} ${detected.sub}`);
       },
-      () => { setLocating(false); showToast('위치를 가져올 수 없습니다.'); },
-      { enableHighAccuracy: true, timeout: 10000 }
+      () => {
+        setLocating(false);
+        // Fallback to default region instead of showing error
+        setSelectedRegion('서울시 강남구');
+        setSelectedSubRegion('전체');
+        setShowRegionModal(false);
+        showToast('현재 위치 대신 강남구로 설정했어요. 직접 선택도 가능합니다.');
+      },
+      { enableHighAccuracy: false, timeout: 8000, maximumAge: 300000 }
     );
   };
 

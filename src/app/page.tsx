@@ -15,6 +15,31 @@ const searchPlaceholders = [
   '보톡스 검색해보세요',
 ];
 
+const DISTRICTS = [
+  { name: '강남구', lat: 37.4979, lng: 127.0276 },
+  { name: '서초구', lat: 37.4837, lng: 127.0324 },
+  { name: '송파구', lat: 37.5145, lng: 127.1050 },
+  { name: '강동구', lat: 37.5301, lng: 127.1237 },
+  { name: '마포구', lat: 37.5564, lng: 126.9236 },
+  { name: '종로구', lat: 37.5735, lng: 126.9790 },
+  { name: '중구', lat: 37.5636, lng: 126.9976 },
+  { name: '영등포구', lat: 37.5247, lng: 126.8965 },
+  { name: '동작구', lat: 37.5124, lng: 126.9396 },
+  { name: '관악구', lat: 37.4784, lng: 126.9516 },
+  { name: '양천구', lat: 37.5170, lng: 126.8664 },
+  { name: '금천구', lat: 37.4568, lng: 126.8956 },
+];
+
+function detectDistrict(lat: number, lng: number): string {
+  let closest = DISTRICTS[0];
+  let minDist = Infinity;
+  for (const d of DISTRICTS) {
+    const dist = Math.hypot(lat - d.lat, lng - d.lng);
+    if (dist < minDist) { minDist = dist; closest = d; }
+  }
+  return closest.name;
+}
+
 export default function HomePage() {
   const router = useRouter();
   const { products, hospitals, reviews, categories, isLoggedIn, recentlyViewed, recentSearches, removeRecentSearch } = useStore();
@@ -22,42 +47,27 @@ export default function HomePage() {
   const [placeholderIdx, setPlaceholderIdx] = useState(0);
   const [animating, setAnimating] = useState(false);
   const headerRef = useRef<HTMLDivElement>(null);
-  const [currentLocation, setCurrentLocation] = useState('위치 확인 중…');
+  const [currentLocation, setCurrentLocation] = useState('내 근처');
 
-  // Detect current location on mount
+  // Detect current location on mount — silent fallback, never shows error
   useEffect(() => {
-    if (typeof navigator === 'undefined' || !navigator.geolocation) {
-      setCurrentLocation('서울');
-      return;
+    if (typeof window === 'undefined') return;
+    if (!navigator?.geolocation) return;
+    try {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const { latitude, longitude } = pos.coords;
+          const detected = detectDistrict(latitude, longitude);
+          setCurrentLocation(detected);
+        },
+        () => {
+          // Permission denied or timeout — just keep "내 근처" silently
+        },
+        { enableHighAccuracy: false, timeout: 8000, maximumAge: 300000 }
+      );
+    } catch {
+      // Ignore — geolocation not available
     }
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const { latitude, longitude } = pos.coords;
-        const districts = [
-          { name: '강남구 역삼동', lat: 37.4979, lng: 127.0276 },
-          { name: '서초구 서초동', lat: 37.4837, lng: 127.0324 },
-          { name: '송파구 잠실동', lat: 37.5145, lng: 127.1050 },
-          { name: '강동구 천호동', lat: 37.5301, lng: 127.1237 },
-          { name: '마포구 서교동', lat: 37.5564, lng: 126.9236 },
-          { name: '종로구 종로동', lat: 37.5735, lng: 126.9790 },
-          { name: '중구 명동', lat: 37.5636, lng: 126.9976 },
-          { name: '영등포구 여의도', lat: 37.5247, lng: 126.8965 },
-          { name: '동작구 사당동', lat: 37.5124, lng: 126.9396 },
-          { name: '관악구 봉천동', lat: 37.4784, lng: 126.9516 },
-          { name: '양천구 목동', lat: 37.5170, lng: 126.8664 },
-          { name: '금천구 가산동', lat: 37.4568, lng: 126.8956 },
-        ];
-        let closest = districts[0];
-        let minDist = Infinity;
-        for (const d of districts) {
-          const dist = Math.hypot(latitude - d.lat, longitude - d.lng);
-          if (dist < minDist) { minDist = dist; closest = d; }
-        }
-        setCurrentLocation(closest.name);
-      },
-      () => setCurrentLocation('서울'),
-      { enableHighAccuracy: false, timeout: 5000 }
-    );
   }, []);
 
   const popularProducts = products.slice(0, 6);
