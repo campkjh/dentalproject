@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Search,
   ChevronDown,
@@ -32,27 +32,7 @@ interface UserRow {
   status: UserStatus;
 }
 
-const mockUsers: UserRow[] = [
-  { id: 12458, name: '김서연', email: 'seoyeon.k@gmail.com', phone: '010-1234-5678', signupType: '카카오', role: '일반', joinDate: '2026-04-05', status: '활성' },
-  { id: 12457, name: '박지훈', email: 'jihun.park@naver.com', phone: '010-2345-6789', signupType: '카카오', role: '일반', joinDate: '2026-04-05', status: '활성' },
-  { id: 12456, name: '이민재', email: 'dr.lee@hospital.co.kr', phone: '010-3456-7890', signupType: '이메일', role: '의사', joinDate: '2026-04-04', status: '활성' },
-  { id: 12455, name: '최유진', email: 'yujin.choi@gmail.com', phone: '010-4567-8901', signupType: '애플', role: '일반', joinDate: '2026-04-04', status: '활성' },
-  { id: 12454, name: '정하늘', email: 'haneul.j@daum.net', phone: '010-5678-9012', signupType: '카카오', role: '일반', joinDate: '2026-04-03', status: '정지' },
-  { id: 12453, name: '한소희', email: 'sohee.han@hospital.co.kr', phone: '010-6789-0123', signupType: '이메일', role: '병원관리자', joinDate: '2026-04-03', status: '활성' },
-  { id: 12452, name: '오승우', email: 'dr.oh@smile-dental.kr', phone: '010-7890-1234', signupType: '이메일', role: '의사', joinDate: '2026-04-02', status: '활성' },
-  { id: 12451, name: '윤다은', email: 'daeun.yoon@gmail.com', phone: '010-8901-2345', signupType: '애플', role: '일반', joinDate: '2026-04-02', status: '탈퇴' },
-  { id: 12450, name: '임재현', email: 'jh.lim@naver.com', phone: '010-9012-3456', signupType: '카카오', role: '일반', joinDate: '2026-04-01', status: '활성' },
-  { id: 12449, name: '송미래', email: 'mirae.song@hospital.co.kr', phone: '010-0123-4567', signupType: '이메일', role: '병원관리자', joinDate: '2026-04-01', status: '활성' },
-  { id: 12448, name: '강도윤', email: 'dy.kang@gmail.com', phone: '010-1111-2222', signupType: '카카오', role: '일반', joinDate: '2026-03-31', status: '활성' },
-  { id: 12447, name: '배수진', email: 'dr.bae@beauty-clinic.kr', phone: '010-3333-4444', signupType: '이메일', role: '의사', joinDate: '2026-03-30', status: '정지' },
-];
-
-const stats = [
-  { label: '전체 회원', value: '12,458', icon: Users, color: 'bg-blue-500' },
-  { label: '일반 회원', value: '11,230', icon: UserCheck, color: 'bg-green-500' },
-  { label: '의사 회원', value: '886', icon: Stethoscope, color: 'bg-purple-500' },
-  { label: '병원관리자', value: '342', icon: Building2, color: 'bg-orange-500' },
-];
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 const statusBadge: Record<UserStatus, string> = {
   '활성': 'bg-green-100 text-green-700',
@@ -77,10 +57,46 @@ const filterOptions = ['전체', '일반회원', '의사', '병원관리자'] as
 export default function AdminUsersPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filter, setFilter] = useState<(typeof filterOptions)[number]>('전체');
+  const [users, setUsers] = useState<UserRow[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/admin/users', { cache: 'no-store' });
+        if (!res.ok) return;
+        const { users: apiUsers } = await res.json();
+        if (cancelled) return;
+        setUsers(
+          (apiUsers ?? []).map((u: any, i: number) => ({
+            id: i + 1,
+            name: u.name || '(미입력)',
+            email: u.email || '-',
+            phone: u.phone || '-',
+            signupType: (u.login_type === 'kakao' ? '카카오' : u.login_type === 'apple' ? '애플' : '이메일') as SignupType,
+            role: (u.is_admin ? '병원관리자' : u.is_doctor ? '의사' : '일반') as UserRole,
+            joinDate: u.created_at ? new Date(u.created_at).toISOString().slice(0, 10) : '',
+            status: '활성' as UserStatus,
+          }))
+        );
+      } finally {
+        setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  const stats = [
+    { label: '전체 회원', value: users.length.toLocaleString(), icon: Users, color: 'bg-blue-500' },
+    { label: '일반 회원', value: users.filter(u => u.role === '일반').length.toLocaleString(), icon: UserCheck, color: 'bg-green-500' },
+    { label: '의사 회원', value: users.filter(u => u.role === '의사').length.toLocaleString(), icon: Stethoscope, color: 'bg-purple-500' },
+    { label: '병원관리자', value: users.filter(u => u.role === '병원관리자').length.toLocaleString(), icon: Building2, color: 'bg-orange-500' },
+  ];
   const [currentPage, setCurrentPage] = useState(1);
   const [openDropdownId, setOpenDropdownId] = useState<number | null>(null);
   const [confirmModal, setConfirmModal] = useState<{ type: '정지' | '삭제'; user: UserRow } | null>(null);
-  const [users, setUsers] = useState<UserRow[]>(mockUsers);
+  // Replaced by state + API fetch above
 
   const filteredUsers = users.filter((user) => {
     const matchesSearch =

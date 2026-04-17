@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   Search,
   Calendar,
@@ -32,22 +32,7 @@ interface Reservation {
   doctor: string;
 }
 
-// ---------- Mock Data ----------
-const mockReservations: Reservation[] = [
-  { id: 'RV-20260406-001', customer: '김서연', product: '원데이 치아미백 3회', hospital: '참포도나무치과의원', dateTime: '2026-04-10 14:30', amount: 55000, paymentMethod: 'app', status: 'pending', doctor: '이정민 원장' },
-  { id: 'RV-20260406-002', customer: '박지훈', product: '무삭제 라미네이트 1개', hospital: '레브치과의원', dateTime: '2026-04-11 10:00', amount: 759000, paymentMethod: 'app', status: 'confirmed', doctor: '김태준 원장' },
-  { id: 'RV-20260406-003', customer: '이하은', product: '올타이트 리프팅 100샷', hospital: '온리프성형외과의원', dateTime: '2026-04-09 11:00', amount: 195900, paymentMethod: 'onsite', status: 'completed', doctor: '박서윤 원장' },
-  { id: 'RV-20260406-004', customer: '정민수', product: '디데이 치아미백 11', hospital: '참포도나무치과의원', dateTime: '2026-04-08 16:00', amount: 759000, paymentMethod: 'app', status: 'cancelled', doctor: '이정민 원장' },
-  { id: 'RV-20260406-005', customer: '최유진', product: '프리미엄 스케일링', hospital: '아이디치과', dateTime: '2026-04-12 09:30', amount: 45000, paymentMethod: 'app', status: 'pending', doctor: '한소희 원장' },
-  { id: 'RV-20260405-006', customer: '윤도현', product: '임플란트 1개 (오스템)', hospital: '참포도나무치과의원', dateTime: '2026-04-15 13:00', amount: 990000, paymentMethod: 'app', status: 'confirmed', doctor: '이정민 원장' },
-  { id: 'RV-20260405-007', customer: '강지아', product: '보톡스 이마 + 미간', hospital: '에이블피부과', dateTime: '2026-04-07 15:30', amount: 120000, paymentMethod: 'onsite', status: 'completed', doctor: '조현우 원장' },
-  { id: 'RV-20260405-008', customer: '송태민', product: '라식 양안 수술', hospital: '밝은눈안과', dateTime: '2026-04-20 10:00', amount: 1650000, paymentMethod: 'app', status: 'confirmed', doctor: '최영진 원장' },
-  { id: 'RV-20260404-009', customer: '임수빈', product: '필러 애교살 (쥬비덤)', hospital: '온리프성형외과의원', dateTime: '2026-04-06 14:00', amount: 245000, paymentMethod: 'app', status: 'pending', doctor: '박서윤 원장' },
-  { id: 'RV-20260404-010', customer: '오지환', product: '레이저 토닝 10회', hospital: '에이블피부과', dateTime: '2026-04-05 11:00', amount: 350000, paymentMethod: 'onsite', status: 'completed', doctor: '조현우 원장' },
-  { id: 'RV-20260403-011', customer: '배수지', product: '인비절라인 교정 패키지', hospital: '바른이치과', dateTime: '2026-04-18 09:00', amount: 4200000, paymentMethod: 'app', status: 'confirmed', doctor: '정해인 원장' },
-  { id: 'RV-20260403-012', customer: '남주혁', product: '라섹 양안 수술', hospital: '밝은눈안과', dateTime: '2026-04-22 10:30', amount: 1350000, paymentMethod: 'app', status: 'pending', doctor: '최영진 원장' },
-  { id: 'RV-20260402-013', customer: '한지민', product: '코필러 (레스틸렌)', hospital: '온리프성형외과의원', dateTime: '2026-04-03 16:00', amount: 195000, paymentMethod: 'onsite', status: 'cancelled', doctor: '박서윤 원장' },
-];
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 const statusTabs: { key: ReservationStatus | 'all'; label: string }[] = [
   { key: 'all', label: '전체' },
@@ -80,6 +65,38 @@ const PAGE_SIZE = 10;
 
 export default function AdminReservationsPage() {
   const [statusFilter, setStatusFilter] = useState<ReservationStatus | 'all'>('all');
+  const [apiReservations, setApiReservations] = useState<Reservation[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/admin/reservations', { cache: 'no-store' });
+        if (!res.ok) return;
+        const { reservations } = await res.json();
+        if (cancelled) return;
+        setApiReservations(
+          (reservations ?? []).map((r: any) => ({
+            id: r.id,
+            customer: r.user?.name ?? r.customer_name ?? '환자',
+            product: r.product?.title ?? '-',
+            hospital: r.hospital?.name ?? '-',
+            dateTime: r.visit_at
+              ? new Date(r.visit_at).toLocaleString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
+              : '-',
+            amount: r.amount ?? 0,
+            paymentMethod: (r.payment_method ? 'app' : 'onsite') as 'app' | 'onsite',
+            status: r.status as ReservationStatus,
+            doctor: r.doctor?.name ? `${r.doctor.name} 원장` : '미지정',
+          }))
+        );
+      } finally {
+        setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
   const [search, setSearch] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -92,7 +109,7 @@ export default function AdminReservationsPage() {
 
   // ---- Filter & Sort ----
   const filtered = useMemo(() => {
-    let list = [...mockReservations];
+    let list = [...apiReservations];
     if (statusFilter !== 'all') list = list.filter((r) => r.status === statusFilter);
     if (search.trim()) {
       const q = search.trim().toLowerCase();

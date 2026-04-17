@@ -78,17 +78,58 @@ function SearchPage() {
       : selectedRegion
     : '';
 
+  // --- Location filter helper ---
+  const matchesRegion = (p: typeof products[0]) => {
+    if (!selectedRegion) return true;
+    const loc = (p.location ?? '') + (p.hospitalName ?? '');
+    // Extract district from selectedRegion like "서울시 강남구" → "강남"
+    const regionKey = selectedRegion.replace(/시\s*/, '').replace(/구$/, '');
+    if (selectedSubRegion && selectedSubRegion !== '전체') {
+      return loc.includes(selectedSubRegion) || loc.includes(regionKey);
+    }
+    return loc.includes(regionKey) || loc.includes(selectedRegion);
+  };
+
+  // --- Price filter helper ---
+  const matchesPrice = (p: typeof products[0]) => {
+    if (selectedPrice === '전체') return true;
+    if (selectedPrice === '10만원 이하') return p.price <= 100000;
+    if (selectedPrice === '10~50만원') return p.price > 100000 && p.price <= 500000;
+    if (selectedPrice === '50~100만원') return p.price > 500000 && p.price <= 1000000;
+    if (selectedPrice === '100만원 이상') return p.price > 1000000;
+    return true;
+  };
+
+  // --- Sort helper ---
+  const sortResults = (arr: typeof products) => {
+    const sorted = [...arr];
+    if (selectedSort === '가격 낮은순') sorted.sort((a, b) => a.price - b.price);
+    else if (selectedSort === '가격 높은순') sorted.sort((a, b) => b.price - a.price);
+    else if (selectedSort === '리뷰 많은순') sorted.sort((a, b) => b.reviewCount - a.reviewCount);
+    else if (selectedSort === '평점 높은순') sorted.sort((a, b) => b.rating - a.rating);
+    return sorted;
+  };
+
   const categoryResults = isCategoryMode
-    ? (activeCategory ? products.filter(p => p.category === activeCategory) : products)
+    ? sortResults(
+        (activeCategory ? products.filter(p => p.category === activeCategory) : products)
+          .filter(matchesRegion)
+          .filter(matchesPrice)
+      )
     : [];
 
   const searchResults = hasSearched
-    ? products.filter(
-        (p) =>
-          p.title.includes(query) ||
-          p.tags.some((t) => t.includes(query)) ||
-          p.hospitalName.includes(query) ||
-          p.subCategory.includes(query)
+    ? sortResults(
+        products
+          .filter(
+            (p) =>
+              p.title.includes(query) ||
+              p.tags.some((t) => t.includes(query)) ||
+              p.hospitalName.includes(query) ||
+              p.subCategory.includes(query)
+          )
+          .filter(matchesRegion)
+          .filter(matchesPrice)
       )
     : [];
 
@@ -109,16 +150,47 @@ function SearchPage() {
     setLocating(true);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        setSelectedRegion('서울시 강남구');
-        setSelectedSubRegion('역삼동');
+        // Map lat/lng to nearest Seoul district
+        const { latitude, longitude } = pos.coords;
+        const detected = detectSeoulDistrict(latitude, longitude);
+        setSelectedRegion(detected.region);
+        setSelectedSubRegion(detected.sub);
         setLocating(false);
         setShowRegionModal(false);
-        showToast(`현재 위치: 서울시 강남구 역삼동`);
+        showToast(`현재 위치: ${detected.region} ${detected.sub}`);
       },
       () => { setLocating(false); showToast('위치를 가져올 수 없습니다.'); },
       { enableHighAccuracy: true, timeout: 10000 }
     );
   };
+
+  // Simple lat/lng → Seoul district mapping (center coordinates of major districts)
+  function detectSeoulDistrict(lat: number, lng: number): { region: string; sub: string } {
+    const districts: { region: string; sub: string; lat: number; lng: number }[] = [
+      { region: '서울시 강남구', sub: '역삼동', lat: 37.4979, lng: 127.0276 },
+      { region: '서울시 서초구', sub: '서초동', lat: 37.4837, lng: 127.0324 },
+      { region: '서울시 송파구', sub: '잠실동', lat: 37.5145, lng: 127.1050 },
+      { region: '서울시 강동구', sub: '천호동', lat: 37.5301, lng: 127.1237 },
+      { region: '서울시 마포구', sub: '서교동', lat: 37.5564, lng: 126.9236 },
+      { region: '서울시 종로구', sub: '종로동', lat: 37.5735, lng: 126.9790 },
+      { region: '서울시 중구', sub: '명동', lat: 37.5636, lng: 126.9976 },
+      { region: '서울시 영등포구', sub: '여의도동', lat: 37.5247, lng: 126.8965 },
+      { region: '서울시 동작구', sub: '사당동', lat: 37.5124, lng: 126.9396 },
+      { region: '서울시 금천구', sub: '가산동', lat: 37.4568, lng: 126.8956 },
+      { region: '서울시 양천구', sub: '목동', lat: 37.5170, lng: 126.8664 },
+      { region: '서울시 관악구', sub: '봉천동', lat: 37.4784, lng: 126.9516 },
+    ];
+    let closest = districts[0];
+    let minDist = Infinity;
+    for (const d of districts) {
+      const dist = Math.hypot(lat - d.lat, lng - d.lng);
+      if (dist < minDist) {
+        minDist = dist;
+        closest = d;
+      }
+    }
+    return { region: closest.region, sub: closest.sub };
+  }
 
   const handleSelectRegion = (region: string) => {
     setTempRegion(region);
