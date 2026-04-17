@@ -3,7 +3,27 @@
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useState } from 'react';
-import { ChevronDown, ChevronRight, Menu, X, Bell, Search } from 'lucide-react';
+import {
+  ChevronDown,
+  ChevronRight,
+  Menu,
+  Bell,
+  Search,
+  Home,
+  MessageSquare,
+  Building2,
+  Coins,
+  Gift,
+  HelpCircle,
+  PieChart,
+  TrendingUp,
+  Phone,
+  CalendarDays,
+  Star,
+  Megaphone,
+  CreditCard,
+  type LucideIcon,
+} from 'lucide-react';
 
 interface NavChild {
   label: string;
@@ -12,42 +32,42 @@ interface NavChild {
 interface NavItem {
   label: string;
   href?: string;
-  icon: string;
+  Icon: LucideIcon;
   children?: NavChild[];
 }
 
 const NAV: NavItem[] = [
-  { label: '홈', icon: '🏠', href: '/partner' },
-  { label: '알림', icon: '🔔', href: '/partner/notices' },
-  { label: '채팅상담', icon: '💬', href: '/partner/chat' },
+  { label: '홈', Icon: Home, href: '/partner' },
+  { label: '알림', Icon: Bell, href: '/partner/notices' },
+  { label: '채팅상담', Icon: MessageSquare, href: '/partner/chat' },
   {
     label: '병원 관리',
-    icon: '🏥',
+    Icon: Building2,
     children: [
       { label: '병원 정보', href: '/partner/hospital-info' },
       { label: '의사 정보', href: '/partner/doctors' },
       { label: '연락처 정보', href: '/partner/contact' },
     ],
   },
-  { label: '병원포인트', icon: '💰', href: '/partner/points' },
+  { label: '병원포인트', Icon: Coins, href: '/partner/points' },
   {
     label: '이벤트 관리',
-    icon: '🎁',
+    Icon: Gift,
     children: [
       { label: '승인 요청 내역', href: '/partner/events/approval' },
       { label: '이벤트 목록', href: '/partner/events/list' },
     ],
   },
-  { label: '이벤트 Q&A 관리', icon: '❓', href: '/partner/events/qa' },
-  { label: '예산 관리', icon: '📊', href: '/partner/budget' },
-  { label: '성과 관리', icon: '📈', href: '/partner/performance' },
-  { label: '상담 관리', icon: '📞', href: '/partner/consults' },
-  { label: '예약 관리', icon: '📅', href: '/partner/reservations' },
-  { label: '후기 관리', icon: '⭐', href: '/partner/reviews' },
-  { label: '부가광고 관리', icon: '📣', href: '/partner/ads' },
+  { label: '이벤트 Q&A 관리', Icon: HelpCircle, href: '/partner/events/qa' },
+  { label: '예산 관리', Icon: PieChart, href: '/partner/budget' },
+  { label: '성과 관리', Icon: TrendingUp, href: '/partner/performance' },
+  { label: '상담 관리', Icon: Phone, href: '/partner/consults' },
+  { label: '예약 관리', Icon: CalendarDays, href: '/partner/reservations' },
+  { label: '후기 관리', Icon: Star, href: '/partner/reviews' },
+  { label: '부가광고 관리', Icon: Megaphone, href: '/partner/ads' },
   {
     label: '앱결제 관리',
-    icon: '💳',
+    Icon: CreditCard,
     children: [
       { label: '앱결제 이용 정보', href: '/partner/app-pay/info' },
       { label: '앱결제 정보 관리', href: '/partner/app-pay/payments' },
@@ -110,7 +130,7 @@ export default function PartnerLayout({ children }: { children: React.ReactNode 
                   } hover:bg-gray-50`}
                 >
                   <span className="flex items-center gap-2">
-                    <span className="text-base w-5 text-center">{item.icon}</span>
+                    <item.Icon size={16} className="flex-shrink-0" />
                     {item.label}
                   </span>
                   {isOpen ? (
@@ -153,7 +173,7 @@ export default function PartnerLayout({ children }: { children: React.ReactNode 
                 active ? 'text-[#7C3AED] font-semibold bg-[#F4EFFF]' : 'text-gray-700'
               } hover:bg-gray-50`}
             >
-              <span className="text-base w-5 text-center">{item.icon}</span>
+              <item.Icon size={16} className="flex-shrink-0" />
               {item.label}
             </Link>
           );
