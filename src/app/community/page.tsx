@@ -540,17 +540,72 @@ export default function CommunityPage() {
         </div>
       </div>
 
-      {/* Floating write button */}
-      <Link
-        href={`/community/write?board=${boardType}`}
-        className="fixed bottom-24 right-4 max-w-[480px] z-30 lg:fixed lg:bottom-8 lg:right-8"
+      {/* Floating write button — SVG design replica + train animation */}
+      <div
+        className="fixed bottom-24 z-30"
         style={{ right: 'calc(50% - 215px + 16px)' }}
       >
-        <div className="bg-[#7C3AED] text-white rounded-full px-5 py-3 shadow-lg flex items-center gap-2 text-[15px] font-semibold">
-          <IconPencil size={20} />
-          {writeButtonLabel}
-        </div>
-      </Link>
+        {/* Train track (curved path) */}
+        <svg
+          className="absolute pointer-events-none"
+          style={{ bottom: -8, right: -12, width: 160, height: 80 }}
+          viewBox="0 0 160 80"
+          fill="none"
+        >
+          <path
+            d="M10 70 Q 40 10, 80 40 T 150 20"
+            stroke="#E0D4FF"
+            strokeWidth="1.5"
+            strokeDasharray="4 4"
+            fill="none"
+          />
+          {/* Moving dot (train) */}
+          <circle r="3" fill="#9255FD">
+            <animateMotion
+              dur="3s"
+              repeatCount="indefinite"
+              path="M10 70 Q 40 10, 80 40 T 150 20"
+            />
+          </circle>
+        </svg>
+
+        <Link
+          href={`/community/write?board=${boardType}`}
+          className="relative block btn-press"
+        >
+          <div
+            className="flex items-center rounded-full overflow-hidden"
+            style={{
+              backgroundColor: '#9255FD',
+              height: 44,
+              paddingRight: 18,
+              boxShadow: '0 6px 20px rgba(146,85,253,0.35)',
+            }}
+          >
+            {/* Left circle with ? icon */}
+            <div
+              className="flex items-center justify-center flex-shrink-0"
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: '50%',
+                backgroundColor: '#DECBFF',
+                border: '1.5px solid #843DFF',
+                marginLeft: 4,
+              }}
+            >
+              <span style={{ color: '#6C19FF', fontSize: 18, fontWeight: 800, lineHeight: 1 }}>?</span>
+            </div>
+            {/* Text */}
+            <span
+              className="ml-2.5 text-white font-semibold whitespace-nowrap"
+              style={{ fontSize: 14 }}
+            >
+              {writeButtonLabel}
+            </span>
+          </div>
+        </Link>
+      </div>
 
       {/* Scroll to top */}
       {showScrollTop && (
