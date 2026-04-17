@@ -329,6 +329,9 @@ export default function HomePage() {
           </div>
         )}
 
+        {/* 근처 핫플레이스 알아보기 */}
+        <NearbyHotPlaces currentLocation={currentLocation} hospitals={hospitals} />
+
         {/* 나한테 꿀이되는 후기 */}
         <div className="mb-8">
           <div className="flex items-center justify-between px-2.5 lg:px-6 lg:max-w-7xl lg:mx-auto mb-3">
@@ -529,6 +532,147 @@ export default function HomePage() {
         <p>Copyright(c) 000. All right reserved.</p>
       </div>
 
+    </div>
+  );
+}
+
+/* ===================== 근처 핫플레이스 ===================== */
+
+const HOTSPOTS = [
+  {
+    id: 'gangnam',
+    name: '강남',
+    region: '서울시 강남구',
+    tags: ['#프리미엄 치과', '#강남 맛집', '#역삼역'],
+    gradient: 'from-violet-600 to-indigo-500',
+    emoji: '🏙️',
+  },
+  {
+    id: 'seocho',
+    name: '서초',
+    region: '서울시 서초구',
+    tags: ['#교대역 치과', '#양재 카페', '#서초 힐링'],
+    gradient: 'from-blue-500 to-cyan-400',
+    emoji: '🌿',
+  },
+  {
+    id: 'songpa',
+    name: '잠실·송파',
+    region: '서울시 송파구',
+    tags: ['#잠실 피부과', '#석촌호수', '#롯데타워'],
+    gradient: 'from-rose-500 to-orange-400',
+    emoji: '🎡',
+  },
+  {
+    id: 'mapo',
+    name: '마포·홍대',
+    region: '서울시 마포구',
+    tags: ['#홍대 성형', '#연남동 카페', '#합정역'],
+    gradient: 'from-amber-500 to-yellow-400',
+    emoji: '🎵',
+  },
+  {
+    id: 'jongno',
+    name: '종로·광화문',
+    region: '서울시 종로구',
+    tags: ['#광화문 치과', '#인사동', '#북촌한옥'],
+    gradient: 'from-emerald-600 to-teal-400',
+    emoji: '🏛️',
+  },
+  {
+    id: 'yeongdeungpo',
+    name: '여의도',
+    region: '서울시 영등포구',
+    tags: ['#여의도 피부과', '#IFC몰', '#한강뷰'],
+    gradient: 'from-sky-500 to-blue-400',
+    emoji: '🌉',
+  },
+];
+
+function NearbyHotPlaces({
+  currentLocation,
+  hospitals,
+}: {
+  currentLocation: string;
+  hospitals: { id: string; location: string; name: string }[];
+}) {
+  // Sort hotspots: current location first
+  const sorted = [...HOTSPOTS].sort((a, b) => {
+    const aMatch = currentLocation.includes(a.name) ? -1 : 0;
+    const bMatch = currentLocation.includes(b.name) ? -1 : 0;
+    return aMatch - bMatch;
+  });
+
+  // Count hospitals per region
+  const countByRegion = (region: string) => {
+    const key = region.replace(/시\s*/, '').replace(/구$/, '');
+    return hospitals.filter((h) => (h.location ?? '').includes(key)).length;
+  };
+
+  return (
+    <div className="mb-8">
+      <div className="px-2.5 lg:px-6 lg:max-w-7xl lg:mx-auto mb-3">
+        <h2 className="font-bold text-[16px] text-gray-900">근처 핫플레이스 알아보기</h2>
+        <p className="text-[12px] text-gray-500 mt-1">나와 가까운 핫플이 어디인지 알려드려요.</p>
+      </div>
+      <div className="px-2.5 lg:px-6 lg:max-w-7xl lg:mx-auto">
+        <div className="flex gap-3 overflow-x-auto hide-scrollbar pb-2">
+          {sorted.map((spot) => {
+            const hospitalCount = countByRegion(spot.region);
+            return (
+              <Link
+                key={spot.id}
+                href={`/search?region=${encodeURIComponent(spot.region)}`}
+                className="flex-shrink-0 block card-press"
+                style={{ width: 160 }}
+              >
+                <div
+                  className={`relative overflow-hidden bg-gradient-to-br ${spot.gradient}`}
+                  style={{ borderRadius: 16, aspectRatio: '3 / 4' }}
+                >
+                  {/* Emoji decoration */}
+                  <div
+                    className="absolute pointer-events-none"
+                    style={{
+                      fontSize: 64,
+                      opacity: 0.15,
+                      right: -10,
+                      top: -10,
+                      transform: 'rotate(15deg)',
+                    }}
+                  >
+                    {spot.emoji}
+                  </div>
+
+                  {/* Tags */}
+                  <div className="absolute top-3 left-3 right-3 flex flex-wrap gap-1">
+                    {spot.tags.map((tag) => (
+                      <span
+                        key={tag}
+                        className="text-[10px] font-semibold text-white/90 bg-white/20 backdrop-blur-sm rounded-full px-2 py-0.5 whitespace-nowrap"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+
+                  {/* Bottom info */}
+                  <div className="absolute bottom-0 left-0 right-0 p-3 pt-8 bg-gradient-to-t from-black/50 to-transparent">
+                    <p className="text-[16px] font-extrabold text-white leading-tight">
+                      {spot.name}
+                    </p>
+                    {hospitalCount > 0 && (
+                      <p className="text-[10px] text-white/80 mt-0.5">
+                        병원 {hospitalCount}곳
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }
