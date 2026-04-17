@@ -538,54 +538,61 @@ export default function HomePage() {
 
 /* ===================== 근처 핫플레이스 ===================== */
 
+const BLOB = 'https://4ipmgcqyzk6ysqa7.public.blob.vercel-storage.com';
 const HOTSPOTS = [
+  {
+    id: 'suwon',
+    name: '수원',
+    sub: '행궁동',
+    region: '수원시',
+    tags: ['#아늑한 카페'],
+    image: `${BLOB}/etc_1620284296.jpg`,
+    color: '#7C3AED',
+  },
   {
     id: 'gangnam',
     name: '강남',
+    sub: '',
     region: '서울시 강남구',
-    tags: ['#프리미엄 치과', '#강남 맛집', '#역삼역'],
-    gradient: 'from-violet-600 to-indigo-500',
-    emoji: '🏙️',
+    tags: ['#놀면뭐하니'],
+    image: `${BLOB}/etc_1669967008.jpg`,
+    color: '#3B82F6',
   },
   {
-    id: 'seocho',
-    name: '서초',
-    region: '서울시 서초구',
-    tags: ['#교대역 치과', '#양재 카페', '#서초 힐링'],
-    gradient: 'from-blue-500 to-cyan-400',
-    emoji: '🌿',
+    id: 'apgujeong',
+    name: '압구정',
+    sub: '',
+    region: '서울시 강남구',
+    tags: ['#페미아드 시그니처...'],
+    image: `${BLOB}/etc_1672388697.jpg`,
+    color: '#10B981',
   },
   {
-    id: 'songpa',
-    name: '잠실·송파',
-    region: '서울시 송파구',
-    tags: ['#잠실 피부과', '#석촌호수', '#롯데타워'],
-    gradient: 'from-rose-500 to-orange-400',
-    emoji: '🎡',
-  },
-  {
-    id: 'mapo',
-    name: '마포·홍대',
+    id: 'hongdae',
+    name: '홍대',
+    sub: '합정',
     region: '서울시 마포구',
-    tags: ['#홍대 성형', '#연남동 카페', '#합정역'],
-    gradient: 'from-amber-500 to-yellow-400',
-    emoji: '🎵',
+    tags: ['#힙한 거리'],
+    image: `${BLOB}/etc_1698051602.jpg`,
+    color: '#F59E0B',
   },
   {
-    id: 'jongno',
-    name: '종로·광화문',
-    region: '서울시 종로구',
-    tags: ['#광화문 치과', '#인사동', '#북촌한옥'],
-    gradient: 'from-emerald-600 to-teal-400',
-    emoji: '🏛️',
+    id: 'jamsil',
+    name: '잠실',
+    sub: '송파',
+    region: '서울시 송파구',
+    tags: ['#석촌호수'],
+    image: `${BLOB}/etc_1721806033.jpg`,
+    color: '#EF4444',
   },
   {
-    id: 'yeongdeungpo',
+    id: 'yeouido',
     name: '여의도',
+    sub: '',
     region: '서울시 영등포구',
-    tags: ['#여의도 피부과', '#IFC몰', '#한강뷰'],
-    gradient: 'from-sky-500 to-blue-400',
-    emoji: '🌉',
+    tags: ['#한강뷰'],
+    image: `${BLOB}/etc_1723509679.jpg`,
+    color: '#06B6D4',
   },
 ];
 
@@ -596,18 +603,11 @@ function NearbyHotPlaces({
   currentLocation: string;
   hospitals: { id: string; location: string; name: string }[];
 }) {
-  // Sort hotspots: current location first
   const sorted = [...HOTSPOTS].sort((a, b) => {
     const aMatch = currentLocation.includes(a.name) ? -1 : 0;
     const bMatch = currentLocation.includes(b.name) ? -1 : 0;
     return aMatch - bMatch;
   });
-
-  // Count hospitals per region
-  const countByRegion = (region: string) => {
-    const key = region.replace(/시\s*/, '').replace(/구$/, '');
-    return hospitals.filter((h) => (h.location ?? '').includes(key)).length;
-  };
 
   return (
     <div className="mb-8">
@@ -616,61 +616,92 @@ function NearbyHotPlaces({
         <p className="text-[12px] text-gray-500 mt-1">나와 가까운 핫플이 어디인지 알려드려요.</p>
       </div>
       <div className="px-2.5 lg:px-6 lg:max-w-7xl lg:mx-auto">
-        <div className="flex gap-3 overflow-x-auto hide-scrollbar pb-2">
-          {sorted.map((spot) => {
-            const hospitalCount = countByRegion(spot.region);
-            return (
-              <Link
-                key={spot.id}
-                href={`/search?region=${encodeURIComponent(spot.region)}`}
-                className="flex-shrink-0 block card-press"
-                style={{ width: 160 }}
-              >
-                <div
-                  className={`relative overflow-hidden bg-gradient-to-br ${spot.gradient}`}
-                  style={{ borderRadius: 16, aspectRatio: '3 / 4' }}
-                >
-                  {/* Emoji decoration */}
-                  <div
-                    className="absolute pointer-events-none"
-                    style={{
-                      fontSize: 64,
-                      opacity: 0.15,
-                      right: -10,
-                      top: -10,
-                      transform: 'rotate(15deg)',
-                    }}
-                  >
-                    {spot.emoji}
-                  </div>
-
-                  {/* Tags */}
-                  <div className="absolute top-3 left-3 right-3 flex flex-wrap gap-1">
-                    {spot.tags.map((tag) => (
-                      <span
-                        key={tag}
-                        className="text-[10px] font-semibold text-white/90 bg-white/20 backdrop-blur-sm rounded-full px-2 py-0.5 whitespace-nowrap"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-
-                  {/* Bottom info */}
-                  <div className="absolute bottom-0 left-0 right-0 p-3 pt-8 bg-gradient-to-t from-black/50 to-transparent">
-                    <p className="text-[16px] font-extrabold text-white leading-tight">
-                      {spot.name}
-                    </p>
-                    {hospitalCount > 0 && (
-                      <p className="text-[10px] text-white/80 mt-0.5">
-                        병원 {hospitalCount}곳
-                      </p>
-                    )}
-                  </div>
+        <div className="flex gap-5 overflow-x-auto hide-scrollbar pb-2">
+          {sorted.map((spot) => (
+            <Link
+              key={spot.id}
+              href={`/search?region=${encodeURIComponent(spot.region)}`}
+              className="flex-shrink-0 flex flex-col items-center card-press"
+              style={{ width: 110 }}
+            >
+              {/* Tag bubble above circle */}
+              <div className="relative mb-1.5" style={{ width: 100 }}>
+                <div className="flex justify-center">
+                  {spot.tags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="text-[11px] font-medium text-gray-700 bg-gray-100 rounded-full px-2.5 py-1 whitespace-nowrap max-w-[110px] truncate"
+                    >
+                      {tag}
+                    </span>
+                  ))}
                 </div>
-              </Link>
-            );
-          })}
+                {/* Speech bubble tail */}
+                <div className="flex justify-center">
+                  <div
+                    style={{
+                      width: 0,
+                      height: 0,
+                      borderLeft: '5px solid transparent',
+                      borderRight: '5px solid transparent',
+                      borderTop: '5px solid #F3F4F6',
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Open circle with image */}
+              <div className="relative" style={{ width: 96, height: 96 }}>
+                {/* Arc ring (SVG) — open at top-right */}
+                <svg
+                  viewBox="0 0 100 100"
+                  className="absolute inset-0"
+                  style={{ width: 96, height: 96 }}
+                >
+                  <circle
+                    cx="50"
+                    cy="50"
+                    r="46"
+                    fill="none"
+                    stroke={spot.color}
+                    strokeWidth="3"
+                    strokeDasharray="260 29"
+                    strokeDashoffset="-14"
+                    strokeLinecap="round"
+                    style={{ transform: 'rotate(-90deg)', transformOrigin: '50% 50%' }}
+                  />
+                </svg>
+                {/* Photo */}
+                <div
+                  className="absolute overflow-hidden"
+                  style={{
+                    top: 6,
+                    left: 6,
+                    width: 84,
+                    height: 84,
+                    borderRadius: '50%',
+                  }}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={spot.image}
+                    alt={spot.name}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              </div>
+
+              {/* Name */}
+              <p className="text-[14px] font-bold text-gray-900 mt-2 text-center leading-tight">
+                {spot.name}
+              </p>
+              {spot.sub && (
+                <p className="text-[12px] text-gray-500 text-center leading-tight">
+                  {spot.sub}
+                </p>
+              )}
+            </Link>
+          ))}
         </div>
       </div>
     </div>
