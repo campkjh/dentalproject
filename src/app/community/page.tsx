@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import Avatar from '@/components/common/Avatar';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import {
@@ -540,72 +541,8 @@ export default function CommunityPage() {
         </div>
       </div>
 
-      {/* Floating write button — SVG design replica + train animation */}
-      <div
-        className="fixed bottom-24 z-30"
-        style={{ right: 'calc(50% - 215px + 16px)' }}
-      >
-        {/* Train track (curved path) */}
-        <svg
-          className="absolute pointer-events-none"
-          style={{ bottom: -8, right: -12, width: 160, height: 80 }}
-          viewBox="0 0 160 80"
-          fill="none"
-        >
-          <path
-            d="M10 70 Q 40 10, 80 40 T 150 20"
-            stroke="#E0D4FF"
-            strokeWidth="1.5"
-            strokeDasharray="4 4"
-            fill="none"
-          />
-          {/* Moving dot (train) */}
-          <circle r="3" fill="#9255FD">
-            <animateMotion
-              dur="3s"
-              repeatCount="indefinite"
-              path="M10 70 Q 40 10, 80 40 T 150 20"
-            />
-          </circle>
-        </svg>
-
-        <Link
-          href={`/community/write?board=${boardType}`}
-          className="relative block btn-press"
-        >
-          <div
-            className="flex items-center rounded-full overflow-hidden"
-            style={{
-              backgroundColor: '#9255FD',
-              height: 44,
-              paddingRight: 18,
-              boxShadow: '0 6px 20px rgba(146,85,253,0.35)',
-            }}
-          >
-            {/* Left circle with ? icon */}
-            <div
-              className="flex items-center justify-center flex-shrink-0"
-              style={{
-                width: 36,
-                height: 36,
-                borderRadius: '50%',
-                backgroundColor: '#DECBFF',
-                border: '1.5px solid #843DFF',
-                marginLeft: 4,
-              }}
-            >
-              <span style={{ color: '#6C19FF', fontSize: 18, fontWeight: 800, lineHeight: 1 }}>?</span>
-            </div>
-            {/* Text */}
-            <span
-              className="ml-2.5 text-white font-semibold whitespace-nowrap"
-              style={{ fontSize: 14 }}
-            >
-              {writeButtonLabel}
-            </span>
-          </div>
-        </Link>
-      </div>
+      {/* Floating write button — circle→pill expand + train border animation */}
+      <FloatingAskButton label={writeButtonLabel} href={`/community/write?board=${boardType}`} scrolled={showScrollTop} />
 
       {/* Scroll to top */}
       {showScrollTop && (
@@ -618,6 +555,135 @@ export default function CommunityPage() {
         </button>
       )}
 
+    </div>
+  );
+}
+
+/* ===================== Floating Ask Button ===================== */
+
+function PillBorderTrain({ w, h }: { w: number; h: number }) {
+  const pathRef = useRef<SVGPathElement>(null);
+
+  useEffect(() => {
+    const path = pathRef.current;
+    if (!path || w === 0) return;
+    const perimeter = path.getTotalLength();
+    const trainLen = perimeter * 0.15;
+    path.setAttribute('stroke-dasharray', `${trainLen} ${perimeter - trainLen}`);
+    path.style.animation = `pillDash ${Math.max(2, perimeter / 90)}s linear infinite`;
+  }, [w, h]);
+
+  if (w === 0) return null;
+  const inset = 1;
+  const radius = (h - inset * 2) / 2;
+  const left = inset;
+  const top = inset;
+  const right = w - inset;
+  const bottom = h - inset;
+  const d = `M ${left + radius},${top} L ${right - radius},${top} A ${radius},${radius} 0 0 1 ${right - radius},${bottom} L ${left + radius},${bottom} A ${radius},${radius} 0 0 1 ${left + radius},${top} Z`;
+
+  return (
+    <svg
+      className="absolute inset-0 pointer-events-none"
+      width={w}
+      height={h}
+      viewBox={`0 0 ${w} ${h}`}
+      fill="none"
+      style={{ overflow: 'visible' }}
+    >
+      <path
+        ref={pathRef}
+        d={d}
+        stroke="rgba(255,255,255,0.7)"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        style={{
+          filter: 'drop-shadow(0 0 3px rgba(255,255,255,0.6)) drop-shadow(0 0 6px rgba(255,255,255,0.3))',
+        }}
+      />
+    </svg>
+  );
+}
+
+function FloatingAskButton({ label, href, scrolled }: { label: string; href: string; scrolled: boolean }) {
+  const router = useRouter();
+  const [expanded, setExpanded] = useState(false);
+  const [size, setSize] = useState({ w: 0, h: 0 });
+  const btnRef = useRef<HTMLButtonElement>(null);
+
+  // 2초 후 원형→알약 확장
+  useEffect(() => {
+    const t = setTimeout(() => setExpanded(true), 2000);
+    return () => clearTimeout(t);
+  }, []);
+
+  // 스크롤 시 원형으로 축소
+  useEffect(() => {
+    if (scrolled) setExpanded(false);
+  }, [scrolled]);
+
+  // 사이즈 측정 (train path용)
+  useEffect(() => {
+    if (!btnRef.current) return;
+    const ro = new ResizeObserver((entries) => {
+      const { width, height } = entries[0].contentRect;
+      setSize({ w: width, h: height });
+    });
+    ro.observe(btnRef.current);
+    return () => ro.disconnect();
+  }, []);
+
+  const isPill = expanded && !scrolled;
+
+  return (
+    <div
+      className="fixed z-30"
+      style={{ bottom: 96, right: 16 }}
+    >
+      <button
+        ref={btnRef}
+        onClick={() => router.push(href)}
+        className="relative inline-flex items-center active:scale-95"
+        style={{
+          borderRadius: 9999,
+          height: 44,
+          paddingLeft: 4,
+          paddingRight: isPill ? 16 : 4,
+          gap: isPill ? 8 : 0,
+          backgroundColor: '#9255FD',
+          boxShadow: '0 6px 20px rgba(146,85,253,0.4)',
+          transition: 'padding 0.55s cubic-bezier(0.34, 1.56, 0.64, 1), gap 0.55s cubic-bezier(0.34, 1.56, 0.64, 1)',
+          transformOrigin: 'right center',
+        }}
+      >
+        {isPill && size.w > 0 && <PillBorderTrain w={size.w} h={size.h} />}
+
+        <div
+          className="flex items-center justify-center flex-shrink-0"
+          style={{
+            width: 36,
+            height: 36,
+            borderRadius: '50%',
+            backgroundColor: '#DECBFF',
+            border: '1.5px solid #843DFF',
+          }}
+        >
+          <span style={{ color: '#6C19FF', fontSize: 18, fontWeight: 800, lineHeight: 1 }}>?</span>
+        </div>
+
+        <span
+          className="text-white font-semibold whitespace-nowrap overflow-hidden"
+          style={{
+            fontSize: 14,
+            maxWidth: isPill ? 80 : 0,
+            opacity: isPill ? 1 : 0,
+            transform: isPill ? 'translateX(0)' : 'translateX(-6px)',
+            transition: 'max-width 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.35s ease 0.15s, transform 0.35s ease 0.15s',
+          }}
+        >
+          {label}
+        </span>
+      </button>
     </div>
   );
 }

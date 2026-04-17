@@ -470,6 +470,11 @@ body {
   to   { opacity: 1; transform: translateX(0); }
 }
 
+/* ===== Pill border train (floating button) ===== */
+@keyframes pillDash {
+  to { stroke-dashoffset: -500; }
+}
+
 /* ===== Live chat fade-scale ===== */
 @keyframes liveFadeIn {
   from { opacity: 0; transform: scale(0.97) translateY(8px); }
