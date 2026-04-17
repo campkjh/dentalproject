@@ -183,6 +183,26 @@ export const useStore = create<AppState>((set, get) => ({
   catalogHydrated: false,
   hydrateCatalog: async () => {
     if (get().catalogHydrated) return;
+
+    // 1) Instant: restore from localStorage cache (0ms render)
+    try {
+      const cached = typeof window !== 'undefined' ? localStorage.getItem('catalog_cache') : null;
+      if (cached) {
+        const data = JSON.parse(cached);
+        set({
+          hospitals: data.hospitals ?? get().hospitals,
+          products: data.products ?? get().products,
+          reviews: data.reviews ?? get().reviews,
+          categories: data.categories ?? get().categories,
+          posts: data.posts ?? get().posts,
+          comments: data.comments ?? get().comments,
+          announcements: data.announcements ?? get().announcements,
+          catalogHydrated: true,
+        });
+      }
+    } catch { /* corrupt cache — ignore */ }
+
+    // 2) Background: fetch fresh from server
     try {
       const res = await fetch('/api/catalog');
       if (!res.ok) return;
@@ -197,8 +217,12 @@ export const useStore = create<AppState>((set, get) => ({
         announcements: data.announcements?.length ? data.announcements : get().announcements,
         catalogHydrated: true,
       });
+      // Save to cache for next visit
+      try {
+        localStorage.setItem('catalog_cache', JSON.stringify(data));
+      } catch { /* storage full — ignore */ }
     } catch {
-      // network down → keep mock data; app still works
+      // network down → keep cached/mock data
     }
   },
 
