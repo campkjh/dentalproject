@@ -283,19 +283,18 @@ export default function CommunityLivePage() {
           paddingBottom: 'env(safe-area-inset-bottom)',
         }}
       >
-        <div className="flex items-center gap-1.5 px-2.5 pt-2 pb-1 overflow-x-auto hide-scrollbar">
+        {/* Category pills */}
+        <div className="flex items-center gap-1.5 px-3 pt-2.5 pb-1.5 overflow-x-auto hide-scrollbar">
           {categories.filter((c) => c !== '전체').map((c) => {
             const active = pickedCategory === c;
             return (
               <button
                 key={c}
                 onClick={() => setPickedCategory(c)}
-                className="px-2.5 py-1 rounded-full text-[11px] font-semibold whitespace-nowrap"
+                className="px-3 py-1 rounded-full text-[11px] font-semibold whitespace-nowrap transition-all"
                 style={{
-                  backgroundColor: active ? '#EDE9FE' : '#fff',
-                  color: active ? '#7C3AED' : '#A4ABBA',
-                  border: `1px solid ${active ? '#C4B5FD' : '#E5E7EB'}`,
-                  transition: 'all 200ms ease',
+                  backgroundColor: active ? '#7C3AED' : 'transparent',
+                  color: active ? '#fff' : '#9CA3AF',
                 }}
               >
                 {c}
@@ -303,16 +302,21 @@ export default function CommunityLivePage() {
             );
           })}
         </div>
+        {/* Input bar */}
         <form
           onSubmit={(e) => {
             e.preventDefault();
             handleSend();
           }}
-          className="flex items-end gap-2 px-2.5 py-2.5"
+          className="px-3 pb-3"
         >
           <div
-            className="flex-1 rounded-2xl flex items-end px-3 py-2"
-            style={{ backgroundColor: '#F4F5F7' }}
+            className="flex items-center gap-0 rounded-full overflow-hidden"
+            style={{
+              backgroundColor: '#F4F5F7',
+              border: input.trim() ? '1.5px solid #C4B5FD' : '1.5px solid transparent',
+              transition: 'border-color 200ms ease',
+            }}
           >
             <textarea
               value={input}
@@ -325,25 +329,25 @@ export default function CommunityLivePage() {
               }}
               placeholder="의사에게 궁금한 점을 적어주세요"
               rows={1}
-              className="flex-1 resize-none outline-none bg-transparent text-[13px] leading-snug placeholder:text-gray-400"
-              style={{ maxHeight: 100 }}
+              className="flex-1 resize-none outline-none bg-transparent text-[14px] leading-snug placeholder:text-gray-400 py-3 pl-4 pr-1"
+              style={{ maxHeight: 80 }}
             />
+            <button
+              type="submit"
+              disabled={!input.trim()}
+              className="flex-shrink-0 flex items-center justify-center mr-1.5 transition-all"
+              style={{
+                width: 34,
+                height: 34,
+                borderRadius: '50%',
+                backgroundColor: input.trim() ? '#7C3AED' : 'transparent',
+                color: input.trim() ? '#fff' : '#C5CAD4',
+                transition: 'all 200ms ease',
+              }}
+            >
+              <Send size={15} strokeWidth={2.2} />
+            </button>
           </div>
-          <button
-            type="submit"
-            disabled={!input.trim()}
-            className="flex-shrink-0 flex items-center justify-center btn-press"
-            style={{
-              width: 40,
-              height: 40,
-              borderRadius: '50%',
-              backgroundColor: input.trim() ? '#7C3AED' : '#E5E7EB',
-              color: '#fff',
-              transition: 'background-color 220ms ease',
-            }}
-          >
-            <Send size={16} strokeWidth={2.5} />
-          </button>
         </form>
       </div>
     </div>
