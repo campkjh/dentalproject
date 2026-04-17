@@ -542,7 +542,7 @@ export default function CommunityPage() {
       </div>
 
       {/* Floating write button — circle→pill expand + train border animation */}
-      <FloatingAskButton label={writeButtonLabel} href={`/community/write?board=${boardType}`} />
+      <FloatingAskButton label={writeButtonLabel} href={`/community/write?board=${boardType}`} scrollContainer={scrollContainerRef} />
 
       {/* Scroll to top */}
       {showScrollTop && (
@@ -605,7 +605,15 @@ function PillBorderTrain({ w, h }: { w: number; h: number }) {
   );
 }
 
-function FloatingAskButton({ label, href }: { label: string; href: string; scrolled?: boolean }) {
+function FloatingAskButton({
+  label,
+  href,
+  scrollContainer,
+}: {
+  label: string;
+  href: string;
+  scrollContainer: React.RefObject<HTMLDivElement | null>;
+}) {
   const router = useRouter();
   const [expanded, setExpanded] = useState(false);
   const [size, setSize] = useState({ w: 0, h: 0 });
@@ -618,39 +626,40 @@ function FloatingAskButton({ label, href }: { label: string; href: string; scrol
     return () => clearTimeout(t);
   }, []);
 
-  // 스크롤 방향 감지: 내리면 접기, 올리면 펼치기
+  // 스크롤 방향 감지 — 실제 스크롤 컨테이너에 바인딩
   useEffect(() => {
+    const el = scrollContainer.current;
+    if (!el) return;
     let ticking = false;
     const onScroll = () => {
       if (ticking) return;
       ticking = true;
       requestAnimationFrame(() => {
-        const y = window.scrollY;
+        const y = el.scrollTop;
         const delta = y - lastScrollY.current;
         if (delta > 15) {
-          // 스크롤 다운 → 원형으로 축소
           setExpanded(false);
         } else if (delta < -15) {
-          // 스크롤 업 → 알약으로 확장
           setExpanded(true);
         }
         lastScrollY.current = y;
         ticking = false;
       });
     };
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
+    el.addEventListener('scroll', onScroll, { passive: true });
+    return () => el.removeEventListener('scroll', onScroll);
+  }, [scrollContainer]);
 
-  // 사이즈 측정 (train path용) — 약간의 딜레이로 확장 후 측정
+  // 사이즈 측정 — getBoundingClientRect로 padding 포함 실제 크기
   useEffect(() => {
     if (!btnRef.current) return;
-    const ro = new ResizeObserver((entries) => {
-      const { width, height } = entries[0].contentRect;
-      if (width > 0 && height > 0) {
-        setSize({ w: width, h: height });
+    const measure = () => {
+      const rect = btnRef.current?.getBoundingClientRect();
+      if (rect && rect.width > 0) {
+        setSize({ w: rect.width, h: rect.height });
       }
-    });
+    };
+    const ro = new ResizeObserver(measure);
     ro.observe(btnRef.current);
     return () => ro.disconnect();
   }, []);
