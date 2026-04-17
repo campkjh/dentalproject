@@ -2,7 +2,7 @@
 
 import { Suspense, useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Mail, Lock, User as UserIcon, Eye, EyeOff } from 'lucide-react';
+import { Mail, Lock, User as UserIcon, Eye, EyeOff, ChevronLeft } from 'lucide-react';
 import { useSession } from '@/lib/supabase/SessionProvider';
 
 type Mode = 'login' | 'signup';
@@ -77,8 +77,15 @@ function LoginInner() {
 
   return (
     <div className="min-h-screen bg-white max-w-[480px] mx-auto flex flex-col">
+      {/* Back button */}
+      <div className="px-2 pt-3">
+        <button onClick={() => router.back()} className="p-1.5 -ml-0.5 rounded-full hover:bg-gray-100 transition-colors">
+          <ChevronLeft size={24} className="text-gray-700" />
+        </button>
+      </div>
+
       {/* Logo & Title */}
-      <div className="pt-16 pb-8 flex flex-col items-center px-6">
+      <div className="pt-6 pb-8 flex flex-col items-center px-6">
         <div className="w-20 h-20 bg-[#7C3AED] rounded-2xl flex items-center justify-center mb-5 bounce-in">
           <span className="text-4xl">🦷</span>
         </div>

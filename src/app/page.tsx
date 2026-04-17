@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation';
 import { Search, Send, ChevronRight, Star, MapPin, X } from 'lucide-react';
 import ProductCard from '@/components/common/ProductCard';
 import { useStore } from '@/store';
-import { products as allMockProducts } from '@/lib/mock-data';
 
 const searchPlaceholders = [
   '입술필러 검색해보세요',
@@ -23,6 +22,43 @@ export default function HomePage() {
   const [placeholderIdx, setPlaceholderIdx] = useState(0);
   const [animating, setAnimating] = useState(false);
   const headerRef = useRef<HTMLDivElement>(null);
+  const [currentLocation, setCurrentLocation] = useState('위치 확인 중…');
+
+  // Detect current location on mount
+  useEffect(() => {
+    if (typeof navigator === 'undefined' || !navigator.geolocation) {
+      setCurrentLocation('서울');
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        const districts = [
+          { name: '강남구 역삼동', lat: 37.4979, lng: 127.0276 },
+          { name: '서초구 서초동', lat: 37.4837, lng: 127.0324 },
+          { name: '송파구 잠실동', lat: 37.5145, lng: 127.1050 },
+          { name: '강동구 천호동', lat: 37.5301, lng: 127.1237 },
+          { name: '마포구 서교동', lat: 37.5564, lng: 126.9236 },
+          { name: '종로구 종로동', lat: 37.5735, lng: 126.9790 },
+          { name: '중구 명동', lat: 37.5636, lng: 126.9976 },
+          { name: '영등포구 여의도', lat: 37.5247, lng: 126.8965 },
+          { name: '동작구 사당동', lat: 37.5124, lng: 126.9396 },
+          { name: '관악구 봉천동', lat: 37.4784, lng: 126.9516 },
+          { name: '양천구 목동', lat: 37.5170, lng: 126.8664 },
+          { name: '금천구 가산동', lat: 37.4568, lng: 126.8956 },
+        ];
+        let closest = districts[0];
+        let minDist = Infinity;
+        for (const d of districts) {
+          const dist = Math.hypot(latitude - d.lat, longitude - d.lng);
+          if (dist < minDist) { minDist = dist; closest = d; }
+        }
+        setCurrentLocation(closest.name);
+      },
+      () => setCurrentLocation('서울'),
+      { enableHighAccuracy: false, timeout: 5000 }
+    );
+  }, []);
 
   const popularProducts = products.slice(0, 6);
   const recentProducts = recentlyViewed
@@ -131,7 +167,7 @@ export default function HomePage() {
             >
               <MapPin size={12} className="text-[#7C3AED]" />
               <span className="text-[12px] font-semibold text-gray-800 whitespace-nowrap leading-none">
-                강남구 논현동
+                {currentLocation}
               </span>
             </span>
             {/* Divider */}
@@ -292,7 +328,7 @@ export default function HomePage() {
             <div className="flex gap-2.5 overflow-x-auto hide-scrollbar pb-2" style={{ scrollSnapType: 'x mandatory' }}>
               {reviews.slice(0, 10).map((review) => {
                 const hospital = hospitals.find(h => h.id === review.hospitalId);
-                const relatedProduct = allMockProducts.find(p => p.id === review.productId || p.hospitalId === review.hospitalId);
+                const relatedProduct = products.find(p => p.id === review.productId || p.hospitalId === review.hospitalId);
                 return (
                   <Link
                     key={review.id}
@@ -315,7 +351,7 @@ export default function HomePage() {
                     {/* 카드 본문 */}
                     <div style={{ backgroundColor: '#F6F6F8', borderRadius: '0 0 16px 16px', padding: '14px 16px' }}>
                       <p style={{ fontSize: 14, color: '#C8CEDA' }}>
-                        {hospital?.location || '서울 강남구'} · {hospital?.name || review.authorName}
+                        {hospital?.location || currentLocation} · {hospital?.name || review.authorName}
                       </p>
                       <h3 style={{ fontSize: 18, fontWeight: 600, color: '#2B313D', marginTop: 6, lineHeight: '24px' }} className="line-clamp-2">
                         {review.treatmentName}
