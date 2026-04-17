@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, Suspense, useEffect } from 'react';
+import { useState, useMemo, Suspense, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Search, XCircle, ChevronLeft, ChevronDown, MapPin, Locate, Check, X, SlidersHorizontal, DollarSign, CalendarCheck } from 'lucide-react';
 import ProductCard from '@/components/common/ProductCard';
 import { useStore } from '@/store';
-import { regions, popularSearches, dentalSubCategories } from '@/lib/mock-data';
+import { regions, dentalSubCategories } from '@/lib/mock-data';
 
 const subRegions: Record<string, string[]> = {
   '서울시 강남구': ['전체', '압구정동', '청담동', '신사동', '논현동', '역삼동', '삼성동', '대치동'],
@@ -50,7 +50,26 @@ function SearchPage() {
   const router = useRouter();
   const categoryParam = searchParams.get('category');
 
-  const { products, recentSearches, addRecentSearch, removeRecentSearch, showToast, categories } = useStore();
+  const { products, recentSearches, addRecentSearch, removeRecentSearch, showToast, categories, reviews } = useStore();
+
+  // 인기검색어: 상품 태그 빈도순 + 리뷰 시술명 빈도순 합산 (실데이터 기반)
+  const popularSearches = useMemo(() => {
+    const freq: Record<string, number> = {};
+    for (const p of products) {
+      for (const tag of p.tags) {
+        const clean = tag.replace(/^#/, '');
+        freq[clean] = (freq[clean] ?? 0) + 2; // 태그는 가중치 2
+      }
+      if (p.subCategory) freq[p.subCategory] = (freq[p.subCategory] ?? 0) + 1;
+    }
+    for (const r of reviews) {
+      if (r.treatmentName) freq[r.treatmentName] = (freq[r.treatmentName] ?? 0) + 1;
+    }
+    return Object.entries(freq)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10)
+      .map(([k]) => k);
+  }, [products, reviews]);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [query, setQuery] = useState('');
   const [selectedRegion, setSelectedRegion] = useState('');
