@@ -111,7 +111,29 @@ const seedQuestions: LiveQuestion[] = [
   },
 ];
 
-const categories = ['전체', '임플란트', '치아교정', '치아미백', '사랑니', '스케일링', '기타'];
+const categories = ['전체', '임플란트', '치아교정', '치아미백', '사랑니', '스케일링', '충치', '잇몸', '보톡스', '필러', '리프팅', '기타'];
+
+// 키워드 → 카테고리 자동 매핑
+const KEYWORD_MAP: [string[], string][] = [
+  [['임플란트', '식립', '어금니', '발치 후', '뼈이식'], '임플란트'],
+  [['교정', '인비절라인', '투명교정', '브라켓', '덧니', '돌출입', '비발치'], '치아교정'],
+  [['미백', '하얗', '누런', '변색', '화이트닝'], '치아미백'],
+  [['사랑니', '매복', '발치'], '사랑니'],
+  [['스케일링', '치석', '잇몸 피'], '스케일링'],
+  [['충치', '신경치료', '레진', '크라운', '인레이', '아말감'], '충치'],
+  [['잇몸', '치주', '치은', '풍치', '잇몸 출혈', '잇몸 부기'], '잇몸'],
+  [['보톡스', '사각턱', '주름'], '보톡스'],
+  [['필러', '코필러', '입술필러', '팔자주름'], '필러'],
+  [['리프팅', '올타이트', '슈링크', '인모드', '울쎄라'], '리프팅'],
+];
+
+function detectCategory(text: string): string {
+  const lower = text.toLowerCase();
+  for (const [keywords, category] of KEYWORD_MAP) {
+    if (keywords.some((kw) => lower.includes(kw))) return category;
+  }
+  return '기타';
+}
 
 function relTime(dateStr: string) {
   if (!dateStr) return '';
@@ -130,7 +152,7 @@ export default function CommunityLivePage() {
   const { authUser } = useSession();
   const [activeCategory, setActiveCategory] = useState('전체');
   const [input, setInput] = useState('');
-  const [pickedCategory, setPickedCategory] = useState('기타');
+  const detectedTag = useMemo(() => detectCategory(input), [input]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -222,7 +244,7 @@ export default function CommunityLivePage() {
       viewCount: 0,
       likeCount: 0,
       commentCount: 0,
-      tags: [pickedCategory],
+      tags: [detectedTag],
       hasAnswer: false,
       answerCount: 0,
     });
@@ -236,7 +258,7 @@ export default function CommunityLivePage() {
       {
         id: result.id ?? `q-${Date.now()}`,
         user: { name: user?.name ?? '익명', seed: user?.id ?? '' },
-        category: pickedCategory,
+        category: detectedTag,
         content: text,
         time: '방금',
         replies: [],
@@ -350,25 +372,21 @@ export default function CommunityLivePage() {
           paddingBottom: 'env(safe-area-inset-bottom)',
         }}
       >
-        {/* Category pills */}
-        <div className="flex items-center gap-1.5 px-3 pt-2.5 pb-1.5 overflow-x-auto hide-scrollbar">
-          {categories.filter((c) => c !== '전체').map((c) => {
-            const active = pickedCategory === c;
-            return (
-              <button
-                key={c}
-                onClick={() => setPickedCategory(c)}
-                className="px-3 py-1 rounded-full text-[11px] font-semibold whitespace-nowrap transition-all"
-                style={{
-                  backgroundColor: active ? '#7C3AED' : 'transparent',
-                  color: active ? '#fff' : '#9CA3AF',
-                }}
-              >
-                {c}
-              </button>
-            );
-          })}
-        </div>
+        {/* Auto-detected tag indicator */}
+        {input.trim() && (
+          <div className="px-3 pt-2 pb-1 flex items-center gap-1.5">
+            <span className="text-[10px] text-gray-400">자동 태그:</span>
+            <span
+              className="text-[11px] font-bold px-2 py-0.5 rounded-full transition-all"
+              style={{
+                backgroundColor: detectedTag === '기타' ? '#F3F4F6' : '#EDE9FE',
+                color: detectedTag === '기타' ? '#6B7280' : '#7C3AED',
+              }}
+            >
+              #{detectedTag}
+            </span>
+          </div>
+        )}
         {/* Input bar */}
         <form
           onSubmit={(e) => {
