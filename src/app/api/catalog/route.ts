@@ -8,7 +8,7 @@ import {
   normalizeCategory,
 } from '@/lib/api/normalize';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 60; // ISR: 60초 캐시
 
 export async function GET() {
   const sb = await createClient();
@@ -17,9 +17,9 @@ export async function GET() {
     sb
       .from('hospitals')
       .select(
-        `id, slug, name, category, location, phone, tags, logo_url, cover_images,
-         introduction, holiday_notice, address, address_detail, map_url, rating, review_count,
-         doctors (id, name, title, specialty, profile_image, is_owner, bio, careers, certifications),
+        `id, slug, name, category, location, phone, tags, cover_images,
+         introduction, holiday_notice, address, address_detail, rating, review_count,
+         doctors (id, name, title, specialty, profile_image, is_owner),
          operating_hours (day, start_time, end_time, is_closed)`
       )
       .eq('status', 'approved'),
@@ -133,5 +133,12 @@ export async function GET() {
     content: a.content ?? '',
   }));
 
-  return NextResponse.json({ hospitals, products, reviews, categories, posts, comments, announcements });
+  return NextResponse.json(
+    { hospitals, products, reviews, categories, posts, comments, announcements },
+    {
+      headers: {
+        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
+      },
+    }
+  );
 }

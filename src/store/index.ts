@@ -184,7 +184,7 @@ export const useStore = create<AppState>((set, get) => ({
   hydrateCatalog: async () => {
     if (get().catalogHydrated) return;
     try {
-      const res = await fetch('/api/catalog', { cache: 'no-store' });
+      const res = await fetch('/api/catalog');
       if (!res.ok) return;
       const data = await res.json();
       set({
