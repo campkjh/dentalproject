@@ -224,48 +224,62 @@ export default function CommunityLivePage() {
     return () => clearTimeout(timer);
   }, [filtered.length]);
 
+  const [sending, setSending] = useState(false);
+
   const handleSend = async () => {
     const text = input.trim();
-    if (!text) return;
+    if (!text || sending) return;
     if (!authUser) {
       showToast('로그인이 필요합니다.');
       router.push('/login');
       return;
     }
-    const result = await addPost({
-      id: `q-${Date.now()}`,
-      boardType: 'question',
-      title: text.slice(0, 40),
-      content: text,
-      authorName: user?.name ?? '익명',
-      authorId: user?.id ?? '',
-      isAnonymous: false,
-      date: new Date().toISOString(),
-      viewCount: 0,
-      likeCount: 0,
-      commentCount: 0,
-      tags: [detectedTag],
-      hasAnswer: false,
-      answerCount: 0,
-    });
-    if (result.error) {
-      showToast(result.error);
-      return;
-    }
-    // Add locally for instant feedback
+
+    setSending(true);
+    setInput('');
+    const tag = detectedTag;
+    const tempId = `q-${Date.now()}`;
+
+    // 즉시 로컬에 추가 (optimistic)
     setQuestions((prev) => [
       ...prev,
       {
-        id: result.id ?? `q-${Date.now()}`,
+        id: tempId,
         user: { name: user?.name ?? '익명', seed: user?.id ?? '' },
-        category: detectedTag,
+        category: tag,
         content: text,
         time: '방금',
         replies: [],
       },
     ]);
-    setInput('');
-    showToast('질문이 등록되었습니다.');
+
+    // DB 저장 (store.addPost는 호출하되 로컬 추가는 이미 했으므로 결과만 확인)
+    try {
+      const res = await fetch('/api/posts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          boardType: 'question',
+          title: text.slice(0, 40),
+          content: text,
+          tags: [tag],
+        }),
+      });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        showToast(j.error || '전송 실패');
+        setQuestions((prev) => prev.filter((q) => q.id !== tempId));
+      } else {
+        const { id } = await res.json();
+        setQuestions((prev) => prev.map((q) => (q.id === tempId ? { ...q, id } : q)));
+        showToast('질문이 등록되었습니다.');
+      }
+    } catch {
+      showToast('네트워크 오류');
+      setQuestions((prev) => prev.filter((q) => q.id !== tempId));
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
