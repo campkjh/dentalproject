@@ -624,59 +624,71 @@ function NearbyHotPlaces({
               className="flex-shrink-0 flex flex-col items-center card-press"
               style={{ width: 140 }}
             >
-              {/* Tag bubble above shape */}
-              <div className="relative mb-1.5" style={{ width: 140 }}>
-                <div className="flex justify-center">
-                  {spot.tags.map((tag) => (
-                    <span
-                      key={tag}
-                      className="text-[11px] font-medium text-gray-700 bg-gray-100 rounded-full px-2.5 py-1 whitespace-nowrap max-w-[110px] truncate"
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-                {/* Speech bubble tail */}
-                <div className="flex justify-center">
+              {/* Container: bubble overlaps image top */}
+              <div className="relative" style={{ paddingTop: 16 }}>
+                {/* Speech bubble — overlaps top of image */}
+                <div
+                  className="absolute left-1/2 z-10 flex flex-col items-center"
+                  style={{ top: 0, transform: 'translateX(-50%)' }}
+                >
+                  <span
+                    className="text-[13px] font-medium text-gray-800 bg-white rounded-full px-3 py-1 whitespace-nowrap max-w-[140px] truncate"
+                    style={{
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                    }}
+                  >
+                    {spot.tags[0]}
+                  </span>
+                  {/* Tail */}
                   <div
                     style={{
                       width: 0,
                       height: 0,
                       borderLeft: '5px solid transparent',
                       borderRight: '5px solid transparent',
-                      borderTop: '5px solid #F3F4F6',
+                      borderTop: '5px solid #fff',
+                      filter: 'drop-shadow(0 1px 1px rgba(0,0,0,0.04))',
                     }}
                   />
                 </div>
-              </div>
 
-              {/* Rounded shape with open corner */}
-              <div
-                className="relative overflow-hidden"
-                style={{
-                  width: 140,
-                  height: 140,
-                  aspectRatio: '1/1',
-                  borderRadius: '100px 100px 100px 12px',
-                }}
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={spot.image}
-                  alt={spot.name}
-                  className="w-full h-full object-cover"
-                />
+                {/* Image shape with dimmed overlay + text inside */}
+                <div
+                  className="relative overflow-hidden"
+                  style={{
+                    width: 140,
+                    height: 140,
+                    aspectRatio: '1/1',
+                    borderRadius: '100px 100px 100px 12px',
+                    marginTop: 8,
+                  }}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={spot.image}
+                    alt={spot.name}
+                    className="w-full h-full object-cover"
+                  />
+                  {/* Dim overlay */}
+                  <div
+                    className="absolute inset-0"
+                    style={{
+                      background: 'linear-gradient(to top, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.05) 60%)',
+                    }}
+                  />
+                  {/* Text inside image */}
+                  <div className="absolute bottom-3 left-3 right-3">
+                    <p className="text-[16px] font-extrabold text-white leading-tight">
+                      {spot.name}
+                    </p>
+                    {spot.sub && (
+                      <p className="text-[13px] font-medium text-white/80 leading-tight">
+                        {spot.sub}
+                      </p>
+                    )}
+                  </div>
+                </div>
               </div>
-
-              {/* Name */}
-              <p className="text-[14px] font-bold text-gray-900 mt-2 text-center leading-tight">
-                {spot.name}
-              </p>
-              {spot.sub && (
-                <p className="text-[12px] text-gray-500 text-center leading-tight">
-                  {spot.sub}
-                </p>
-              )}
             </Link>
           ))}
         </div>
