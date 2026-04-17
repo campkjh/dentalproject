@@ -629,17 +629,18 @@ function NearbyHotPlaces({
                 {/* Speech bubble — overlaps top of image */}
                 <div
                   className="absolute left-1/2 z-10 flex flex-col items-center"
-                  style={{ top: 0, transform: 'translateX(-50%)' }}
+                  style={{ top: 0, transform: 'translateX(-50%)', gap: 0 }}
                 >
                   <span
                     className="text-[13px] font-medium text-gray-800 bg-white rounded-full px-3 py-1 whitespace-nowrap max-w-[140px] truncate"
                     style={{
                       boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                      marginBottom: -1,
                     }}
                   >
                     {spot.tags[0]}
                   </span>
-                  {/* Tail */}
+                  {/* Tail — flush against pill */}
                   <div
                     style={{
                       width: 0,
