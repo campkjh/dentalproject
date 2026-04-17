@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   Users,
   Building2,
@@ -30,6 +30,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
+import { useSession } from '@/lib/supabase/SessionProvider';
 
 // ---------------------------------------------------------------------------
 // Colors
@@ -43,143 +44,8 @@ const COLORS = {
   red: '#EF4444',
 };
 
-// ---------------------------------------------------------------------------
-// Stats cards data
-// ---------------------------------------------------------------------------
-const stats = [
-  { label: '총 회원수', value: '12,458', change: '+248', trend: 'up' as const, icon: Users, color: 'bg-blue-500' },
-  { label: '등록 병원', value: '342', change: '+12', trend: 'up' as const, icon: Building2, color: 'bg-green-500' },
-  { label: '이번 달 예약', value: '1,847', change: '+156', trend: 'up' as const, icon: CalendarDays, color: 'bg-purple-500' },
-  { label: '이번 달 매출', value: '₩248.5M', change: '+18.2%', trend: 'up' as const, icon: CreditCard, color: 'bg-orange-500' },
-];
-
-// ---------------------------------------------------------------------------
-// Revenue line chart data (12 months, 매출 & 순매출)
-// ---------------------------------------------------------------------------
-const revenueDataByPeriod: Record<string, { month: string; 매출: number; 순매출: number }[]> = {
-  month: [
-    { month: '1월', 매출: 180, 순매출: 126 },
-    { month: '2월', 매출: 195, 순매출: 137 },
-    { month: '3월', 매출: 220, 순매출: 154 },
-    { month: '4월', 매출: 248, 순매출: 174 },
-    { month: '5월', 매출: 260, 순매출: 182 },
-    { month: '6월', 매출: 275, 순매출: 193 },
-    { month: '7월', 매출: 290, 순매출: 203 },
-    { month: '8월', 매출: 310, 순매출: 217 },
-    { month: '9월', 매출: 295, 순매출: 207 },
-    { month: '10월', 매출: 320, 순매출: 224 },
-    { month: '11월', 매출: 340, 순매출: 238 },
-    { month: '12월', 매출: 365, 순매출: 256 },
-  ],
-  week: [
-    { month: '월', 매출: 42, 순매출: 29 },
-    { month: '화', 매출: 55, 순매출: 39 },
-    { month: '수', 매출: 48, 순매출: 34 },
-    { month: '목', 매출: 61, 순매출: 43 },
-    { month: '금', 매출: 72, 순매출: 50 },
-    { month: '토', 매출: 38, 순매출: 27 },
-    { month: '일', 매출: 15, 순매출: 11 },
-  ],
-  today: [
-    { month: '09시', 매출: 8, 순매출: 6 },
-    { month: '10시', 매출: 15, 순매출: 11 },
-    { month: '11시', 매출: 22, 순매출: 15 },
-    { month: '12시', 매출: 12, 순매출: 8 },
-    { month: '13시', 매출: 18, 순매출: 13 },
-    { month: '14시', 매출: 25, 순매출: 18 },
-    { month: '15시', 매출: 30, 순매출: 21 },
-    { month: '16시', 매출: 28, 순매출: 20 },
-  ],
-};
-
-// ---------------------------------------------------------------------------
-// Reservation bar chart data (8 weeks, stacked by status)
-// ---------------------------------------------------------------------------
-const reservationDataByPeriod: Record<string, { week: string; 확인중: number; 확정: number; 완료: number; 취소: number }[]> = {
-  month: [
-    { week: '1주차', 확인중: 45, 확정: 62, 완료: 120, 취소: 15 },
-    { week: '2주차', 확인중: 52, 확정: 70, 완료: 135, 취소: 18 },
-    { week: '3주차', 확인중: 48, 확정: 58, 완료: 110, 취소: 12 },
-    { week: '4주차', 확인중: 60, 확정: 75, 완료: 145, 취소: 20 },
-    { week: '5주차', 확인중: 55, 확정: 68, 완료: 130, 취소: 16 },
-    { week: '6주차', 확인중: 63, 확정: 80, 완료: 155, 취소: 22 },
-    { week: '7주차', 확인중: 58, 확정: 72, 완료: 140, 취소: 19 },
-    { week: '8주차', 확인중: 65, 확정: 85, 완료: 160, 취소: 14 },
-  ],
-  week: [
-    { week: '월', 확인중: 12, 확정: 18, 완료: 35, 취소: 4 },
-    { week: '화', 확인중: 15, 확정: 22, 완료: 40, 취소: 5 },
-    { week: '수', 확인중: 10, 확정: 16, 완료: 30, 취소: 3 },
-    { week: '목', 확인중: 18, 확정: 25, 완료: 45, 취소: 6 },
-    { week: '금', 확인중: 20, 확정: 28, 완료: 50, 취소: 7 },
-    { week: '토', 확인중: 8, 확정: 12, 완료: 20, 취소: 2 },
-    { week: '일', 확인중: 3, 확정: 5, 완료: 8, 취소: 1 },
-  ],
-  today: [
-    { week: '09시', 확인중: 3, 확정: 5, 완료: 8, 취소: 1 },
-    { week: '10시', 확인중: 5, 확정: 8, 완료: 12, 취소: 2 },
-    { week: '11시', 확인중: 7, 확정: 10, 완료: 18, 취소: 1 },
-    { week: '12시', 확인중: 4, 확정: 6, 완료: 10, 취소: 2 },
-    { week: '13시', 확인중: 6, 확정: 9, 완료: 15, 취소: 3 },
-    { week: '14시', 확인중: 8, 확정: 12, 완료: 20, 취소: 2 },
-    { week: '15시', 확인중: 9, 확정: 14, 완료: 22, 취소: 1 },
-    { week: '16시', 확인중: 7, 확정: 11, 완료: 19, 취소: 2 },
-  ],
-};
-
-// ---------------------------------------------------------------------------
-// Category pie chart data
-// ---------------------------------------------------------------------------
-const categoryData = [
-  { name: '치과', value: 45, color: COLORS.primary },
-  { name: '성형외과', value: 25, color: COLORS.blue },
-  { name: '피부과', value: 15, color: COLORS.green },
-  { name: '안과', value: 8, color: COLORS.yellow },
-  { name: '기타', value: 7, color: COLORS.red },
-];
-
-// ---------------------------------------------------------------------------
-// User growth area chart data (30 days)
-// ---------------------------------------------------------------------------
-function generateUserGrowthData(days: number): { date: string; 신규가입: number }[] {
-  const data: { date: string; 신규가입: number }[] = [];
-  for (let i = days; i >= 1; i--) {
-    const d = new Date(2026, 3, 6); // April 6, 2026
-    d.setDate(d.getDate() - i + 1);
-    const month = d.getMonth() + 1;
-    const day = d.getDate();
-    // Generate realistic-looking signup numbers with some variance
-    const base = 35 + Math.round(Math.sin(i * 0.3) * 12 + (days - i) * 0.4);
-    data.push({ date: `${month}/${day}`, 신규가입: base });
-  }
-  return data;
-}
-
-const userGrowthByPeriod: Record<string, { date: string; 신규가입: number }[]> = {
-  month: generateUserGrowthData(30),
-  week: generateUserGrowthData(7),
-  today: [
-    { date: '09시', 신규가입: 5 },
-    { date: '10시', 신규가입: 8 },
-    { date: '11시', 신규가입: 12 },
-    { date: '12시', 신규가입: 7 },
-    { date: '13시', 신규가입: 10 },
-    { date: '14시', 신규가입: 14 },
-    { date: '15시', 신규가입: 11 },
-    { date: '16시', 신규가입: 9 },
-  ],
-};
-
-// ---------------------------------------------------------------------------
-// Recent reservations
-// ---------------------------------------------------------------------------
-const recentReservations = [
-  { id: 'R001', customer: '김서연', product: '원데이 치아미백 3회', hospital: '레브치과의원', amount: '55,000원', status: 'pending', date: '2026-04-06 14:30' },
-  { id: 'R002', customer: '박지훈', product: '무삭제로네이트 라미네이트', hospital: '아이디치과', amount: '759,000원', status: 'confirmed', date: '2026-04-06 13:15' },
-  { id: 'R003', customer: '이하은', product: '올타이트 리프팅 100샷', hospital: '온리프성형외과', amount: '195,900원', status: 'completed', date: '2026-04-06 11:00' },
-  { id: 'R004', customer: '정민수', product: '디데이 치아미백 11', hospital: '참포도나무치과', amount: '759,000원', status: 'cancelled', date: '2026-04-06 10:20' },
-  { id: 'R005', customer: '최유진', product: '무삭제 폴리네이트', hospital: '레브치과의원', amount: '385,000원', status: 'pending', date: '2026-04-05 16:45' },
-];
+// --- Data is fetched from /api/admin/dashboard ---
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 const statusColors: Record<string, string> = {
   pending: 'bg-yellow-100 text-yellow-700',
@@ -200,10 +66,60 @@ const statusLabels: Record<string, string> = {
 // ---------------------------------------------------------------------------
 export default function AdminDashboard() {
   const [period, setPeriod] = useState('month');
+  const { authUser } = useSession();
+  const [apiData, setApiData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-  const revenueData = useMemo(() => revenueDataByPeriod[period] ?? revenueDataByPeriod.month, [period]);
-  const reservationData = useMemo(() => reservationDataByPeriod[period] ?? reservationDataByPeriod.month, [period]);
-  const userGrowthData = useMemo(() => userGrowthByPeriod[period] ?? userGrowthByPeriod.month, [period]);
+  useEffect(() => {
+    if (!authUser) { setLoading(false); return; }
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/admin/dashboard', { cache: 'no-store' });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!cancelled) setApiData(data);
+      } finally {
+        setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [authUser]);
+
+  const s = apiData?.stats ?? {};
+  const stats = [
+    { label: '총 회원수', value: (s.totalUsers ?? 0).toLocaleString(), change: '', trend: 'up' as const, icon: Users, color: 'bg-blue-500' },
+    { label: '등록 병원', value: (s.totalHospitals ?? 0).toLocaleString(), change: `승인 ${s.approvedHospitals ?? 0}`, trend: 'up' as const, icon: Building2, color: 'bg-green-500' },
+    { label: '이번 달 예약', value: (s.monthReservations ?? 0).toLocaleString(), change: '', trend: 'up' as const, icon: CalendarDays, color: 'bg-purple-500' },
+    { label: '이번 달 매출', value: `₩${((s.monthRevenue ?? 0) / 10000).toFixed(1)}만`, change: '', trend: 'up' as const, icon: CreditCard, color: 'bg-orange-500' },
+  ];
+
+  const categoryData = (apiData?.categoryData ?? []).map((c: any, i: number) => ({
+    ...c,
+    color: [COLORS.primary, COLORS.blue, COLORS.green, COLORS.yellow, COLORS.red][i % 5],
+  }));
+
+  const recentReservations = (apiData?.recentReservations ?? []).map((r: any) => ({
+    ...r,
+    amount: `${(r.amount ?? 0).toLocaleString()}원`,
+  }));
+
+  const revenueData = (apiData?.monthlyRevenue ?? []).map((m: any) => ({
+    month: m.month,
+    매출: m.revenue / 10000,
+    순매출: Math.round(m.revenue * 0.7) / 10000,
+  }));
+  const reservationData = (apiData?.monthlyRevenue ?? []).map((m: any) => ({
+    week: m.month,
+    확인중: 0,
+    확정: 0,
+    완료: m.count,
+    취소: 0,
+  }));
+  const userGrowthData = (apiData?.monthlyRevenue ?? []).map((m: any) => ({
+    date: m.month,
+    신규가입: m.count,
+  }));
 
   return (
     <div className="space-y-6">
@@ -374,7 +290,7 @@ export default function AdminDashboard() {
                   label={({ name, value }) => `${name} ${value}%`}
                   labelLine={{ stroke: '#9CA3AF', strokeWidth: 1 }}
                 >
-                  {categoryData.map((entry, index) => (
+                  {categoryData.map((entry: any, index: number) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
@@ -471,7 +387,7 @@ export default function AdminDashboard() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {recentReservations.map((res) => (
+              {recentReservations.map((res: any) => (
                 <tr key={res.id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-5 py-3 text-sm text-[#7C3AED] font-medium">{res.id}</td>
                   <td className="px-5 py-3 text-sm text-gray-900">{res.customer}</td>
