@@ -8,7 +8,7 @@ import {
   normalizeCategory,
 } from '@/lib/api/normalize';
 
-export const revalidate = 60; // ISR: 60초 캐시
+export const revalidate = 300; // ISR: 5분 캐시
 
 export async function GET() {
   const sb = await createClient();
@@ -118,7 +118,7 @@ export async function GET() {
     { hospitals, products, reviews, categories, posts, comments: [], announcements },
     {
       headers: {
-        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
+        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=3600',
       },
     }
   );

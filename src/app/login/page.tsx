@@ -4,6 +4,7 @@ import { Suspense, useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Mail, Lock, User as UserIcon, Eye, EyeOff, ChevronLeft } from 'lucide-react';
 import { useSession } from '@/lib/supabase/SessionProvider';
+import { useStore } from '@/store';
 
 type Mode = 'login' | 'signup';
 
@@ -29,9 +30,11 @@ function LoginInner() {
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
+  const isLoggedIn = useStore((s) => s.isLoggedIn);
   useEffect(() => {
-    if (session) router.push('/');
-  }, [session, router]);
+    // Only redirect if store confirms logged in (not just session exists)
+    if (isLoggedIn) router.push('/');
+  }, [isLoggedIn, router]);
 
   const isLogin = mode === 'login';
   const canSubmit =
