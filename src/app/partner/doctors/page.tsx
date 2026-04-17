@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Plus, X } from 'lucide-react';
+import { Plus, X, Pencil, Trash2 } from 'lucide-react';
 import { useStore } from '@/store';
 import { useSession } from '@/lib/supabase/SessionProvider';
 
@@ -22,8 +22,9 @@ export default function PartnerDoctorsPage() {
   const showToast = useStore((s) => s.showToast);
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showAdd, setShowAdd] = useState(false);
-  const [creating, setCreating] = useState(false);
+  const [showModal, setShowModal] = useState<'add' | 'edit' | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ name: '', title: '원장', specialty: '', bio: '', profileImage: '' });
 
   const reload = async () => {
@@ -51,29 +52,71 @@ export default function PartnerDoctorsPage() {
     };
   }, [authUser]);
 
-  const handleAdd = async () => {
+  const openAdd = () => {
+    setForm({ name: '', title: '원장', specialty: '', bio: '', profileImage: '' });
+    setEditingId(null);
+    setShowModal('add');
+  };
+
+  const openEdit = (d: Doctor) => {
+    setForm({
+      name: d.name,
+      title: d.title ?? '원장',
+      specialty: d.specialty ?? '',
+      bio: d.bio ?? '',
+      profileImage: d.profile_image ?? '',
+    });
+    setEditingId(d.id);
+    setShowModal('edit');
+  };
+
+  const handleSave = async () => {
     if (!form.name.trim()) {
       showToast('의사명을 입력해주세요.');
       return;
     }
-    setCreating(true);
+    setSaving(true);
     try {
-      const res = await fetch('/api/my-hospital/doctors', {
-        method: 'POST',
+      const isEdit = showModal === 'edit' && editingId;
+      const url = isEdit ? `/api/my-hospital/doctors/${editingId}` : '/api/my-hospital/doctors';
+      const method = isEdit ? 'PATCH' : 'POST';
+      const res = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
       });
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));
-        showToast(j.error || '추가에 실패했습니다.');
+        showToast(j.error || '저장에 실패했습니다.');
       } else {
-        showToast('의료진이 추가되었습니다.');
+        showToast(isEdit ? '의료진 정보가 수정되었습니다.' : '의료진이 추가되었습니다.');
         setForm({ name: '', title: '원장', specialty: '', bio: '', profileImage: '' });
-        setShowAdd(false);
+        setShowModal(null);
+        setEditingId(null);
         await reload();
       }
     } finally {
-      setCreating(false);
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async (d: Doctor) => {
+    if (d.is_owner) {
+      showToast('대표원장은 삭제할 수 없습니다.');
+      return;
+    }
+    if (!confirm(`${d.name} 원장님을 삭제하시겠습니까?`)) return;
+    try {
+      const res = await fetch(`/api/my-hospital/doctors/${d.id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        showToast(j.error || '삭제에 실패했습니다.');
+      } else {
+        showToast('의료진이 삭제되었습니다.');
+        await reload();
+      }
+    } catch {
+      showToast('네트워크 오류');
     }
   };
 
@@ -98,7 +141,7 @@ export default function PartnerDoctorsPage() {
           </p>
         </div>
         <button
-          onClick={() => setShowAdd(true)}
+          onClick={openAdd}
           className="flex items-center gap-1.5 px-4 py-2 bg-[#7C3AED] text-white text-[13px] font-bold rounded-lg btn-press"
         >
           <Plus size={14} />
@@ -111,45 +154,65 @@ export default function PartnerDoctorsPage() {
       ) : doctors.length === 0 ? (
         <div className="bg-white rounded-xl border border-gray-200 py-16 text-center">
           <p className="text-sm text-gray-400 mb-4">등록된 의료진이 없습니다.</p>
-          <button onClick={() => setShowAdd(true)} className="text-[#7C3AED] text-sm font-bold">
+          <button onClick={openAdd} className="text-[#7C3AED] text-sm font-bold">
             첫 의사 추가하기
           </button>
         </div>
       ) : (
         <ul className="grid md:grid-cols-2 gap-3">
           {doctors.map((d) => (
-            <li key={d.id} className="bg-white rounded-xl border border-gray-200 p-5 flex gap-4">
-              <div className="w-16 h-16 rounded-full bg-[#F4EFFF] flex items-center justify-center text-[#7C3AED] font-bold flex-shrink-0 overflow-hidden">
-                {d.profile_image ? (
-                  /* eslint-disable-next-line @next/next/no-img-element */
-                  <img src={d.profile_image} alt={d.name} className="w-full h-full object-cover" />
-                ) : (
-                  d.name.slice(-2)
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-1.5 mb-0.5">
-                  <span className="text-[15px] font-bold text-gray-900">{d.name}</span>
-                  <span className="text-[12px] text-[#7C3AED] font-semibold">{d.title}</span>
-                  {d.is_owner && (
-                    <span className="text-[10px] bg-[#7C3AED] text-white rounded px-1.5 py-0.5 font-bold">대표</span>
+            <li key={d.id} className="bg-white rounded-xl border border-gray-200 p-5">
+              <div className="flex gap-4">
+                <div className="w-16 h-16 rounded-full bg-[#F4EFFF] flex items-center justify-center text-[#7C3AED] font-bold flex-shrink-0 overflow-hidden">
+                  {d.profile_image ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img src={d.profile_image} alt={d.name} className="w-full h-full object-cover" />
+                  ) : (
+                    d.name.slice(-2)
                   )}
                 </div>
-                {d.specialty && <p className="text-[12px] text-gray-500 mb-1">{d.specialty}</p>}
-                {d.bio && <p className="text-[12px] text-gray-600 line-clamp-2 leading-relaxed">{d.bio}</p>}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5 mb-0.5">
+                    <span className="text-[15px] font-bold text-gray-900">{d.name}</span>
+                    <span className="text-[12px] text-[#7C3AED] font-semibold">{d.title}</span>
+                    {d.is_owner && (
+                      <span className="text-[10px] bg-[#7C3AED] text-white rounded px-1.5 py-0.5 font-bold">대표</span>
+                    )}
+                  </div>
+                  {d.specialty && <p className="text-[12px] text-gray-500 mb-1">{d.specialty}</p>}
+                  {d.bio && <p className="text-[12px] text-gray-600 line-clamp-2 leading-relaxed">{d.bio}</p>}
+                </div>
+              </div>
+              <div className="flex gap-2 mt-3 pt-3 border-t border-gray-100">
+                <button
+                  onClick={() => openEdit(d)}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg border border-gray-200 text-[12px] font-bold text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  <Pencil size={12} /> 수정
+                </button>
+                {!d.is_owner && (
+                  <button
+                    onClick={() => handleDelete(d)}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg border border-red-200 text-[12px] font-bold text-red-600 hover:bg-red-50 transition-colors"
+                  >
+                    <Trash2 size={12} /> 삭제
+                  </button>
+                )}
               </div>
             </li>
           ))}
         </ul>
       )}
 
-      {/* Add doctor modal */}
-      {showAdd && (
+      {/* Add/Edit doctor modal */}
+      {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md mx-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-5">
-              <h3 className="text-[15px] font-bold text-gray-900">의사 추가</h3>
-              <button onClick={() => setShowAdd(false)}>
+              <h3 className="text-[15px] font-bold text-gray-900">
+                {showModal === 'edit' ? '의료진 수정' : '의사 추가'}
+              </h3>
+              <button onClick={() => { setShowModal(null); setEditingId(null); }}>
                 <X size={18} className="text-gray-400" />
               </button>
             </div>
@@ -199,17 +262,17 @@ export default function PartnerDoctorsPage() {
             </div>
             <div className="flex gap-2 mt-5">
               <button
-                onClick={() => setShowAdd(false)}
+                onClick={() => { setShowModal(null); setEditingId(null); }}
                 className="flex-1 py-2.5 border border-gray-200 rounded-lg text-sm font-medium text-gray-700"
               >
                 취소
               </button>
               <button
-                onClick={handleAdd}
-                disabled={creating}
+                onClick={handleSave}
+                disabled={saving}
                 className="flex-1 py-2.5 bg-[#7C3AED] text-white rounded-lg text-sm font-bold disabled:opacity-50"
               >
-                {creating ? '추가 중…' : '추가'}
+                {saving ? '저장 중…' : showModal === 'edit' ? '수정' : '추가'}
               </button>
             </div>
           </div>
