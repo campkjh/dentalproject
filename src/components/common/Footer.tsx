@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { siteConfig } from '@/lib/site-config';
 
 const footerLinks = {
   서비스: [
@@ -79,11 +80,11 @@ export default function Footer() {
           </div>
           <div className="flex items-center justify-between">
             <div className="text-xs space-y-1">
-              <p>(주)키닥터 | 대표 000 | 사업자등록번호 000-00-00000</p>
-              <p>서울특별시 금천구 가산디지털1로 225, 11층 1123-에이-2호</p>
-              <p>통신판매업신고 제 2025-서울송파-0000호 | T 070-000-0000 | E ceo@sample.com</p>
+              <p>{siteConfig.companyName} | {siteConfig.representative} | {siteConfig.businessNumber}</p>
+              <p>{siteConfig.address}</p>
+              <p>{siteConfig.mailOrderNumber} | T {siteConfig.phone} | E {siteConfig.email}</p>
             </div>
-            <p className="text-xs">Copyright(c) 키닥터. All rights reserved.</p>
+            <p className="text-xs">Copyright(c) {siteConfig.copyrightName}. All rights reserved.</p>
           </div>
         </div>
       </div>

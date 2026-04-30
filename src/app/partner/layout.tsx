@@ -81,12 +81,12 @@ export default function PartnerLayout({ children }: { children: React.ReactNode 
   const [openItems, setOpenItems] = useState<Set<string>>(
     new Set(['병원 관리', '이벤트 관리', '앱결제 관리'])
   );
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   // Auth/landing pages render without the sidebar shell
   if (pathname === '/partner/login') {
     return <>{children}</>;
   }
-  const [drawerOpen, setDrawerOpen] = useState(false);
 
   const toggleItem = (label: string) => {
     setOpenItems((prev) => {

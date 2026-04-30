@@ -131,18 +131,25 @@ export default function AdminReservationsPage() {
       return sortDir === 'asc' ? (av as number) - (bv as number) : (bv as number) - (av as number);
     });
     return list;
-  }, [search, statusFilter, startDate, endDate, sortKey, sortDir]);
+  }, [apiReservations, search, statusFilter, startDate, endDate, sortKey, sortDir]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const pageData = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-  // Stats (fixed display values)
+  // Stats
+  const statusCounts = apiReservations.reduce(
+    (acc, reservation) => {
+      acc[reservation.status] += 1;
+      return acc;
+    },
+    { pending: 0, confirmed: 0, completed: 0, cancelled: 0 } as Record<ReservationStatus, number>
+  );
   const statsRow = [
-    { label: '전체', value: '1,847', color: 'text-gray-900' },
-    { label: '확인중', value: '234', color: 'text-yellow-600' },
-    { label: '확정', value: '856', color: 'text-blue-600' },
-    { label: '완료', value: '623', color: 'text-green-600' },
-    { label: '취소', value: '134', color: 'text-red-500' },
+    { label: '전체', value: apiReservations.length.toLocaleString('ko-KR'), color: 'text-gray-900' },
+    { label: '확인중', value: statusCounts.pending.toLocaleString('ko-KR'), color: 'text-yellow-600' },
+    { label: '확정', value: statusCounts.confirmed.toLocaleString('ko-KR'), color: 'text-blue-600' },
+    { label: '완료', value: statusCounts.completed.toLocaleString('ko-KR'), color: 'text-green-600' },
+    { label: '취소', value: statusCounts.cancelled.toLocaleString('ko-KR'), color: 'text-red-500' },
   ];
 
   // ---- Handlers ----

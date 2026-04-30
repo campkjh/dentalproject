@@ -27,15 +27,19 @@ export default function CommunitySearchPage() {
   const { posts } = useStore();
   const [query, setQuery] = useState('');
   const [scope, setScope] = useState<'all' | 'question' | 'free' | 'dental'>('all');
-  const [recent, setRecent] = useState<string[]>([]);
+  const [recent, setRecent] = useState<string[]>(() => {
+    if (typeof window === 'undefined') return [];
+    try {
+      const saved = JSON.parse(localStorage.getItem('communityRecentSearches') || '[]');
+      return Array.isArray(saved) ? saved : [];
+    } catch {
+      return [];
+    }
+  });
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     inputRef.current?.focus();
-    try {
-      const saved = JSON.parse(localStorage.getItem('communityRecentSearches') || '[]');
-      if (Array.isArray(saved)) setRecent(saved);
-    } catch {}
   }, []);
 
   const persist = (list: string[]) => {

@@ -90,7 +90,7 @@ export default function PaymentsPage() {
     const target = tabToStatus[activeTab];
     if (!target) return reservations;
     return reservations.filter((r) => target.includes(r.status));
-  }, [activeTab]);
+  }, [activeTab, reservations]);
 
   const counts = useMemo(() => {
     const c: Record<Reservation['status'], number> = {
@@ -101,7 +101,7 @@ export default function PaymentsPage() {
     };
     reservations.forEach((r) => (c[r.status] += 1));
     return c;
-  }, []);
+  }, [reservations]);
 
   if (!isLoggedIn) {
     return (

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect, useRef, useLayoutEffect } from 'react';
+import { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -91,26 +91,17 @@ export default function ProductDetailPage() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const product = useMemo(() => {
-    const found = products.find((p) => p.id === params.id);
-    if (found) addRecentlyViewed(found.id);
-    return found;
-  }, [params.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  const product = products.find((p) => p.id === params.id);
 
-  const hospital = useMemo(
-    () => hospitals.find((h) => h.id === product?.hospitalId),
-    [product]
-  );
+  useEffect(() => {
+    if (product) addRecentlyViewed(product.id);
+  }, [product, addRecentlyViewed]);
 
-  const productReviews = useMemo(
-    () => reviews.filter((r) => r.productId === product?.id || r.hospitalId === product?.hospitalId),
-    [product]
-  );
+  const hospital = hospitals.find((h) => h.id === product?.hospitalId);
 
-  const hospitalProducts = useMemo(
-    () => products.filter((p) => p.hospitalId === product?.hospitalId && p.id !== product?.id),
-    [product]
-  );
+  const productReviews = reviews.filter((r) => r.productId === product?.id || r.hospitalId === product?.hospitalId);
+
+  const hospitalProducts = products.filter((p) => p.hospitalId === product?.hospitalId && p.id !== product?.id);
 
   const isWished = product ? wishlist.includes(product.id) : false;
 

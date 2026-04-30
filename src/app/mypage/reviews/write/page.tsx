@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, Suspense, useMemo } from 'react';
+import { useRef, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Camera, Star, X, Sparkles, ChevronLeft, Check, Stethoscope } from 'lucide-react';
 import { useStore } from '@/store';
@@ -36,6 +36,7 @@ const TIME_OPTIONS = [
 function ReviewWritePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const localReviewSeq = useRef(0);
   const productId = searchParams.get('productId');
   const { user, addReview, showToast, products, reservations, hospitals } = useStore();
 
@@ -44,13 +45,11 @@ function ReviewWritePage() {
   const doctors = hospital?.doctors ?? [];
 
   // Auto-filled from reservation
-  const paidReservation = useMemo(() => {
-    return reservations.find(
-      (r) =>
-        (r.hospitalId === product.hospitalId || r.productTitle === product.title) &&
-        (r.status === 'completed' || r.status === 'confirmed')
-    );
-  }, [product]);
+  const paidReservation = reservations.find(
+    (r) =>
+      (r.hospitalId === product.hospitalId || r.productTitle === product.title) &&
+      (r.status === 'completed' || r.status === 'confirmed')
+  );
   const autoPaidAmount = paidReservation?.amount ?? product.price;
   const hasDiscount = Boolean(product.discount && product.discount > 0);
 
@@ -119,11 +118,12 @@ ${hasAspectFeedback && aspects.kindness >= 4 ? '원장님과 스태프분들의 
       showToast('리뷰는 최소 50자 이상 작성해주세요.');
       return;
     }
+    localReviewSeq.current += 1;
     addReview({
-      id: `review_${Date.now()}`,
+      id: `review_${product.id}_${localReviewSeq.current}`,
       authorName: user?.name ?? '홍길동',
       authorId: user?.id ?? '1',
-      date: new Date().toISOString().split('T')[0],
+      date: treatmentDate || treatmentTiming || '',
       rating,
       content,
       beforeImage: beforeImage || undefined,

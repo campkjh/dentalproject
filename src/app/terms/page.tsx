@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import TopBar from '@/components/common/TopBar';
 import { ChevronRight, FileText } from 'lucide-react';
+import { siteConfig } from '@/lib/site-config';
 
 const termsList = [
   { id: 'privacy', title: '개인정보 수집 및 이용약관' },
@@ -41,13 +42,13 @@ export default function TermsPage() {
       {/* Company Info */}
       <div className="mt-8 px-2.5 py-6 border-t border-gray-100 lg:max-w-3xl lg:mx-auto">
         <div className="space-y-1.5 text-xs text-gray-400">
-          <p>(주)00000은 통신판매중개자로서 통신판매의 당사자가 아니며 개별 판매자가 제공하는 서비스에 대한 이행, 계약사항 등과 관련한 의무와 책임은 거래 당사자에게 있습니다.</p>
-          <p className="mt-2">통신판매업신고번호 : 제 2025-서울송파-0000호</p>
-          <p>(주)0000 | 우 00000</p>
-          <p>주소 서울특별시 금천구 가산디지털1로 225, 11층 1123-에이-2호(가산동, 에이스 가산 포휴)</p>
-          <p>T 070-000-0000 | E ceo@sample.com</p>
-          <p>대표자 000 | 사업자 등록 번호 000-00-00000</p>
-          <p>Copyright(c) 000. All right reserved.</p>
+          <p>{siteConfig.companyName}은 통신판매중개자로서 통신판매의 당사자가 아니며 개별 판매자가 제공하는 서비스에 대한 이행, 계약사항 등과 관련한 의무와 책임은 거래 당사자에게 있습니다.</p>
+          <p className="mt-2">통신판매업신고번호 : {siteConfig.mailOrderNumber}</p>
+          <p>{siteConfig.companyName}{siteConfig.postalCode ? ` | 우 ${siteConfig.postalCode}` : ''}</p>
+          <p>주소 {siteConfig.address}</p>
+          <p>T {siteConfig.phone} | E {siteConfig.email}</p>
+          <p>{siteConfig.representative} | {siteConfig.businessNumber}</p>
+          <p>Copyright(c) {siteConfig.copyrightName}. All right reserved.</p>
         </div>
       </div>
     </div>

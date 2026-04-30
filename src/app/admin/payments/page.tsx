@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import {
   Search,
   Download,
@@ -50,22 +50,6 @@ interface Payment {
   datetime: string;
   status: PaymentStatus;
 }
-
-// --- Mock Data ---
-const mockPayments: Payment[] = [
-  { id: 'PAY-20260406-001', customer: '김서연', product: '원데이 치아미백 3회', hospital: '레브치과의원', amount: 55000, fee: 5500, method: '카카오페이', datetime: '2026-04-06 14:30', status: '완료' },
-  { id: 'PAY-20260406-002', customer: '박지훈', product: '무삭제 라미네이트 10개', hospital: '아이디치과', amount: 7590000, fee: 759000, method: '카드', datetime: '2026-04-06 13:15', status: '완료' },
-  { id: 'PAY-20260406-003', customer: '이하은', product: '올타이트 리프팅 100샷', hospital: '온리프성형외과', amount: 195900, fee: 19590, method: '토스', datetime: '2026-04-06 11:00', status: '완료' },
-  { id: 'PAY-20260406-004', customer: '정민수', product: '디데이 치아미백 11', hospital: '참포도나무치과', amount: 759000, fee: 75900, method: '네이버페이', datetime: '2026-04-06 10:20', status: '환불' },
-  { id: 'PAY-20260405-005', customer: '최유진', product: '무삭제 폴리네이트', hospital: '레브치과의원', amount: 385000, fee: 38500, method: '카카오페이', datetime: '2026-04-05 16:45', status: '완료' },
-  { id: 'PAY-20260405-006', customer: '한소희', product: '레진 인레이 3개', hospital: '참포도나무치과', amount: 450000, fee: 45000, method: '카드', datetime: '2026-04-05 14:20', status: '완료' },
-  { id: 'PAY-20260405-007', customer: '오지은', product: '임플란트 1개', hospital: '아이디치과', amount: 1200000, fee: 120000, method: '계좌이체', datetime: '2026-04-05 11:30', status: '부분환불' },
-  { id: 'PAY-20260404-008', customer: '윤도현', product: '교정 상담 + 장치', hospital: '온리프성형외과', amount: 3500000, fee: 350000, method: '카드', datetime: '2026-04-04 15:00', status: '완료' },
-  { id: 'PAY-20260404-009', customer: '강민지', product: '스케일링 패키지', hospital: '참포도나무치과', amount: 89000, fee: 8900, method: '토스', datetime: '2026-04-04 10:45', status: '완료' },
-  { id: 'PAY-20260403-010', customer: '서준혁', product: '사랑니 발치 2개', hospital: '레브치과의원', amount: 260000, fee: 26000, method: '카카오페이', datetime: '2026-04-03 16:30', status: '완료' },
-  { id: 'PAY-20260403-011', customer: '임수빈', product: '치아미백 홈키트', hospital: '아이디치과', amount: 120000, fee: 12000, method: '네이버페이', datetime: '2026-04-03 14:10', status: '환불' },
-  { id: 'PAY-20260402-012', customer: '조예진', product: '세라믹 크라운 2개', hospital: '참포도나무치과', amount: 980000, fee: 98000, method: '카드', datetime: '2026-04-02 09:30', status: '완료' },
-];
 
 // --- 30-day Revenue Data for Area Chart ---
 const dailyRevenueData = Array.from({ length: 30 }, (_, i) => {
@@ -231,6 +215,8 @@ function HospitalTooltip({ active, payload }: { active?: boolean; payload?: { pa
 }
 
 export default function AdminPaymentsPage() {
+  const [payments, setPayments] = useState<Payment[]>([]);
+  const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState<Period>('일별');
   const [startDate, setStartDate] = useState('2026-04-01');
   const [endDate, setEndDate] = useState('2026-04-06');
@@ -238,11 +224,28 @@ export default function AdminPaymentsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const paymentsPerPage = 10;
 
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/admin/payments', { cache: 'no-store' });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!cancelled) setPayments(data.payments ?? []);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   // Heatmap max
   const heatmapMax = useMemo(() => Math.max(...heatmapData.flat()), []);
 
   // Filter payments
-  const filteredPayments = mockPayments.filter((p) => {
+  const filteredPayments = payments.filter((p) => {
     if (searchQuery === '') return true;
     const query = searchQuery.toLowerCase();
     return (
@@ -259,6 +262,12 @@ export default function AdminPaymentsPage() {
     (currentPage - 1) * paymentsPerPage,
     currentPage * paymentsPerPage
   );
+
+  const totalRevenue = payments.filter((p) => p.status !== '환불').reduce((sum, p) => sum + p.amount, 0);
+  const refundAmount = payments.filter((p) => p.status === '환불').reduce((sum, p) => sum + p.amount, 0);
+  const feeIncome = payments.reduce((sum, p) => sum + p.fee, 0);
+  const netRevenue = Math.max(totalRevenue - refundAmount - feeIncome, 0);
+  const refundRate = payments.length ? Math.round((refundAmount / Math.max(totalRevenue + refundAmount, 1)) * 1000) / 10 : 0;
 
   return (
     <div className="space-y-6">
@@ -281,7 +290,7 @@ export default function AdminPaymentsPage() {
                 <CreditCard size={16} className="text-[#7C3AED]" />
                 <span className="text-sm text-gray-500">총 매출</span>
               </div>
-              <p className="text-2xl font-bold text-gray-900">248.5M</p>
+              <p className="text-2xl font-bold text-gray-900">{formatCurrency(totalRevenue)}</p>
               <p className="text-xs text-green-600 mt-1 flex items-center gap-0.5">
                 <TrendingUp size={12} /> +18.2% 전월 대비
               </p>
@@ -299,7 +308,7 @@ export default function AdminPaymentsPage() {
                 <Wallet size={16} className="text-[#10B981]" />
                 <span className="text-sm text-gray-500">순 매출</span>
               </div>
-              <p className="text-2xl font-bold text-gray-900">223.6M</p>
+              <p className="text-2xl font-bold text-gray-900">{formatCurrency(netRevenue)}</p>
               <p className="text-xs text-green-600 mt-1 flex items-center gap-0.5">
                 <TrendingUp size={12} /> +15.7% 전월 대비
               </p>
@@ -317,9 +326,9 @@ export default function AdminPaymentsPage() {
                 <RefreshCw size={16} className="text-[#EF4444]" />
                 <span className="text-sm text-gray-500">환불</span>
               </div>
-              <p className="text-2xl font-bold text-red-600">24.9M</p>
+              <p className="text-2xl font-bold text-red-600">{formatCurrency(refundAmount)}</p>
               <p className="text-xs text-gray-500 mt-1 flex items-center gap-0.5">
-                <TrendingDown size={12} /> 환불율 10.0%
+                <TrendingDown size={12} /> 환불율 {refundRate}%
               </p>
             </div>
             <div className="w-20 h-10">
@@ -335,7 +344,7 @@ export default function AdminPaymentsPage() {
                 <Percent size={16} className="text-[#F59E0B]" />
                 <span className="text-sm text-gray-500">수수료 수입</span>
               </div>
-              <p className="text-2xl font-bold text-gray-900">37.3M</p>
+              <p className="text-2xl font-bold text-gray-900">{formatCurrency(feeIncome)}</p>
               <p className="text-xs text-green-600 mt-1 flex items-center gap-0.5">
                 <TrendingUp size={12} /> +12.4% 전월 대비
               </p>
@@ -669,6 +678,13 @@ export default function AdminPaymentsPage() {
                   </td>
                 </tr>
               ))}
+              {paginatedPayments.length === 0 && (
+                <tr>
+                  <td colSpan={10} className="px-4 py-12 text-center text-sm text-gray-400">
+                    {loading ? '결제 내역을 불러오는 중입니다.' : '결제 내역이 없습니다.'}
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

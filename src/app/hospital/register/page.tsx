@@ -1431,14 +1431,17 @@ function SequentialAgreeFlow({
   // Re-check on step change — short content auto-enables button
   useEffect(() => {
     if (isSignatureStep) return;
-    setReachedBottom(false);
+    const resetTimer = setTimeout(() => setReachedBottom(false), 0);
     const t = setTimeout(() => {
       const el = scrollRef.current;
       if (!el) return;
       const notScrollable = el.scrollHeight <= el.clientHeight + 12;
       if (notScrollable) setReachedBottom(true);
     }, 60);
-    return () => clearTimeout(t);
+    return () => {
+      clearTimeout(resetTimer);
+      clearTimeout(t);
+    };
   }, [stepIdx, isSignatureStep]);
 
   const resetScroll = () => {
@@ -1752,4 +1755,3 @@ function SignatureStep({
     </div>
   );
 }
-

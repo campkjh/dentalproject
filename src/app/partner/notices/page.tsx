@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { Calendar, XCircle, CheckCircle, MessageSquare, Bell } from 'lucide-react';
 import { useStore } from '@/store';
@@ -31,10 +31,6 @@ export default function PartnerNoticesPage() {
   const notifications = useStore((s) => s.notifications);
   const [filter, setFilter] = useState<'전체' | string>('전체');
   const [readIds, setReadIds] = useState<Set<string>>(new Set());
-
-  useEffect(() => {
-    setReadIds(new Set(notifications.filter((n) => n.isRead).map((n) => n.id)));
-  }, [notifications]);
 
   const filtered = useMemo(() => {
     if (filter === '전체') return notifications;

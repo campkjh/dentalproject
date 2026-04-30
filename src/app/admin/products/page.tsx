@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import {
   Search,
   Plus,
@@ -18,10 +18,11 @@ import {
 } from 'lucide-react';
 
 // ---------- Types ----------
+type DbProductStatus = 'active' | 'paused' | 'removed' | 'pending';
 type ProductStatus = 'active' | 'inactive' | 'pending';
 
 interface Product {
-  id: number;
+  id: string;
   name: string;
   hospital: string;
   category: string;
@@ -29,28 +30,9 @@ interface Product {
   discountPrice: number;
   rating: number;
   reviews: number;
-  status: ProductStatus;
+  status: DbProductStatus;
   createdAt: string;
 }
-
-// ---------- Mock Data ----------
-const mockProducts: Product[] = [
-  { id: 1, name: '원데이 치아미백 3회', hospital: '참포도나무치과의원', category: '치과', originalPrice: 90000, discountPrice: 55000, rating: 4.9, reviews: 328, status: 'active', createdAt: '2026-03-15' },
-  { id: 2, name: '무삭제 라미네이트 1개', hospital: '레브치과의원', category: '치과', originalPrice: 950000, discountPrice: 759000, rating: 5.0, reviews: 214, status: 'active', createdAt: '2026-03-12' },
-  { id: 3, name: '올타이트 리프팅 100샷', hospital: '온리프성형외과의원', category: '성형외과', originalPrice: 290000, discountPrice: 195900, rating: 4.8, reviews: 176, status: 'active', createdAt: '2026-03-10' },
-  { id: 4, name: '프리미엄 스케일링', hospital: '아이디치과', category: '치과', originalPrice: 80000, discountPrice: 45000, rating: 4.7, reviews: 542, status: 'active', createdAt: '2026-03-08' },
-  { id: 5, name: '인비절라인 교정 패키지', hospital: '바른이치과', category: '치과', originalPrice: 5500000, discountPrice: 4200000, rating: 4.9, reviews: 89, status: 'active', createdAt: '2026-02-28' },
-  { id: 6, name: '보톡스 이마 + 미간', hospital: '에이블피부과', category: '피부과', originalPrice: 180000, discountPrice: 120000, rating: 4.6, reviews: 231, status: 'active', createdAt: '2026-02-25' },
-  { id: 7, name: '라식 양안 수술', hospital: '밝은눈안과', category: '안과', originalPrice: 2200000, discountPrice: 1650000, rating: 4.8, reviews: 67, status: 'inactive', createdAt: '2026-02-20' },
-  { id: 8, name: '임플란트 1개 (오스템)', hospital: '참포도나무치과의원', category: '치과', originalPrice: 1500000, discountPrice: 990000, rating: 4.9, reviews: 412, status: 'active', createdAt: '2026-02-18' },
-  { id: 9, name: '필러 애교살 (쥬비덤)', hospital: '온리프성형외과의원', category: '성형외과', originalPrice: 350000, discountPrice: 245000, rating: 4.5, reviews: 198, status: 'pending', createdAt: '2026-04-05' },
-  { id: 10, name: '레이저 토닝 10회', hospital: '에이블피부과', category: '피부과', originalPrice: 500000, discountPrice: 350000, rating: 4.7, reviews: 156, status: 'active', createdAt: '2026-01-30' },
-  { id: 11, name: '디데이 치아미백 11', hospital: '레브치과의원', category: '치과', originalPrice: 1100000, discountPrice: 759000, rating: 4.8, reviews: 97, status: 'pending', createdAt: '2026-04-04' },
-  { id: 12, name: '코필러 (레스틸렌)', hospital: '온리프성형외과의원', category: '성형외과', originalPrice: 280000, discountPrice: 195000, rating: 4.4, reviews: 83, status: 'inactive', createdAt: '2026-01-15' },
-  { id: 13, name: '라섹 양안 수술', hospital: '밝은눈안과', category: '안과', originalPrice: 1800000, discountPrice: 1350000, rating: 4.9, reviews: 45, status: 'active', createdAt: '2026-01-10' },
-];
-
-const categories = ['전체', '치과', '성형외과', '피부과', '안과', '한의원', '내과'];
 
 type SortKey = 'id' | 'name' | 'hospital' | 'category' | 'discountPrice' | 'rating' | 'reviews' | 'createdAt';
 type SortDir = 'asc' | 'desc';
@@ -68,18 +50,42 @@ function formatPrice(n: number) {
 const PAGE_SIZE = 10;
 
 export default function AdminProductsPage() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('전체');
   const [sortKey, setSortKey] = useState<SortKey>('id');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
   const [page, setPage] = useState(1);
-  const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [selected, setSelected] = useState<Set<string>>(new Set());
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showBulkAction, setShowBulkAction] = useState<'deactivate' | 'delete' | null>(null);
 
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/admin/products', { cache: 'no-store' });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!cancelled) setProducts(data.products ?? []);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const categories = useMemo(
+    () => ['전체', ...Array.from(new Set(products.map((p) => p.category).filter(Boolean)))],
+    [products]
+  );
+
   // ---- Filter & Sort ----
   const filtered = useMemo(() => {
-    let list = [...mockProducts];
+    let list = [...products];
     if (categoryFilter !== '전체') list = list.filter((p) => p.category === categoryFilter);
     if (search.trim()) {
       const q = search.trim().toLowerCase();
@@ -96,16 +102,16 @@ export default function AdminProductsPage() {
       return sortDir === 'asc' ? (av as number) - (bv as number) : (bv as number) - (av as number);
     });
     return list;
-  }, [search, categoryFilter, sortKey, sortDir]);
+  }, [products, search, categoryFilter, sortKey, sortDir]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const pageData = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   // Stats
-  const totalCount = mockProducts.length;
-  const activeCount = mockProducts.filter((p) => p.status === 'active').length;
-  const inactiveCount = mockProducts.filter((p) => p.status === 'inactive').length;
-  const pendingCount = mockProducts.filter((p) => p.status === 'pending').length;
+  const totalCount = products.length;
+  const activeCount = products.filter((p) => p.status === 'active').length;
+  const inactiveCount = products.filter((p) => p.status === 'paused' || p.status === 'removed').length;
+  const pendingCount = products.filter((p) => p.status === 'pending').length;
 
   // ---- Handlers ----
   function handleSort(key: SortKey) {
@@ -118,7 +124,7 @@ export default function AdminProductsPage() {
     setPage(1);
   }
 
-  function toggleSelect(id: number) {
+  function toggleSelect(id: string) {
     setSelected((prev) => {
       const next = new Set(prev);
       next.has(id) ? next.delete(id) : next.add(id);
@@ -162,10 +168,10 @@ export default function AdminProductsPage() {
       {/* ---------- Stats ---------- */}
       <div className="grid grid-cols-4 gap-4">
         {[
-          { label: '전체 상품', value: '856', color: 'text-gray-900' },
-          { label: '활성 상품', value: '742', color: 'text-green-600' },
-          { label: '비활성 상품', value: '89', color: 'text-gray-500' },
-          { label: '검수대기', value: '25', color: 'text-yellow-600' },
+          { label: '전체 상품', value: totalCount.toLocaleString('ko-KR'), color: 'text-gray-900' },
+          { label: '활성 상품', value: activeCount.toLocaleString('ko-KR'), color: 'text-green-600' },
+          { label: '비활성 상품', value: inactiveCount.toLocaleString('ko-KR'), color: 'text-gray-500' },
+          { label: '검수대기', value: pendingCount.toLocaleString('ko-KR'), color: 'text-yellow-600' },
         ].map((s) => (
           <div key={s.label} className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
             <p className="text-sm text-gray-500">{s.label}</p>
@@ -267,8 +273,13 @@ export default function AdminProductsPage() {
             </thead>
             <tbody className="divide-y divide-gray-100">
               {pageData.map((product) => {
-                const discount = Math.round((1 - product.discountPrice / product.originalPrice) * 100);
-                const st = statusConfig[product.status];
+                const discount =
+                  product.originalPrice > 0
+                    ? Math.max(0, Math.round((1 - product.discountPrice / product.originalPrice) * 100))
+                    : 0;
+                const normalizedStatus: ProductStatus =
+                  product.status === 'active' ? 'active' : product.status === 'pending' ? 'pending' : 'inactive';
+                const st = statusConfig[normalizedStatus];
                 return (
                   <tr key={product.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-4 py-3">
@@ -325,7 +336,9 @@ export default function AdminProductsPage() {
               })}
               {pageData.length === 0 && (
                 <tr>
-                  <td colSpan={10} className="px-4 py-12 text-center text-gray-400 text-sm">검색 결과가 없습니다.</td>
+                  <td colSpan={10} className="px-4 py-12 text-center text-gray-400 text-sm">
+                    {loading ? '상품을 불러오는 중입니다.' : '검색 결과가 없습니다.'}
+                  </td>
                 </tr>
               )}
             </tbody>

@@ -1,6 +1,5 @@
 'use client';
 
-import { useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -19,28 +18,22 @@ export default function DoctorDetailPage() {
   const { hospitals, products, reviews } = useStore();
 
   // Find the doctor across all hospitals
-  const { doctor, hospital } = useMemo(() => {
+  const { doctor, hospital } = (() => {
     for (const h of hospitals) {
       const d = h.doctors.find((doc) => doc.id === params.id);
       if (d) return { doctor: d, hospital: h };
     }
     return { doctor: null, hospital: null };
-  }, [params.id, hospitals]);
+  })();
 
-  const doctorReviews = useMemo(
-    () => reviews.filter((r) => r.doctorId === doctor?.id),
-    [doctor]
-  );
+  const doctorReviews = reviews.filter((r) => r.doctorId === doctor?.id);
 
-  const doctorAvgRating = useMemo(() => {
+  const doctorAvgRating = (() => {
     if (doctorReviews.length === 0) return '0.0';
     return (doctorReviews.reduce((sum, r) => sum + r.rating, 0) / doctorReviews.length).toFixed(1);
-  }, [doctorReviews]);
+  })();
 
-  const hospitalProducts = useMemo(
-    () => products.filter((p) => p.hospitalId === hospital?.id),
-    [hospital]
-  );
+  const hospitalProducts = products.filter((p) => p.hospitalId === hospital?.id);
 
   if (!doctor || !hospital) {
     return (

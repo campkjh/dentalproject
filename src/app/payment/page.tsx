@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, Suspense, useEffect, useRef } from 'react';
+import { useState, Suspense, useEffect, useRef, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ChevronDown, ChevronUp, ChevronLeft, Check, X } from 'lucide-react';
@@ -46,6 +46,22 @@ function PaymentPage() {
   }, []);
 
   const product = products.find((p) => p.id === productId) ?? products[0];
+  if (!product) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center px-6 text-center">
+        <div>
+          <p className="text-base font-bold text-gray-900">결제할 상품을 찾을 수 없습니다.</p>
+          <button
+            type="button"
+            onClick={() => router.push('/search')}
+            className="mt-4 px-5 py-2.5 rounded-xl bg-[#7C3AED] text-white text-sm font-bold"
+          >
+            상품 다시 찾기
+          </button>
+        </div>
+      </div>
+    );
+  }
   const hospital = product.hospitalName;
 
   const availableCoupons = coupons.filter((c) => c.status === 'available');
@@ -561,9 +577,12 @@ function CouponSheet({
   onClose: () => void;
   onSelect: (id: string | null) => void;
 }) {
-  const [mounted, setMounted] = useState(false);
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
   useEffect(() => {
-    setMounted(true);
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => {

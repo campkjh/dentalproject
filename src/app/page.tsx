@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Search, Send, ChevronRight, Star, MapPin, X } from 'lucide-react';
 import ProductCard from '@/components/common/ProductCard';
 import { useStore } from '@/store';
+import { siteConfig } from '@/lib/site-config';
 
 const searchPlaceholders = [
   '입술필러 검색해보세요',
@@ -526,13 +527,13 @@ export default function HomePage() {
           <Link href="/terms/withdrawal" className="hover:text-gray-700 underline">회원탈퇴 문의</Link>
           <Link href="/terms/meta" className="hover:text-gray-700 underline">META서비스 이용방침</Link>
         </div>
-        <p>(주)00000은 통신판매중개자로서 통신판매의 당사자가 아니며 개별 판매자가 제공하는 서비스에 대한 이행, 계약사항 등과 관련한 의무와 책임은 거래 당사자에게 있습니다.</p>
-        <p className="mt-2">통신판매업신고번호 : 제 2025-서울송파-0000호</p>
-        <p>(주)0000 | 우 00000</p>
-        <p>주소 서울특별시 금천구 가산디지털1로 225, 11층 1123-에이-2호(가산동, 에이스 가산 포휴)</p>
-        <p className="mt-1">T 070-000-0000 | E ceo@sample.com</p>
-        <p className="mt-1">대표자 000 | 사업자 등록 번호 000-00-00000</p>
-        <p>Copyright(c) 000. All right reserved.</p>
+        <p>{siteConfig.companyName}은 통신판매중개자로서 통신판매의 당사자가 아니며 개별 판매자가 제공하는 서비스에 대한 이행, 계약사항 등과 관련한 의무와 책임은 거래 당사자에게 있습니다.</p>
+        <p className="mt-2">통신판매업신고번호 : {siteConfig.mailOrderNumber}</p>
+        <p>{siteConfig.companyName}{siteConfig.postalCode ? ` | 우 ${siteConfig.postalCode}` : ''}</p>
+        <p>주소 {siteConfig.address}</p>
+        <p className="mt-1">T {siteConfig.phone} | E {siteConfig.email}</p>
+        <p className="mt-1">{siteConfig.representative} | {siteConfig.businessNumber}</p>
+        <p>Copyright(c) {siteConfig.copyrightName}. All right reserved.</p>
       </div>
 
     </div>
