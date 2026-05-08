@@ -2,10 +2,11 @@
 
 import { useState, useMemo, Suspense, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Search, XCircle, ChevronLeft, ChevronDown, MapPin, Locate, Check, X, SlidersHorizontal, DollarSign, CalendarCheck } from 'lucide-react';
-import ProductCard from '@/components/common/ProductCard';
+import Link from 'next/link';
+import { Search, XCircle, ChevronLeft, ChevronDown, MapPin, Locate, Check, X, SlidersHorizontal, DollarSign, CalendarCheck, Star } from 'lucide-react';
 import { useStore } from '@/store';
 import { regions, dentalSubCategories } from '@/lib/mock-data';
+import type { Product } from '@/types';
 
 const PROVINCES: Record<string, string[]> = {
   '서울': ['전체', '강남구', '서초구', '송파구', '강동구', '마포구', '용산구', '성동구', '광진구', '동대문구', '중랑구', '성북구', '강북구', '도봉구', '노원구', '은평구', '서대문구', '종로구', '중구', '동작구', '관악구', '금천구', '구로구', '영등포구', '양천구'],
@@ -397,9 +398,9 @@ function SearchPage() {
             )}
           </p>
           {categoryResults.length > 0 ? (
-            <div className="grid grid-cols-3 lg:grid-cols-4 gap-1.5 lg:gap-6 stagger-children">
+            <div className="flex flex-col divide-y divide-gray-100 stagger-children">
               {categoryResults.map((product) => (
-                <ProductCard key={product.id} product={product} />
+                <SearchProductListItem key={product.id} product={product} />
               ))}
             </div>
           ) : (
@@ -603,9 +604,9 @@ function SearchPage() {
                   <p className="text-sm text-gray-500 mb-3">
                     검색결과 <span className="font-bold text-black">{searchResults.length}</span>건
                   </p>
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-6">
+                  <div className="flex flex-col divide-y divide-gray-100">
                     {searchResults.map((product) => (
-                      <ProductCard key={product.id} product={product} />
+                      <SearchProductListItem key={product.id} product={product} />
                     ))}
                   </div>
                 </>
@@ -730,6 +731,69 @@ function SearchPage() {
         </FilterModal>
       )}
     </div>
+  );
+}
+
+function SearchProductListItem({ product }: { product: Product }) {
+  return (
+    <Link
+      href={`/product/${product.id}`}
+      className="flex gap-3 py-3.5 card-press"
+    >
+      <div className="relative w-[112px] h-[112px] flex-shrink-0 overflow-hidden rounded-xl bg-gray-100">
+        <img
+          src={product.imageUrl}
+          alt={product.title}
+          className="w-full h-full object-cover"
+        />
+      </div>
+
+      <div className="min-w-0 flex-1 py-0.5">
+        <div className="flex items-center gap-1.5 mb-1">
+          <span className="text-[12px] font-normal text-gray-400 truncate">
+            {product.location || product.hospitalName}
+          </span>
+          <span className="w-0.5 h-0.5 rounded-full bg-gray-300 flex-shrink-0" />
+          <span className="flex items-center gap-0.5 text-[12px] font-medium text-gray-500 flex-shrink-0">
+            <Star size={12} fill="#FBBF24" stroke="#FBBF24" />
+            {product.rating.toFixed(1)}
+          </span>
+        </div>
+
+        <h3 className="text-[15px] leading-[20px] font-medium text-gray-900 line-clamp-2">
+          {product.title}
+        </h3>
+
+        <div className="mt-1.5 flex items-baseline gap-1.5">
+          {product.discount && (
+            <span className="text-[13px] font-semibold text-[#8037FF]">
+              {product.discount}%
+            </span>
+          )}
+          <span className="text-[18px] leading-none font-semibold text-gray-900">
+            {product.price.toLocaleString()}원
+          </span>
+        </div>
+
+        {product.originalPrice && (
+          <p className="mt-1 text-[12px] text-gray-300 line-through">
+            {product.originalPrice.toLocaleString()}원
+          </p>
+        )}
+
+        <div className="mt-2 flex items-center gap-1.5 overflow-hidden">
+          <span className="flex-shrink-0 rounded px-1.5 py-0.5 text-[11px] font-medium text-[#8037FF] bg-[#F0EBFF]">
+            앱결제
+          </span>
+          <span className="flex-shrink-0 rounded px-1.5 py-0.5 text-[11px] font-medium text-gray-600 bg-gray-100">
+            앱예약
+          </span>
+          <span className="min-w-0 truncate text-[11px] text-gray-400">
+            리뷰 {product.reviewCount.toLocaleString()}개
+          </span>
+        </div>
+      </div>
+    </Link>
   );
 }
 

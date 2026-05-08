@@ -77,6 +77,7 @@ export interface Review {
   totalCost: number;
   treatmentDate: string;
   productId?: string;
+  reservationId?: string;
   hospitalId?: string;
   doctorId?: string;
   doctorName?: string;
@@ -86,6 +87,7 @@ export interface Reservation {
   id: string;
   status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
   date: string;
+  productId?: string;
   productTitle: string;
   productImage: string;
   hospitalName: string;

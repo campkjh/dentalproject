@@ -297,7 +297,7 @@ export default function ReservationDetailPage() {
           {canReview && (
             <button
               onClick={() =>
-                router.push(`/mypage/reviews/write?productId=${reservation.hospitalId}`)
+                router.push(`/mypage/reviews/write?productId=${reservation.productId ?? ''}&reservationId=${reservation.id}`)
               }
               className="flex-1 py-3.5 rounded-xl bg-[#7C3AED] text-white text-[14px] font-bold btn-press"
               style={{ boxShadow: '0 6px 16px rgba(124,58,237,0.3)' }}

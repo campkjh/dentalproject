@@ -17,8 +17,24 @@ function PaymentSuccessPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const productId = searchParams.get('productId');
+  const reservationId = searchParams.get('reservationId');
   const products = useStore((s) => s.products);
-  const product = products.find((p) => p.id === productId) ?? products[0];
+  const product = products.find((p) => p.id === productId);
+
+  if (!product || !reservationId) {
+    return (
+      <div className="min-h-screen bg-white flex flex-col items-center justify-center px-6 text-center">
+        <h1 className="text-lg font-bold text-gray-900">예약 정보를 확인할 수 없습니다.</h1>
+        <p className="mt-2 text-sm text-gray-500">마이페이지의 예약 내역에서 상태를 확인해주세요.</p>
+        <button
+          onClick={() => router.push('/mypage')}
+          className="mt-6 px-5 py-2.5 rounded-xl bg-[#7C3AED] text-white text-sm font-bold"
+        >
+          마이페이지로 이동
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-white flex flex-col">

@@ -44,8 +44,24 @@ function BottomNavInner() {
 
   return createPortal(
     <nav
-      style={{ position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)', zIndex: 9999, height: 82, width: '100%', maxWidth: 480 }}
-      className="bg-white border-t border-gray-100 lg:hidden"
+      style={{
+        position: 'fixed',
+        bottom: 0,
+        left: '50%',
+        transform: 'translateX(-50%)',
+        zIndex: 9999,
+        height: 82,
+        width: '100%',
+        maxWidth: 480,
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
+        background: 'rgba(255, 255, 255, 0.68)',
+        borderTop: '1px solid rgba(255, 255, 255, 0.76)',
+        boxShadow: '0 -10px 32px rgba(17, 24, 39, 0.10)',
+        backdropFilter: 'blur(18px) saturate(170%)',
+        WebkitBackdropFilter: 'blur(18px) saturate(170%)',
+      }}
+      className="lg:hidden"
     >
       <div className="flex items-center justify-around h-full">
         {consumerNav.map((item) => {

@@ -29,9 +29,11 @@ function CommunityWritePage() {
   const { user, addPost, showToast } = useStore();
   const { authUser } = useSession();
   const [submitting, setSubmitting] = useState(false);
+  const isDoctor = Boolean(user?.isDoctor || user?.doctorInfo);
+  const allowedBoardOptions = isDoctor ? boardOptions : boardOptions.filter((b) => b.value === 'question');
 
   const [boardType, setBoardType] = useState<'question' | 'free' | 'dental'>(
-    boardOptions.find((b) => b.value === boardParam)?.value || 'question'
+    allowedBoardOptions.find((b) => b.value === boardParam)?.value || 'question'
   );
   const [showBoardDropdown, setShowBoardDropdown] = useState(false);
   const [title, setTitle] = useState('');
@@ -81,6 +83,11 @@ function CommunityWritePage() {
     if (!authUser) {
       showToast('로그인이 필요합니다.');
       router.push('/login');
+      return;
+    }
+    if (!isDoctor && boardType !== 'question') {
+      showToast('일반 회원은 질문게시판에만 글을 작성할 수 있습니다.');
+      setBoardType('question');
       return;
     }
     if (!title.trim()) {
@@ -149,7 +156,7 @@ function CommunityWritePage() {
           </button>
           {showBoardDropdown && (
             <div className="absolute left-0 right-0 top-full mt-1 bg-white rounded-xl border border-gray-200 shadow-lg z-20 overflow-hidden">
-              {boardOptions.map((option) => (
+              {allowedBoardOptions.map((option) => (
                 <button
                   key={option.value}
                   onClick={() => {

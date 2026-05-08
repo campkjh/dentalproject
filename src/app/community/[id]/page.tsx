@@ -45,19 +45,28 @@ export default function PostDetailPage() {
     setLiked(!liked);
   };
 
-  const handleSubmitComment = () => {
+  const handleSubmitComment = async () => {
+    if (!user) {
+      showToast('로그인이 필요합니다.');
+      router.push('/login');
+      return;
+    }
     if (!commentText.trim()) return;
-    addComment({
+    const result = await addComment({
       id: `comment-${Date.now()}`,
       postId: params.id as string,
-      authorName: user?.name ?? '익명',
-      authorId: user?.id ?? 'guest',
+      authorName: user.name,
+      authorId: user.id,
       isAnonymous: post?.boardType === 'free',
       anonymousId: post?.boardType === 'free' ? String(Math.floor(Math.random() * 900) + 100) : undefined,
       content: commentText.trim(),
       date: new Date().toLocaleDateString('ko-KR'),
       likeCount: 0,
     });
+    if (result.error) {
+      showToast(result.error);
+      return;
+    }
     showToast('댓글이 등록되었습니다.');
     setCommentText('');
   };

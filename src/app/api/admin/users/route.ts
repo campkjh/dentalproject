@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient, createClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,8 +18,10 @@ export async function GET() {
     .order('created_at', { ascending: false });
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
 
-  // Get emails from auth.admin
-  const { data: authList } = await sb.auth.admin.listUsers({ perPage: 1000 });
+  // Get emails from auth.admin with service role after the current user is verified as admin.
+  const admin = await createAdminClient();
+  const { data: authList, error: authError } = await admin.auth.admin.listUsers({ perPage: 1000 });
+  if (authError) return NextResponse.json({ error: authError.message }, { status: 500 });
   const emailMap = new Map<string, string>();
   for (const u of authList?.users ?? []) {
     emailMap.set(u.id, u.email ?? '');

@@ -1,9 +1,11 @@
 'use client';
 
+import type { ReactNode } from 'react';
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Search, Send, ChevronRight, Star, MapPin, X } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { Search, Send, ChevronLeft, ChevronRight, Star, MapPin, X, ArrowUp } from 'lucide-react';
 import ProductCard from '@/components/common/ProductCard';
 import { useStore } from '@/store';
 import { siteConfig } from '@/lib/site-config';
@@ -45,9 +47,13 @@ export default function HomePage() {
   const router = useRouter();
   const { products, hospitals, reviews, categories, isLoggedIn, recentlyViewed, recentSearches, removeRecentSearch, catalogHydrated } = useStore();
   const [scrolled, setScrolled] = useState(false);
+  const [showScrollTop, setShowScrollTop] = useState(false);
+  const [scrollTopLeaving, setScrollTopLeaving] = useState(false);
   const [placeholderIdx, setPlaceholderIdx] = useState(0);
   const [animating, setAnimating] = useState(false);
   const headerRef = useRef<HTMLDivElement>(null);
+  const showScrollTopRef = useRef(false);
+  const scrollTopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [currentLocation, setCurrentLocation] = useState('내 근처');
 
   // Detect current location on mount — silent fallback, never shows error
@@ -87,9 +93,37 @@ export default function HomePage() {
 
   // Scroll detection
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 50);
+    const onScroll = () => {
+      const scrollTop = window.scrollY || document.documentElement.scrollTop || 0;
+      const isPastHeader = scrollTop > 50;
+      setScrolled(isPastHeader);
+
+      if (isPastHeader) {
+        if (scrollTopTimerRef.current) {
+          clearTimeout(scrollTopTimerRef.current);
+          scrollTopTimerRef.current = null;
+        }
+        showScrollTopRef.current = true;
+        setShowScrollTop(true);
+        setScrollTopLeaving(false);
+        return;
+      }
+
+      if (!showScrollTopRef.current) return;
+      setScrollTopLeaving(true);
+      if (scrollTopTimerRef.current) clearTimeout(scrollTopTimerRef.current);
+      scrollTopTimerRef.current = setTimeout(() => {
+        showScrollTopRef.current = false;
+        setShowScrollTop(false);
+        setScrollTopLeaving(false);
+      }, 260);
+    };
+    onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      if (scrollTopTimerRef.current) clearTimeout(scrollTopTimerRef.current);
+    };
   }, []);
 
   // Category dock detection (when category section scrolls past the header)
@@ -130,6 +164,10 @@ export default function HomePage() {
     return () => clearInterval(interval);
   }, []);
 
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   return (
     <div className="pb-[86px] lg:pb-0 page-enter">
       {/* Sticky Header */}
@@ -142,19 +180,63 @@ export default function HomePage() {
         <div className={`flex items-center justify-between px-2.5 py-3 transition-all duration-300 ${scrolled ? 'h-0 overflow-hidden opacity-0 py-0' : 'opacity-100'}`}>
           <span className="text-lg font-bold text-[#7C3AED]">로고</span>
           {isLoggedIn ? (
-            <div className="flex items-center gap-3">
-              <Link href="/search"><Search size={22} /></Link>
-              <Link href="/notifications" className="relative">
+            <div className="flex items-center gap-2">
+              <Link
+                href="/search"
+                className="w-10 h-10 rounded-full flex items-center justify-center text-gray-800 transition-all duration-200 active:scale-110"
+                style={{
+                  background: 'rgba(255, 255, 255, 0.56)',
+                  border: '1px solid rgba(255, 255, 255, 0.72)',
+                  boxShadow: '0 8px 24px rgba(17, 24, 39, 0.10)',
+                  backdropFilter: 'blur(16px) saturate(160%)',
+                  WebkitBackdropFilter: 'blur(16px) saturate(160%)',
+                }}
+              >
+                <Search size={20} />
+              </Link>
+              <Link
+                href="/notifications"
+                className="relative w-10 h-10 rounded-full flex items-center justify-center text-gray-800 transition-all duration-200 active:scale-110"
+                style={{
+                  background: 'rgba(255, 255, 255, 0.56)',
+                  border: '1px solid rgba(255, 255, 255, 0.72)',
+                  boxShadow: '0 8px 24px rgba(17, 24, 39, 0.10)',
+                  backdropFilter: 'blur(16px) saturate(160%)',
+                  WebkitBackdropFilter: 'blur(16px) saturate(160%)',
+                }}
+              >
                 <Send size={22} />
                 <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] rounded-full min-w-[16px] h-4 flex items-center justify-center px-1">23</span>
               </Link>
             </div>
           ) : (
-            <div className="flex items-center gap-3">
-              <Link href="/login" className="bg-[#7C3AED] text-white text-sm px-2.5 py-2 rounded-full font-medium">
+            <div className="flex items-center gap-2">
+              <Link
+                href="/login"
+                className="text-sm px-3.5 py-2 rounded-full font-semibold text-gray-900 transition-all duration-200 active:scale-105"
+                style={{
+                  background: 'rgba(255, 255, 255, 0.58)',
+                  border: '1px solid rgba(255, 255, 255, 0.74)',
+                  boxShadow: '0 8px 24px rgba(17, 24, 39, 0.10)',
+                  backdropFilter: 'blur(16px) saturate(160%)',
+                  WebkitBackdropFilter: 'blur(16px) saturate(160%)',
+                }}
+              >
                 로그인
               </Link>
-              <Link href="/search"><Search size={22} /></Link>
+              <Link
+                href="/search"
+                className="w-10 h-10 rounded-full flex items-center justify-center text-gray-800 transition-all duration-200 active:scale-110"
+                style={{
+                  background: 'rgba(255, 255, 255, 0.58)',
+                  border: '1px solid rgba(255, 255, 255, 0.74)',
+                  boxShadow: '0 8px 24px rgba(17, 24, 39, 0.10)',
+                  backdropFilter: 'blur(16px) saturate(160%)',
+                  WebkitBackdropFilter: 'blur(16px) saturate(160%)',
+                }}
+              >
+                <Search size={20} />
+              </Link>
             </div>
           )}
         </div>
@@ -288,15 +370,12 @@ export default function HomePage() {
         {/* 치과 섹션 */}
         {dentalProducts.length > 0 && (
           <div className="mb-8">
-            <div className="flex items-center justify-between px-2.5 lg:px-6 lg:max-w-7xl lg:mx-auto mb-3">
-              <div className="flex items-center gap-2">
-                <img src="/icons/dental.svg" alt="치과" className="w-6 h-6" />
-                <h2 className="font-bold">치과</h2>
-              </div>
-              <Link href="/search?category=dental" className="flex items-center gap-0.5 text-sm text-[#7C3AED] hover:underline">
-                더보기 <ChevronRight size={14} />
-              </Link>
-            </div>
+            <SectionHeader
+              title="치과"
+              subtitle="치아미백부터 임플란트까지 인기 시술을 모았어요."
+              icon="/icons/dental.svg"
+              action={<MoreButton href="/search?category=dental" />}
+            />
             <div className="px-2.5 lg:max-w-7xl lg:mx-auto">
               <div className="flex gap-1.5 overflow-x-auto hide-scrollbar pb-2 lg:grid lg:grid-cols-4 lg:gap-1.5 lg:overflow-visible">
                 {dentalProducts.map((product) => (
@@ -312,15 +391,12 @@ export default function HomePage() {
         {/* 성형외과 섹션 */}
         {plasticProducts.length > 0 && (
           <div className="mb-8">
-            <div className="flex items-center justify-between px-2.5 lg:px-6 lg:max-w-7xl lg:mx-auto mb-3">
-              <div className="flex items-center gap-2">
-                <img src="/icons/plastic.svg" alt="성형외과" className="w-6 h-6" />
-                <h2 className="font-bold">성형외과</h2>
-              </div>
-              <Link href="/search?category=plastic" className="flex items-center gap-0.5 text-sm text-[#7C3AED] hover:underline">
-                더보기 <ChevronRight size={14} />
-              </Link>
-            </div>
+            <SectionHeader
+              title="성형외과"
+              subtitle="요즘 많이 찾는 성형·리프팅 패키지를 확인해보세요."
+              icon="/icons/plastic.svg"
+              action={<MoreButton href="/search?category=plastic" />}
+            />
             <div className="px-2.5 lg:max-w-7xl lg:mx-auto">
               <div className="flex gap-1.5 overflow-x-auto hide-scrollbar pb-2 lg:grid lg:grid-cols-4 lg:gap-1.5 lg:overflow-visible">
                 {plasticProducts.map((product) => (
@@ -338,58 +414,56 @@ export default function HomePage() {
 
         {/* 나한테 꿀이되는 후기 */}
         <div className="mb-8">
-          <div className="flex items-center justify-between px-2.5 lg:px-6 lg:max-w-7xl lg:mx-auto mb-3">
-            <h2 className="font-bold">나한테 꿀이되는 후기</h2>
-          </div>
+          <SectionHeader title="나한테 꿀이되는 후기" subtitle="실제 방문자가 남긴 시술 경험을 살펴보세요." />
           <div className="px-2.5 lg:max-w-7xl lg:mx-auto">
             <div className="flex gap-2.5 overflow-x-auto hide-scrollbar pb-2" style={{ scrollSnapType: 'x mandatory' }}>
               {reviews.slice(0, 10).map((review) => {
                 const hospital = hospitals.find(h => h.id === review.hospitalId);
                 const relatedProduct = products.find(p => p.id === review.productId || p.hospitalId === review.hospitalId);
                 return (
-                  <Link
-                    key={review.id}
-                    href={relatedProduct ? `/product/${relatedProduct.id}` : '#'}
-                    className="flex-shrink-0 block"
-                    style={{ width: 286, scrollSnapAlign: 'start' }}
-                  >
-                    {/* 전후 이미지 영역 */}
-                    <div className="relative overflow-hidden" style={{ borderRadius: '16px 16px 0 0', backgroundColor: '#111' }}>
-                      <div className="flex">
-                        <div className="flex-1 aspect-square flex items-center justify-center" style={{ backgroundColor: '#EBEBEB' }}>
-                          <span className="text-3xl">📷</span>
-                        </div>
-                        <div className="flex-1 aspect-square flex items-center justify-center" style={{ backgroundColor: '#DEDEDE' }}>
-                          <span className="text-3xl">📷</span>
-                        </div>
-                      </div>
-                      <span style={{ position: 'absolute', top: 12, right: 12, fontSize: 13, fontWeight: 600, color: '#fff' }}>시술 후</span>
-                    </div>
-                    {/* 카드 본문 */}
-                    <div style={{ backgroundColor: '#F6F6F8', borderRadius: '0 0 16px 16px', padding: '14px 16px' }}>
-                      <p style={{ fontSize: 14, color: '#C8CEDA' }}>
-                        {hospital?.location || currentLocation} · {hospital?.name || review.authorName}
-                      </p>
-                      <h3 style={{ fontSize: 18, fontWeight: 600, color: '#2B313D', marginTop: 6, lineHeight: '24px' }} className="line-clamp-2">
-                        {review.treatmentName}
-                      </h3>
-                      <div className="flex items-center gap-1.5" style={{ marginTop: 8 }}>
-                        <Star size={16} fill="#FBBF24" stroke="#FBBF24" />
-                        <span style={{ fontSize: 14, fontWeight: 600, color: '#2B313D' }}>{review.rating.toFixed(1)}</span>
-                        <span style={{ fontSize: 14, color: '#A4ABBA' }}>({relatedProduct?.reviewCount?.toLocaleString() || '0'})</span>
-                      </div>
-                      <p style={{ fontSize: 20, fontWeight: 700, color: '#111111', marginTop: 6 }}>
-                        {review.totalCost.toLocaleString()}원
-                      </p>
-                      <div className="flex items-center gap-1.5" style={{ marginTop: 10 }}>
-                        <span className="flex items-center gap-1" style={{ fontSize: 12, fontWeight: 500, color: '#3B82F6', backgroundColor: '#EFF6FF', borderRadius: 4, padding: '3px 8px' }}>
-                          <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
-                          앱결제
-                        </span>
-                        <span className="flex items-center gap-1" style={{ fontSize: 12, fontWeight: 500, color: '#10B981', backgroundColor: '#ECFDF5', borderRadius: 4, padding: '3px 8px' }}>
-                          <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4 12 14.01l-3-3"/></svg>
-                          앱예약
-                        </span>
+	                  <Link
+	                    key={review.id}
+	                    href={relatedProduct ? `/product/${relatedProduct.id}` : '#'}
+	                    className="flex-shrink-0 block"
+	                    style={{ width: 230, scrollSnapAlign: 'start' }}
+	                  >
+	                    {/* 전후 이미지 영역 */}
+	                    <div className="relative overflow-hidden" style={{ borderRadius: '14px 14px 0 0', backgroundColor: '#111' }}>
+	                      <div className="flex">
+	                        <div className="flex-1 h-[104px] flex items-center justify-center" style={{ backgroundColor: '#EBEBEB' }}>
+	                          <span className="text-2xl">📷</span>
+	                        </div>
+	                        <div className="flex-1 h-[104px] flex items-center justify-center" style={{ backgroundColor: '#DEDEDE' }}>
+	                          <span className="text-2xl">📷</span>
+	                        </div>
+	                      </div>
+	                      <span style={{ position: 'absolute', top: 8, right: 8, fontSize: 11, fontWeight: 600, color: '#fff' }}>시술 후</span>
+	                    </div>
+	                    {/* 카드 본문 */}
+	                    <div style={{ backgroundColor: '#F6F6F8', borderRadius: '0 0 14px 14px', padding: '10px 12px' }}>
+	                      <p className="truncate" style={{ fontSize: 12, color: '#C8CEDA' }}>
+	                        {hospital?.location || currentLocation} · {hospital?.name || review.authorName}
+	                      </p>
+	                      <h3 style={{ fontSize: 15, fontWeight: 600, color: '#2B313D', marginTop: 4, lineHeight: '20px' }} className="line-clamp-1">
+	                        {review.treatmentName}
+	                      </h3>
+	                      <div className="flex items-center gap-1" style={{ marginTop: 5 }}>
+	                        <Star size={13} fill="#FBBF24" stroke="#FBBF24" />
+	                        <span style={{ fontSize: 12, fontWeight: 600, color: '#2B313D' }}>{review.rating.toFixed(1)}</span>
+	                        <span style={{ fontSize: 12, color: '#A4ABBA' }}>({relatedProduct?.reviewCount?.toLocaleString() || '0'})</span>
+	                      </div>
+	                      <p style={{ fontSize: 16, fontWeight: 700, color: '#111111', marginTop: 4 }}>
+	                        {review.totalCost.toLocaleString()}원
+	                      </p>
+	                      <div className="flex items-center gap-1" style={{ marginTop: 7 }}>
+	                        <span className="flex items-center gap-1" style={{ fontSize: 11, fontWeight: 500, color: '#3B82F6', backgroundColor: '#EFF6FF', borderRadius: 4, padding: '2px 6px' }}>
+	                          <svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+	                          앱결제
+	                        </span>
+	                        <span className="flex items-center gap-1" style={{ fontSize: 11, fontWeight: 500, color: '#10B981', backgroundColor: '#ECFDF5', borderRadius: 4, padding: '2px 6px' }}>
+	                          <svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4 12 14.01l-3-3"/></svg>
+	                          앱예약
+	                        </span>
                       </div>
                     </div>
                   </Link>
@@ -401,12 +475,11 @@ export default function HomePage() {
 
         {/* 이번 주 인기 많은 패키지 */}
         <div className="mb-8">
-          <div className="flex items-center justify-between px-2.5 lg:px-6 lg:max-w-7xl lg:mx-auto mb-3">
-            <h2 className="font-bold">이번 주 인기 많은 패키지</h2>
-            <Link href="/search" className="flex items-center gap-0.5 text-sm text-[#7C3AED] hover:underline">
-              더보기 <ChevronRight size={14} />
-            </Link>
-          </div>
+          <SectionHeader
+            title="이번 주 인기 많은 패키지"
+            subtitle="후기가 많은 패키지부터 빠르게 비교해보세요."
+            action={<MoreButton href="/search" />}
+          />
           <div className="px-2.5 lg:max-w-7xl lg:mx-auto">
             <div className="flex gap-1.5 overflow-x-auto hide-scrollbar pb-2 lg:grid lg:grid-cols-4 lg:gap-1.5 lg:overflow-visible">
               {weeklyPopularPackages.map((product) => (
@@ -420,12 +493,11 @@ export default function HomePage() {
 
         {/* 이런 패키지는 어때요? */}
         <div className="mb-8">
-          <div className="flex items-center justify-between px-2.5 lg:px-6 lg:max-w-7xl lg:mx-auto mb-3">
-            <h2 className="font-bold">이런 패키지는 어때요?</h2>
-            <Link href="/search" className="flex items-center gap-0.5 text-sm text-[#7C3AED] hover:underline">
-              더보기 <ChevronRight size={14} />
-            </Link>
-          </div>
+          <SectionHeader
+            title="이런 패키지는 어때요?"
+            subtitle="할인율이 좋은 시술을 골라 추천해드려요."
+            action={<MoreButton href="/search" />}
+          />
           <div className="px-2.5 lg:max-w-7xl lg:mx-auto">
             <div className="flex gap-1.5 overflow-x-auto hide-scrollbar pb-2 lg:grid lg:grid-cols-4 lg:gap-1.5 lg:overflow-visible">
               {suggestedPackages.map((product) => (
@@ -439,9 +511,7 @@ export default function HomePage() {
 
         {/* 요즘 뜨고 있는 병원 */}
         <div className="mb-8">
-          <div className="flex items-center justify-between px-2.5 lg:px-6 lg:max-w-7xl lg:mx-auto mb-3">
-            <h2 className="font-bold">요즘 뜨고 있는 병원</h2>
-          </div>
+          <SectionHeader title="요즘 뜨고 있는 병원" subtitle="평점과 후기가 좋은 병원을 둘러보세요." />
           <div className="px-2.5 lg:max-w-7xl lg:mx-auto">
             <div className="flex gap-2.5 overflow-x-auto hide-scrollbar pb-2" style={{ scrollSnapType: 'x mandatory' }}>
               {(() => {
@@ -500,12 +570,11 @@ export default function HomePage() {
 
         {/* 인기 상품 */}
         <div className="mb-6">
-          <div className="flex items-center justify-between px-2.5 lg:px-6 lg:max-w-7xl lg:mx-auto mb-3">
-            <h2 className="font-bold">인기 상품</h2>
-            <Link href="/search" className="flex items-center gap-0.5 text-sm text-[#7C3AED] hover:underline">
-              전체보기 <ChevronRight size={14} />
-            </Link>
-          </div>
+          <SectionHeader
+            title="인기 상품"
+            subtitle="많이 찜하고 예약한 상품을 확인해보세요."
+            action={<MoreButton href="/search" label="전체보기" />}
+          />
           <div className="px-2.5 lg:max-w-7xl lg:mx-auto">
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-6 stagger-children">
               {popularProducts.map((product) => (
@@ -535,6 +604,30 @@ export default function HomePage() {
         <p className="mt-1">{siteConfig.representative} | {siteConfig.businessNumber}</p>
         <p>Copyright(c) {siteConfig.copyrightName}. All right reserved.</p>
       </div>
+
+      {showScrollTop &&
+        createPortal(
+          <button
+            type="button"
+            aria-label="상단으로 이동"
+            onClick={scrollToTop}
+            className={`${scrollTopLeaving ? 'scroll-top-leave' : 'scroll-top-bounce'} scroll-top-button fixed z-[10000] w-12 h-12 rounded-full p-0 text-gray-950`}
+            style={{
+              bottom: '104px',
+              right: '16px',
+              background: 'rgba(255, 255, 255, 0.82)',
+              border: '1px solid rgba(229, 231, 235, 0.92)',
+              boxShadow: '0 12px 34px rgba(17, 24, 39, 0.22)',
+              backdropFilter: 'blur(18px) saturate(170%)',
+              WebkitBackdropFilter: 'blur(18px) saturate(170%)',
+            }}
+          >
+            <span className="scroll-top-button-inner">
+              <ArrowUp size={21} strokeWidth={1.9} />
+            </span>
+          </button>,
+          document.body
+        )}
 
     </div>
   );
@@ -701,10 +794,7 @@ function NearbyHotPlaces({
 
   return (
     <div className="mb-8">
-      <div className="px-2.5 lg:px-6 lg:max-w-7xl lg:mx-auto mb-3">
-        <h2 className="font-bold text-[16px] text-gray-900">근처 핫플레이스 알아보기</h2>
-        <p className="text-[12px] text-gray-500 mt-1">나와 가까운 핫플이 어디인지 알려드려요.</p>
-      </div>
+      <SectionHeader title="근처 핫플레이스 알아보기" subtitle="나와 가까운 핫플이 어디인지 알려드려요." />
       <div className="px-2.5 lg:px-6 lg:max-w-7xl lg:mx-auto">
         <div className="flex gap-5 overflow-x-auto hide-scrollbar pb-2">
           {sorted.map((spot) => (
@@ -802,44 +892,100 @@ function CategoryPager() {
     setActivePage(pageIndex);
   };
 
+  const scrollToPage = (direction: 'prev' | 'next') => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    const nextPage =
+      direction === 'prev'
+        ? Math.max(0, activePage - 1)
+        : Math.min(totalPages - 1, activePage + 1);
+
+    el.scrollTo({
+      left: nextPage * el.clientWidth,
+      behavior: 'smooth',
+    });
+    setActivePage(nextPage);
+  };
+
   return (
     <div className="mb-8 lg:max-w-7xl lg:mx-auto">
-      <div
-        ref={scrollerRef}
-        onScroll={handleScroll}
-        className="flex overflow-x-auto hide-scrollbar"
-        style={{
-          scrollSnapType: 'x mandatory',
-          WebkitOverflowScrolling: 'touch',
-        }}
-      >
-        {Array.from({ length: totalPages }).map((_, pageIdx) => {
-          const pageItems = categories.slice(pageIdx * pageSize, (pageIdx + 1) * pageSize);
-          return (
-            <div
-              key={pageIdx}
-              className="flex-shrink-0 w-full px-4 lg:px-6"
-              style={{ scrollSnapAlign: 'start' }}
-            >
-              <div className="grid grid-cols-5 gap-y-4 gap-x-2">
-                {pageItems.map((cat) => (
-                  <Link
-                    key={cat.id}
-                    href={`/search?category=${cat.id}`}
-                    className="flex flex-col items-center gap-1.5 card-press"
-                  >
-                    <div className="w-[52px] h-[52px] rounded-2xl bg-[#F4F5F7] flex items-center justify-center">
-                      <img src={cat.icon} alt={cat.name} className="w-9 h-9" />
-                    </div>
-                    <span className="text-[12px] text-gray-700 font-medium text-center leading-tight">
-                      {cat.name}
-                    </span>
-                  </Link>
-                ))}
+      <div className="relative">
+        {totalPages > 1 && (
+          <>
+            {activePage > 0 && (
+              <button
+                type="button"
+                aria-label="이전 카테고리"
+                onClick={() => scrollToPage('prev')}
+                className="absolute left-1 lg:left-3 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full flex items-center justify-center text-gray-800 transition-all duration-200 hover:scale-105 active:scale-95"
+                style={{
+                  background: 'rgba(255, 255, 255, 0.58)',
+                  border: '1px solid rgba(255, 255, 255, 0.72)',
+                  boxShadow: '0 8px 28px rgba(17, 24, 39, 0.14)',
+                  backdropFilter: 'blur(16px) saturate(160%)',
+                  WebkitBackdropFilter: 'blur(16px) saturate(160%)',
+                }}
+              >
+                <ChevronLeft size={20} strokeWidth={2.4} />
+              </button>
+            )}
+            {activePage < totalPages - 1 && (
+              <button
+                type="button"
+                aria-label="다음 카테고리"
+                onClick={() => scrollToPage('next')}
+                className="absolute right-1 lg:right-3 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full flex items-center justify-center text-gray-800 transition-all duration-200 hover:scale-105 active:scale-95"
+                style={{
+                  background: 'rgba(255, 255, 255, 0.58)',
+                  border: '1px solid rgba(255, 255, 255, 0.72)',
+                  boxShadow: '0 8px 28px rgba(17, 24, 39, 0.14)',
+                  backdropFilter: 'blur(16px) saturate(160%)',
+                  WebkitBackdropFilter: 'blur(16px) saturate(160%)',
+                }}
+              >
+                <ChevronRight size={20} strokeWidth={2.4} />
+              </button>
+            )}
+          </>
+        )}
+
+        <div
+          ref={scrollerRef}
+          onScroll={handleScroll}
+          className="flex overflow-x-auto hide-scrollbar"
+          style={{
+            scrollSnapType: 'x mandatory',
+            WebkitOverflowScrolling: 'touch',
+          }}
+        >
+          {Array.from({ length: totalPages }).map((_, pageIdx) => {
+            const pageItems = categories.slice(pageIdx * pageSize, (pageIdx + 1) * pageSize);
+            return (
+              <div
+                key={pageIdx}
+                className="flex-shrink-0 w-full px-4 lg:px-6"
+                style={{ scrollSnapAlign: 'start' }}
+              >
+                <div className="grid grid-cols-5 gap-y-4 gap-x-2">
+                  {pageItems.map((cat) => (
+                    <Link
+                      key={cat.id}
+                      href={`/search?category=${cat.id}`}
+                      className="flex flex-col items-center gap-1.5 card-press"
+                    >
+                      <div className="w-[52px] h-[52px] rounded-2xl bg-[#F4F5F7] flex items-center justify-center">
+                        <img src={cat.icon} alt={cat.name} className="w-9 h-9" />
+                      </div>
+                      <span className="text-[12px] text-gray-700 font-medium text-center leading-tight">
+                        {cat.name}
+                      </span>
+                    </Link>
+                  ))}
+                </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
 
       {totalPages > 1 && (
@@ -849,8 +995,9 @@ function CategoryPager() {
               key={i}
               className="h-1 rounded-full transition-all duration-300"
               style={{
-                width: i === activePage ? 16 : 4,
-                backgroundColor: i === activePage ? '#7C3AED' : '#E5E7EB',
+                width: i === activePage ? 28 : 10,
+                height: 3,
+                backgroundColor: i === activePage ? '#111827' : '#E5E7EB',
               }}
             />
           ))}
@@ -875,22 +1022,11 @@ function RecentlyViewedSection({
 
   return (
     <div className="mb-8">
-      <div className="flex items-center justify-between px-2.5 lg:px-6 lg:max-w-7xl lg:mx-auto mb-3">
-        <div className="flex items-center gap-2">
-          <h2 className="font-bold">최근 본 상품</h2>
-          {!hasRecent && (
-            <span className="text-[11px] text-gray-400 font-medium">
-              추천으로 보여드려요
-            </span>
-          )}
-        </div>
-        <Link
-          href="/wishlist"
-          className="flex items-center gap-0.5 text-sm text-[#7C3AED] hover:underline"
-        >
-          더보기 <ChevronRight size={14} />
-        </Link>
-      </div>
+      <SectionHeader
+        title="최근 본 상품"
+        subtitle={hasRecent ? '최근 둘러본 상품을 이어서 확인해보세요.' : '추천으로 보여드려요.'}
+        action={<MoreButton href="/wishlist" />}
+      />
       <div className="px-2.5 lg:max-w-7xl lg:mx-auto">
         <div className="flex gap-3 overflow-x-auto hide-scrollbar pb-2 lg:grid lg:grid-cols-4 lg:gap-6 lg:overflow-visible">
           {items.map((p) => (
@@ -907,6 +1043,53 @@ function RecentlyViewedSection({
   );
 }
 
+function SectionHeader({
+  title,
+  subtitle,
+  icon,
+  action,
+}: {
+  title: string;
+  subtitle?: string;
+  icon?: string;
+  action?: ReactNode;
+}) {
+  return (
+    <div className="flex items-start justify-between gap-3 px-2.5 lg:px-6 lg:max-w-7xl lg:mx-auto mb-3">
+      <div className="min-w-0">
+        <div className="flex items-center gap-2">
+          {icon && <img src={icon} alt={title} className="w-6 h-6 flex-shrink-0" />}
+          <h2 className="font-bold text-[18px] leading-[24px] text-gray-900">{title}</h2>
+        </div>
+        {subtitle && (
+          <p className="mt-0.5 text-[14px] leading-[19px] text-gray-400">
+            {subtitle}
+          </p>
+        )}
+      </div>
+      {action && <div className="flex-shrink-0 pt-0.5">{action}</div>}
+    </div>
+  );
+}
+
+function MoreButton({ href, label = '더보기' }: { href: string; label?: string }) {
+  return (
+    <Link
+      href={href}
+      className="flex items-center gap-0.5 rounded-full pl-3 pr-2 py-1.5 text-[12px] font-semibold text-gray-900 transition-all duration-200 active:scale-105"
+      style={{
+        background: 'rgba(255, 255, 255, 0.58)',
+        border: '1px solid rgba(255, 255, 255, 0.74)',
+        boxShadow: '0 8px 24px rgba(17, 24, 39, 0.10)',
+        backdropFilter: 'blur(16px) saturate(160%)',
+        WebkitBackdropFilter: 'blur(16px) saturate(160%)',
+      }}
+    >
+      {label} <ChevronRight size={13} strokeWidth={2.3} />
+    </Link>
+  );
+}
+
 function RecentTagsSection({
   tags,
   onRemove,
@@ -918,9 +1101,7 @@ function RecentTagsSection({
 
   return (
     <div className="mb-6">
-      <div className="flex items-center justify-between px-2.5 lg:px-6 lg:max-w-7xl lg:mx-auto mb-2">
-        <h2 className="font-bold">최근 본 태그</h2>
-      </div>
+      <SectionHeader title="최근 본 태그" />
       <div className="px-2.5 lg:max-w-7xl lg:mx-auto">
         <div className="flex gap-1.5 overflow-x-auto hide-scrollbar pb-1">
           {tags.map((tag) => (

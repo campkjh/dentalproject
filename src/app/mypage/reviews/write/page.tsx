@@ -38,9 +38,11 @@ function ReviewWritePage() {
   const searchParams = useSearchParams();
   const localReviewSeq = useRef(0);
   const productId = searchParams.get('productId');
+  const reservationId = searchParams.get('reservationId');
   const { user, addReview, showToast, products, reservations, hospitals } = useStore();
 
-  const product = products.find((p) => p.id === productId) ?? products[0];
+  const reservation = reservations.find((r) => r.id === reservationId);
+  const product = products.find((p) => p.id === (productId || reservation?.productId)) ?? products[0];
   const hospital = hospitals.find((h) => h.id === product.hospitalId);
   const doctors = hospital?.doctors ?? [];
 
@@ -75,6 +77,7 @@ function ReviewWritePage() {
   const [singleDate, setSingleDate] = useState('');
   const [mosaicRequested, setMosaicRequested] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const MAX_CONTENT = 2000;
 
@@ -109,7 +112,13 @@ ${hasAspectFeedback && aspects.kindness >= 4 ? '원장님과 스태프분들의 
     showToast('AI가 리뷰를 작성했습니다. 내용을 다듬어주세요.');
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    if (!user) {
+      showToast('로그인이 필요합니다.');
+      router.push('/login');
+      return;
+    }
+    if (submitting) return;
     if (rating === 0) {
       showToast('별점을 선택해주세요.');
       return;
@@ -119,10 +128,11 @@ ${hasAspectFeedback && aspects.kindness >= 4 ? '원장님과 스태프분들의 
       return;
     }
     localReviewSeq.current += 1;
-    addReview({
+    setSubmitting(true);
+    const result = await addReview({
       id: `review_${product.id}_${localReviewSeq.current}`,
-      authorName: user?.name ?? '홍길동',
-      authorId: user?.id ?? '1',
+      authorName: user.name,
+      authorId: user.id,
       date: treatmentDate || treatmentTiming || '',
       rating,
       content,
@@ -132,10 +142,16 @@ ${hasAspectFeedback && aspects.kindness >= 4 ? '원장님과 스태프분들의 
       totalCost: parseInt(totalCost, 10) || 0,
       treatmentDate: treatmentTiming || treatmentDate,
       productId: product.id,
+      reservationId: reservation?.id,
       hospitalId: product.hospitalId,
       doctorId: selectedDoctorId || undefined,
       doctorName: doctors.find((d) => d.id === selectedDoctorId)?.name,
     });
+    setSubmitting(false);
+    if (result.error) {
+      showToast(result.error);
+      return;
+    }
     showToast('리뷰가 작성되었습니다!');
     router.push('/mypage/reviews');
   };
@@ -545,7 +561,8 @@ ${hasAspectFeedback && aspects.kindness >= 4 ? '원장님과 스태프분들의 
       >
         <button
           onClick={handleSubmit}
-          className="w-full py-3.5 rounded-xl text-[14px] font-bold btn-press"
+          disabled={submitting}
+          className="w-full py-3.5 rounded-xl text-[14px] font-bold btn-press disabled:opacity-60"
           style={{
             backgroundColor:
               rating > 0 && content.length >= 50 ? '#7C3AED' : '#E5E7EB',
@@ -557,7 +574,7 @@ ${hasAspectFeedback && aspects.kindness >= 4 ? '원장님과 스태프분들의 
             transition: 'all 240ms ease',
           }}
         >
-          리뷰 등록하고 500P 받기
+          {submitting ? '등록 중...' : '리뷰 등록하고 500P 받기'}
         </button>
       </div>
     </div>

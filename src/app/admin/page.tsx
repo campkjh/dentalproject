@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useSyncExternalStore } from 'react';
 import {
   Users,
   Building2,
@@ -61,6 +61,13 @@ const statusLabels: Record<string, string> = {
   cancelled: '취소',
 };
 
+const subscribeMounted = () => () => {};
+const getMountedSnapshot = () => true;
+const getServerMountedSnapshot = () => false;
+function useMounted() {
+  return useSyncExternalStore(subscribeMounted, getMountedSnapshot, getServerMountedSnapshot);
+}
+
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
@@ -69,6 +76,7 @@ export default function AdminDashboard() {
   const { authUser } = useSession();
   const [apiData, setApiData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const mounted = useMounted();
 
   useEffect(() => {
     if (!authUser) { setLoading(false); return; }
@@ -183,7 +191,7 @@ export default function AdminDashboard() {
             {period === 'month' ? '월별' : period === 'week' ? '요일별' : '시간별'} 매출 추이
           </h3>
           <div className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
+            {mounted && <ResponsiveContainer width="100%" height="100%">
               <LineChart data={revenueData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" />
                 <XAxis
@@ -225,7 +233,7 @@ export default function AdminDashboard() {
                   strokeDasharray="5 5"
                 />
               </LineChart>
-            </ResponsiveContainer>
+            </ResponsiveContainer>}
           </div>
         </div>
 
@@ -235,7 +243,7 @@ export default function AdminDashboard() {
             {period === 'month' ? '주간' : period === 'week' ? '요일별' : '시간별'} 예약 현황
           </h3>
           <div className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
+            {mounted && <ResponsiveContainer width="100%" height="100%">
               <BarChart data={reservationData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" vertical={false} />
                 <XAxis
@@ -264,7 +272,7 @@ export default function AdminDashboard() {
                 <Bar dataKey="완료" stackId="a" fill={COLORS.green} />
                 <Bar dataKey="취소" stackId="a" fill={COLORS.red} radius={[4, 4, 0, 0]} />
               </BarChart>
-            </ResponsiveContainer>
+            </ResponsiveContainer>}
           </div>
         </div>
       </div>
@@ -277,7 +285,7 @@ export default function AdminDashboard() {
         <div className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
           <h3 className="font-semibold text-gray-900 mb-4">카테고리별 매출 비중</h3>
           <div className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
+            {mounted && <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
                   data={categoryData}
@@ -310,7 +318,7 @@ export default function AdminDashboard() {
                   )}
                 />
               </PieChart>
-            </ResponsiveContainer>
+            </ResponsiveContainer>}
           </div>
         </div>
 
@@ -320,7 +328,7 @@ export default function AdminDashboard() {
             {period === 'month' ? '최근 30일' : period === 'week' ? '최근 7일' : '오늘'} 신규 가입자 추이
           </h3>
           <div className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
+            {mounted && <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={userGrowthData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
                 <defs>
                   <linearGradient id="gradientPurple" x1="0" y1="0" x2="0" y2="1">
@@ -358,7 +366,7 @@ export default function AdminDashboard() {
                   fill="url(#gradientPurple)"
                 />
               </AreaChart>
-            </ResponsiveContainer>
+            </ResponsiveContainer>}
           </div>
         </div>
       </div>

@@ -21,19 +21,61 @@ export async function POST(req: NextRequest) {
 
   const hospitalId = await resolveHospitalId(sb, body.hospitalId ?? null);
   const productId = body.productId && /^[0-9a-f]{8}-/.test(body.productId) ? body.productId : null;
+  const reservationId = body.reservationId && /^[0-9a-f]{8}-/.test(body.reservationId) ? body.reservationId : null;
   const doctorId = body.doctorId && /^[0-9a-f]{8}-/.test(body.doctorId) ? body.doctorId : null;
+  const treatmentDate = body.treatmentDate ?? null;
+
+  if (reservationId) {
+    const { data: reservation } = await sb
+      .from('reservations')
+      .select('id, user_id, status')
+      .eq('id', reservationId)
+      .eq('user_id', user.id)
+      .maybeSingle();
+    if (!reservation) {
+      return NextResponse.json({ error: '예약 정보를 찾을 수 없습니다.' }, { status: 404 });
+    }
+    if (!['confirmed', 'completed'].includes(reservation.status)) {
+      return NextResponse.json({ error: '확정 또는 완료된 예약만 후기를 작성할 수 있습니다.' }, { status: 400 });
+    }
+    const { data: duplicateByReservation } = await sb
+      .from('reviews')
+      .select('id')
+      .eq('reservation_id', reservationId)
+      .maybeSingle();
+    if (duplicateByReservation) {
+      return NextResponse.json({ error: '이미 작성된 후기입니다.' }, { status: 409 });
+    }
+  }
+
+  if (productId || hospitalId) {
+    let duplicateQuery = sb
+      .from('reviews')
+      .select('id')
+      .eq('author_id', user.id)
+      .limit(1);
+    duplicateQuery = productId
+      ? duplicateQuery.eq('product_id', productId)
+      : duplicateQuery.eq('hospital_id', hospitalId);
+    if (treatmentDate) duplicateQuery = duplicateQuery.eq('treatment_date', treatmentDate);
+    const { data: duplicate } = await duplicateQuery.maybeSingle();
+    if (duplicate) {
+      return NextResponse.json({ error: '이미 작성된 후기입니다.' }, { status: 409 });
+    }
+  }
 
   const { data, error } = await sb
     .from('reviews')
     .insert({
       author_id: user.id,
+      reservation_id: reservationId,
       hospital_id: hospitalId,
       product_id: productId,
       doctor_id: doctorId,
       rating: Number(body.rating ?? 5),
       content: body.content ?? '',
       treatment_name: body.treatmentName ?? null,
-      treatment_date: body.treatmentDate ?? null,
+      treatment_date: treatmentDate,
       total_cost: body.totalCost ?? 0,
       before_image: body.beforeImage ?? null,
       after_image: body.afterImage ?? null,

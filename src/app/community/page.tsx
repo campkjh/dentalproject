@@ -28,7 +28,7 @@ const boardTypeMap: Record<string, Post['boardType']> = {
 };
 
 export default function CommunityPage() {
-  const { isLoggedIn, posts, catalogHydrated } = useStore();
+  const { isDoctor, posts, catalogHydrated } = useStore();
   const [activeBoard, setActiveBoard] = useState('질문게시판');
   const [sortBy, setSortBy] = useState('최신순');
   const [showSortDropdown, setShowSortDropdown] = useState(false);
@@ -51,18 +51,23 @@ export default function CommunityPage() {
   };
 
   const activeCategoryIdx = questionCategories.indexOf(activeCategory);
+  const visibleBoardTabs = isDoctor ? boardTabs : ['질문게시판'];
+  const visiblePosts = isDoctor
+    ? posts
+    : posts.filter((p) => p.boardType === 'question');
+  const effectiveActiveBoard = isDoctor ? activeBoard : '질문게시판';
 
   useLayoutEffect(() => {
     const btn = categoryBtnRefs.current[activeCategoryIdx];
     if (!btn) return;
     setCategoryIndicator({ left: btn.offsetLeft, width: btn.offsetWidth });
-  }, [activeCategoryIdx, activeBoard]);
+  }, [activeCategoryIdx, effectiveActiveBoard]);
 
-  const boardType = boardTypeMap[activeBoard];
-  const filteredPosts = posts.filter((p) => p.boardType === boardType);
+  const boardType = boardTypeMap[effectiveActiveBoard];
+  const filteredPosts = visiblePosts.filter((p) => p.boardType === boardType);
 
   const categoryFilteredPosts =
-    activeBoard === '질문게시판' && activeCategory !== '전체'
+    effectiveActiveBoard === '질문게시판' && activeCategory !== '전체'
       ? filteredPosts.filter((p) => p.tags?.includes(activeCategory))
       : filteredPosts;
 
@@ -73,12 +78,12 @@ export default function CommunityPage() {
   });
 
   // Popular posts (top 5 by view count from all posts)
-  const popularPosts = [...posts]
+  const popularPosts = [...visiblePosts]
     .sort((a, b) => b.viewCount - a.viewCount)
     .slice(0, 5);
 
   // Recent questions for live Q&A ticker (stop-and-go)
-  const liveQuestions = posts
+  const liveQuestions = visiblePosts
     .filter((p) => p.boardType === 'question')
     .slice(0, 8);
   const ITEM_HEIGHT = 92; // px per card incl. gap
@@ -90,13 +95,13 @@ export default function CommunityPage() {
     : [];
 
   useEffect(() => {
-    if (activeBoard !== '질문게시판' || liveQuestions.length === 0) return;
+    if (effectiveActiveBoard !== '질문게시판' || liveQuestions.length === 0) return;
     const id = setInterval(() => {
       setTickerAnim(true);
       setTickerIdx((i) => i + 1);
     }, DWELL_MS);
     return () => clearInterval(id);
-  }, [activeBoard, liveQuestions.length]);
+  }, [effectiveActiveBoard, liveQuestions.length]);
 
   const handleTickerTransitionEnd = () => {
     if (tickerIdx >= liveQuestions.length) {
@@ -132,12 +137,12 @@ export default function CommunityPage() {
   };
 
   const boardHeader = () => {
-    if (activeBoard === '질문게시판') return '의사에게 질문게시판';
-    if (activeBoard === '자유게시판') return '자유익명게시판';
+    if (effectiveActiveBoard === '질문게시판') return '의사에게 질문게시판';
+    if (effectiveActiveBoard === '자유게시판') return '자유익명게시판';
     return '방금 올라온 글';
   };
 
-  const writeButtonLabel = activeBoard === '질문게시판' ? '질문하기' : '글쓰기';
+  const writeButtonLabel = effectiveActiveBoard === '질문게시판' ? '질문하기' : '글쓰기';
 
   return (
     <div className="h-[100dvh] flex flex-col bg-white lg:h-auto lg:min-h-screen">
@@ -154,12 +159,12 @@ export default function CommunityPage() {
       {/* Board tabs */}
       <div className="bg-white border-b border-gray-200">
         <div className="flex">
-          {boardTabs.map((tab) => (
+          {visibleBoardTabs.map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveBoard(tab)}
               className={`flex-1 py-3.5 text-[15px] font-semibold border-b-2 transition-colors ${
-                activeBoard === tab
+                effectiveActiveBoard === tab
                   ? 'border-[#7C3AED] text-[#7C3AED]'
                   : 'border-transparent text-gray-400'
               }`}
@@ -212,7 +217,7 @@ export default function CommunityPage() {
         )}
 
         {/* Live doctor Q&A - question board only */}
-        {activeBoard === '질문게시판' && tickerItems.length > 0 && (
+        {effectiveActiveBoard === '질문게시판' && tickerItems.length > 0 && (
           <div className="bg-white px-2.5 py-4 mb-2">
             <div className="flex items-center justify-between mb-1">
               <div className="flex items-center gap-2">
@@ -312,7 +317,7 @@ export default function CommunityPage() {
         {/* Board header + sort */}
         <div className="bg-white px-2.5 py-3 flex items-center justify-between mb-px">
           <div className="flex items-center gap-2">
-            {activeBoard === '질문게시판' && (
+            {effectiveActiveBoard === '질문게시판' && (
               <img src="/icons/community-doctor-board-v2.svg" alt="" width={22} height={22} />
             )}
             <h3 className="text-[17px] font-bold text-gray-900">{boardHeader()}</h3>
@@ -349,7 +354,7 @@ export default function CommunityPage() {
         </div>
 
         {/* Question category sub-tabs */}
-        {activeBoard === '질문게시판' && (
+        {effectiveActiveBoard === '질문게시판' && (
           <div className="bg-white px-2.5 pb-2 pt-0.5">
             <div
               ref={categoryTabsRef}
@@ -393,9 +398,9 @@ export default function CommunityPage() {
 
         {/* Post list */}
         <div
-          key={`${activeBoard}-${activeCategory}`}
+          key={`${effectiveActiveBoard}-${activeCategory}`}
           className={`bg-white lg:bg-white lg:rounded-2xl lg:shadow-sm lg:p-6 stagger-children ${
-            activeBoard === '질문게시판'
+            effectiveActiveBoard === '질문게시판'
               ? categoryDir === 'right'
                 ? 'tab-slide-right'
                 : 'tab-slide-left'

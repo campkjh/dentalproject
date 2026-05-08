@@ -360,7 +360,9 @@ export default function ReservationsPage() {
                             onClick={(e) => {
                               e.preventDefault();
                               e.stopPropagation();
-                              router.push(`/mypage/reviews/write?productId=${reservation.hospitalId}`);
+                              router.push(
+                                `/mypage/reviews/write?productId=${reservation.productId ?? ''}&reservationId=${reservation.id}`
+                              );
                             }}
                             className="btn-press mt-2.5 w-full py-2.5 bg-[#7C3AED] text-white rounded-xl text-[13px] font-bold flex items-center justify-center gap-1.5"
                           >

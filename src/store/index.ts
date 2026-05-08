@@ -47,6 +47,7 @@ function reservationFromRow(r: any): Reservation {
     id: r.id,
     status: r.status,
     date: r.reservation_at ? new Date(r.reservation_at).toLocaleDateString('ko-KR') : '',
+    productId: r.product?.id ?? r.product_id ?? undefined,
     productTitle: r.product?.title ?? '',
     productImage: r.product?.image_url ?? '',
     hospitalName: r.hospital?.name ?? '',
@@ -150,12 +151,12 @@ interface AppState {
 
   // Comments
   comments: Comment[];
-  addComment: (comment: Comment) => void;
+  addComment: (comment: Comment) => Promise<{ error: string | null; id?: string }>;
   deleteComment: (id: string) => void;
 
   // Reviews
   reviews: Review[];
-  addReview: (review: Review) => void;
+  addReview: (review: Review) => Promise<{ error: string | null; id?: string }>;
 
   // Notifications & point history (hydrated from /api/me)
   notifications: Notification[];
@@ -372,6 +373,7 @@ export const useStore = create<AppState>((set, get) => ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           hospitalId: reservation.hospitalId,
+          productId: reservation.productId,
           visitAt: opts?.visitAtIso ?? reservation.visitDate,
           amount: reservation.amount,
           customerName: reservation.customerName,
@@ -437,33 +439,49 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   comments: mockComments,
-  addComment: (comment) => {
+  addComment: async (comment) => {
     set({ comments: [...get().comments, comment] });
     set({
       posts: get().posts.map((p) =>
         p.id === comment.postId ? { ...p, commentCount: p.commentCount + 1 } : p
       ),
     });
-    if (/^[0-9a-f]{8}-/.test(comment.postId)) {
-      void (async () => {
-        try {
-          const res = await fetch('/api/comments', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              postId: comment.postId,
-              content: comment.content,
-              isAnonymous: comment.isAnonymous,
-              anonymousId: comment.anonymousId,
-              parentCommentId: comment.parentCommentId,
-            }),
-          });
-          if (res.ok) {
-            const { id } = await res.json();
-            set({ comments: get().comments.map((c) => (c.id === comment.id ? { ...c, id } : c)) });
-          }
-        } catch {/* ignore */}
-      })();
+    if (!/^[0-9a-f]{8}-/.test(comment.postId)) {
+      return { error: null, id: comment.id };
+    }
+    try {
+      const res = await fetch('/api/comments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          postId: comment.postId,
+          content: comment.content,
+          isAnonymous: comment.isAnonymous,
+          anonymousId: comment.anonymousId,
+          parentCommentId: comment.parentCommentId,
+        }),
+      });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        set({ comments: get().comments.filter((c) => c.id !== comment.id) });
+        set({
+          posts: get().posts.map((p) =>
+            p.id === comment.postId ? { ...p, commentCount: Math.max(0, p.commentCount - 1) } : p
+          ),
+        });
+        return { error: j.error || `댓글 등록 실패 (${res.status})` };
+      }
+      const { id } = await res.json();
+      set({ comments: get().comments.map((c) => (c.id === comment.id ? { ...c, id } : c)) });
+      return { error: null, id };
+    } catch (e) {
+      set({ comments: get().comments.filter((c) => c.id !== comment.id) });
+      set({
+        posts: get().posts.map((p) =>
+          p.id === comment.postId ? { ...p, commentCount: Math.max(0, p.commentCount - 1) } : p
+        ),
+      });
+      return { error: (e as Error).message || '네트워크 오류' };
     }
   },
   deleteComment: (id) => {
@@ -486,37 +504,44 @@ export const useStore = create<AppState>((set, get) => ({
   announcements: mockAnnouncements,
 
   reviews: mockReviews,
-  addReview: (review) => {
+  addReview: async (review) => {
     set({ reviews: [review, ...get().reviews] });
-    // Add points for review
     const user = get().user;
     if (user) {
       set({ user: { ...user, points: user.points + 500 } });
     }
-    void (async () => {
-      try {
-        const res = await fetch('/api/reviews', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            hospitalId: review.hospitalId,
-            productId: review.productId,
-            doctorId: review.doctorId,
-            rating: review.rating,
-            content: review.content,
-            treatmentName: review.treatmentName,
-            treatmentDate: review.treatmentDate,
-            totalCost: review.totalCost,
-            beforeImage: review.beforeImage,
-            afterImage: review.afterImage,
-          }),
-        });
-        if (res.ok) {
-          const { id } = await res.json();
-          set({ reviews: get().reviews.map((r) => (r.id === review.id ? { ...r, id } : r)) });
-        }
-      } catch {/* ignore */}
-    })();
+    try {
+      const res = await fetch('/api/reviews', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          hospitalId: review.hospitalId,
+          productId: review.productId,
+          reservationId: review.reservationId,
+          doctorId: review.doctorId,
+          rating: review.rating,
+          content: review.content,
+          treatmentName: review.treatmentName,
+          treatmentDate: review.treatmentDate,
+          totalCost: review.totalCost,
+          beforeImage: review.beforeImage,
+          afterImage: review.afterImage,
+        }),
+      });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        set({ reviews: get().reviews.filter((r) => r.id !== review.id) });
+        if (user) set({ user: { ...user, points: user.points } });
+        return { error: j.error || `리뷰 등록 실패 (${res.status})` };
+      }
+      const { id } = await res.json();
+      set({ reviews: get().reviews.map((r) => (r.id === review.id ? { ...r, id } : r)) });
+      return { error: null, id };
+    } catch (e) {
+      set({ reviews: get().reviews.filter((r) => r.id !== review.id) });
+      if (user) set({ user: { ...user, points: user.points } });
+      return { error: (e as Error).message || '네트워크 오류' };
+    }
   },
 
   recentSearches: [],

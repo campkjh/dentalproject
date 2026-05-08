@@ -75,6 +75,9 @@ function PaymentPage() {
   const couponDiscount = selectedCoupon?.discountAmount ?? 0;
   const totalSavings = couponDiscount + pointsToUse;
   const totalPrice = Math.max(basePrice + vatAmount - couponDiscount - pointsToUse, 0);
+  const selectedVisitLabel = dateParam && timeParam
+    ? `${dateParam.replaceAll('-', '.')} ${timeParam}`
+    : '예약일시 미선택';
 
   const allAgreed = agreementTerms.every((t) => agreed.has(t.id));
 
@@ -124,21 +127,18 @@ function PaymentPage() {
     const visitIso = dateParam && timeParam
       ? `${dateParam}T${timeParam}:00+09:00`
       : new Date().toISOString();
-    const visitDateLabel = dateParam && timeParam
-      ? `${dateParam.replaceAll('-', '.')} ${timeParam}`
-      : new Date().toLocaleString('ko-KR');
-
     const newReservation = {
       id: `res-${Date.now()}`,
       status: 'pending' as const,
       date: new Date().toLocaleDateString('ko-KR'),
+      productId: product.id,
       productTitle: product.title,
       productImage: product.imageUrl,
       hospitalName: product.hospitalName,
       hospitalId: product.hospitalId,
       location: product.location,
-      visitDate: visitDateLabel,
-      reservationDate: visitDateLabel,
+      visitDate: selectedVisitLabel,
+      reservationDate: selectedVisitLabel,
       amount: totalPrice,
       customerName: user.name ?? '',
       customerPhone: user.phone ?? '',
@@ -151,7 +151,7 @@ function PaymentPage() {
       return;
     }
     showToast('결제가 완료되었습니다!');
-    router.push('/payment/success');
+    router.push(`/payment/success?reservationId=${encodeURIComponent(result.id ?? '')}&productId=${encodeURIComponent(product.id)}`);
   };
 
   return (
@@ -214,9 +214,9 @@ function PaymentPage() {
       <div className="stagger-children">
         {/* Reservation info */}
         <Section title="예약 정보">
-          <Row label="예약자" value={user?.name ?? '홍길동'} />
-          <Row label="연락처" value={user?.phone ?? '010-1245-2189'} />
-          <Row label="예약일시" value="2026년 4월 15일 (수) 17:00" />
+          <Row label="예약자" value={user?.name || '로그인 필요'} />
+          <Row label="연락처" value={user?.phone || '연락처 미등록'} />
+          <Row label="예약일시" value={selectedVisitLabel} />
           <Row label="위치" value={product.location} valueClass="truncate max-w-[200px]" />
         </Section>
 

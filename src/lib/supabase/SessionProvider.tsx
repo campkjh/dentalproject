@@ -125,19 +125,16 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     },
     async signUpWithEmail(email, password, name) {
       if (!supabase) return { error: 'Supabase not configured', needsConfirm: false };
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: { name: name ?? '' },
-          emailRedirectTo: `${
-            process.env.NEXT_PUBLIC_SITE_URL ?? window.location.origin
-          }/auth/callback`,
-        },
+      const res = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, name }),
       });
-      // session === null when email confirmation is required
-      const needsConfirm = !error && !data.session;
-      return { error: error?.message ?? null, needsConfirm };
+      const payload = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) return { error: payload.error ?? '회원가입에 실패했습니다.', needsConfirm: false };
+
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      return { error: error?.message ?? null, needsConfirm: false };
     },
     async signInWithOAuth(provider) {
       if (!supabase) {

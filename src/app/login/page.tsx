@@ -29,6 +29,7 @@ function LoginInner() {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [retryAfter, setRetryAfter] = useState(0);
 
   const isLoggedIn = useStore((s) => s.isLoggedIn);
   useEffect(() => {
@@ -41,7 +42,16 @@ function LoginInner() {
     email.trim().length > 3 &&
     password.length >= 6 &&
     (isLogin || name.trim().length >= 2) &&
-    !pending;
+    !pending &&
+    retryAfter === 0;
+
+  useEffect(() => {
+    if (retryAfter <= 0) return;
+    const id = window.setInterval(() => {
+      setRetryAfter((seconds) => Math.max(0, seconds - 1));
+    }, 1000);
+    return () => window.clearInterval(id);
+  }, [retryAfter]);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,6 +64,7 @@ function LoginInner() {
         const { error } = await signInWithEmail(email.trim(), password);
         if (error) {
           setError(translate(error));
+          if (isRateLimitError(error)) setRetryAfter(60);
           return;
         }
         router.push('/');
@@ -65,6 +76,7 @@ function LoginInner() {
         );
         if (error) {
           setError(translate(error));
+          if (isRateLimitError(error)) setRetryAfter(60);
           return;
         }
         if (needsConfirm) {
@@ -116,6 +128,7 @@ function LoginInner() {
                 setMode(m);
                 setError(null);
                 setSuccessMsg(null);
+                setRetryAfter(0);
               }}
               className="relative z-10 flex-1 py-2 text-[13px] font-bold"
               style={{
@@ -190,7 +203,11 @@ function LoginInner() {
             transition: 'background-color 200ms ease',
           }}
         >
-          {pending ? (isLogin ? '로그인 중…' : '가입 처리 중…') : isLogin ? '로그인' : '회원가입'}
+          {pending
+            ? isLogin ? '로그인 중…' : '가입 처리 중…'
+            : retryAfter > 0
+              ? `잠시 후 재시도 (${retryAfter}s)`
+              : isLogin ? '로그인' : '회원가입'}
         </button>
 
         {isLogin && (
@@ -241,6 +258,10 @@ function Field({
 }
 
 function translate(msg: string): string {
+  if (isRateLimitError(msg)) {
+    return '요청이 잠시 많았습니다. 1분 후 다시 시도해 주세요.';
+  }
+
   const map: Record<string, string> = {
     'Invalid login credentials': '이메일 또는 비밀번호가 일치하지 않습니다.',
     'Email not confirmed': '이메일 인증이 완료되지 않았습니다. 메일함을 확인해 주세요.',
@@ -251,4 +272,9 @@ function translate(msg: string): string {
     'Signups not allowed for this instance': '회원가입이 비활성화 되어있습니다.',
   };
   return map[msg] ?? msg;
+}
+
+function isRateLimitError(msg: string): boolean {
+  const normalized = msg.toLowerCase();
+  return normalized.includes('rate limit') || normalized.includes('too many');
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useSyncExternalStore } from 'react';
 import {
   Search,
   Download,
@@ -49,6 +49,13 @@ interface Payment {
   method: PaymentMethod;
   datetime: string;
   status: PaymentStatus;
+}
+
+const subscribeMounted = () => () => {};
+const getMountedSnapshot = () => true;
+const getServerMountedSnapshot = () => false;
+function useMounted() {
+  return useSyncExternalStore(subscribeMounted, getMountedSnapshot, getServerMountedSnapshot);
 }
 
 // --- 30-day Revenue Data for Area Chart ---
@@ -150,6 +157,9 @@ function MiniSparkline({
   color: string;
   height?: number;
 }) {
+  const mounted = useMounted();
+  if (!mounted) return <div style={{ height }} />;
+
   return (
     <ResponsiveContainer width="100%" height={height}>
       <LineChart data={data}>
@@ -222,6 +232,7 @@ export default function AdminPaymentsPage() {
   const [endDate, setEndDate] = useState('2026-04-06');
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const mounted = useMounted();
   const paymentsPerPage = 10;
 
   useEffect(() => {
@@ -397,7 +408,7 @@ export default function AdminPaymentsPage() {
           매출 추이 ({period})
         </h3>
         <div className="h-72">
-          <ResponsiveContainer width="100%" height="100%">
+          {mounted && <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={dailyRevenueData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
               <defs>
                 <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
@@ -429,7 +440,7 @@ export default function AdminPaymentsPage() {
                 activeDot={{ r: 5, fill: '#7C3AED', stroke: '#fff', strokeWidth: 2 }}
               />
             </AreaChart>
-          </ResponsiveContainer>
+          </ResponsiveContainer>}
         </div>
       </div>
 
@@ -440,7 +451,7 @@ export default function AdminPaymentsPage() {
           <h3 className="font-semibold text-gray-900 mb-4">결제수단 비율</h3>
           <div className="flex items-center">
             <div className="w-1/2 h-64">
-              <ResponsiveContainer width="100%" height="100%">
+              {mounted && <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
                     data={paymentMethodData}
@@ -466,7 +477,7 @@ export default function AdminPaymentsPage() {
                     }}
                   />
                 </PieChart>
-              </ResponsiveContainer>
+              </ResponsiveContainer>}
             </div>
             <div className="w-1/2 space-y-3 pl-4">
               {paymentMethodData.map((item) => (
@@ -492,7 +503,7 @@ export default function AdminPaymentsPage() {
             <h3 className="font-semibold text-gray-900">병원별 매출 TOP 10</h3>
           </div>
           <div className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
+            {mounted && <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={hospitalBarData}
                 layout="vertical"
@@ -528,7 +539,7 @@ export default function AdminPaymentsPage() {
                   ))}
                 </Bar>
               </BarChart>
-            </ResponsiveContainer>
+            </ResponsiveContainer>}
           </div>
         </div>
       </div>
