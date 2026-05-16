@@ -2,20 +2,15 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Pencil, Plus, Trash2, UserRound } from 'lucide-react';
 import { useStore } from '@/store';
 import { useSession } from '@/lib/supabase/SessionProvider';
 import {
   PartnerButton,
-  PartnerEmpty,
   PartnerField,
   PartnerInput,
   PartnerModal,
-  PartnerPanel,
   PartnerSelect,
-  PartnerStatusBadge,
   PartnerTextarea,
-  PartnerTop,
 } from '@/components/partner/tds';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -33,6 +28,7 @@ export default function PartnerDoctorsPage() {
   const { authUser } = useSession();
   const showToast = useStore((s) => s.showToast);
   const [doctors, setDoctors] = useState<Doctor[]>([]);
+  const [hospitalName, setHospitalName] = useState('참포도나무치과의원');
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState<'add' | 'edit' | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -43,6 +39,7 @@ export default function PartnerDoctorsPage() {
     const res = await fetch('/api/my-hospital', { cache: 'no-store' });
     if (!res.ok) return;
     const { hospital } = await res.json();
+    setHospitalName(hospital?.name ?? '참포도나무치과의원');
     setDoctors(hospital?.doctors ?? []);
   };
 
@@ -112,26 +109,6 @@ export default function PartnerDoctorsPage() {
     }
   };
 
-  const handleDelete = async (d: Doctor) => {
-    if (d.is_owner) {
-      showToast('대표원장은 삭제할 수 없습니다.');
-      return;
-    }
-    if (!confirm(`${d.name} 원장님을 삭제하시겠습니까?`)) return;
-    try {
-      const res = await fetch(`/api/my-hospital/doctors/${d.id}`, { method: 'DELETE' });
-      if (!res.ok) {
-        const j = await res.json().catch(() => ({}));
-        showToast(j.error || '삭제에 실패했습니다.');
-      } else {
-        showToast('의료진이 삭제되었습니다.');
-        await reload();
-      }
-    } catch {
-      showToast('네트워크 오류');
-    }
-  };
-
   if (!authUser) {
     return (
       <div className="bg-white rounded-xl p-10 text-center">
@@ -144,61 +121,51 @@ export default function PartnerDoctorsPage() {
   }
 
   return (
-    <div className="space-y-5">
-      <PartnerTop
-        eyebrow="병원 관리"
-        title="의료진 관리"
-        description={`총 ${doctors.length}명의 의사가 등록되어 있습니다.`}
-        icon={<UserRound size={28} />}
-        action={
-          <PartnerButton type="button" size="m" leftIcon={<Plus size={16} />} onClick={openAdd}>
-            추가
-          </PartnerButton>
-        }
-      />
-
+    <div className="partner-mobile-screen">
+      <header className="partner-screen-title with-action">
+        <h1>병원관리</h1>
+        <nav className="partner-inline-segment" aria-label="병원관리 탭">
+          <Link href="/partner/hospital-info">병원</Link>
+          <Link href="/partner/doctors" className="is-active">{`멤버(${doctors.length.toLocaleString()})`}</Link>
+          <Link href="/partner/reviews">리뷰</Link>
+        </nav>
+      </header>
       {loading ? (
-        <div className="text-center py-20 text-sm text-gray-400">불러오는 중…</div>
+        <div className="partner-loading small">불러오는 중...</div>
       ) : doctors.length === 0 ? (
-        <PartnerEmpty
-          icon={<UserRound size={24} />}
-          title="등록된 의료진이 없습니다."
-          action={<PartnerButton type="button" variant="weak" size="m" onClick={openAdd}>첫 의사 추가하기</PartnerButton>}
-        />
+        <section className="partner-member-content">
+          <button className="partner-member-empty" type="button" onClick={openAdd}>
+            <span>멤버 추가</span>
+          </button>
+        </section>
       ) : (
-        <PartnerPanel className="overflow-hidden">
+        <section className="partner-member-content">
           {doctors.map((d) => (
-            <article key={d.id} className="partner-list-row items-start">
-                <div className="h-[60px] w-[60px] flex-shrink-0 overflow-hidden rounded-[18px] bg-[#E8F3FF] text-[#3182F6] flex items-center justify-center font-bold">
+            <article key={d.id} className="partner-member-row">
+                <div className="partner-member-avatar">
                   {d.profile_image ? (
                     /* eslint-disable-next-line @next/next/no-img-element */
-                    <img src={d.profile_image} alt={d.name} className="w-full h-full object-cover" />
+                    <img src={d.profile_image} alt={d.name} />
                   ) : (
-                    d.name.slice(-2)
+                    <img src="/partner-template/doctor-avatar.png" alt="" />
                   )}
                 </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <span className="truncate text-[17px] font-bold leading-[23px] text-[#191F28]">{d.name}</span>
-                    {d.title && <PartnerStatusBadge tone="info">{d.title}</PartnerStatusBadge>}
-                    {d.is_owner && <PartnerStatusBadge tone="brand">대표</PartnerStatusBadge>}
+                <div className="partner-member-summary">
+                  <div>
+                    <h2>
+                      {d.name}
+                      {d.is_owner ? <span>My</span> : null}
+                    </h2>
+                    <p>{d.specialty || d.title || '치과교정과 전문의'}</p>
                   </div>
-                  {d.specialty && <p className="mt-1 text-[13px] text-[rgba(0,19,43,0.58)]">{d.specialty}</p>}
-                  {d.bio && <p className="mt-1 line-clamp-2 text-[13px] leading-[18px] text-[rgba(3,24,50,0.46)]">{d.bio}</p>}
-                  <div className="mt-3 flex gap-2">
-                    <PartnerButton type="button" variant="weak" tone="neutral" size="s" leftIcon={<Pencil size={13} />} className="flex-1" onClick={() => openEdit(d)}>
-                      수정
-                    </PartnerButton>
-                    {!d.is_owner && (
-                      <PartnerButton type="button" variant="weak" tone="danger" size="s" leftIcon={<Trash2 size={13} />} className="flex-1" onClick={() => handleDelete(d)}>
-                        삭제
-                      </PartnerButton>
-                    )}
-                  </div>
+                  <p>{hospitalName}</p>
                 </div>
+                <button className="partner-edit-button" type="button" aria-label={`${d.name} 수정`} onClick={() => openEdit(d)}>
+                  <img src="/partner-template/edit.svg" alt="" />
+                </button>
             </article>
           ))}
-        </PartnerPanel>
+        </section>
       )}
 
       {showModal && (

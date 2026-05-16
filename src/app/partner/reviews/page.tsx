@@ -2,15 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import { Star } from 'lucide-react';
 import { useSession } from '@/lib/supabase/SessionProvider';
-import {
-  PartnerEmpty,
-  PartnerPanel,
-  PartnerSegmentedControl,
-  PartnerStatCard,
-  PartnerTop,
-} from '@/components/partner/tds';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type ReviewRow = {
@@ -30,8 +22,8 @@ type ReviewRow = {
 export default function PartnerReviewsPage() {
   const { authUser } = useSession();
   const [items, setItems] = useState<ReviewRow[]>([]);
+  const [doctorCount, setDoctorCount] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<'전체' | '5점' | '4점이하'>('전체');
 
   useEffect(() => {
     if (!authUser) {
@@ -43,8 +35,9 @@ export default function PartnerReviewsPage() {
       try {
         const res = await fetch('/api/my-hospital', { cache: 'no-store' });
         if (!res.ok) return;
-        const { reviews } = await res.json();
+        const { hospital, reviews } = await res.json();
         if (cancelled) return;
+        setDoctorCount(hospital?.doctors?.length ?? 0);
         setItems(reviews ?? []);
       } finally {
         setLoading(false);
@@ -54,12 +47,6 @@ export default function PartnerReviewsPage() {
       cancelled = true;
     };
   }, [authUser]);
-
-  const filtered = useMemo(() => {
-    if (filter === '전체') return items;
-    if (filter === '5점') return items.filter((r) => Number(r.rating) >= 5);
-    return items.filter((r) => Number(r.rating) < 5);
-  }, [items, filter]);
 
   const avgRating = useMemo(() => {
     if (!items.length) return 0;
@@ -78,88 +65,80 @@ export default function PartnerReviewsPage() {
   }
 
   return (
-    <div className="space-y-5">
-      <PartnerTop
-        eyebrow="후기"
-        title="후기 관리"
-        description="내 병원에 등록된 환자 후기를 확인하세요."
-        icon={<Star size={28} />}
-      />
+    <div className="partner-mobile-screen">
+      <header className="partner-screen-title with-action">
+        <h1>병원관리</h1>
+        <nav className="partner-inline-segment" aria-label="병원관리 탭">
+          <Link href="/partner/hospital-info">병원</Link>
+          <Link href="/partner/doctors">{`멤버(${doctorCount.toLocaleString()})`}</Link>
+          <Link href="/partner/reviews" className="is-active">{`리뷰(${items.length.toLocaleString()})`}</Link>
+        </nav>
+      </header>
 
-      <div className="grid grid-cols-3 gap-2">
-        <PartnerStatCard label="평균 평점" value={avgRating.toFixed(1)} icon={<Star size={18} fill="#FBBF24" stroke="#FBBF24" />} accent />
-        <PartnerStatCard label="총 후기" value={items.length.toLocaleString()} />
-        <PartnerStatCard label="고평가" value={items.filter((r) => Number(r.rating) >= 4.5).length.toLocaleString()} />
-      </div>
-
-      <PartnerSegmentedControl
-        value={filter}
-        options={['전체', '5점', '4점이하'] as const}
-        onChange={setFilter}
-      />
+      <section className="partner-review-content">
+        <div className="partner-review-score">
+          <img src="/partner-template/review-star.svg" alt="" />
+          <strong>{avgRating.toFixed(1)}</strong>
+          <span>({items.length.toLocaleString()})</span>
+        </div>
 
       {loading ? (
-        <div className="text-center py-20 text-sm text-gray-400">불러오는 중…</div>
-      ) : filtered.length === 0 ? (
-        <PartnerEmpty icon={<Star size={24} />} title="등록된 후기가 없습니다." />
+        <div className="partner-loading small">불러오는 중...</div>
+      ) : items.length === 0 ? (
+        <div className="partner-review-empty">
+          <span>
+            <img src="/partner-template/review-empty.svg" alt="" />
+          </span>
+          <p>리뷰가 존재하지 않아요</p>
+        </div>
       ) : (
-        <ul className="space-y-3">
-          {filtered.map((r) => (
-            <PartnerPanel key={r.id} className="p-5">
-              <div className="flex items-start justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-9 h-9 rounded-full bg-[#F4F5F7] text-gray-600 flex items-center justify-center text-[12px] font-bold">
+        <ul className="partner-review-list">
+          {items.map((r) => (
+            <li key={r.id} className="partner-review-card">
+              <div className="partner-review-card-head">
+                <div className="partner-review-author">
+                  <div>
                     {r.author?.name?.[0] ?? '?'}
                   </div>
                   <div>
-                    <p className="text-[13px] font-bold text-gray-900">{r.author?.name ?? '익명'}</p>
-                    <p className="text-[10px] text-gray-400">
+                    <strong>{r.author?.name ?? '익명'}</strong>
+                    <p>
                       {new Date(r.created_at).toLocaleDateString('ko-KR')}
-                      {r.doctor?.name && <> · {r.doctor.name} 원장</>}
+                      {r.doctor?.name ? <> · {r.doctor.name} 원장</> : null}
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-0.5">
-                  {[1, 2, 3, 4, 5].map((i) => (
-                    <Star
-                      key={i}
-                      size={14}
-                      fill={i <= Number(r.rating) ? '#FBBF24' : '#E5E7EB'}
-                      stroke={i <= Number(r.rating) ? '#FBBF24' : '#E5E7EB'}
-                    />
-                  ))}
-                </div>
+                <span>{Number(r.rating).toFixed(1)}</span>
               </div>
 
               {r.treatment_name && (
-                <div className="bg-gray-50 rounded-lg p-3 my-3 text-[12px] text-gray-600">
-                  <span className="font-medium text-gray-700">시술: {r.treatment_name}</span>
+                <div className="partner-review-meta">
+                  <span>시술: {r.treatment_name}</span>
                   {r.total_cost > 0 && (
-                    <span className="ml-2 text-gray-400">· {r.total_cost.toLocaleString()}원</span>
+                    <span>· {r.total_cost.toLocaleString()}원</span>
                   )}
                 </div>
               )}
 
               {(r.before_image || r.after_image) && (
-                <div className="flex gap-2 mb-3">
+                <div className="partner-review-images">
                   {r.before_image && (
                     /* eslint-disable-next-line @next/next/no-img-element */
-                    <img src={r.before_image} alt="Before" className="flex-1 h-32 object-cover rounded-lg" />
+                    <img src={r.before_image} alt="Before" />
                   )}
                   {r.after_image && (
                     /* eslint-disable-next-line @next/next/no-img-element */
-                    <img src={r.after_image} alt="After" className="flex-1 h-32 object-cover rounded-lg" />
+                    <img src={r.after_image} alt="After" />
                   )}
                 </div>
               )}
 
-              <p className="text-[13px] text-gray-700 leading-relaxed whitespace-pre-line">
-                {r.content}
-              </p>
-            </PartnerPanel>
+              <p>{r.content}</p>
+            </li>
           ))}
         </ul>
       )}
+      </section>
     </div>
   );
 }

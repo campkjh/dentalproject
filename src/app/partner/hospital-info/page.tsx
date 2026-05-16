@@ -29,6 +29,12 @@ type HospitalRow = {
 const DAY_ORDER = ['월', '화', '수', '목', '금', '토', '일'];
 const FALLBACK_MAP = '/partner-template/map.png';
 
+function usableImage(src?: string | null) {
+  if (!src) return null;
+  if (src.startsWith('/images/hospital_')) return null;
+  return src;
+}
+
 function SegmentNav() {
   return (
     <nav className="partner-inline-segment" aria-label="병원관리 탭">
@@ -39,9 +45,9 @@ function SegmentNav() {
   );
 }
 
-function EditButton({ label }: { label: string }) {
+function EditButton({ label, onClick }: { label: string; onClick?: () => void }) {
   return (
-    <button className="partner-edit-button" type="button" aria-label={label}>
+    <button className="partner-edit-button" type="button" aria-label={label} onClick={onClick}>
       <img src="/partner-template/edit.svg" alt="" />
     </button>
   );
@@ -65,6 +71,8 @@ export default function PartnerHospitalInfoPage() {
   const [hospital, setHospital] = useState<HospitalRow | null>(null);
   const [loading, setLoading] = useState(true);
   const [photoMenuOpen, setPhotoMenuOpen] = useState(false);
+  const [mode, setMode] = useState<'overview' | 'cover' | 'hours' | 'intro'>('overview');
+  const [introDraft, setIntroDraft] = useState('');
 
   useEffect(() => {
     if (!authUser) {
@@ -77,7 +85,10 @@ export default function PartnerHospitalInfoPage() {
         const res = await fetch('/api/my-hospital', { cache: 'no-store' });
         if (!res.ok) return;
         const data = await res.json();
-        if (!cancelled) setHospital(data.hospital ?? null);
+        if (!cancelled) {
+          setHospital(data.hospital ?? null);
+          setIntroDraft(data.hospital?.introduction ?? '');
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -86,6 +97,13 @@ export default function PartnerHospitalInfoPage() {
       cancelled = true;
     };
   }, [authUser]);
+
+  useEffect(() => {
+    document.body.classList.toggle('partner-editing', mode !== 'overview');
+    return () => {
+      document.body.classList.remove('partner-editing');
+    };
+  }, [mode]);
 
   if (loading) return <div className="partner-loading">불러오는 중...</div>;
 
@@ -101,8 +119,110 @@ export default function PartnerHospitalInfoPage() {
 
   const tags = hospital.tags?.length ? hospital.tags.slice(0, 3) : ['치아교정', '임플란트', '라미네이트'];
   const address = hospital.address ?? hospital.location ?? '주소 정보 없음';
-  const cover = hospital.cover_images?.[0] ?? hospital.image_url;
+  const cover = usableImage(hospital.cover_images?.[0]) ?? usableImage(hospital.image_url);
+  const logo = usableImage(hospital.image_url);
   const hours = hourLines(hospital);
+
+  const openMode = (nextMode: typeof mode) => {
+    setPhotoMenuOpen(false);
+    window.scrollTo(0, 0);
+    setMode(nextMode);
+  };
+  const goOverview = () => openMode('overview');
+
+  if (mode === 'cover') {
+    return (
+      <div className="partner-mobile-screen partner-edit-screen cover">
+        <button className="partner-edit-back" type="button" onClick={goOverview} aria-label="뒤로">
+          <img src="/partner-template/chevron-left.svg" alt="" />
+        </button>
+        <section className="partner-edit-content">
+          <div className="partner-edit-title">
+            <h1>대문사진</h1>
+            <p>이미지는 3:1비율의 사진으로 첨부해주세요.<br />jpg, png, jpeg, avif 10mb이하의 이미지 파일</p>
+          </div>
+          <div className="partner-cover-upload-grid">
+            <button type="button" onClick={() => setPhotoMenuOpen(true)}>
+              <span><img src="/partner-template/camera.svg" alt="" /></span>
+            </button>
+            <button type="button" className="is-hidden" aria-hidden="true" tabIndex={-1} />
+          </div>
+        </section>
+        {photoMenuOpen && (
+          <div className="partner-photo-action-menu edit">
+            <button type="button" onClick={() => setPhotoMenuOpen(false)}>앨범에서 사진 선택</button>
+            <button type="button" onClick={() => setPhotoMenuOpen(false)}>사진촬영</button>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  if (mode === 'hours') {
+    return (
+      <div className="partner-mobile-screen partner-edit-screen with-save">
+        <button className="partner-edit-back" type="button" onClick={goOverview} aria-label="뒤로">
+          <img src="/partner-template/chevron-left.svg" alt="" />
+        </button>
+        <section className="partner-edit-content compact">
+          <div className="partner-edit-title small-gap">
+            <h1>운영일 및 시간</h1>
+            <p>운영시간 미기입 시 휴무일로 간주됩니다.</p>
+          </div>
+          <textarea className="partner-hours-note" placeholder="기타 휴진일 안내" defaultValue={hospital.holiday_notice ?? ''} />
+          <div className="partner-hours-table">
+            {['일', '월', '화', '수', '목', '금', '토'].map((day, index) => {
+              const matched = hospital.operating_hours?.find((row) => row.day === day);
+              const weekend = index === 0 || index === 6;
+              return (
+                <div key={day} className="partner-hours-row">
+                  <span className={weekend ? 'weekend' : undefined}>{day}</span>
+                  <input aria-label={`${day} 시작시간`} defaultValue={matched?.start_time ?? (day === '일' ? '' : '10:00')} placeholder="시작시간" />
+                  <input aria-label={`${day} 마감시간`} defaultValue={matched?.end_time ?? (day === '일' ? '' : day === '화' || day === '금' ? '21:00' : day === '토' ? '16:00' : '19:00')} placeholder="마감시간" />
+                </div>
+              );
+            })}
+          </div>
+        </section>
+        <button className="partner-edit-save" type="button" onClick={goOverview}>저장하기</button>
+      </div>
+    );
+  }
+
+  if (mode === 'intro') {
+    return (
+      <div className="partner-mobile-screen partner-edit-screen with-save">
+        <button className="partner-edit-back" type="button" onClick={goOverview} aria-label="뒤로">
+          <img src="/partner-template/chevron-left.svg" alt="" />
+        </button>
+        <section className="partner-edit-content compact">
+          <div className="partner-edit-title">
+            <h1>병원소개</h1>
+          </div>
+          <p className="partner-intro-count">
+            {introDraft.length}/<span>220</span>
+          </p>
+          <textarea
+            className="partner-intro-textarea"
+            value={introDraft}
+            maxLength={220}
+            onChange={(e) => setIntroDraft(e.target.value)}
+            placeholder="병원소개글 등록"
+          />
+        </section>
+        <button
+          className="partner-edit-save"
+          type="button"
+          onClick={() => {
+            setHospital((prev) => prev ? { ...prev, introduction: introDraft } : prev);
+            goOverview();
+          }}
+        >
+          저장하기
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="partner-mobile-screen">
@@ -112,12 +232,20 @@ export default function PartnerHospitalInfoPage() {
       </header>
 
       <section className="partner-hospital-cover">
-        {cover ? <img src={cover} alt="" /> : null}
+        {cover ? (
+          <img
+            src={cover}
+            alt=""
+            onError={(event) => {
+              event.currentTarget.style.display = 'none';
+            }}
+          />
+        ) : null}
         <button
           className="partner-edit-button"
           type="button"
           aria-label="대문사진 수정"
-          onClick={() => setPhotoMenuOpen((value) => !value)}
+          onClick={() => openMode('cover')}
         >
           <img src="/partner-template/edit.svg" alt="" />
         </button>
@@ -131,7 +259,7 @@ export default function PartnerHospitalInfoPage() {
             onClick={() => setPhotoMenuOpen((value) => !value)}
             aria-label="병원 사진 등록"
           >
-            {hospital.image_url ? <img src={hospital.image_url} alt="" /> : <img src="/partner-template/camera.svg" alt="" />}
+            {logo ? <img src={logo} alt="" /> : <img src="/partner-template/camera.svg" alt="" />}
           </button>
           <div className="partner-hospital-summary">
             <span className="partner-category-chip">{hospital.category ?? '치과'}</span>
@@ -149,7 +277,7 @@ export default function PartnerHospitalInfoPage() {
         <section className="partner-info-section">
           <div className="partner-info-section-head">
             <h2>운영일 및 시간</h2>
-            <EditButton label="운영일 및 시간 수정" />
+            <EditButton label="운영일 및 시간 수정" onClick={() => openMode('hours')} />
           </div>
           <div className="partner-info-copy">
             <p>*{hospital.holiday_notice || '공휴일 휴진'}</p>
@@ -162,7 +290,9 @@ export default function PartnerHospitalInfoPage() {
         <section className="partner-info-section">
           <div className="partner-info-section-head">
             <h2>병원소개</h2>
-            <EditButton label="병원소개 수정" />
+            <button className="partner-edit-button" type="button" aria-label="병원소개 수정" onClick={() => openMode('intro')}>
+              <img src="/partner-template/edit.svg" alt="" />
+            </button>
           </div>
           {hospital.introduction ? (
             <p className="partner-info-description">{hospital.introduction}</p>
