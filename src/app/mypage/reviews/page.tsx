@@ -137,7 +137,7 @@ export default function MyReviewsPage() {
                     alt="후"
                     className="w-full h-full object-cover"
                   />
-                  <span className="absolute top-2 left-2 px-2 py-0.5 bg-[#7C3AED] text-white text-[10px] font-bold rounded">
+                  <span className="absolute top-2 left-2 px-2 py-0.5 bg-[#3182F6] text-white text-[10px] font-bold rounded">
                     AFTER
                   </span>
                 </div>

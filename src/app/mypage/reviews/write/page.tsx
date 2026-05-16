@@ -170,7 +170,7 @@ ${hasAspectFeedback && aspects.kindness >= 4 ? '원장님과 스태프분들의 
       <div className="flex-1 overflow-y-auto overflow-x-hidden pb-4 w-full">
         {/* Product header */}
         <div className="px-2.5 py-3 flex items-center gap-3 border-b border-gray-100">
-          <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-100 to-blue-100 flex items-center justify-center flex-shrink-0">
+          <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-sky-100 to-blue-100 flex items-center justify-center flex-shrink-0">
             <span className="text-2xl">🦷</span>
           </div>
           <div className="flex-1 min-w-0">
@@ -206,7 +206,7 @@ ${hasAspectFeedback && aspects.kindness >= 4 ? '원장님과 스태프분들의 
               ))}
             </div>
             {rating > 0 && (
-              <p className="text-center text-[13px] font-bold text-[#7C3AED] mt-1 fade-in-up">
+              <p className="text-center text-[13px] font-bold text-[#3182F6] mt-1 fade-in-up">
                 {['아쉬워요', '괜찮아요', '좋아요', '만족해요', '최고예요'][rating - 1]}
               </p>
             )}
@@ -310,7 +310,7 @@ ${hasAspectFeedback && aspects.kindness >= 4 ? '원장님과 스태프분들의 
                 />
                 <PhotoSlot
                   label="AFTER"
-                  badgeColor="#7C3AED"
+                  badgeColor="#3182F6"
                   image={afterImage}
                   date={afterDate}
                   onPick={() => pickFile(setAfterImage)}
@@ -325,7 +325,7 @@ ${hasAspectFeedback && aspects.kindness >= 4 ? '원장님과 스태프분들의 
               <div key="single" className="tab-slide-right">
                 <PhotoSlot
                   label="사진"
-                  badgeColor="#7C3AED"
+                  badgeColor="#3182F6"
                   image={singleImage}
                   date={singleDate}
                   onPick={() => pickFile(setSingleImage)}
@@ -345,7 +345,7 @@ ${hasAspectFeedback && aspects.kindness >= 4 ? '원장님과 스태프분들의 
                 type="checkbox"
                 checked={mosaicRequested}
                 onChange={(e) => setMosaicRequested(e.target.checked)}
-                className="w-4 h-4 mt-0.5 flex-shrink-0 accent-[#7C3AED]"
+                className="w-4 h-4 mt-0.5 flex-shrink-0 accent-[#3182F6]"
               />
               <div className="flex-1">
                 <p className="text-[12px] font-semibold text-gray-900">모자이크 처리 요청</p>
@@ -381,7 +381,7 @@ ${hasAspectFeedback && aspects.kindness >= 4 ? '원장님과 스태프분들의 
                         style={{
                           backgroundColor: selected ? '#F4EFFF' : '#F3F4F6',
                           boxShadow: selected
-                            ? '0 4px 12px rgba(124,58,237,0.2)'
+                            ? '0 4px 12px rgba(49,130,246,0.2)'
                             : 'none',
                           transform: selected ? 'scale(1.05)' : 'scale(1)',
                           transition:
@@ -400,13 +400,13 @@ ${hasAspectFeedback && aspects.kindness >= 4 ? '원장님과 스태프분들의 
                         {selected && (
                           <span
                             className="absolute inset-0 rounded-full border-2 check-pop"
-                            style={{ borderColor: '#7C3AED' }}
+                            style={{ borderColor: '#3182F6' }}
                           />
                         )}
                       </div>
                       <p
                         className="text-[12px] font-semibold line-clamp-1 w-full text-center"
-                        style={{ color: selected ? '#7C3AED' : '#2B313D' }}
+                        style={{ color: selected ? '#3182F6' : '#2B313D' }}
                       >
                         {d.name}
                       </p>
@@ -422,8 +422,8 @@ ${hasAspectFeedback && aspects.kindness >= 4 ? '원장님과 스태프분들의 
             )}
             {selectedDoctorId && (
               <div className="mt-2 flex items-center gap-1.5 rounded-lg bg-[#F4EFFF] px-3 py-2 fade-in-up">
-                <Stethoscope size={12} className="text-[#7C3AED]" />
-                <p className="text-[11px] text-[#7C3AED] font-semibold">
+                <Stethoscope size={12} className="text-[#3182F6]" />
+                <p className="text-[11px] text-[#3182F6] font-semibold">
                   {doctors.find((d) => d.id === selectedDoctorId)?.name} 원장
                   지정하여 리뷰합니다.
                 </p>
@@ -447,8 +447,8 @@ ${hasAspectFeedback && aspects.kindness >= 4 ? '원장님과 스태프분들의 
                       className="px-3 py-1.5 rounded-full text-[12px] font-semibold"
                       style={{
                         backgroundColor: sel ? '#F4EFFF' : '#fff',
-                        color: sel ? '#7C3AED' : '#51535C',
-                        border: `1px solid ${sel ? '#7C3AED' : '#E5E7EB'}`,
+                        color: sel ? '#3182F6' : '#51535C',
+                        border: `1px solid ${sel ? '#3182F6' : '#E5E7EB'}`,
                         transition: 'all 200ms ease',
                       }}
                     >
@@ -464,7 +464,7 @@ ${hasAspectFeedback && aspects.kindness >= 4 ? '원장님과 스태프분들의 
                   setTreatmentDate(e.target.value);
                   if (e.target.value) setTreatmentTiming('');
                 }}
-                className="w-full max-w-[180px] px-3 py-2 border border-gray-200 rounded-lg text-[13px] outline-none focus:border-[#7C3AED]"
+                className="w-full max-w-[180px] px-3 py-2 border border-gray-200 rounded-lg text-[13px] outline-none focus:border-[#3182F6]"
               />
               <p className="text-[10px] text-gray-400 mt-1">선택 · 날짜를 정확히 아는 경우 직접 입력</p>
             </Field>
@@ -475,7 +475,7 @@ ${hasAspectFeedback && aspects.kindness >= 4 ? '원장님과 스태프분들의 
                   type="number"
                   value={totalCost}
                   onChange={(e) => setTotalCost(e.target.value)}
-                  className="flex-1 max-w-[200px] px-3 py-2 border border-gray-200 rounded-lg text-[13px] outline-none focus:border-[#7C3AED]"
+                  className="flex-1 max-w-[200px] px-3 py-2 border border-gray-200 rounded-lg text-[13px] outline-none focus:border-[#3182F6]"
                 />
                 <span className="text-[12px] text-gray-500">원</span>
               </div>
@@ -495,8 +495,8 @@ ${hasAspectFeedback && aspects.kindness >= 4 ? '원장님과 스태프분들의 
                       className="flex-1 py-2 rounded-lg text-[12px] font-semibold"
                       style={{
                         backgroundColor: isActive ? '#F4EFFF' : '#fff',
-                        color: isActive ? '#7C3AED' : '#51535C',
-                        border: `1px solid ${isActive ? '#7C3AED' : '#E5E7EB'}`,
+                        color: isActive ? '#3182F6' : '#51535C',
+                        border: `1px solid ${isActive ? '#3182F6' : '#E5E7EB'}`,
                         transition: 'all 200ms ease',
                       }}
                     >
@@ -506,7 +506,7 @@ ${hasAspectFeedback && aspects.kindness >= 4 ? '원장님과 스태프분들의 
                 })}
               </div>
               {hasDiscount && (
-                <p className="text-[10px] text-[#7C3AED] mt-1">
+                <p className="text-[10px] text-[#3182F6] mt-1">
                   결제 상품에 {product.discount}% 할인이 적용되어 자동 체크됩니다.
                 </p>
               )}
@@ -520,7 +520,7 @@ ${hasAspectFeedback && aspects.kindness >= 4 ? '원장님과 스태프분들의 
               <button
                 onClick={aiFill}
                 disabled={aiLoading || rating === 0}
-                className="flex items-center gap-1 text-[11px] font-bold text-[#7C3AED] disabled:text-gray-400"
+                className="flex items-center gap-1 text-[11px] font-bold text-[#3182F6] disabled:text-gray-400"
               >
                 <Sparkles size={12} />
                 {aiLoading ? '작성 중...' : 'AI로 작성'}
@@ -532,7 +532,7 @@ ${hasAspectFeedback && aspects.kindness >= 4 ? '원장님과 스태프분들의 
               onChange={(e) => setContent(e.target.value.slice(0, MAX_CONTENT))}
               rows={8}
               placeholder="시술 과정, 결과, 병원 분위기 등을 자유롭게 남겨주세요. (최소 50자)"
-              className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] outline-none focus:border-[#7C3AED] transition-colors resize-none"
+              className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] outline-none focus:border-[#3182F6] transition-colors resize-none"
             />
             <div className="flex items-center justify-between mt-1.5">
               <span
@@ -565,11 +565,11 @@ ${hasAspectFeedback && aspects.kindness >= 4 ? '원장님과 스태프분들의 
           className="w-full py-3.5 rounded-xl text-[14px] font-bold btn-press disabled:opacity-60"
           style={{
             backgroundColor:
-              rating > 0 && content.length >= 50 ? '#7C3AED' : '#E5E7EB',
+              rating > 0 && content.length >= 50 ? '#3182F6' : '#E5E7EB',
             color: rating > 0 && content.length >= 50 ? '#fff' : '#A4ABBA',
             boxShadow:
               rating > 0 && content.length >= 50
-                ? '0 6px 16px rgba(124,58,237,0.3)'
+                ? '0 6px 16px rgba(49,130,246,0.3)'
                 : 'none',
             transition: 'all 240ms ease',
           }}
@@ -667,7 +667,7 @@ function PhotoSlot({
         value={date}
         onChange={(e) => onDateChange(e.target.value)}
         placeholder="촬영일"
-        className="mt-1.5 w-full px-2 py-1.5 bg-gray-50 border border-gray-100 rounded text-[11px] outline-none focus:border-[#7C3AED]"
+        className="mt-1.5 w-full px-2 py-1.5 bg-gray-50 border border-gray-100 rounded text-[11px] outline-none focus:border-[#3182F6]"
       />
     </div>
   );

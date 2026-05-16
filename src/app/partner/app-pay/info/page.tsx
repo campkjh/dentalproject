@@ -51,7 +51,7 @@ export default function AppPayInfoPage() {
     return (
       <div className="bg-white rounded-xl p-10 text-center">
         <p className="text-sm text-gray-500 mb-4">로그인이 필요합니다.</p>
-        <Link href="/login" className="inline-block px-5 py-2.5 bg-[#7C3AED] text-white text-sm font-bold rounded-xl">
+        <Link href="/login" className="inline-block px-5 py-2.5 bg-[#3182F6] text-white text-sm font-bold rounded-xl">
           로그인
         </Link>
       </div>
@@ -68,7 +68,7 @@ export default function AppPayInfoPage() {
       <div className="grid md:grid-cols-3 gap-3">
         <div className="bg-white rounded-xl border border-gray-200 p-5">
           <div className="flex items-center gap-2 mb-2">
-            <CreditCard size={16} className="text-[#7C3AED]" />
+            <CreditCard size={16} className="text-[#3182F6]" />
             <span className="text-[12px] text-gray-500">누적 결제 금액</span>
           </div>
           <p className="text-[24px] font-extrabold text-gray-900">
@@ -88,7 +88,7 @@ export default function AppPayInfoPage() {
           <div className="flex items-center gap-2 mb-2">
             <span className="text-[12px] text-gray-500">시술 완료 건수</span>
           </div>
-          <p className="text-[24px] font-extrabold text-[#7C3AED]">
+          <p className="text-[24px] font-extrabold text-[#3182F6]">
             {loading ? '—' : stats.completed.toLocaleString()}
           </p>
         </div>
@@ -109,7 +109,7 @@ export default function AppPayInfoPage() {
           <Link href="/partner/app-pay/payments" className="flex-1 py-2.5 text-center text-[13px] font-bold border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50">
             결제 내역
           </Link>
-          <Link href="/partner/app-pay/settlement" className="flex-1 py-2.5 text-center text-[13px] font-bold bg-[#7C3AED] text-white rounded-lg">
+          <Link href="/partner/app-pay/settlement" className="flex-1 py-2.5 text-center text-[13px] font-bold bg-[#3182F6] text-white rounded-lg">
             정산 내역
           </Link>
         </div>

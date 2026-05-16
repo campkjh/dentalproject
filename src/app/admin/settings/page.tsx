@@ -92,7 +92,7 @@ export default function AdminSettingsPage() {
       {/* Basic Settings */}
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
         <div className="flex items-center gap-2 mb-5">
-          <div className="w-8 h-8 bg-[#7C3AED] rounded-lg flex items-center justify-center">
+          <div className="w-8 h-8 bg-[#3182F6] rounded-lg flex items-center justify-center">
             <Globe size={16} className="text-white" />
           </div>
           <h3 className="text-lg font-semibold text-gray-900">기본 설정</h3>
@@ -104,7 +104,7 @@ export default function AdminSettingsPage() {
               type="text"
               value={platformName}
               onChange={(e) => setPlatformName(e.target.value)}
-              className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#7C3AED]/30 focus:border-[#7C3AED] transition-colors"
+              className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#3182F6]/30 focus:border-[#3182F6] transition-colors"
             />
           </div>
           <div>
@@ -115,7 +115,7 @@ export default function AdminSettingsPage() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#7C3AED]/30 focus:border-[#7C3AED] transition-colors"
+                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#3182F6]/30 focus:border-[#3182F6] transition-colors"
               />
             </div>
           </div>
@@ -127,7 +127,7 @@ export default function AdminSettingsPage() {
                 type="text"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#7C3AED]/30 focus:border-[#7C3AED] transition-colors"
+                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#3182F6]/30 focus:border-[#3182F6] transition-colors"
               />
             </div>
           </div>
@@ -164,7 +164,7 @@ export default function AdminSettingsPage() {
                 type="text"
                 value={baseFee}
                 onChange={(e) => setBaseFee(e.target.value)}
-                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#7C3AED]/30 focus:border-[#7C3AED] transition-colors pr-8"
+                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#3182F6]/30 focus:border-[#3182F6] transition-colors pr-8"
               />
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">%</span>
             </div>
@@ -177,7 +177,7 @@ export default function AdminSettingsPage() {
                 type="text"
                 value={premiumFee}
                 onChange={(e) => setPremiumFee(e.target.value)}
-                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#7C3AED]/30 focus:border-[#7C3AED] transition-colors pr-8"
+                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#3182F6]/30 focus:border-[#3182F6] transition-colors pr-8"
               />
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">%</span>
             </div>
@@ -189,7 +189,7 @@ export default function AdminSettingsPage() {
               <select
                 value={settlementCycle}
                 onChange={(e) => setSettlementCycle(e.target.value)}
-                className="w-full appearance-none px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#7C3AED]/30 focus:border-[#7C3AED] transition-colors cursor-pointer pr-10"
+                className="w-full appearance-none px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#3182F6]/30 focus:border-[#3182F6] transition-colors cursor-pointer pr-10"
               >
                 <option value="주간">주간</option>
                 <option value="월간">월간</option>
@@ -240,7 +240,7 @@ export default function AdminSettingsPage() {
             </div>
             <h3 className="text-lg font-semibold text-gray-900">서비스 관리</h3>
           </div>
-          <button className="flex items-center gap-2 px-3 py-1.5 bg-[#7C3AED] text-white rounded-lg text-sm font-medium hover:bg-[#6D28D9] transition-colors shadow-sm">
+          <button className="flex items-center gap-2 px-3 py-1.5 bg-[#3182F6] text-white rounded-lg text-sm font-medium hover:bg-[#1E6FD9] transition-colors shadow-sm">
             <Plus size={14} />
             신규 카테고리 추가
           </button>
@@ -252,7 +252,7 @@ export default function AdminSettingsPage() {
               key={cat.id}
               className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${
                 cat.enabled
-                  ? 'bg-purple-50 border-[#7C3AED]/20'
+                  ? 'bg-blue-50 border-[#3182F6]/20'
                   : 'bg-gray-50 border-gray-100'
               }`}
             >
@@ -264,7 +264,7 @@ export default function AdminSettingsPage() {
                 className="flex-shrink-0"
               >
                 {cat.enabled ? (
-                  <ToggleRight size={28} className="text-[#7C3AED]" />
+                  <ToggleRight size={28} className="text-[#3182F6]" />
                 ) : (
                   <ToggleLeft size={28} className="text-gray-300" />
                 )}
@@ -299,7 +299,7 @@ export default function AdminSettingsPage() {
                 <tr key={admin.id} className="hover:bg-gray-50/50 transition-colors">
                   <td className="px-5 py-4">
                     <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 bg-[#7C3AED] rounded-full flex items-center justify-center text-white text-xs font-bold">
+                      <div className="w-8 h-8 bg-[#3182F6] rounded-full flex items-center justify-center text-white text-xs font-bold">
                         {admin.name.charAt(0)}
                       </div>
                       <span className="text-sm font-medium text-gray-900">{admin.name}</span>
@@ -307,7 +307,7 @@ export default function AdminSettingsPage() {
                   </td>
                   <td className="px-5 py-4 text-sm text-gray-500">{admin.email}</td>
                   <td className="px-5 py-4">
-                    <span className="inline-block px-2.5 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700">
+                    <span className="inline-block px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
                       {admin.role}
                     </span>
                   </td>
@@ -331,7 +331,7 @@ export default function AdminSettingsPage() {
 
       {/* Save Button */}
       <div className="flex justify-end">
-        <button className="flex items-center gap-2 px-6 py-3 bg-[#7C3AED] text-white rounded-xl text-sm font-semibold hover:bg-[#6D28D9] transition-colors shadow-lg shadow-[#7C3AED]/25">
+        <button className="flex items-center gap-2 px-6 py-3 bg-[#3182F6] text-white rounded-xl text-sm font-semibold hover:bg-[#1E6FD9] transition-colors shadow-lg shadow-[#3182F6]/25">
           <Save size={18} />
           저장하기
         </button>

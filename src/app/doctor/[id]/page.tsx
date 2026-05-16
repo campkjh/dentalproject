@@ -53,7 +53,7 @@ export default function DoctorDetailPage() {
         <div className="px-2.5 py-6">
           <div className="flex flex-col items-center text-center mb-6">
             {/* Large Avatar */}
-            <div className="w-24 h-24 bg-gradient-to-br from-[#7C3AED] to-purple-400 rounded-full flex items-center justify-center mb-4">
+            <div className="w-24 h-24 bg-gradient-to-br from-[#3182F6] to-blue-400 rounded-full flex items-center justify-center mb-4">
               <span className="text-white font-bold text-2xl">
                 {doctor.name.slice(-2)}
               </span>
@@ -63,16 +63,16 @@ export default function DoctorDetailPage() {
             <div className="flex items-center gap-2 mb-1">
               <h1 className="text-xl font-bold">{doctor.name}</h1>
               {doctor.isOwner && (
-                <span className="text-xs bg-[#7C3AED] text-white rounded-full px-2.5 py-0.5 font-medium">
+                <span className="text-xs bg-[#3182F6] text-white rounded-full px-2.5 py-0.5 font-medium">
                   대표원장
                 </span>
               )}
             </div>
-            <p className="text-sm text-[#7C3AED] font-medium mb-1">{doctor.title}</p>
+            <p className="text-sm text-[#3182F6] font-medium mb-1">{doctor.title}</p>
 
             {/* Specialty Badge */}
             {doctor.specialty && (
-              <span className="inline-block text-xs bg-purple-50 text-[#7C3AED] rounded-full px-3 py-1 mb-3">
+              <span className="inline-block text-xs bg-blue-50 text-[#3182F6] rounded-full px-3 py-1 mb-3">
                 {doctor.specialty}
               </span>
             )}
@@ -80,7 +80,7 @@ export default function DoctorDetailPage() {
             {/* Hospital Name - clickable */}
             <Link
               href={`/hospital/detail/${hospital.id}`}
-              className="flex items-center gap-1 text-sm text-gray-500 hover:text-[#7C3AED] transition-colors"
+              className="flex items-center gap-1 text-sm text-gray-500 hover:text-[#3182F6] transition-colors"
             >
               <Building2 size={14} />
               <span>{hospital.name}</span>
@@ -108,7 +108,7 @@ export default function DoctorDetailPage() {
         {doctor.bio && (
           <div className="px-2.5 pb-4">
             <div className="flex items-center gap-2 mb-3">
-              <User size={16} className="text-[#7C3AED]" />
+              <User size={16} className="text-[#3182F6]" />
               <h2 className="font-bold text-sm">의사 소개</h2>
             </div>
             <div className="bg-gray-50 rounded-xl p-4">
@@ -121,14 +121,14 @@ export default function DoctorDetailPage() {
         {doctor.careers && doctor.careers.length > 0 && (
           <div className="px-2.5 pb-4">
             <div className="flex items-center gap-2 mb-3">
-              <Briefcase size={16} className="text-[#7C3AED]" />
+              <Briefcase size={16} className="text-[#3182F6]" />
               <h2 className="font-bold text-sm">경력</h2>
             </div>
             <div className="bg-gray-50 rounded-xl p-4">
               <ul className="space-y-2">
                 {doctor.careers.map((career, i) => (
                   <li key={i} className="flex items-start gap-2 text-sm text-gray-600">
-                    <span className="w-1.5 h-1.5 bg-[#7C3AED] rounded-full mt-1.5 flex-shrink-0" />
+                    <span className="w-1.5 h-1.5 bg-[#3182F6] rounded-full mt-1.5 flex-shrink-0" />
                     <span>{career}</span>
                   </li>
                 ))}
@@ -141,14 +141,14 @@ export default function DoctorDetailPage() {
         {doctor.certifications && doctor.certifications.length > 0 && (
           <div className="px-2.5 pb-4">
             <div className="flex items-center gap-2 mb-3">
-              <Award size={16} className="text-[#7C3AED]" />
+              <Award size={16} className="text-[#3182F6]" />
               <h2 className="font-bold text-sm">자격증</h2>
             </div>
             <div className="flex flex-wrap gap-2">
               {doctor.certifications.map((cert, i) => (
                 <span
                   key={i}
-                  className="text-xs bg-purple-50 text-[#7C3AED] font-medium rounded-full px-3 py-1.5 border border-purple-100"
+                  className="text-xs bg-blue-50 text-[#3182F6] font-medium rounded-full px-3 py-1.5 border border-blue-100"
                 >
                   {cert}
                 </span>
@@ -175,8 +175,8 @@ export default function DoctorDetailPage() {
                   {/* Reviewer info */}
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
-                        <User size={14} className="text-[#7C3AED]" />
+                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                        <User size={14} className="text-[#3182F6]" />
                       </div>
                       <div>
                         <p className="text-sm font-bold">{review.authorName}</p>
@@ -209,7 +209,7 @@ export default function DoctorDetailPage() {
                       <span className="text-xl">📷</span>
                       <span className="text-[10px] text-gray-400 mt-1">Before</span>
                     </div>
-                    <div className="flex-1 aspect-[4/3] bg-gradient-to-br from-purple-50 to-blue-50 rounded-lg flex flex-col items-center justify-center">
+                    <div className="flex-1 aspect-[4/3] bg-gradient-to-br from-blue-50 to-blue-50 rounded-lg flex flex-col items-center justify-center">
                       <span className="text-xl">📷</span>
                       <span className="text-[10px] text-gray-400 mt-1">After</span>
                     </div>

@@ -100,7 +100,7 @@ export default function ProfilePage() {
               alt={user?.name || '프로필'}
             />
           </div>
-          <label className="absolute bottom-0 right-0 w-8 h-8 bg-[#7C3AED] rounded-full flex items-center justify-center shadow-lg border-2 border-white cursor-pointer btn-press">
+          <label className="absolute bottom-0 right-0 w-8 h-8 bg-[#3182F6] rounded-full flex items-center justify-center shadow-lg border-2 border-white cursor-pointer btn-press">
             <Camera size={14} className="text-white" />
             <input
               type="file"
@@ -162,7 +162,7 @@ export default function ProfilePage() {
                   className="w-14 h-14 rounded-2xl flex items-center justify-center transition-all"
                   style={{
                     backgroundColor: selected ? '#F4EFFF' : '#F4F5F7',
-                    boxShadow: selected ? '0 4px 12px rgba(124,58,237,0.2)' : 'none',
+                    boxShadow: selected ? '0 4px 12px rgba(49,130,246,0.2)' : 'none',
                     transform: selected ? 'scale(1.03)' : 'scale(1)',
                   }}
                 >
@@ -170,14 +170,14 @@ export default function ProfilePage() {
                 </div>
                 <span
                   className="text-[12px] font-medium"
-                  style={{ color: selected ? '#7C3AED' : '#4B5563' }}
+                  style={{ color: selected ? '#3182F6' : '#4B5563' }}
                 >
                   {cat.name}
                 </span>
                 {selected && (
                   <span
-                    className="absolute top-0 right-0 w-5 h-5 bg-[#7C3AED] rounded-full flex items-center justify-center check-pop"
-                    style={{ boxShadow: '0 2px 6px rgba(124,58,237,0.3)' }}
+                    className="absolute top-0 right-0 w-5 h-5 bg-[#3182F6] rounded-full flex items-center justify-center check-pop"
+                    style={{ boxShadow: '0 2px 6px rgba(49,130,246,0.3)' }}
                   >
                     <Check size={11} strokeWidth={3} className="text-white" />
                   </span>
@@ -303,7 +303,7 @@ function NameEditor({ name, onSave }: { name: string; onSave: (v: string) => voi
         onClick={() => onSave(val.trim())}
         className="w-full py-3.5 rounded-xl font-bold text-[15px] btn-press"
         style={{
-          backgroundColor: val.trim() ? '#7C3AED' : '#E5E7EB',
+          backgroundColor: val.trim() ? '#3182F6' : '#E5E7EB',
           color: val.trim() ? '#fff' : '#A4ABBA',
         }}
       >
@@ -336,13 +336,13 @@ function ListChoice({
             <span
               className="text-[14px]"
               style={{
-                color: selected ? '#7C3AED' : '#2B313D',
+                color: selected ? '#3182F6' : '#2B313D',
                 fontWeight: selected ? 700 : 500,
               }}
             >
               {opt}
             </span>
-            {selected && <Check size={16} strokeWidth={3} className="text-[#7C3AED]" />}
+            {selected && <Check size={16} strokeWidth={3} className="text-[#3182F6]" />}
           </button>
         );
       })}

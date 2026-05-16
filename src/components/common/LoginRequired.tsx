@@ -10,15 +10,15 @@ export default function LoginRequired() {
         <Lock size={28} className="text-gray-400" />
       </div>
       <h2 className="text-lg font-bold mb-2 fade-in-up">로그인이 필요한 페이지입니다!</h2>
-      <p className="text-sm text-[#7C3AED] text-center mb-6 fade-in-up-delay-1">
+      <p className="text-sm text-[#3182F6] text-center mb-6 fade-in-up-delay-1">
         로그인하시면 더 많은 내용과 서비스를 이용하실 수 있습니다.
       </p>
       <Link
         href="/login"
         className="w-full max-w-xs py-3.5 rounded-xl text-center text-[14px] font-bold text-white btn-press fade-in-up-delay-2"
         style={{
-          backgroundColor: '#7C3AED',
-          boxShadow: '0 6px 16px rgba(124,58,237,0.25)',
+          backgroundColor: '#3182F6',
+          boxShadow: '0 6px 16px rgba(49,130,246,0.25)',
         }}
       >
         로그인 / 회원가입

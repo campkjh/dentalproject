@@ -119,7 +119,7 @@ export default function PaymentsPage() {
       {/* Summary hero */}
       <div className="bg-white px-2.5 pt-2 pb-5 fade-in-up">
         <p className="text-[22px] font-bold text-gray-900 leading-tight">
-          총 <span className="text-[#7C3AED]">{reservations.length}</span>건의 결제내역이 있어요
+          총 <span className="text-[#3182F6]">{reservations.length}</span>건의 결제내역이 있어요
         </p>
         <div className="mt-4 grid grid-cols-4 gap-2">
           {(
@@ -221,7 +221,7 @@ export default function PaymentsPage() {
 
                   {/* Product info */}
                   <div className="flex gap-2.5 mt-2">
-                    <div className="w-[64px] h-[64px] rounded-xl bg-gradient-to-br from-purple-100 to-blue-100 flex items-center justify-center flex-shrink-0">
+                    <div className="w-[64px] h-[64px] rounded-xl bg-gradient-to-br from-sky-100 to-blue-100 flex items-center justify-center flex-shrink-0">
                       <span className="text-2xl">🦷</span>
                     </div>
                     <div className="flex-1 min-w-0 flex flex-col justify-center">

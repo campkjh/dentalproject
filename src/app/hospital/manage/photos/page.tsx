@@ -57,7 +57,7 @@ export default function PhotosEditPage() {
             <div key={photo.id} className="relative">
               {photo.url ? (
                 <div className="aspect-[3/1] rounded-xl bg-gray-100 overflow-hidden relative group">
-                  <div className="w-full h-full bg-gradient-to-br from-purple-100 to-blue-100 flex items-center justify-center"><span className="text-2xl">🦷</span></div>
+                  <div className="w-full h-full bg-gradient-to-br from-sky-100 to-blue-100 flex items-center justify-center"><span className="text-2xl">🦷</span></div>
                   {/* Overlay buttons */}
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
                     <button
@@ -84,7 +84,7 @@ export default function PhotosEditPage() {
               ) : (
                 <button
                   onClick={() => handleAddPhoto(photo.id)}
-                  className="aspect-[3/1] w-full rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center gap-1 hover:border-[#7C3AED] transition-colors"
+                  className="aspect-[3/1] w-full rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center gap-1 hover:border-[#3182F6] transition-colors"
                 >
                   <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
                     <Plus size={20} className="text-gray-400" />
@@ -101,7 +101,7 @@ export default function PhotosEditPage() {
       <div className="sticky bottom-0 bg-white px-2.5 py-4 border-t border-gray-100">
         <button
           onClick={handleSave}
-          className="w-full py-3.5 bg-[#7C3AED] text-white rounded-xl text-base font-bold"
+          className="w-full py-3.5 bg-[#3182F6] text-white rounded-xl text-base font-bold"
         >
           저장하기
         </button>

@@ -45,7 +45,7 @@ function detectDistrict(lat: number, lng: number): string {
 
 export default function HomePage() {
   const router = useRouter();
-  const { products, hospitals, reviews, categories, isLoggedIn, recentlyViewed, recentSearches, removeRecentSearch, catalogHydrated } = useStore();
+  const { products, hospitals, reviews, categories, isLoggedIn, isDoctor, recentlyViewed, recentSearches, removeRecentSearch, catalogHydrated } = useStore();
   const [scrolled, setScrolled] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [scrollTopLeaving, setScrollTopLeaving] = useState(false);
@@ -55,6 +55,10 @@ export default function HomePage() {
   const showScrollTopRef = useRef(false);
   const scrollTopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [currentLocation, setCurrentLocation] = useState('내 근처');
+
+  useEffect(() => {
+    if (isLoggedIn && isDoctor) router.replace('/partner');
+  }, [isLoggedIn, isDoctor, router]);
 
   // Detect current location on mount — silent fallback, never shows error
   useEffect(() => {
@@ -178,7 +182,7 @@ export default function HomePage() {
       >
         {/* Default Header (logo + icons) */}
         <div className={`flex items-center justify-between px-2.5 py-3 transition-all duration-300 ${scrolled ? 'h-0 overflow-hidden opacity-0 py-0' : 'opacity-100'}`}>
-          <span className="text-lg font-bold text-[#7C3AED]">로고</span>
+          <span className="text-lg font-bold text-[#3182F6]">로고</span>
           {isLoggedIn ? (
             <div className="flex items-center gap-2">
               <Link
@@ -258,7 +262,7 @@ export default function HomePage() {
               className="flex items-center gap-1 flex-shrink-0 bg-white rounded-full px-2.5"
               style={{ height: 32, border: '1px solid #E5E7EB' }}
             >
-              <MapPin size={12} className="text-[#7C3AED]" />
+              <MapPin size={12} className="text-[#3182F6]" />
               <span className="text-[12px] font-semibold text-gray-800 whitespace-nowrap leading-none">
                 {currentLocation}
               </span>
@@ -339,7 +343,7 @@ export default function HomePage() {
       <div className="lg:bg-white lg:rounded-2xl lg:shadow-sm lg:my-6">
 
         {/* Banner */}
-        <div className="mx-4 lg:mx-auto lg:max-w-7xl lg:px-6 rounded-2xl bg-gradient-to-r from-[#7C3AED] to-[#6D28D9] p-5 lg:p-8 mb-6 text-white relative overflow-hidden gradient-shift">
+        <div className="mx-4 lg:mx-auto lg:max-w-7xl lg:px-6 rounded-2xl bg-gradient-to-r from-[#3182F6] to-[#1E6FD9] p-5 lg:p-8 mb-6 text-white relative overflow-hidden gradient-shift">
           <p className="text-sm opacity-90">첫방문 체험</p>
           <p className="text-xl font-bold mt-1">추가 15% 쿠폰 증정</p>
           <div className="absolute right-6 top-1/2 -translate-y-1/2 w-20 h-20 bg-white/20 rounded-full flex items-center justify-center float">
@@ -549,7 +553,7 @@ export default function HomePage() {
                     <div style={{ padding: '12px 4px' }}>
                       <h3 style={{ fontSize: 18, fontWeight: 600, color: '#2B313D' }}>{hp.name}</h3>
                       {topReview && (
-                        <p style={{ fontSize: 14, fontWeight: 600, color: '#7C3AED', marginTop: 4 }}>
+                        <p style={{ fontSize: 14, fontWeight: 600, color: '#3182F6', marginTop: 4 }}>
                           {topReview.treatmentName} 후기 {hpReviews.length}개
                         </p>
                       )}
@@ -644,7 +648,7 @@ const HOTSPOTS = [
     region: '수원시',
     tags: ['#아늑한 카페'],
     image: `${BLOB}/etc_1620284296.jpg`,
-    color: '#7C3AED',
+    color: '#3182F6',
   },
   {
     id: 'gangnam',

@@ -64,11 +64,11 @@ export default function PointsPage() {
 
       {/* Total Points */}
       <div className="bg-white px-2.5 py-8 text-center fade-in-up">
-        <div className="w-14 h-14 bg-[#7C3AED]/10 rounded-full flex items-center justify-center mx-auto mb-3">
-          <Coins size={26} className="text-[#7C3AED]" />
+        <div className="w-14 h-14 bg-[#3182F6]/10 rounded-full flex items-center justify-center mx-auto mb-3">
+          <Coins size={26} className="text-[#3182F6]" />
         </div>
         <p className="text-sm text-gray-500 mb-1">보유 포인트</p>
-        <p className="text-3xl font-bold text-[#7C3AED]">
+        <p className="text-3xl font-bold text-[#3182F6]">
           {(user?.points ?? 0).toLocaleString()}P
         </p>
       </div>
@@ -132,7 +132,7 @@ export default function PointsPage() {
                   </div>
                   <span
                     className={`text-sm font-bold ${
-                      item.amount > 0 ? 'text-[#7C3AED]' : 'text-gray-500'
+                      item.amount > 0 ? 'text-[#3182F6]' : 'text-gray-500'
                     }`}
                   >
                     {item.amount > 0 ? '+' : ''}

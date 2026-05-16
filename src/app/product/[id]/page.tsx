@@ -147,7 +147,7 @@ export default function ProductDetailPage() {
       <div className="lg:max-w-7xl lg:mx-auto lg:grid lg:grid-cols-5 lg:gap-8 lg:py-8 lg:px-6">
       {/* Product Image Area */}
       <div className="relative lg:col-span-2 lg:sticky lg:top-20 lg:self-start">
-        <div className="aspect-[4/3] bg-gradient-to-br from-purple-100 to-blue-100 flex items-center justify-center lg:rounded-2xl">
+        <div className="aspect-[4/3] bg-gradient-to-br from-sky-100 to-blue-100 flex items-center justify-center lg:rounded-2xl">
           <span className="text-6xl">🦷</span>
         </div>
       </div>
@@ -349,7 +349,7 @@ export default function ProductDetailPage() {
       >
       {activeTab === '상품설명' && (
         <div className="bg-white">
-          <div className="aspect-[4/3] bg-gradient-to-br from-purple-50 to-blue-50 flex items-center justify-center">
+          <div className="aspect-[4/3] bg-gradient-to-br from-blue-50 to-blue-50 flex items-center justify-center">
             <div className="text-center">
               <span className="text-5xl block mb-2">🦷</span>
               <p style={{ fontSize: 13, color: '#A4ABBA' }}>상품 상세 이미지</p>
@@ -442,7 +442,7 @@ export default function ProductDetailPage() {
                       backgroundColor: isToday ? '#F0EBFF' : 'transparent',
                     }}
                   >
-                    <span style={{ fontSize: 12, fontWeight: 500, color: isToday ? '#7C3AED' : '#2B313D', width: 28 }}>{oh.day}</span>
+                    <span style={{ fontSize: 12, fontWeight: 500, color: isToday ? '#3182F6' : '#2B313D', width: 28 }}>{oh.day}</span>
                     {isClosed ? (
                       <span style={{ fontSize: 12, fontWeight: 500, color: '#51535C', backgroundColor: '#F2F3F5', borderRadius: 8, padding: '4px 10px' }}>휴진</span>
                     ) : (
@@ -468,7 +468,7 @@ export default function ProductDetailPage() {
                 className="flex items-center gap-3 py-3 hover:opacity-80 transition-opacity"
                 style={{ borderBottom: idx < hospital.doctors.length - 1 ? '1px solid #F2F3F5' : 'none' }}
               >
-                <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0 flex items-center justify-center" style={{ backgroundColor: '#F4EFFF', color: '#7C3AED', fontWeight: 700, fontSize: 14 }}>
+                <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0 flex items-center justify-center" style={{ backgroundColor: '#F4EFFF', color: '#3182F6', fontWeight: 700, fontSize: 14 }}>
                   {doctor.profileImage ? (
                     /* eslint-disable-next-line @next/next/no-img-element */
                     <img src={doctor.profileImage} alt={doctor.name} className="w-full h-full object-cover" />
@@ -504,7 +504,7 @@ export default function ProductDetailPage() {
                     className="w-full flex items-center gap-3 py-3 text-left"
                     style={{ borderBottom: idx < hospitalProducts.length - 1 ? '1px solid #F2F3F5' : 'none' }}
                   >
-                    <div className="w-16 h-16 bg-gradient-to-br from-purple-50 to-blue-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <div className="w-16 h-16 bg-gradient-to-br from-blue-50 to-blue-50 rounded-lg flex items-center justify-center flex-shrink-0">
                       <span className="text-2xl">🦷</span>
                     </div>
                     <div className="flex-1 min-w-0">

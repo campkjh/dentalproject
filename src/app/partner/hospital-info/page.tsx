@@ -2,8 +2,17 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { Building2 } from 'lucide-react';
 import { useStore } from '@/store';
 import { useSession } from '@/lib/supabase/SessionProvider';
+import {
+  PartnerBottomCTA,
+  PartnerButton,
+  PartnerField,
+  PartnerInput,
+  PartnerTextarea,
+  PartnerTop,
+} from '@/components/partner/tds';
 
 const DAYS = ['월', '화', '수', '목', '금', '토', '일'] as const;
 
@@ -129,9 +138,9 @@ export default function PartnerHospitalInfoPage() {
 
   if (!authUser) {
     return (
-      <div className="bg-white rounded-xl p-10 text-center">
-        <p className="text-sm text-gray-500 mb-4">로그인이 필요합니다.</p>
-        <Link href="/login" className="inline-block px-5 py-2.5 bg-[#7C3AED] text-white text-sm font-bold rounded-xl">
+      <div className="bg-white rounded-[16px] p-10 text-center">
+        <p className="text-[15px] text-[rgba(0,19,43,0.58)] mb-4">로그인이 필요합니다.</p>
+        <Link href="/login" className="tds-button-primary inline-flex min-w-[120px]">
           로그인
         </Link>
       </div>
@@ -144,9 +153,9 @@ export default function PartnerHospitalInfoPage() {
 
   if (!hospital) {
     return (
-      <div className="bg-white rounded-xl p-10 text-center">
-        <p className="text-sm text-gray-500 mb-2">등록된 병원이 없습니다.</p>
-        <Link href="/hospital/register" className="inline-block px-5 py-2.5 bg-[#7C3AED] text-white text-sm font-bold rounded-xl mt-2">
+      <div className="bg-white rounded-[16px] p-10 text-center">
+        <p className="text-[15px] text-[rgba(0,19,43,0.58)] mb-2">등록된 병원이 없습니다.</p>
+        <Link href="/hospital/register" className="tds-button-primary inline-flex min-w-[160px] mt-2">
           병원 등록하기
         </Link>
       </div>
@@ -154,66 +163,55 @@ export default function PartnerHospitalInfoPage() {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-[18px] font-bold text-gray-900">병원 정보</h1>
-          <p className="text-[12px] text-gray-500 mt-1">환자에게 노출되는 병원 정보를 관리합니다.</p>
-        </div>
-        <button
-          onClick={save}
-          disabled={saving}
-          className="px-4 py-2 rounded-lg bg-[#7C3AED] text-white text-[13px] font-bold btn-press disabled:opacity-50"
-        >
-          {saving ? '저장 중…' : '저장하기'}
-        </button>
-      </div>
+    <div className="space-y-5">
+      <PartnerTop
+        eyebrow="파트너 관리"
+        title="병원 정보"
+        description="환자에게 노출되는 병원 정보를 관리합니다."
+        icon={<Building2 size={28} />}
+      />
 
-      <Card title="병원명">
-        <input
+      <div className="space-y-4">
+      <PartnerField label="병원명">
+        <PartnerInput
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:border-[#7C3AED]"
         />
-      </Card>
+      </PartnerField>
 
-      <Card title="연락처">
-        <input
+      <PartnerField label="연락처">
+        <PartnerInput
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
           placeholder="02-1234-5678"
-          className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:border-[#7C3AED]"
         />
-      </Card>
+      </PartnerField>
 
-      <Card title="주소">
+      <PartnerField label="주소">
         <div className="space-y-2">
-          <input
+          <PartnerInput
             value={address}
             onChange={(e) => setAddress(e.target.value)}
             placeholder="기본 주소"
-            className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:border-[#7C3AED]"
           />
-          <input
+          <PartnerInput
             value={addressDetail}
             onChange={(e) => setAddressDetail(e.target.value)}
             placeholder="상세 주소 (선택)"
-            className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:border-[#7C3AED]"
           />
         </div>
-      </Card>
+      </PartnerField>
 
-      <Card title="병원 소개">
-        <textarea
+      <PartnerField label="병원 소개">
+        <PartnerTextarea
           value={introduction}
           onChange={(e) => setIntroduction(e.target.value)}
           rows={5}
           placeholder="환자에게 보여줄 병원 소개를 작성해 주세요"
-          className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:border-[#7C3AED] resize-none"
         />
-      </Card>
+      </PartnerField>
 
-      <Card title="진료 키워드 (태그)">
+      <PartnerField label="진료 키워드 (태그)" help="환자가 병원을 찾을 때 사용하는 주요 키워드입니다.">
         <div className="flex flex-wrap gap-2">
           {COMMON_TAGS.map((t) => {
             const on = tags.includes(t);
@@ -221,11 +219,11 @@ export default function PartnerHospitalInfoPage() {
               <button
                 key={t}
                 onClick={() => toggleTag(t)}
-                className="px-3 py-1.5 rounded-full text-xs font-medium border"
+                className="px-3.5 py-2 rounded-full text-[13px] font-semibold border transition-transform active:scale-[0.97]"
                 style={{
-                  backgroundColor: on ? '#7C3AED' : '#fff',
-                  color: on ? '#fff' : '#6B7280',
-                  borderColor: on ? '#7C3AED' : '#E5E7EB',
+                  backgroundColor: on ? '#3182F6' : 'rgba(7,25,76,0.05)',
+                  color: on ? '#fff' : 'rgba(3,18,40,0.7)',
+                  borderColor: on ? '#3182F6' : 'rgba(0,27,55,0.1)',
                 }}
               >
                 {t}
@@ -233,28 +231,28 @@ export default function PartnerHospitalInfoPage() {
             );
           })}
         </div>
-      </Card>
+      </PartnerField>
 
-      <Card title="운영 시간">
+      <PartnerField label="운영 시간">
         <div className="space-y-2">
           {hours.map((h, i) => (
-            <div key={h.day} className="grid grid-cols-[40px_1fr_1fr_70px] gap-2 items-center">
-              <span className="text-sm font-medium text-gray-700 text-center">{h.day}</span>
-              <input
+            <div key={h.day} className="grid grid-cols-[34px_1fr_1fr_64px] gap-2 items-center">
+              <span className="text-[15px] font-semibold text-[rgba(0,12,30,0.8)] text-center">{h.day}</span>
+              <PartnerInput
                 type="time"
                 value={h.start}
                 onChange={(e) => updateHour(i, { start: e.target.value })}
                 disabled={h.closed}
-                className="px-2 py-2 text-sm border border-gray-200 rounded-lg outline-none disabled:bg-gray-50 disabled:text-gray-300"
+                className="min-h-[44px] px-2 text-[15px] disabled:text-gray-300"
               />
-              <input
+              <PartnerInput
                 type="time"
                 value={h.end}
                 onChange={(e) => updateHour(i, { end: e.target.value })}
                 disabled={h.closed}
-                className="px-2 py-2 text-sm border border-gray-200 rounded-lg outline-none disabled:bg-gray-50 disabled:text-gray-300"
+                className="min-h-[44px] px-2 text-[15px] disabled:text-gray-300"
               />
-              <label className="flex items-center justify-center gap-1 text-xs text-gray-600 cursor-pointer">
+              <label className="flex items-center justify-center gap-1 text-[12px] text-[rgba(3,18,40,0.7)] cursor-pointer">
                 <input
                   type="checkbox"
                   checked={h.closed}
@@ -266,25 +264,28 @@ export default function PartnerHospitalInfoPage() {
             </div>
           ))}
         </div>
-      </Card>
+      </PartnerField>
 
-      <Card title="휴진 안내">
-        <input
+      <PartnerField label="휴진 안내">
+        <PartnerInput
           value={holidayNotice}
           onChange={(e) => setHolidayNotice(e.target.value)}
           placeholder="예) 공휴일 휴진, 설/추석 연휴 휴진"
-          className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:border-[#7C3AED]"
         />
-      </Card>
-    </div>
-  );
-}
+      </PartnerField>
 
-function Card({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <section className="bg-white rounded-xl border border-gray-200 p-5">
-      <h2 className="text-[14px] font-bold text-gray-900 mb-3">{title}</h2>
-      {children}
-    </section>
+      <PartnerBottomCTA className="-mx-5">
+        <PartnerButton
+          type="button"
+          onClick={save}
+          disabled={saving}
+          size="xl"
+          className="w-full"
+        >
+          {saving ? '저장 중…' : '저장하기'}
+        </PartnerButton>
+      </PartnerBottomCTA>
+      </div>
+    </div>
   );
 }

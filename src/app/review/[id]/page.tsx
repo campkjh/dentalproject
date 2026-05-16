@@ -22,7 +22,7 @@ export default function ReviewDetailPage() {
         <TopBar title="리뷰" />
         <div className="flex flex-col items-center justify-center py-20 px-2.5">
           <p className="text-sm text-gray-500 mb-4">리뷰를 찾을 수 없습니다.</p>
-          <button onClick={() => router.back()} className="text-sm text-[#7C3AED] font-semibold">
+          <button onClick={() => router.back()} className="text-sm text-[#3182F6] font-semibold">
             이전으로
           </button>
         </div>
@@ -135,7 +135,7 @@ export default function ReviewDetailPage() {
               <div className="relative aspect-square rounded-xl overflow-hidden bg-gray-100">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={imgs.after} alt="후" className="w-full h-full object-cover" />
-                <span className="absolute top-2 left-2 px-2 py-0.5 text-[10px] font-bold rounded bg-[#7C3AED] text-white">
+                <span className="absolute top-2 left-2 px-2 py-0.5 text-[10px] font-bold rounded bg-[#3182F6] text-white">
                   AFTER
                 </span>
               </div>
@@ -169,7 +169,7 @@ export default function ReviewDetailPage() {
             href={`/product/${product.id}`}
             className="flex items-center gap-3 px-2.5 py-3 card-press"
           >
-            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-100 to-blue-100 flex items-center justify-center flex-shrink-0">
+            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-sky-100 to-blue-100 flex items-center justify-center flex-shrink-0">
               <span className="text-2xl">🦷</span>
             </div>
             <div className="flex-1 min-w-0">
@@ -237,7 +237,7 @@ export default function ReviewDetailPage() {
                       </div>
                     </div>
                   ) : (
-                    <div className="aspect-[2/1] rounded-lg bg-gradient-to-br from-purple-50 to-blue-50 flex items-center justify-center">
+                    <div className="aspect-[2/1] rounded-lg bg-gradient-to-br from-blue-50 to-blue-50 flex items-center justify-center">
                       <span className="text-2xl">🦷</span>
                     </div>
                   )}

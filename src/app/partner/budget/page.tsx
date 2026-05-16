@@ -19,7 +19,7 @@ type Tx = {
 const TYPE_LABEL: Record<Tx['type'], { label: string; color: string }> = {
   charge: { label: '충전', color: '#15803D' },
   spend: { label: '소진', color: '#E5484D' },
-  refund: { label: '환불', color: '#7C3AED' },
+  refund: { label: '환불', color: '#3182F6' },
 };
 
 const PRESET = [50000, 100000, 300000, 500000, 1000000, 3000000];
@@ -89,7 +89,7 @@ export default function BudgetPage() {
     return (
       <div className="bg-white rounded-xl p-10 text-center">
         <p className="text-sm text-gray-500 mb-4">로그인이 필요합니다.</p>
-        <Link href="/login" className="inline-block px-5 py-2.5 bg-[#7C3AED] text-white text-sm font-bold rounded-xl">
+        <Link href="/login" className="inline-block px-5 py-2.5 bg-[#3182F6] text-white text-sm font-bold rounded-xl">
           로그인
         </Link>
       </div>
@@ -106,7 +106,7 @@ export default function BudgetPage() {
       </div>
 
       {/* Balance card */}
-      <div className="bg-gradient-to-br from-[#7C3AED] to-[#5B2BB5] rounded-2xl p-6 text-white">
+      <div className="bg-gradient-to-br from-[#3182F6] to-[#1B64DA] rounded-2xl p-6 text-white">
         <div className="flex items-center gap-3 mb-2">
           <Coins size={20} />
           <span className="text-[13px] font-bold opacity-90">현재 잔액</span>
@@ -131,8 +131,8 @@ export default function BudgetPage() {
               onClick={() => setChargeAmount(String(amt))}
               className="py-2.5 rounded-lg border text-[12px] font-semibold transition-colors"
               style={{
-                borderColor: chargeAmount === String(amt) ? '#7C3AED' : '#E5E7EB',
-                color: chargeAmount === String(amt) ? '#7C3AED' : '#374151',
+                borderColor: chargeAmount === String(amt) ? '#3182F6' : '#E5E7EB',
+                color: chargeAmount === String(amt) ? '#3182F6' : '#374151',
               }}
             >
               {amt.toLocaleString()}원
@@ -145,18 +145,18 @@ export default function BudgetPage() {
             value={chargeAmount}
             onChange={(e) => setChargeAmount(e.target.value)}
             placeholder="직접 입력 (1,000원 이상)"
-            className="flex-1 px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:border-[#7C3AED]"
+            className="flex-1 px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:border-[#3182F6]"
           />
           <button
             onClick={handleCharge}
             disabled={charging || !chargeAmount}
-            className="px-5 py-2.5 bg-[#7C3AED] text-white text-sm font-bold rounded-lg disabled:opacity-50"
+            className="px-5 py-2.5 bg-[#3182F6] text-white text-sm font-bold rounded-lg disabled:opacity-50"
           >
             {charging ? '처리 중…' : '충전'}
           </button>
         </div>
-        <p className="text-[11px] text-gray-400 mt-2">
-          ⚠ 데모용 즉시 충전입니다. 실서비스 시 결제 PG 연동 필요.
+        <p className="text-[13px] text-gray-400 mt-2">
+          충전 요청은 포인트 잔액과 거래 내역에 반영됩니다.
         </p>
       </section>
 

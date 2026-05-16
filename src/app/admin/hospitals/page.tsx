@@ -210,7 +210,7 @@ export default function AdminHospitalsPage() {
             <Download size={16} />
             내보내기
           </button>
-          <button className="flex items-center gap-2 px-4 py-2 bg-[#7C3AED] rounded-lg text-sm text-white hover:bg-[#6D28D9] transition-colors shadow-sm">
+          <button className="flex items-center gap-2 px-4 py-2 bg-[#3182F6] rounded-lg text-sm text-white hover:bg-[#1E6FD9] transition-colors shadow-sm">
             <Plus size={16} />
             신규 병원 등록
           </button>
@@ -247,14 +247,14 @@ export default function AdminHospitalsPage() {
               placeholder="병원명, 대표원장, 연락처로 검색..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#7C3AED] focus:border-transparent"
+              className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#3182F6] focus:border-transparent"
             />
           </div>
           <div className="relative">
             <select
               value={filter}
               onChange={(e) => setFilter(e.target.value as FilterOpt)}
-              className="appearance-none pl-4 pr-10 py-2 bg-white border border-gray-200 rounded-lg text-sm cursor-pointer hover:bg-gray-50 transition-colors min-w-[140px] focus:outline-none focus:ring-2 focus:ring-[#7C3AED]"
+              className="appearance-none pl-4 pr-10 py-2 bg-white border border-gray-200 rounded-lg text-sm cursor-pointer hover:bg-gray-50 transition-colors min-w-[140px] focus:outline-none focus:ring-2 focus:ring-[#3182F6]"
             >
               {filterOptions.map((opt) => (
                 <option key={opt} value={opt}>
@@ -313,7 +313,7 @@ export default function AdminHospitalsPage() {
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => handleAction('승인', hospital)}
-                            className="px-3 py-1.5 bg-[#7C3AED] text-white text-xs font-medium rounded-lg hover:bg-[#6D28D9] transition-colors"
+                            className="px-3 py-1.5 bg-[#3182F6] text-white text-xs font-medium rounded-lg hover:bg-[#1E6FD9] transition-colors"
                           >
                             승인
                           </button>
@@ -435,7 +435,7 @@ export default function AdminHospitalsPage() {
                 onClick={confirmAction}
                 className={`flex-1 py-2.5 rounded-lg text-sm font-medium text-white transition-colors ${
                   confirmModal.type === '승인' || confirmModal.type === '정지해제'
-                    ? 'bg-[#7C3AED] hover:bg-[#6D28D9]'
+                    ? 'bg-[#3182F6] hover:bg-[#1E6FD9]'
                     : confirmModal.type === '거절'
                       ? 'bg-red-500 hover:bg-red-600'
                       : 'bg-orange-500 hover:bg-orange-600'

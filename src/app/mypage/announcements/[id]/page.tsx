@@ -16,7 +16,7 @@ export default function AnnouncementDetailPage() {
         <TopBar title="공지사항" />
         <div className="flex flex-col items-center justify-center py-20 px-2.5">
           <p className="text-sm text-gray-500 mb-4">공지사항을 찾을 수 없습니다.</p>
-          <Link href="/mypage/announcements" className="text-sm text-[#7C3AED] font-medium">
+          <Link href="/mypage/announcements" className="text-sm text-[#3182F6] font-medium">
             목록으로 돌아가기
           </Link>
         </div>

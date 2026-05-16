@@ -202,7 +202,7 @@ export default function PostDetailPage() {
                   : post.authorName}
               </span>
               {post.boardType === 'dental' && (
-                <span className="px-1.5 py-0.5 bg-[#7C3AED] text-white text-[10px] rounded font-medium">
+                <span className="px-1.5 py-0.5 bg-[#3182F6] text-white text-[10px] rounded font-medium">
                   치과
                 </span>
               )}
@@ -228,7 +228,7 @@ export default function PostDetailPage() {
         {/* Image */}
         {post.imageUrl && (
           <div className="mt-4 rounded-xl overflow-hidden bg-gray-100 relative aspect-video">
-            <div className="w-full h-full bg-gradient-to-br from-purple-100 to-blue-100 flex items-center justify-center"><span className="text-gray-400 text-xs">IMG</span></div>
+            <div className="w-full h-full bg-gradient-to-br from-sky-100 to-blue-100 flex items-center justify-center"><span className="text-gray-400 text-xs">IMG</span></div>
           </div>
         )}
 
@@ -278,8 +278,8 @@ export default function PostDetailPage() {
         <div className="px-2.5 py-3 bg-gray-50 border-y border-gray-100">
           {post.hasAnswer && post.answerCount && post.answerCount > 0 ? (
             <div className="flex items-center gap-2">
-              <MessageCircle size={16} className="text-[#7C3AED]" />
-              <span className="text-sm font-medium text-[#7C3AED]">
+              <MessageCircle size={16} className="text-[#3182F6]" />
+              <span className="text-sm font-medium text-[#3182F6]">
                 {post.answerCount}명이 답변했어요
               </span>
             </div>
@@ -383,7 +383,7 @@ export default function PostDetailPage() {
               }}
               placeholder="댓글을 입력해주세요"
               rows={1}
-              className="w-full px-2.5 py-2.5 bg-gray-100 rounded-xl text-sm resize-none focus:outline-none focus:ring-1 focus:ring-[#7C3AED]"
+              className="w-full px-2.5 py-2.5 bg-gray-100 rounded-xl text-sm resize-none focus:outline-none focus:ring-1 focus:ring-[#3182F6]"
               style={{ minHeight: '40px', maxHeight: '100px' }}
             />
             <span className="absolute right-3 bottom-2 text-[10px] text-gray-400">
@@ -395,7 +395,7 @@ export default function PostDetailPage() {
             disabled={!commentText.trim()}
             className={`px-2.5 py-2.5 rounded-xl text-sm font-medium flex-shrink-0 transition-colors ${
               commentText.trim()
-                ? 'bg-[#7C3AED] text-white'
+                ? 'bg-[#3182F6] text-white'
                 : 'bg-gray-200 text-gray-400'
             }`}
           >

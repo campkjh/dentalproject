@@ -2,9 +2,10 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useStore } from '@/store';
 import { useSession } from '@/lib/supabase/SessionProvider';
+import { PartnerEmpty, PartnerPanel, PartnerTop } from '@/components/partner/tds';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type ReservationRow = {
@@ -149,7 +150,7 @@ export default function PartnerReservationsPage() {
     return (
       <div className="bg-white rounded-xl p-10 text-center">
         <p className="text-sm text-gray-500 mb-4">로그인이 필요합니다.</p>
-        <Link href="/login" className="inline-block px-5 py-2.5 bg-[#7C3AED] text-white text-sm font-bold rounded-xl">
+        <Link href="/login" className="inline-block px-5 py-2.5 bg-[#3182F6] text-white text-sm font-bold rounded-xl">
           로그인
         </Link>
       </div>
@@ -157,17 +158,16 @@ export default function PartnerReservationsPage() {
   }
 
   return (
-    <div className="space-y-4">
-      <div>
-        <h1 className="text-[18px] font-bold text-gray-900">예약 관리</h1>
-        <p className="text-[12px] text-gray-500 mt-1">
-          상담을 통해 확정된 예약 및 내원 일정을 관리합니다.
-        </p>
-      </div>
+    <div className="space-y-5">
+      <PartnerTop
+        eyebrow="예약"
+        title="예약 관리"
+        description="상담을 통해 확정된 예약 및 내원 일정을 관리합니다."
+        icon={<CalendarDays size={28} />}
+      />
 
-      <div className="grid md:grid-cols-[360px_1fr] gap-4">
-        {/* Calendar */}
-        <section className="bg-white rounded-xl border border-gray-200 p-4">
+      <div className="grid gap-4">
+        <PartnerPanel className="p-4">
           <div className="flex items-center justify-between mb-3">
             <button onClick={prev} className="p-1 hover:bg-gray-100 rounded">
               <ChevronLeft size={18} className="text-gray-600" />
@@ -225,7 +225,7 @@ export default function PartnerReservationsPage() {
                       {d}
                     </span>
                     {n > 0 && (
-                      <span className="absolute bottom-0 text-[9px] font-bold text-[#7C3AED]">
+                      <span className="absolute bottom-0 text-[9px] font-bold text-[#3182F6]">
                         {n}건
                       </span>
                     )}
@@ -234,20 +234,17 @@ export default function PartnerReservationsPage() {
               })}
             </div>
           ))}
-        </section>
+        </PartnerPanel>
 
-        {/* Day list */}
-        <section className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <PartnerPanel className="overflow-hidden">
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-            <h2 className="text-[14px] font-bold text-gray-900">{selectedDate} 일정</h2>
+            <h2>{selectedDate} 일정</h2>
             <span className="text-[11px] text-gray-500">{dayList.length}건</span>
           </div>
           {loading ? (
             <div className="py-16 text-center text-[12px] text-gray-400">불러오는 중…</div>
           ) : dayList.length === 0 ? (
-            <div className="py-16 text-center text-[12px] text-gray-400">
-              해당 날짜에 예약이 없습니다.
-            </div>
+            <PartnerEmpty icon={<CalendarDays size={24} />} title="해당 날짜에 예약이 없습니다." />
           ) : (
             <ul className="divide-y divide-gray-100">
               {dayList.map((r) => {
@@ -296,7 +293,7 @@ export default function PartnerReservationsPage() {
               })}
             </ul>
           )}
-        </section>
+        </PartnerPanel>
       </div>
     </div>
   );

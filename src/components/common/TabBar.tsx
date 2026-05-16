@@ -18,7 +18,7 @@ export default function TabBar({ tabs, activeTab, onTabChange, variant = 'pill',
             onClick={() => onTabChange(tab)}
             className={`flex-1 py-3 text-sm font-medium border-b-2 transition-all duration-300 ${
               activeTab === tab
-                ? 'border-[#7C3AED] text-[#7C3AED]'
+                ? 'border-[#3182F6] text-[#3182F6]'
                 : 'border-transparent text-gray-400'
             }`}
           >

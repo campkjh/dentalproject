@@ -4,9 +4,11 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Eye, EyeOff, Info } from 'lucide-react';
+import { useSession } from '@/lib/supabase/SessionProvider';
 
 export default function PartnerLoginPage() {
   const router = useRouter();
+  const { signInWithEmail } = useSession();
   const [userId, setUserId] = useState('');
   const [pw, setPw] = useState('');
   const [showPw, setShowPw] = useState(false);
@@ -14,7 +16,7 @@ export default function PartnerLoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     if (!userId.trim() || !pw.trim()) {
@@ -22,44 +24,51 @@ export default function PartnerLoginPage() {
       return;
     }
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      router.push('/partner');
-    }, 700);
+    const { error, isDoctor } = await signInWithEmail(userId.trim(), pw);
+    setLoading(false);
+    if (error) {
+      setError('아이디 또는 비밀번호가 일치하지 않습니다.');
+      return;
+    }
+    if (!isDoctor) {
+      setError('병원 관리자 계정만 이용할 수 있습니다.');
+      return;
+    }
+    router.replace('/partner');
   };
 
   return (
-    <div className="min-h-screen bg-[#F8F8F8] flex items-center justify-center p-4">
+    <div className="tds-screen min-h-screen bg-white flex items-center justify-center p-4">
       <div className="w-full max-w-[380px]">
-        <div className="bg-white rounded-2xl border border-gray-200 p-6 partner-page shadow-[0_10px_40px_rgba(124,58,237,0.08)]">
+        <div className="bg-white rounded-[16px] border border-[rgba(0,27,55,0.1)] p-6 partner-page shadow-[0_10px_32px_rgba(25,31,40,0.08)]">
           {/* Brand */}
-          <div className="flex items-center gap-2 mb-5">
-            <div className="w-8 h-8 rounded-lg bg-[#7C3AED] flex items-center justify-center text-white text-[14px] font-black">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-9 h-9 rounded-[12px] bg-[#3182F6] flex items-center justify-center text-white text-[15px] font-black">
               K
             </div>
-            <span className="text-[15px] font-bold text-gray-900">키닥터 파트너센터</span>
+            <span className="text-[17px] font-bold text-[#191F28]">키닥터 파트너센터</span>
           </div>
 
-          <h1 className="text-[20px] font-bold text-gray-900 mb-1">로그인</h1>
-          <p className="text-[12px] text-gray-500 mb-6">
+          <h1 className="text-[28px] leading-[37px] font-extrabold text-[#191F28] mb-1">로그인</h1>
+          <p className="text-[17px] leading-[25.5px] text-[rgba(3,18,40,0.7)] mb-6">
             병원 관리자 계정으로 로그인해주세요.
           </p>
 
           <form onSubmit={submit} className="space-y-3">
             <label className="block">
-              <span className="text-[12px] font-semibold text-gray-700 block mb-1.5">아이디</span>
+              <span className="tds-field-label">아이디</span>
               <input
                 type="text"
                 value={userId}
                 onChange={(e) => setUserId(e.target.value)}
                 placeholder="아이디"
                 autoComplete="username"
-                className="w-full px-3 py-3 border border-gray-200 rounded-lg text-[14px] outline-none focus:border-[#7C3AED] transition-colors"
+                className="tds-input"
               />
             </label>
 
             <label className="block">
-              <span className="text-[12px] font-semibold text-gray-700 block mb-1.5">비밀번호</span>
+              <span className="tds-field-label">비밀번호</span>
               <div className="relative">
                 <input
                   type={showPw ? 'text' : 'password'}
@@ -67,21 +76,21 @@ export default function PartnerLoginPage() {
                   onChange={(e) => setPw(e.target.value)}
                   placeholder="비밀번호"
                   autoComplete="current-password"
-                  className="w-full pl-3 pr-10 py-3 border border-gray-200 rounded-lg text-[14px] outline-none focus:border-[#7C3AED] transition-colors"
+                  className="tds-input pr-12"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPw((v) => !v)}
                   aria-label={showPw ? '비밀번호 숨기기' : '비밀번호 보기'}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded hover:bg-gray-100 text-gray-400"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-full hover:bg-[rgba(7,25,76,0.05)] text-[rgba(3,24,50,0.46)]"
                 >
                   {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
             </label>
 
-            <div className="flex items-center justify-between text-[12px]">
-              <label className="flex items-center gap-1.5 text-gray-700 cursor-pointer">
+            <div className="flex items-center justify-between text-[13px]">
+              <label className="flex items-center gap-1.5 text-[rgba(3,18,40,0.7)] cursor-pointer">
                 <input
                   type="checkbox"
                   checked={remember}
@@ -90,7 +99,7 @@ export default function PartnerLoginPage() {
                 />
                 아이디 저장
               </label>
-              <Link href="#" className="text-gray-500 hover:text-gray-900">
+              <Link href="#" className="text-[rgba(0,19,43,0.58)] hover:text-[#191F28]">
                 비밀번호 찾기
               </Link>
             </div>
@@ -102,17 +111,7 @@ export default function PartnerLoginPage() {
               </div>
             )}
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3 rounded-lg text-[14px] font-bold btn-press"
-              style={{
-                backgroundColor: '#7C3AED',
-                color: '#fff',
-                boxShadow: '0 6px 16px rgba(124, 58, 237, 0.3)',
-                opacity: loading ? 0.8 : 1,
-              }}
-            >
+            <button type="submit" disabled={loading} className="tds-button-primary w-full disabled:opacity-80">
               {loading ? '로그인 중...' : '로그인'}
             </button>
           </form>
@@ -125,19 +124,19 @@ export default function PartnerLoginPage() {
 
           <Link
             href="/hospital/register"
-            className="block w-full py-3 rounded-lg border border-gray-200 text-[14px] font-semibold text-gray-700 text-center hover:bg-gray-50 transition-colors"
+            className="tds-button-weak w-full"
           >
             병원 신청하기
           </Link>
 
-          <p className="mt-6 text-[11px] text-gray-400 leading-relaxed text-center">
+          <p className="mt-6 text-[12px] text-[rgba(0,19,43,0.58)] leading-relaxed text-center">
             비밀번호는 안전하게 암호화되어 저장됩니다.
             <br />
-            파트너 고객센터: <span className="font-semibold text-gray-600">1588-0000</span>
+            파트너 고객센터: <span className="font-semibold text-[rgba(3,18,40,0.7)]">1588-0000</span>
           </p>
         </div>
 
-        <p className="text-center text-[11px] text-gray-400 mt-4">
+        <p className="text-center text-[12px] text-[rgba(0,19,43,0.58)] mt-4">
           © 2026 키닥터. All rights reserved.
         </p>
       </div>

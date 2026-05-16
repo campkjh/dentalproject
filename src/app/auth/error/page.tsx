@@ -10,7 +10,7 @@ export default function AuthErrorPage() {
         </p>
         <Link
           href="/"
-          className="inline-block px-5 py-2.5 bg-[#7C3AED] text-white rounded-xl text-sm font-bold"
+          className="inline-block px-5 py-2.5 bg-[#3182F6] text-white rounded-xl text-sm font-bold"
         >
           홈으로
         </Link>

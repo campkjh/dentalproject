@@ -36,8 +36,8 @@ import { useSession } from '@/lib/supabase/SessionProvider';
 // Colors
 // ---------------------------------------------------------------------------
 const COLORS = {
-  primary: '#7C3AED',
-  primaryLight: '#A78BFA',
+  primary: '#3182F6',
+  primaryLight: '#86B7FF',
   blue: '#3B82F6',
   green: '#10B981',
   yellow: '#F59E0B',
@@ -98,7 +98,7 @@ export default function AdminDashboard() {
   const stats = [
     { label: '총 회원수', value: (s.totalUsers ?? 0).toLocaleString(), change: '', trend: 'up' as const, icon: Users, color: 'bg-blue-500' },
     { label: '등록 병원', value: (s.totalHospitals ?? 0).toLocaleString(), change: `승인 ${s.approvedHospitals ?? 0}`, trend: 'up' as const, icon: Building2, color: 'bg-green-500' },
-    { label: '이번 달 예약', value: (s.monthReservations ?? 0).toLocaleString(), change: '', trend: 'up' as const, icon: CalendarDays, color: 'bg-purple-500' },
+    { label: '이번 달 예약', value: (s.monthReservations ?? 0).toLocaleString(), change: '', trend: 'up' as const, icon: CalendarDays, color: 'bg-blue-500' },
     { label: '이번 달 매출', value: `₩${((s.monthRevenue ?? 0) / 10000).toFixed(1)}만`, change: '', trend: 'up' as const, icon: CreditCard, color: 'bg-orange-500' },
   ];
 
@@ -377,7 +377,7 @@ export default function AdminDashboard() {
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm">
         <div className="flex items-center justify-between p-5 border-b border-gray-100">
           <h3 className="font-semibold text-gray-900">최근 예약</h3>
-          <a href="/admin/reservations" className="text-sm text-[#7C3AED] hover:underline flex items-center gap-1">
+          <a href="/admin/reservations" className="text-sm text-[#3182F6] hover:underline flex items-center gap-1">
             전체보기 <ArrowUpRight size={14} />
           </a>
         </div>
@@ -397,7 +397,7 @@ export default function AdminDashboard() {
             <tbody className="divide-y divide-gray-100">
               {recentReservations.map((res: any) => (
                 <tr key={res.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-5 py-3 text-sm text-[#7C3AED] font-medium">{res.id}</td>
+                  <td className="px-5 py-3 text-sm text-[#3182F6] font-medium">{res.id}</td>
                   <td className="px-5 py-3 text-sm text-gray-900">{res.customer}</td>
                   <td className="px-5 py-3 text-sm text-gray-600 max-w-[200px] truncate">{res.product}</td>
                   <td className="px-5 py-3 text-sm text-gray-600">{res.hospital}</td>

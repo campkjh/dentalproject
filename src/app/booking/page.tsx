@@ -247,16 +247,16 @@ function BookingPage() {
                         height: 38,
                         borderRadius: '50%',
                         fontSize: 14,
-                        backgroundColor: isSelected ? '#7C3AED' : 'transparent',
+                        backgroundColor: isSelected ? '#3182F6' : 'transparent',
                         color: isSelected
                           ? '#fff'
                           : !available
                           ? '#D1D5DB'
                           : today_
-                          ? '#7C3AED'
+                          ? '#3182F6'
                           : '#2B313D',
                         border: today_ && !isSelected ? '1.5px solid #C4B5FD' : '1.5px solid transparent',
-                        boxShadow: isSelected ? '0 4px 12px rgba(124,58,237,0.35)' : 'none',
+                        boxShadow: isSelected ? '0 4px 12px rgba(49,130,246,0.35)' : 'none',
                         transition: 'background-color 240ms ease, color 240ms ease, box-shadow 240ms ease, transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1)',
                         transform: isSelected ? 'scale(1.06)' : 'scale(1)',
                       }}
@@ -264,7 +264,7 @@ function BookingPage() {
                       {day}
                     </span>
                     {available && !isSelected && (
-                      <span className="absolute bottom-1 w-1 h-1 bg-[#7C3AED] rounded-full" />
+                      <span className="absolute bottom-1 w-1 h-1 bg-[#3182F6] rounded-full" />
                     )}
                     {!available && (
                       <span
@@ -282,7 +282,7 @@ function BookingPage() {
         {/* Legend */}
         <div className="flex items-center justify-center gap-5 px-2.5 mb-5">
           <div className="flex items-center gap-1.5">
-            <div className="w-1.5 h-1.5 bg-[#7C3AED] rounded-full" />
+            <div className="w-1.5 h-1.5 bg-[#3182F6] rounded-full" />
             <span className="text-[11px] text-gray-500 font-medium">예약가능</span>
           </div>
           <div className="flex items-center gap-1.5">
@@ -330,10 +330,10 @@ function BookingPage() {
                           onClick={() => setSelectedTime(time)}
                           className="py-2.5 rounded-xl text-[13px] font-semibold btn-press relative"
                           style={{
-                            backgroundColor: isSelected ? '#7C3AED' : '#fff',
+                            backgroundColor: isSelected ? '#3182F6' : '#fff',
                             color: isSelected ? '#fff' : '#2B313D',
                             border: `1.5px solid ${isSelected ? 'transparent' : '#E5E7EB'}`,
-                            boxShadow: isSelected ? '0 3px 10px rgba(124,58,237,0.25)' : 'none',
+                            boxShadow: isSelected ? '0 3px 10px rgba(49,130,246,0.25)' : 'none',
                             transition: 'all 220ms cubic-bezier(0.22, 1, 0.36, 1)',
                           }}
                         >
@@ -403,11 +403,11 @@ function BookingPage() {
             disabled={!selectedDate || !selectedTime}
             className="w-full py-3.5 rounded-xl font-bold text-[15px] btn-press transition-colors"
             style={{
-              backgroundColor: selectedDate && selectedTime ? '#7C3AED' : '#F3F4F6',
+              backgroundColor: selectedDate && selectedTime ? '#3182F6' : '#F3F4F6',
               color: selectedDate && selectedTime ? '#fff' : '#A4ABBA',
               boxShadow:
                 selectedDate && selectedTime
-                  ? '0 6px 16px rgba(124,58,237,0.3)'
+                  ? '0 6px 16px rgba(49,130,246,0.3)'
                   : 'none',
             }}
           >
@@ -421,14 +421,14 @@ function BookingPage() {
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 modal-overlay-enter">
           <div className="bg-white rounded-2xl mx-6 w-full max-w-sm overflow-hidden modal-content-enter">
             <div className="p-6 text-center">
-              <div className="w-14 h-14 bg-[#7C3AED] rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="w-14 h-14 bg-[#3182F6] rounded-full flex items-center justify-center mx-auto mb-4">
                 <Check size={26} strokeWidth={3} className="text-white" />
               </div>
               <h3 className="text-lg font-bold mb-2">예약을 확정할까요?</h3>
               <p className="text-sm text-gray-600 mb-1">
                 {currentYear}년 {currentMonth}월 {selectedDate}일 ({selectedDayLabel})
               </p>
-              <p className="text-lg font-bold text-[#7C3AED]">{selectedTime}</p>
+              <p className="text-lg font-bold text-[#3182F6]">{selectedTime}</p>
               {product && (
                 <p className="text-[12px] text-gray-500 mt-3 line-clamp-1">
                   {product.title}
@@ -444,7 +444,7 @@ function BookingPage() {
               </button>
               <button
                 onClick={handleConfirm}
-                className="flex-1 py-3.5 text-sm font-bold text-white bg-[#7C3AED]"
+                className="flex-1 py-3.5 text-sm font-bold text-white bg-[#3182F6]"
               >
                 결제하기
               </button>

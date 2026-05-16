@@ -20,7 +20,7 @@ function LoginInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialMode: Mode = searchParams.get('mode') === 'signup' ? 'signup' : 'login';
-  const { signInWithEmail, signUpWithEmail, session } = useSession();
+  const { signInWithEmail, signUpWithEmail } = useSession();
   const [mode, setMode] = useState<Mode>(initialMode);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -32,10 +32,10 @@ function LoginInner() {
   const [retryAfter, setRetryAfter] = useState(0);
 
   const isLoggedIn = useStore((s) => s.isLoggedIn);
+  const isDoctor = useStore((s) => s.isDoctor);
   useEffect(() => {
-    // Only redirect if store confirms logged in (not just session exists)
-    if (isLoggedIn) router.push('/');
-  }, [isLoggedIn, router]);
+    if (isLoggedIn) router.replace(isDoctor ? '/partner' : '/');
+  }, [isLoggedIn, isDoctor, router]);
 
   const isLogin = mode === 'login';
   const canSubmit =
@@ -61,13 +61,13 @@ function LoginInner() {
     setSuccessMsg(null);
     try {
       if (isLogin) {
-        const { error } = await signInWithEmail(email.trim(), password);
+        const { error, isDoctor } = await signInWithEmail(email.trim(), password);
         if (error) {
           setError(translate(error));
           if (isRateLimitError(error)) setRetryAfter(60);
           return;
         }
-        router.push('/');
+        router.replace(isDoctor ? '/partner' : '/');
       } else {
         const { error, needsConfirm } = await signUpWithEmail(
           email.trim(),
@@ -82,7 +82,7 @@ function LoginInner() {
         if (needsConfirm) {
           setSuccessMsg('인증 메일을 발송했습니다. 이메일을 확인해 주세요.');
         } else {
-          router.push('/');
+          router.replace('/');
         }
       }
     } finally {
@@ -101,7 +101,7 @@ function LoginInner() {
 
       {/* Logo & Title */}
       <div className="pt-6 pb-8 flex flex-col items-center px-6">
-        <div className="w-20 h-20 bg-[#7C3AED] rounded-2xl flex items-center justify-center mb-5 bounce-in">
+        <div className="w-20 h-20 bg-[#3182F6] rounded-2xl flex items-center justify-center mb-5 bounce-in">
           <span className="text-4xl">🦷</span>
         </div>
         <h1 className="text-2xl font-bold text-gray-900 mb-1.5 fade-in-up">키닥터</h1>
@@ -132,7 +132,7 @@ function LoginInner() {
               }}
               className="relative z-10 flex-1 py-2 text-[13px] font-bold"
               style={{
-                color: mode === m ? '#7C3AED' : '#9CA3AF',
+                color: mode === m ? '#3182F6' : '#9CA3AF',
                 transition: 'color 320ms ease',
               }}
             >
@@ -197,9 +197,9 @@ function LoginInner() {
           disabled={!canSubmit}
           className="mt-2 w-full py-3.5 rounded-xl font-bold text-[14px] btn-press"
           style={{
-            backgroundColor: canSubmit ? '#7C3AED' : '#E5E7EB',
+            backgroundColor: canSubmit ? '#3182F6' : '#E5E7EB',
             color: canSubmit ? '#fff' : '#A4ABBA',
-            boxShadow: canSubmit ? '0 6px 16px rgba(124,58,237,0.25)' : 'none',
+            boxShadow: canSubmit ? '0 6px 16px rgba(49,130,246,0.25)' : 'none',
             transition: 'background-color 200ms ease',
           }}
         >
@@ -216,7 +216,7 @@ function LoginInner() {
             onClick={() => setMode('signup')}
             className="text-[12px] text-gray-500 mt-1 mx-auto"
           >
-            아직 회원이 아니신가요? <span className="text-[#7C3AED] font-bold">회원가입</span>
+            아직 회원이 아니신가요? <span className="text-[#3182F6] font-bold">회원가입</span>
           </button>
         )}
 

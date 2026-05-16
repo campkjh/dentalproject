@@ -96,7 +96,7 @@ export default function MyPage() {
       </div>
       <div className="flex items-center gap-2">
         {item.badge && (
-          <span className="bg-[#7C3AED] text-white text-[11px] rounded-full min-w-[20px] h-5 flex items-center justify-center px-1.5">
+          <span className="bg-[#3182F6] text-white text-[11px] rounded-full min-w-[20px] h-5 flex items-center justify-center px-1.5">
             {item.badge}
           </span>
         )}
@@ -150,14 +150,14 @@ export default function MyPage() {
             className="flex-1 py-4 text-center hover:bg-gray-50 transition-colors"
           >
             <p className="text-xs text-gray-500 mb-1">내 포인트</p>
-            <p className="text-sm font-bold text-[#7C3AED]">{(user?.points ?? 0).toLocaleString()}P</p>
+            <p className="text-sm font-bold text-[#3182F6]">{(user?.points ?? 0).toLocaleString()}P</p>
           </button>
           <button
             onClick={() => router.push('/mypage/coupons')}
             className="flex-1 py-4 text-center hover:bg-gray-50 transition-colors"
           >
             <p className="text-xs text-gray-500 mb-1">내 쿠폰</p>
-            <p className="text-sm font-bold text-[#7C3AED]">{availableCoupons}개</p>
+            <p className="text-sm font-bold text-[#3182F6]">{availableCoupons}개</p>
           </button>
         </div>
       </div>
@@ -193,7 +193,7 @@ export default function MyPage() {
       <div className="px-2.5 py-6">
         <button
           onClick={() => router.push('/hospital/register')}
-          className="w-full py-3.5 bg-[#7C3AED] text-white rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-[#6D28D9] transition-colors"
+          className="w-full py-3.5 bg-[#3182F6] text-white rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-[#1E6FD9] transition-colors"
         >
           <IconHospital size={22} />
           병원신청하기

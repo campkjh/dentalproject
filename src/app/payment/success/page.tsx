@@ -28,7 +28,7 @@ function PaymentSuccessPage() {
         <p className="mt-2 text-sm text-gray-500">마이페이지의 예약 내역에서 상태를 확인해주세요.</p>
         <button
           onClick={() => router.push('/mypage')}
-          className="mt-6 px-5 py-2.5 rounded-xl bg-[#7C3AED] text-white text-sm font-bold"
+          className="mt-6 px-5 py-2.5 rounded-xl bg-[#3182F6] text-white text-sm font-bold"
         >
           마이페이지로 이동
         </button>
@@ -55,7 +55,7 @@ function PaymentSuccessPage() {
         {/* Product Info Card */}
         <div className="w-full bg-gray-50 rounded-xl p-4 fade-in-up-delay-1">
           <div className="flex gap-3">
-            <div className="w-16 h-16 bg-gradient-to-br from-purple-100 to-blue-100 rounded-xl flex items-center justify-center flex-shrink-0">
+            <div className="w-16 h-16 bg-gradient-to-br from-sky-100 to-blue-100 rounded-xl flex items-center justify-center flex-shrink-0">
               <span className="text-2xl">🦷</span>
             </div>
             <div className="flex-1 min-w-0">
@@ -73,7 +73,7 @@ function PaymentSuccessPage() {
       <div className="px-2.5 py-6">
         <button
           onClick={() => router.push('/')}
-          className="w-full py-3.5 bg-[#7C3AED] text-white rounded-xl font-bold text-sm btn-press"
+          className="w-full py-3.5 bg-[#3182F6] text-white rounded-xl font-bold text-sm btn-press"
         >
           홈으로
         </button>

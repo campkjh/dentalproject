@@ -63,7 +63,7 @@ export default function NotificationDetailPage() {
         {notification.link && (
           <Link
             href={notification.link}
-            className="inline-block mt-6 px-4 py-2.5 bg-[#7C3AED] text-white text-sm font-bold rounded-xl btn-press"
+            className="inline-block mt-6 px-4 py-2.5 bg-[#3182F6] text-white text-sm font-bold rounded-xl btn-press"
           >
             자세히 보기
           </Link>

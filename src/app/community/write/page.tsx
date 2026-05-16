@@ -165,7 +165,7 @@ function CommunityWritePage() {
                   }}
                   className={`w-full text-left px-2.5 py-3 text-sm border-b border-gray-50 last:border-0 ${
                     boardType === option.value
-                      ? 'text-[#7C3AED] font-medium bg-[#EDE9FE]'
+                      ? 'text-[#3182F6] font-medium bg-[#E8F3FF]'
                       : 'text-gray-600'
                   }`}
                 >
@@ -178,8 +178,8 @@ function CommunityWritePage() {
 
         {/* Anonymous notice for free board */}
         {boardType === 'free' && (
-          <div className="bg-[#EDE9FE] rounded-xl px-2.5 py-3">
-            <p className="text-xs text-[#7C3AED]">
+          <div className="bg-[#E8F3FF] rounded-xl px-2.5 py-3">
+            <p className="text-xs text-[#3182F6]">
               자유게시판은 익명으로 작성됩니다. 자동으로 익명 ID가 부여됩니다.
             </p>
           </div>
@@ -193,7 +193,7 @@ function CommunityWritePage() {
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="제목을 입력해 주세요"
-            className="w-full border border-gray-200 rounded-xl px-2.5 py-3 text-sm outline-none focus:border-[#7C3AED] bg-white placeholder:text-gray-400"
+            className="w-full border border-gray-200 rounded-xl px-2.5 py-3 text-sm outline-none focus:border-[#3182F6] bg-white placeholder:text-gray-400"
           />
         </div>
 
@@ -210,7 +210,7 @@ function CommunityWritePage() {
               }}
               placeholder="내용을 입력해 주세요"
               rows={8}
-              className="w-full border border-gray-200 rounded-xl px-2.5 py-3 text-sm outline-none focus:border-[#7C3AED] resize-none bg-white placeholder:text-gray-400"
+              className="w-full border border-gray-200 rounded-xl px-2.5 py-3 text-sm outline-none focus:border-[#3182F6] resize-none bg-white placeholder:text-gray-400"
             />
             <span className="absolute bottom-3 right-3 text-xs text-gray-400">
               {content.length}/{MAX_CONTENT}
@@ -267,7 +267,7 @@ function CommunityWritePage() {
                   onClick={() => toggleTag(tag)}
                   className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
                     isSelected
-                      ? 'bg-[#7C3AED] text-white'
+                      ? 'bg-[#3182F6] text-white'
                       : 'bg-gray-100 text-gray-600'
                   }`}
                 >
@@ -286,7 +286,7 @@ function CommunityWritePage() {
           disabled={!isFormValid || submitting}
           className={`w-full py-3.5 rounded-xl font-bold text-sm transition-colors ${
             isFormValid && !submitting
-              ? 'bg-[#7C3AED] text-white'
+              ? 'bg-[#3182F6] text-white'
               : 'bg-gray-200 text-gray-400 cursor-not-allowed'
           }`}
         >

@@ -530,7 +530,7 @@ export default function HospitalRegisterPage() {
                   }}
                   className={`flex flex-col items-center gap-2 py-4 px-2 rounded-xl border transition-colors card-press ${
                     selectedSpecialty === s.id
-                      ? 'border-[#7C3AED] bg-[#EDE9FE]/30'
+                      ? 'border-[#3182F6] bg-[#E8F3FF]/30'
                       : 'border-gray-200'
                   }`}
                 >
@@ -540,7 +540,7 @@ export default function HospitalRegisterPage() {
                   <span
                     className={`font-medium text-[12px] text-center leading-tight ${
                       selectedSpecialty === s.id
-                        ? 'text-[#7C3AED]'
+                        ? 'text-[#3182F6]'
                         : 'text-gray-700'
                     }`}
                   >
@@ -573,7 +573,7 @@ export default function HospitalRegisterPage() {
                   onClick={() => toggleTreatment(t)}
                   className={`px-3 py-2 rounded-full text-sm font-medium transition-colors ${
                     selectedTreatments.has(t)
-                      ? 'bg-[#7C3AED] text-white'
+                      ? 'bg-[#3182F6] text-white'
                       : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                   }`}
                 >
@@ -600,7 +600,7 @@ export default function HospitalRegisterPage() {
                 onClick={() => setRegisterType('hospital')}
                 className={`w-full p-4 rounded-xl border text-left transition-colors ${
                   registerType === 'hospital'
-                    ? 'border-[#7C3AED] bg-[#EDE9FE]/30'
+                    ? 'border-[#3182F6] bg-[#E8F3FF]/30'
                     : 'border-gray-200'
                 }`}
               >
@@ -617,7 +617,7 @@ export default function HospitalRegisterPage() {
                     size={20}
                     className={
                       registerType === 'hospital'
-                        ? 'text-[#7C3AED]'
+                        ? 'text-[#3182F6]'
                         : 'text-gray-300'
                     }
                   />
@@ -627,7 +627,7 @@ export default function HospitalRegisterPage() {
                 onClick={() => setRegisterType('doctor')}
                 className={`w-full p-4 rounded-xl border text-left transition-colors ${
                   registerType === 'doctor'
-                    ? 'border-[#7C3AED] bg-[#EDE9FE]/30'
+                    ? 'border-[#3182F6] bg-[#E8F3FF]/30'
                     : 'border-gray-200'
                 }`}
               >
@@ -644,7 +644,7 @@ export default function HospitalRegisterPage() {
                     size={20}
                     className={
                       registerType === 'doctor'
-                        ? 'text-[#7C3AED]'
+                        ? 'text-[#3182F6]'
                         : 'text-gray-300'
                     }
                   />
@@ -675,7 +675,7 @@ export default function HospitalRegisterPage() {
                 value={hospitalSearch}
                 onChange={(e) => setHospitalSearch(e.target.value)}
                 placeholder="병원명을 입력해주세요"
-                className="w-full pl-10 pr-4 py-3 bg-gray-50 rounded-xl text-sm border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#7C3AED] focus:border-[#7C3AED]"
+                className="w-full pl-10 pr-4 py-3 bg-gray-50 rounded-xl text-sm border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#3182F6] focus:border-[#3182F6]"
               />
             </div>
 
@@ -683,7 +683,7 @@ export default function HospitalRegisterPage() {
               <div className="space-y-2">
                 <button
                   onClick={() => setHospitalSearch('참포도나무치과의원')}
-                  className="w-full p-3 rounded-xl border border-gray-200 text-left hover:border-[#7C3AED] transition-colors"
+                  className="w-full p-3 rounded-xl border border-gray-200 text-left hover:border-[#3182F6] transition-colors"
                 >
                   <p className="font-medium text-sm text-gray-900">
                     참포도나무치과의원
@@ -696,7 +696,7 @@ export default function HospitalRegisterPage() {
                   <p className="text-sm text-gray-500 mb-2">
                     원하는 병원이 없나요?
                   </p>
-                  <button className="text-sm text-[#7C3AED] font-medium">
+                  <button className="text-sm text-[#3182F6] font-medium">
                     직접 등록하기
                   </button>
                 </div>
@@ -731,7 +731,7 @@ export default function HospitalRegisterPage() {
                       >
                         <div
                           className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 transition-colors duration-200 ${
-                            isChecked ? 'bg-[#7C3AED]' : 'border-2 border-gray-300'
+                            isChecked ? 'bg-[#3182F6]' : 'border-2 border-gray-300'
                           }`}
                         >
                           {isChecked && <Check size={12} className="text-white check-pop" />}
@@ -763,18 +763,19 @@ export default function HospitalRegisterPage() {
 
       case 6:
         return (
-          <div className="px-2.5 py-6 space-y-4">
-            <div>
-              <h2 className="text-xl font-bold text-gray-900 mb-1">
+          <div>
+            <div className="tds-top">
+              <span className="tds-top-eyebrow">입점 신청</span>
+              <h2 className="tds-top-title">
                 병원 기본정보를 입력해주세요
               </h2>
-              <p className="text-sm text-gray-500">
-                정확한 정보를 입력해주세요.
+              <p className="tds-top-desc">
+                환자에게 노출되는 정보를 정확히 입력해주세요.
               </p>
             </div>
-            <div className="space-y-4">
+            <div className="tds-form">
               <div>
-                <label className="text-sm font-medium text-gray-700 block mb-1.5">
+                <label className="tds-field-label">
                   병원명
                 </label>
                 <input
@@ -787,12 +788,12 @@ export default function HospitalRegisterPage() {
                     }))
                   }
                   placeholder="병원명을 입력해주세요"
-                  className="w-full px-2.5 py-3 bg-gray-50 rounded-xl text-sm border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#7C3AED] focus:border-[#7C3AED]"
+                  className="tds-input"
                 />
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-700 block mb-1.5">
-                  대표자명 <span className="text-[11px] text-gray-400 font-normal">(최대 5자)</span>
+                <label className="tds-field-label">
+                  대표자명
                 </label>
                 <input
                   type="text"
@@ -805,14 +806,14 @@ export default function HospitalRegisterPage() {
                     }))
                   }
                   placeholder="대표자명을 입력해주세요"
-                  className="w-full px-2.5 py-3 bg-gray-50 rounded-xl text-sm border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#7C3AED] focus:border-[#7C3AED]"
+                  className="tds-input"
                 />
-                <p className="text-[11px] text-gray-400 mt-1 text-right">
-                  {hospitalInfo.ownerName.length}/5
+                <p className="tds-help text-right">
+                  최대 5자 · {hospitalInfo.ownerName.length}/5
                 </p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-700 block mb-1.5">
+                <label className="tds-field-label">
                   전화번호
                 </label>
                 <input
@@ -826,11 +827,11 @@ export default function HospitalRegisterPage() {
                     }))
                   }
                   placeholder="010 1234 5678"
-                  className="w-full px-0 py-3 bg-transparent text-[15px] text-gray-900 placeholder:text-gray-400 border-0 border-b border-gray-200 focus:outline-none focus:border-[#7C3AED] transition-colors"
+                  className="tds-input"
                 />
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-700 block mb-1.5">
+                <label className="tds-field-label">
                   사업자등록번호
                 </label>
                 <input
@@ -844,22 +845,22 @@ export default function HospitalRegisterPage() {
                     }))
                   }
                   placeholder="574 17 02394"
-                  className="w-full px-0 py-3 bg-transparent text-[15px] text-gray-900 placeholder:text-gray-400 border-0 border-b border-gray-200 focus:outline-none focus:border-[#7C3AED] transition-colors"
+                  className="tds-input"
                 />
               </div>
 
               {/* Document uploads — 의료법 관련 필수·선택 서류 */}
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-sm font-medium text-gray-700">
+                  <label className="tds-field-label mb-0">
                     서류 첨부
                   </label>
-                  <span className="text-[11px] text-gray-400">
+                  <span className="text-[12px] text-[rgba(0,19,43,0.58)]">
                     PDF · JPG · PNG (각 10MB 이하)
                   </span>
                 </div>
 
-                <p className="text-[11px] text-[#7C3AED] font-semibold mb-2">
+                <p className="px-1 text-[13px] text-[#3182F6] font-semibold mb-2">
                   필수 서류
                 </p>
                 <div className="space-y-2 mb-4">
@@ -889,7 +890,7 @@ export default function HospitalRegisterPage() {
                   ))}
                 </div>
 
-                <p className="text-[11px] text-gray-500 font-semibold mb-2">
+                <p className="px-1 text-[13px] text-[rgba(0,19,43,0.58)] font-semibold mb-2">
                   선택 서류
                 </p>
                 <div className="space-y-2">
@@ -915,8 +916,8 @@ export default function HospitalRegisterPage() {
                   ))}
                 </div>
 
-                <div className="mt-3 px-3 py-2.5 rounded-lg bg-[#F4EFFF]">
-                  <p className="text-[11px] text-[#7C3AED] font-semibold leading-snug">
+                <div className="mt-3 px-4 py-3 rounded-[14px] bg-[rgba(49,130,246,0.08)]">
+                  <p className="text-[13px] text-[#1B64DA] font-semibold leading-snug">
                     * 의료법 제33조, 제57조 및 관련 고시에 따라 의료기관 운영 자격을 확인하기
                     위해 상기 서류가 요구됩니다. 제출된 서류는 심사 목적 외에 사용되지 않으며
                     승인 이후 안전하게 파기됩니다.
@@ -985,7 +986,7 @@ export default function HospitalRegisterPage() {
                     className={`px-2 py-1 text-xs rounded-lg font-medium ${
                       oh.closed
                         ? 'bg-gray-200 text-gray-500'
-                        : 'bg-[#EDE9FE] text-[#7C3AED]'
+                        : 'bg-[#E8F3FF] text-[#3182F6]'
                     }`}
                   >
                     {oh.closed ? '휴진' : '진료'}
@@ -998,18 +999,19 @@ export default function HospitalRegisterPage() {
 
       case 8:
         return (
-          <div className="px-2.5 py-6 space-y-4">
-            <div>
-              <h2 className="text-xl font-bold text-gray-900 mb-1">
+          <div>
+            <div className="tds-top">
+              <span className="tds-top-eyebrow">대표 원장 정보</span>
+              <h2 className="tds-top-title">
                 원장 정보를 입력해주세요
               </h2>
-              <p className="text-sm text-gray-500">
-                원장님의 정보를 입력합니다.
+              <p className="tds-top-desc">
+                진료 신뢰도를 높이는 기본 정보를 입력합니다.
               </p>
             </div>
-            <div className="space-y-4">
+            <div className="tds-form">
               <div>
-                <label className="text-sm font-medium text-gray-700 block mb-1.5">
+                <label className="tds-field-label">
                   원장명
                 </label>
                 <input
@@ -1019,11 +1021,11 @@ export default function HospitalRegisterPage() {
                     setDoctorInfo((prev) => ({ ...prev, name: e.target.value }))
                   }
                   placeholder="원장명을 입력해주세요"
-                  className="w-full px-2.5 py-3 bg-gray-50 rounded-xl text-sm border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#7C3AED] focus:border-[#7C3AED]"
+                  className="tds-input"
                 />
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-700 block mb-1.5">
+                <label className="tds-field-label">
                   전문분야
                 </label>
                 <input
@@ -1036,11 +1038,11 @@ export default function HospitalRegisterPage() {
                     }))
                   }
                   placeholder="전문분야를 입력해주세요"
-                  className="w-full px-2.5 py-3 bg-gray-50 rounded-xl text-sm border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#7C3AED] focus:border-[#7C3AED]"
+                  className="tds-input"
                 />
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-700 block mb-1.5">
+                <label className="tds-field-label">
                   면허번호
                 </label>
                 <input
@@ -1053,7 +1055,7 @@ export default function HospitalRegisterPage() {
                     }))
                   }
                   placeholder="면허번호를 입력해주세요"
-                  className="w-full px-2.5 py-3 bg-gray-50 rounded-xl text-sm border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#7C3AED] focus:border-[#7C3AED]"
+                  className="tds-input"
                 />
               </div>
             </div>
@@ -1068,23 +1070,23 @@ export default function HospitalRegisterPage() {
   // Completion screen
   if (step > TOTAL_STEPS) {
     return (
-      <div className="bg-white min-h-screen flex flex-col">
+      <div className="tds-screen min-h-screen flex flex-col">
         <TopBar title="" showBack={false} />
         <div className="flex-1 flex flex-col items-center justify-center px-2.5">
-          <div className="w-20 h-20 bg-[#EDE9FE] rounded-full flex items-center justify-center mb-6">
-            <Plane size={36} className="text-[#7C3AED]" />
+          <div className="w-20 h-20 bg-[rgba(49,130,246,0.1)] rounded-[24px] flex items-center justify-center mb-6">
+            <Plane size={36} className="text-[#3182F6]" />
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">
+          <h2 className="text-[28px] leading-[37px] font-extrabold text-[#191F28] mb-2">
             회원가입을 축하해요!
           </h2>
-          <p className="text-sm text-gray-500 text-center leading-relaxed">
+          <p className="text-[17px] text-[rgba(3,18,40,0.7)] text-center leading-[25.5px]">
             병원 등록이 완료되었습니다.
             <br />
             심사 후 승인이 완료되면 알려드릴게요.
           </p>
           <button
             onClick={() => router.push('/hospital')}
-            className="mt-8 w-full max-w-[280px] py-3.5 bg-[#7C3AED] text-white rounded-xl text-base font-bold"
+            className="tds-button-primary mt-8 w-full max-w-[280px]"
           >
             시작하기
           </button>
@@ -1094,7 +1096,7 @@ export default function HospitalRegisterPage() {
   }
 
   return (
-    <div className="bg-white min-h-screen flex flex-col">
+    <div className="tds-screen min-h-screen flex flex-col">
       <TopBar
         title={getStepTitle()}
         showBack
@@ -1106,14 +1108,12 @@ export default function HospitalRegisterPage() {
       />
 
       {/* Step indicator */}
-      <div className="px-2.5 pt-1 pb-2">
+      <div className="tds-progress-wrap">
         <div className="flex gap-1">
           {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
             <div
               key={i}
-              className={`h-1 flex-1 rounded-full transition-colors ${
-                i < step ? 'bg-[#7C3AED]' : 'bg-gray-200'
-              }`}
+              className={`tds-progress ${i < step ? 'is-active' : ''}`}
             />
           ))}
         </div>
@@ -1130,10 +1130,10 @@ export default function HospitalRegisterPage() {
       </div>
 
       {/* Bottom button + draft save */}
-      <div className="sticky bottom-0 bg-white px-2.5 py-3 border-t border-gray-100 flex items-center gap-2">
+      <div className="tds-bottom-cta">
         <button
           onClick={saveDraft}
-          className="flex-shrink-0 px-4 py-3.5 rounded-xl border border-gray-200 text-[13px] font-semibold text-gray-700 btn-press hover:bg-gray-50 transition-colors"
+          className="tds-button-weak flex-shrink-0"
         >
           중간저장
         </button>
@@ -1178,11 +1178,7 @@ export default function HospitalRegisterPage() {
             }
           }}
           disabled={!canProceed() || submitting}
-          className={`flex-1 py-3.5 rounded-xl text-base font-bold btn-press transition-all duration-300 ${
-            canProceed() && !submitting
-              ? 'bg-[#7C3AED] text-white shadow-[0_6px_16px_rgba(124,58,237,0.3)]'
-              : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-          }`}
+          className="tds-button-primary flex-1"
         >
           {submitting ? '제출 중…' : step === TOTAL_STEPS ? '완료' : '다음'}
         </button>
@@ -1248,10 +1244,10 @@ function DocUploadRow({
   return (
     <label
       htmlFor={`doc-${title}`}
-      className="w-full flex items-center gap-3 p-3 rounded-xl border border-dashed transition-colors text-left cursor-pointer"
+      className="tds-list-row w-full text-left cursor-pointer transition-colors"
       style={{
-        borderColor: uploaded ? '#7C3AED' : '#D1D5DB',
-        backgroundColor: uploaded ? '#F4EFFF' : 'transparent',
+        borderColor: uploaded ? '#3182F6' : 'var(--tds-border)',
+        backgroundColor: uploaded ? 'rgba(49,130,246,0.06)' : '#fff',
       }}
     >
       <input
@@ -1262,15 +1258,17 @@ function DocUploadRow({
         className="sr-only"
         onChange={handleFile}
       />
-      <Upload size={18} className={uploaded ? 'text-[#7C3AED]' : 'text-gray-400'} />
+      <span className="tds-list-icon">
+        <Upload size={16} />
+      </span>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5">
-          <p className="text-sm text-gray-800 font-medium leading-tight">{title}</p>
+          <p className="tds-list-title truncate">{title}</p>
           {required && (
             <span className="text-[10px] font-bold text-red-500 leading-none">*</span>
           )}
         </div>
-        <p className="text-[11px] text-gray-500 mt-0.5 leading-snug truncate">
+        <p className="tds-list-desc truncate">
           {uploaded ? fileName : desc}
         </p>
       </div>
@@ -1278,7 +1276,7 @@ function DocUploadRow({
         <button
           type="button"
           onClick={handleReset}
-          className="flex-shrink-0 text-[11px] font-semibold text-[#7C3AED] px-1.5 py-0.5"
+          className="flex-shrink-0 text-[13px] font-semibold text-[#3182F6] px-1.5 py-0.5"
         >
           다시 올리기
         </button>
@@ -1378,7 +1376,7 @@ function AgreementSheet({
         <div className="px-5 py-4 border-t border-gray-100">
           <button
             onClick={onAgree}
-            className="w-full py-3.5 bg-[#7C3AED] text-white rounded-xl text-base font-bold btn-press"
+            className="w-full py-3.5 bg-[#3182F6] text-white rounded-xl text-base font-bold btn-press"
           >
             {item.required ? '동의하고 계속하기' : '동의합니다'}
           </button>
@@ -1483,7 +1481,7 @@ function SequentialAgreeFlow({
         <div className="px-5 pt-4 pb-3 border-b border-gray-100">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <span className="text-[11px] font-bold text-[#7C3AED] bg-[#EDE9FE] px-2 py-0.5 rounded-full">
+              <span className="text-[11px] font-bold text-[#3182F6] bg-[#E8F3FF] px-2 py-0.5 rounded-full">
                 {currentNumber} / {totalSteps}
               </span>
               <h3 className="text-[15px] font-bold text-gray-900">
@@ -1497,7 +1495,7 @@ function SequentialAgreeFlow({
           {/* Progress bar */}
           <div className="relative h-1 bg-gray-100 rounded-full overflow-hidden">
             <div
-              className="absolute inset-y-0 left-0 bg-[#7C3AED] rounded-full"
+              className="absolute inset-y-0 left-0 bg-[#3182F6] rounded-full"
               style={{
                 width: `${progressPct}%`,
                 transition: 'width 380ms cubic-bezier(0.22, 1, 0.36, 1)',
@@ -1541,7 +1539,7 @@ function SequentialAgreeFlow({
               onClick={handleFinalSubmit}
               className={`w-full py-3.5 rounded-xl text-base font-bold transition-colors ${
                 sigUrl
-                  ? 'bg-[#7C3AED] text-white btn-press'
+                  ? 'bg-[#3182F6] text-white btn-press'
                   : 'bg-gray-200 text-gray-400 cursor-not-allowed'
               }`}
             >
@@ -1553,7 +1551,7 @@ function SequentialAgreeFlow({
               onClick={handleAgree}
               className={`agree-btn w-full py-3.5 rounded-xl text-base font-bold transition-colors ${
                 reachedBottom
-                  ? 'bg-[#7C3AED] text-white'
+                  ? 'bg-[#3182F6] text-white'
                   : 'bg-gray-200 text-gray-400 cursor-not-allowed'
               } ${justChecked ? 'is-checked' : ''}`}
             >
@@ -1732,7 +1730,7 @@ function SignatureStep({
       <div className="mt-4">
         <p className="text-[13px] font-semibold text-gray-900 mb-2">직인 이미지 첨부 (선택)</p>
         <label
-          className="flex items-center gap-2 px-3 py-2.5 rounded-xl border border-dashed border-gray-300 text-[13px] text-gray-600 cursor-pointer hover:border-[#7C3AED] transition-colors"
+          className="flex items-center gap-2 px-3 py-2.5 rounded-xl border border-dashed border-gray-300 text-[13px] text-gray-600 cursor-pointer hover:border-[#3182F6] transition-colors"
         >
           <Upload size={16} className="text-gray-400" />
           {sealPreview ? '직인 이미지 변경' : '직인/인감 이미지 업로드'}

@@ -15,7 +15,7 @@ const statusLabel: Record<Reservation['status'], string> = {
 
 const statusColor: Record<Reservation['status'], string> = {
   pending: 'bg-yellow-100 text-yellow-700',
-  confirmed: 'bg-[#EDE9FE] text-[#7C3AED]',
+  confirmed: 'bg-[#E8F3FF] text-[#3182F6]',
   completed: 'bg-green-100 text-green-700',
   cancelled: 'bg-gray-100 text-gray-500',
 };
@@ -114,7 +114,7 @@ export default function HospitalHomePage() {
                 {/* Product info */}
                 <div className="flex gap-3">
                   <div className="w-20 h-20 rounded-xl bg-gray-100 overflow-hidden flex-shrink-0 relative">
-                    <div className="w-full h-full bg-gradient-to-br from-purple-100 to-blue-100 flex items-center justify-center"><span className="text-2xl">🦷</span></div>
+                    <div className="w-full h-full bg-gradient-to-br from-sky-100 to-blue-100 flex items-center justify-center"><span className="text-2xl">🦷</span></div>
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-bold text-gray-900 line-clamp-2">
@@ -161,7 +161,7 @@ export default function HospitalHomePage() {
                     </button>
                     <button
                       onClick={() => handleConfirm(reservation.id)}
-                      className="flex-1 py-2.5 bg-[#7C3AED] text-white rounded-xl text-sm font-medium"
+                      className="flex-1 py-2.5 bg-[#3182F6] text-white rounded-xl text-sm font-medium"
                     >
                       예약확정
                     </button>

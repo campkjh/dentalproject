@@ -86,7 +86,7 @@ export default function HospitalDetailPage() {
         <TopBar title={hospital.name} showBack />
 
         {/* Cover Image Area */}
-        <div className="relative aspect-[16/9] lg:aspect-[3/1] bg-gradient-to-br from-[#7C3AED] to-purple-400 flex items-end lg:rounded-2xl lg:mt-2 overflow-hidden">
+        <div className="relative aspect-[16/9] lg:aspect-[3/1] bg-gradient-to-br from-[#3182F6] to-blue-400 flex items-end lg:rounded-2xl lg:mt-2 overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
           <div className="relative z-10 p-4 lg:p-6">
             <span className="inline-block text-xs bg-white/20 backdrop-blur-sm text-white rounded-full px-3 py-1 mb-2">
@@ -99,7 +99,7 @@ export default function HospitalDetailPage() {
         {/* Hospital Info */}
         <div className="px-2.5 py-4">
           <div className="flex items-center gap-2 mb-2">
-            <span className="text-xs bg-purple-50 text-[#7C3AED] font-medium rounded-full px-3 py-1">
+            <span className="text-xs bg-blue-50 text-[#3182F6] font-medium rounded-full px-3 py-1">
               {hospital.category}
             </span>
           </div>
@@ -127,7 +127,7 @@ export default function HospitalDetailPage() {
               const query = encodeURIComponent(hospital.address + ' ' + hospital.name);
               window.open(`https://map.naver.com/v5/search/${query}`, '_blank');
             }}
-            className="w-full py-2.5 bg-[#7C3AED] text-white rounded-xl text-sm font-medium mb-4"
+            className="w-full py-2.5 bg-[#3182F6] text-white rounded-xl text-sm font-medium mb-4"
           >
             찾아가는길
           </button>
@@ -212,7 +212,7 @@ export default function HospitalDetailPage() {
               <div className="mb-4">
                 <h3 className="font-bold text-sm mb-2">주소</h3>
                 <div className="flex items-start gap-2 mb-3">
-                  <MapPin size={16} className="text-[#7C3AED] flex-shrink-0 mt-0.5" />
+                  <MapPin size={16} className="text-[#3182F6] flex-shrink-0 mt-0.5" />
                   <div>
                     <p className="text-sm text-gray-700">{hospital.address}</p>
                     {hospital.addressDetail && (
@@ -247,7 +247,7 @@ export default function HospitalDetailPage() {
                   className="flex items-start gap-3 p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
                 >
                   {/* Avatar with initials */}
-                  <div className="w-14 h-14 bg-gradient-to-br from-[#7C3AED] to-purple-400 rounded-full flex items-center justify-center flex-shrink-0">
+                  <div className="w-14 h-14 bg-gradient-to-br from-[#3182F6] to-blue-400 rounded-full flex items-center justify-center flex-shrink-0">
                     <span className="text-white font-bold text-sm">
                       {doctor.name.slice(-2)}
                     </span>
@@ -255,9 +255,9 @@ export default function HospitalDetailPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 mb-1">
                       <span className="text-sm font-bold">{doctor.name}</span>
-                      <span className="text-xs text-[#7C3AED] font-medium">{doctor.title}</span>
+                      <span className="text-xs text-[#3182F6] font-medium">{doctor.title}</span>
                       {doctor.isOwner && (
-                        <span className="text-[10px] bg-[#7C3AED] text-white rounded px-1.5 py-0.5">
+                        <span className="text-[10px] bg-[#3182F6] text-white rounded px-1.5 py-0.5">
                           대표원장
                         </span>
                       )}
@@ -279,7 +279,7 @@ export default function HospitalDetailPage() {
           {activeTab === '진료시간' && (
             <div>
               <div className="flex items-center gap-2 mb-3">
-                <Clock size={16} className="text-[#7C3AED]" />
+                <Clock size={16} className="text-[#3182F6]" />
                 <h3 className="font-bold text-sm">진료시간</h3>
               </div>
               <div className="bg-gray-50 rounded-xl p-4">
@@ -310,7 +310,7 @@ export default function HospitalDetailPage() {
               {/* Average Rating Display */}
               <div className="flex items-center gap-4 mb-6 p-4 bg-gray-50 rounded-xl">
                 <div className="text-center">
-                  <p className="text-3xl font-bold text-[#7C3AED]">{avgRating}</p>
+                  <p className="text-3xl font-bold text-[#3182F6]">{avgRating}</p>
                   <div className="flex items-center gap-0.5 mt-1 justify-center">
                     {[...Array(5)].map((_, i) => (
                       <Star
@@ -333,8 +333,8 @@ export default function HospitalDetailPage() {
                       {/* Reviewer info */}
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
-                            <User size={14} className="text-[#7C3AED]" />
+                          <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                            <User size={14} className="text-[#3182F6]" />
                           </div>
                           <div>
                             <p className="text-sm font-bold">{review.authorName}</p>
@@ -360,7 +360,7 @@ export default function HospitalDetailPage() {
                           비용: {review.totalCost.toLocaleString()}원
                         </p>
                         {review.doctorName && (
-                          <p className="text-xs text-[#7C3AED] mt-1">담당의: {review.doctorName}</p>
+                          <p className="text-xs text-[#3182F6] mt-1">담당의: {review.doctorName}</p>
                         )}
                       </div>
 
@@ -370,7 +370,7 @@ export default function HospitalDetailPage() {
                           <span className="text-xl">📷</span>
                           <span className="text-[10px] text-gray-400 mt-1">Before</span>
                         </div>
-                        <div className="flex-1 aspect-[4/3] bg-gradient-to-br from-purple-50 to-blue-50 rounded-lg flex flex-col items-center justify-center">
+                        <div className="flex-1 aspect-[4/3] bg-gradient-to-br from-blue-50 to-blue-50 rounded-lg flex flex-col items-center justify-center">
                           <span className="text-xl">📷</span>
                           <span className="text-[10px] text-gray-400 mt-1">After</span>
                         </div>

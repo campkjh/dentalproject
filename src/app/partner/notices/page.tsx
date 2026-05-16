@@ -8,7 +8,7 @@ import { useSession } from '@/lib/supabase/SessionProvider';
 
 const TYPE_CFG: Record<string, { icon: React.ReactNode; bg: string; color: string; label: string }> = {
   important: { icon: <CheckCircle size={14} />, bg: '#E6F7EB', color: '#15803D', label: '중요' },
-  event: { icon: <Bell size={14} />, bg: '#EDE7FF', color: '#6D28D9', label: '이벤트' },
+  event: { icon: <Bell size={14} />, bg: '#EDE7FF', color: '#1E6FD9', label: '이벤트' },
   recommendation: { icon: <Calendar size={14} />, bg: '#E6F2FF', color: '#1E6FD9', label: '추천' },
   info: { icon: <MessageSquare size={14} />, bg: '#F3F4F6', color: '#6B7280', label: '안내' },
   update: { icon: <XCircle size={14} />, bg: '#FFF8E1', color: '#B45309', label: '업데이트' },
@@ -50,7 +50,7 @@ export default function PartnerNoticesPage() {
     return (
       <div className="bg-white rounded-xl p-10 text-center">
         <p className="text-sm text-gray-500 mb-4">로그인이 필요합니다.</p>
-        <Link href="/login" className="inline-block px-5 py-2.5 bg-[#7C3AED] text-white text-sm font-bold rounded-xl">
+        <Link href="/login" className="inline-block px-5 py-2.5 bg-[#3182F6] text-white text-sm font-bold rounded-xl">
           로그인
         </Link>
       </div>

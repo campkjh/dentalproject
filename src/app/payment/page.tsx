@@ -54,7 +54,7 @@ function PaymentPage() {
           <button
             type="button"
             onClick={() => router.push('/search')}
-            className="mt-4 px-5 py-2.5 rounded-xl bg-[#7C3AED] text-white text-sm font-bold"
+            className="mt-4 px-5 py-2.5 rounded-xl bg-[#3182F6] text-white text-sm font-bold"
           >
             상품 다시 찾기
           </button>
@@ -297,7 +297,7 @@ function PaymentPage() {
               <Line
                 label="쿠폰 할인"
                 value={`-${couponDiscount.toLocaleString()}원`}
-                valueColor="#7C3AED"
+                valueColor="#3182F6"
                 animate
               />
             )}
@@ -305,7 +305,7 @@ function PaymentPage() {
               <Line
                 label="포인트 사용"
                 value={`-${pointsToUse.toLocaleString()}원`}
-                valueColor="#7C3AED"
+                valueColor="#3182F6"
                 animate
               />
             )}
@@ -317,10 +317,10 @@ function PaymentPage() {
               className="mt-3 px-3 py-2 rounded-lg flex items-center justify-between fade-in-up"
               style={{ backgroundColor: '#F4EFFF' }}
             >
-              <span className="text-[12px] font-semibold text-[#7C3AED]">
+              <span className="text-[12px] font-semibold text-[#3182F6]">
                 총 {totalSavings.toLocaleString()}원 할인됐어요
               </span>
-              <span className="text-[11px] text-[#7C3AED] opacity-70">쿠폰 + 포인트</span>
+              <span className="text-[11px] text-[#3182F6] opacity-70">쿠폰 + 포인트</span>
             </div>
           )}
 
@@ -420,9 +420,9 @@ function PaymentPage() {
             onClick={handleCta}
             className="cta-morph w-full py-3.5 rounded-xl font-bold text-[15px] btn-press relative overflow-hidden"
             style={{
-              backgroundColor: agreedFlow ? '#7C3AED' : '#2B313D',
+              backgroundColor: agreedFlow ? '#3182F6' : '#2B313D',
               color: '#fff',
-              boxShadow: agreedFlow ? '0 8px 20px rgba(124,58,237,0.35)' : 'none',
+              boxShadow: agreedFlow ? '0 8px 20px rgba(49,130,246,0.35)' : 'none',
               transition:
                 'background-color 420ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 420ms cubic-bezier(0.22, 1, 0.36, 1)',
             }}
@@ -534,7 +534,7 @@ function AmountChip({ value }: { value: number }) {
   return (
     <span
       key={value}
-      className="text-[14px] font-extrabold text-[#7C3AED] whitespace-nowrap count-up"
+      className="text-[14px] font-extrabold text-[#3182F6] whitespace-nowrap count-up"
     >
       {value.toLocaleString()}
       <span className="text-[11px] font-semibold text-gray-600 ml-0.5">원</span>

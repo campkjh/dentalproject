@@ -152,7 +152,7 @@ export default function AdminProductsPage() {
 
   function SortIcon({ col }: { col: SortKey }) {
     if (sortKey !== col) return <ChevronsUpDown size={14} className="text-gray-300" />;
-    return sortDir === 'asc' ? <ChevronUp size={14} className="text-[#7C3AED]" /> : <ChevronDown size={14} className="text-[#7C3AED]" />;
+    return sortDir === 'asc' ? <ChevronUp size={14} className="text-[#3182F6]" /> : <ChevronDown size={14} className="text-[#3182F6]" />;
   }
 
   return (
@@ -160,7 +160,7 @@ export default function AdminProductsPage() {
       {/* ---------- Header ---------- */}
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-gray-900">상품 관리</h2>
-        <button className="flex items-center gap-2 px-4 py-2.5 bg-[#7C3AED] text-white rounded-lg text-sm font-medium hover:bg-[#6D28D9] transition-colors">
+        <button className="flex items-center gap-2 px-4 py-2.5 bg-[#3182F6] text-white rounded-lg text-sm font-medium hover:bg-[#1E6FD9] transition-colors">
           <Plus size={16} /> 상품 등록
         </button>
       </div>
@@ -191,7 +191,7 @@ export default function AdminProductsPage() {
               placeholder="상품명 또는 병원명 검색..."
               value={search}
               onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-              className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#7C3AED] focus:ring-1 focus:ring-[#7C3AED]/30"
+              className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#3182F6] focus:ring-1 focus:ring-[#3182F6]/30"
             />
           </div>
 
@@ -201,7 +201,7 @@ export default function AdminProductsPage() {
             <select
               value={categoryFilter}
               onChange={(e) => { setCategoryFilter(e.target.value); setPage(1); }}
-              className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#7C3AED] bg-white"
+              className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#3182F6] bg-white"
             >
               {categories.map((c) => (
                 <option key={c} value={c}>{c}</option>
@@ -213,8 +213,8 @@ export default function AdminProductsPage() {
 
       {/* ---------- Bulk Actions ---------- */}
       {selected.size > 0 && (
-        <div className="flex items-center gap-3 bg-purple-50 border border-purple-200 rounded-xl px-4 py-3">
-          <span className="text-sm text-[#7C3AED] font-medium">{selected.size}개 선택됨</span>
+        <div className="flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-xl px-4 py-3">
+          <span className="text-sm text-[#3182F6] font-medium">{selected.size}개 선택됨</span>
           <button
             onClick={() => setShowBulkAction('deactivate')}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-sm text-gray-700 hover:bg-gray-50"
@@ -241,7 +241,7 @@ export default function AdminProductsPage() {
                     type="checkbox"
                     checked={allPageSelected}
                     onChange={toggleAll}
-                    className="rounded border-gray-300 text-[#7C3AED] focus:ring-[#7C3AED]"
+                    className="rounded border-gray-300 text-[#3182F6] focus:ring-[#3182F6]"
                   />
                 </th>
                 {(
@@ -287,14 +287,14 @@ export default function AdminProductsPage() {
                         type="checkbox"
                         checked={selected.has(product.id)}
                         onChange={() => toggleSelect(product.id)}
-                        className="rounded border-gray-300 text-[#7C3AED] focus:ring-[#7C3AED]"
+                        className="rounded border-gray-300 text-[#3182F6] focus:ring-[#3182F6]"
                       />
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-500">{product.id}</td>
                     <td className="px-4 py-3 text-sm font-medium text-gray-900">{product.name}</td>
                     <td className="px-4 py-3 text-sm text-gray-600">{product.hospital}</td>
                     <td className="px-4 py-3">
-                      <span className="inline-block px-1.5 py-0.5 bg-purple-50 text-[#7C3AED] text-xs font-medium rounded">
+                      <span className="inline-block px-1.5 py-0.5 bg-blue-50 text-[#3182F6] text-xs font-medium rounded">
                         {product.category}
                       </span>
                     </td>
@@ -320,7 +320,7 @@ export default function AdminProductsPage() {
                     <td className="px-4 py-3 text-sm text-gray-500">{product.createdAt}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1">
-                        <button className="p-1.5 text-gray-400 hover:text-[#7C3AED] hover:bg-purple-50 rounded-lg transition-colors" title="상세">
+                        <button className="p-1.5 text-gray-400 hover:text-[#3182F6] hover:bg-blue-50 rounded-lg transition-colors" title="상세">
                           <Eye size={15} />
                         </button>
                         <button className="p-1.5 text-gray-400 hover:text-yellow-600 hover:bg-yellow-50 rounded-lg transition-colors" title="비활성화">
@@ -364,7 +364,7 @@ export default function AdminProductsPage() {
                 key={n}
                 onClick={() => setPage(n)}
                 className={`w-9 h-9 rounded-lg text-sm font-medium transition-colors ${
-                  n === page ? 'bg-[#7C3AED] text-white' : 'text-gray-600 hover:bg-gray-100'
+                  n === page ? 'bg-[#3182F6] text-white' : 'text-gray-600 hover:bg-gray-100'
                 }`}
               >
                 {n}

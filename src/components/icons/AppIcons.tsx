@@ -61,8 +61,8 @@ export function IconMapPin({ size = 24 }: IconProps) {
 export function IconCalendarMini({ size = 24 }: IconProps) {
   return (
     <svg {...wrap(size)}>
-      <rect x="3" y="6" width="18" height="15" rx="2.5" fill="#A78BFA" />
-      <rect x="3" y="6" width="18" height="4.5" rx="2.5" fill="#7C3AED" />
+      <rect x="3" y="6" width="18" height="15" rx="2.5" fill="#86B7FF" />
+      <rect x="3" y="6" width="18" height="4.5" rx="2.5" fill="#3182F6" />
       <circle cx="8" cy="16" r="1.2" fill="#fff" />
       <circle cx="12" cy="16" r="1.2" fill="#fff" />
       <circle cx="16" cy="16" r="1.2" fill="#fff" />
@@ -78,20 +78,20 @@ export function IconStethoscope({ size = 24 }: IconProps) {
       <path
         d="M5 3v5.5a4.5 4.5 0 009 0V3"
         fill="none"
-        stroke="#7C3AED"
+        stroke="#3182F6"
         strokeWidth="2"
         strokeLinecap="round"
       />
-      <circle cx="5" cy="3" r="1.3" fill="#7C3AED" />
-      <circle cx="14" cy="3" r="1.3" fill="#7C3AED" />
+      <circle cx="5" cy="3" r="1.3" fill="#3182F6" />
+      <circle cx="14" cy="3" r="1.3" fill="#3182F6" />
       <path
         d="M9.5 13v3.5a4 4 0 004 4 4 4 0 004-4V14"
         fill="none"
-        stroke="#7C3AED"
+        stroke="#3182F6"
         strokeWidth="2"
         strokeLinecap="round"
       />
-      <circle cx="17.5" cy="12.5" r="2.8" fill="#A78BFA" />
+      <circle cx="17.5" cy="12.5" r="2.8" fill="#86B7FF" />
       <circle cx="17.5" cy="12.5" r="1.1" fill="#fff" />
     </svg>
   );
@@ -120,7 +120,7 @@ export function IconSearch({ size = 24 }: IconProps) {
 export function IconArrowUp({ size = 24 }: IconProps) {
   return (
     <svg {...wrap(size)}>
-      <circle cx="12" cy="12" r="10" fill="#7C3AED" />
+      <circle cx="12" cy="12" r="10" fill="#3182F6" />
       <path d="M12 7.5v9M7.5 12L12 7.5l4.5 4.5" stroke="#fff" strokeWidth="2.2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
@@ -144,7 +144,7 @@ export function IconChat({ size = 24 }: IconProps) {
     <svg {...wrap(size)}>
       <path
         d="M3.5 6.5a3 3 0 013-3h11a3 3 0 013 3v6.5a3 3 0 01-3 3h-6L8 20v-4h-1.5a3 3 0 01-3-3v-6.5z"
-        fill="#A78BFA"
+        fill="#86B7FF"
       />
       <circle cx="9" cy="10" r="1" fill="#fff" />
       <circle cx="12" cy="10" r="1" fill="#fff" />

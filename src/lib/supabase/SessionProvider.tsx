@@ -9,7 +9,7 @@ type Ctx = {
   session: Session | null;
   authUser: User | null;
   loading: boolean;
-  signInWithEmail: (email: string, password: string) => Promise<{ error: string | null }>;
+  signInWithEmail: (email: string, password: string) => Promise<{ error: string | null; isDoctor?: boolean }>;
   signUpWithEmail: (email: string, password: string, name?: string) => Promise<{ error: string | null; needsConfirm: boolean }>;
   signInWithOAuth: (provider: 'kakao' | 'apple') => Promise<void>;
   signOut: () => Promise<void>;
@@ -44,7 +44,6 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     supabase.auth.getSession().then(async ({ data }) => {
       if (!mounted) return;
       setSession(data.session);
-      setLoading(false);
       if (data.session?.user) {
         // Profile + me data in parallel (not sequential)
         await Promise.all([
@@ -52,16 +51,23 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
           hydrateMe(),
         ]);
       }
+      if (mounted) setLoading(false);
     });
 
     const { data: sub } = supabase.auth.onAuthStateChange(async (_event, s) => {
+      if (!mounted) return;
       setSession(s);
       if (s?.user) {
-        await hydrateProfile(s.user.id);
-        await hydrateMe();
+        setLoading(true);
+        await Promise.all([
+          hydrateProfile(s.user.id),
+          hydrateMe(),
+        ]);
+        if (mounted) setLoading(false);
       } else {
         storeLogout();
         resetMe();
+        setLoading(false);
       }
     });
 
@@ -72,13 +78,12 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
     async function hydrateProfile(userId: string) {
       if (!supabase) return;
-      const { data: existing } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .maybeSingle();
+      const [profileRes, hospitalRes] = await Promise.all([
+        supabase.from('profiles').select('*').eq('id', userId).maybeSingle(),
+        supabase.from('hospitals').select('id').eq('owner_id', userId).limit(1).maybeSingle(),
+      ]);
 
-      let p = existing as Record<string, unknown> | null;
+      let p = profileRes.data as Record<string, unknown> | null;
 
       // Auto-create profile if missing (trigger may not have fired for old accounts)
       if (!p) {
@@ -93,6 +98,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       }
 
       const loginType = (p.login_type as 'kakao' | 'apple') ?? 'kakao';
+      const hasHospitalAccess = Boolean(p.is_doctor) || Boolean(hospitalRes.data);
       // Always set isLoggedIn=true if we have a session, regardless of profile completeness
       useStore.setState({
         isLoggedIn: true,
@@ -107,9 +113,9 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
           profileImage: (p.profile_image as string) ?? undefined,
           points: (p.points as number) ?? 0,
           coupons: [],
-          isDoctor: (p.is_doctor as boolean) ?? false,
+          isDoctor: hasHospitalAccess,
         },
-        isDoctor: (p.is_doctor as boolean) ?? false,
+        isDoctor: hasHospitalAccess,
       });
     }
   }, [supabase, storeLogout, hydrateMe, resetMe]);
@@ -120,8 +126,42 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     loading,
     async signInWithEmail(email, password) {
       if (!supabase) return { error: 'Supabase not configured' };
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      return { error: error?.message ?? null };
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) return { error: error.message };
+      const [profileRes, hospitalRes] = await Promise.all([
+        supabase
+          .from('profiles')
+          .select('name, phone, login_type, gender, birth_year, country, profile_image, points, is_doctor')
+          .eq('id', data.user.id)
+          .maybeSingle(),
+        supabase.from('hospitals').select('id').eq('owner_id', data.user.id).limit(1).maybeSingle(),
+      ]);
+      const profile = profileRes.data;
+      const hasHospitalAccess = Boolean(profile?.is_doctor) || Boolean(hospitalRes.data);
+      const currentUser = useStore.getState().user;
+      useStore.setState({
+        isLoggedIn: true,
+        isDoctor: hasHospitalAccess,
+        user: currentUser
+          ? { ...currentUser, isDoctor: hasHospitalAccess }
+          : {
+              id: data.user.id,
+              name: profile?.name ?? data.user.user_metadata?.name ?? '',
+              phone: profile?.phone ?? '',
+              loginType: ((profile?.login_type as 'kakao' | 'apple') ?? 'kakao'),
+              gender: profile?.gender ?? undefined,
+              birthYear: profile?.birth_year ?? undefined,
+              country: profile?.country ?? '대한민국',
+              profileImage: profile?.profile_image ?? undefined,
+              points: profile?.points ?? 0,
+              coupons: [],
+              isDoctor: hasHospitalAccess,
+            },
+      });
+      return {
+        error: null,
+        isDoctor: hasHospitalAccess,
+      };
     },
     async signUpWithEmail(email, password, name) {
       if (!supabase) return { error: 'Supabase not configured', needsConfirm: false };

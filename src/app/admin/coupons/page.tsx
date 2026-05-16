@@ -82,14 +82,14 @@ const pointTypeBadge: Record<PointType, string> = {
 const couponStats = [
   { label: '총 발급', value: '1,245', icon: Gift, color: 'bg-blue-500' },
   { label: '사용완료', value: '856', icon: CheckCircle2, color: 'bg-green-500' },
-  { label: '사용가능', value: '234', icon: Clock, color: 'bg-purple-500' },
+  { label: '사용가능', value: '234', icon: Clock, color: 'bg-blue-500' },
   { label: '기간만료', value: '155', icon: XCircle, color: 'bg-red-500' },
 ];
 
 const pointStats = [
   { label: '총 발행 포인트', value: '2,450,000P', icon: Coins, color: 'bg-blue-500' },
   { label: '사용된 포인트', value: '1,230,000P', icon: TrendingUp, color: 'bg-green-500' },
-  { label: '미사용 포인트', value: '1,220,000P', icon: Wallet, color: 'bg-purple-500' },
+  { label: '미사용 포인트', value: '1,220,000P', icon: Wallet, color: 'bg-blue-500' },
 ];
 
 export default function AdminCouponsPage() {
@@ -196,10 +196,10 @@ export default function AdminCouponsPage() {
                   placeholder="쿠폰명, 쿠폰코드로 검색..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#7C3AED]/30 focus:border-[#7C3AED] transition-colors"
+                  className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#3182F6]/30 focus:border-[#3182F6] transition-colors"
                 />
               </div>
-              <button className="flex items-center gap-2 px-4 py-2.5 bg-[#7C3AED] text-white rounded-lg text-sm font-medium hover:bg-[#6D28D9] transition-colors shadow-sm">
+              <button className="flex items-center gap-2 px-4 py-2.5 bg-[#3182F6] text-white rounded-lg text-sm font-medium hover:bg-[#1E6FD9] transition-colors shadow-sm">
                 <Plus size={16} />
                 새 쿠폰 생성
               </button>
@@ -226,7 +226,7 @@ export default function AdminCouponsPage() {
                 <tbody className="divide-y divide-gray-100">
                   {filteredCoupons.map((coupon) => (
                     <tr key={coupon.id} className="hover:bg-gray-50/50 transition-colors">
-                      <td className="px-5 py-4 text-sm text-[#7C3AED] font-mono font-medium">{coupon.code}</td>
+                      <td className="px-5 py-4 text-sm text-[#3182F6] font-mono font-medium">{coupon.code}</td>
                       <td className="px-5 py-4 text-sm font-medium text-gray-900">{coupon.name}</td>
                       <td className="px-5 py-4 text-sm text-gray-900 font-medium">{coupon.discount}</td>
                       <td className="px-5 py-4 text-sm text-gray-500">{coupon.issued.toLocaleString()}</td>
@@ -235,7 +235,7 @@ export default function AdminCouponsPage() {
                         <div className="flex items-center gap-2">
                           <div className="w-14 bg-gray-100 rounded-full h-1.5 overflow-hidden">
                             <div
-                              className="h-full bg-[#7C3AED] rounded-full"
+                              className="h-full bg-[#3182F6] rounded-full"
                               style={{ width: `${coupon.usageRate}%` }}
                             />
                           </div>
@@ -289,7 +289,7 @@ export default function AdminCouponsPage() {
                       onClick={() => setCouponPage(page)}
                       className={`min-w-[36px] h-9 rounded-lg text-sm font-medium transition-colors ${
                         couponPage === page
-                          ? 'bg-[#7C3AED] text-white'
+                          ? 'bg-[#3182F6] text-white'
                           : 'text-gray-600 hover:bg-gray-100'
                       }`}
                     >
@@ -337,7 +337,7 @@ export default function AdminCouponsPage() {
           <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
             <div className="flex items-center justify-between mb-5">
               <h3 className="text-lg font-semibold text-gray-900">포인트 적립 정책</h3>
-              <button className="flex items-center gap-2 px-4 py-2 bg-[#7C3AED] text-white rounded-lg text-sm font-medium hover:bg-[#6D28D9] transition-colors shadow-sm">
+              <button className="flex items-center gap-2 px-4 py-2 bg-[#3182F6] text-white rounded-lg text-sm font-medium hover:bg-[#1E6FD9] transition-colors shadow-sm">
                 <Save size={16} />
                 정책 저장
               </button>
@@ -350,7 +350,7 @@ export default function AdminCouponsPage() {
                     type="text"
                     value={signupPoint}
                     onChange={(e) => setSignupPoint(e.target.value)}
-                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#7C3AED]/30 focus:border-[#7C3AED] transition-colors pr-8"
+                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#3182F6]/30 focus:border-[#3182F6] transition-colors pr-8"
                   />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">P</span>
                 </div>
@@ -362,7 +362,7 @@ export default function AdminCouponsPage() {
                     type="text"
                     value={paymentRate}
                     onChange={(e) => setPaymentRate(e.target.value)}
-                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#7C3AED]/30 focus:border-[#7C3AED] transition-colors pr-8"
+                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#3182F6]/30 focus:border-[#3182F6] transition-colors pr-8"
                   />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">%</span>
                 </div>
@@ -374,7 +374,7 @@ export default function AdminCouponsPage() {
                     type="text"
                     value={reviewPoint}
                     onChange={(e) => setReviewPoint(e.target.value)}
-                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#7C3AED]/30 focus:border-[#7C3AED] transition-colors pr-8"
+                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#3182F6]/30 focus:border-[#3182F6] transition-colors pr-8"
                   />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">P</span>
                 </div>
@@ -386,7 +386,7 @@ export default function AdminCouponsPage() {
                     type="text"
                     value={eventPoint}
                     onChange={(e) => setEventPoint(e.target.value)}
-                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#7C3AED]/30 focus:border-[#7C3AED] transition-colors pr-8"
+                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#3182F6]/30 focus:border-[#3182F6] transition-colors pr-8"
                   />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">P</span>
                 </div>
@@ -455,7 +455,7 @@ export default function AdminCouponsPage() {
                       onClick={() => setPointPage(page)}
                       className={`min-w-[36px] h-9 rounded-lg text-sm font-medium transition-colors ${
                         pointPage === page
-                          ? 'bg-[#7C3AED] text-white'
+                          ? 'bg-[#3182F6] text-white'
                           : 'text-gray-600 hover:bg-gray-100'
                       }`}
                     >

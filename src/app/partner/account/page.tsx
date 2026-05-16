@@ -2,8 +2,17 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { Building2, UserRound } from 'lucide-react';
 import { useStore } from '@/store';
 import { useSession } from '@/lib/supabase/SessionProvider';
+import {
+  PartnerButton,
+  PartnerField,
+  PartnerInput,
+  PartnerListRow,
+  PartnerPanel,
+  PartnerTop,
+} from '@/components/partner/tds';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export default function PartnerAccountPage() {
@@ -53,7 +62,7 @@ export default function PartnerAccountPage() {
     return (
       <div className="bg-white rounded-xl p-10 text-center">
         <p className="text-sm text-gray-500 mb-4">로그인이 필요합니다.</p>
-        <Link href="/login" className="inline-block px-5 py-2.5 bg-[#7C3AED] text-white text-sm font-bold rounded-xl">
+        <Link href="/login" className="inline-block px-5 py-2.5 bg-[#3182F6] text-white text-sm font-bold rounded-xl">
           로그인
         </Link>
       </div>
@@ -61,90 +70,78 @@ export default function PartnerAccountPage() {
   }
 
   return (
-    <div className="space-y-4 max-w-2xl">
-      <div>
-        <h1 className="text-[18px] font-bold text-gray-900">계정 정보</h1>
-        <p className="text-[12px] text-gray-500 mt-1">파트너 계정과 병원 연결 정보를 관리합니다.</p>
-      </div>
+    <div className="space-y-5">
+      <PartnerTop
+        eyebrow="계정"
+        title="계정 정보"
+        description="파트너 계정과 병원 연결 정보를 관리합니다."
+        icon={<UserRound size={28} />}
+      />
 
-      {/* User profile */}
-      <section className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
-        <h2 className="text-[14px] font-bold text-gray-900">담당자 정보</h2>
-        <Field label="이메일">
-          <p className="px-3 py-2.5 bg-gray-50 rounded-lg text-sm text-gray-600">{authUser.email ?? '-'}</p>
-        </Field>
-        <Field label="이름">
-          <input
+      <PartnerPanel className="p-5 space-y-4">
+        <h2>담당자 정보</h2>
+        <PartnerField label="이메일">
+          <p className="partner-input flex items-center text-[rgba(3,18,40,0.7)]">{authUser.email ?? '-'}</p>
+        </PartnerField>
+        <PartnerField label="이름">
+          <PartnerInput
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:border-[#7C3AED]"
           />
-        </Field>
-        <Field label="휴대폰">
-          <input
+        </PartnerField>
+        <PartnerField label="휴대폰">
+          <PartnerInput
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
-            className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:border-[#7C3AED]"
           />
-        </Field>
-        <button
+        </PartnerField>
+        <PartnerButton
+          type="button"
           onClick={save}
           disabled={saving}
-          className="w-full py-2.5 bg-[#7C3AED] text-white text-sm font-bold rounded-lg disabled:opacity-50"
+          size="xl"
+          className="w-full"
         >
           {saving ? '저장 중…' : '담당자 정보 저장'}
-        </button>
-      </section>
+        </PartnerButton>
+      </PartnerPanel>
 
-      {/* Hospital connection */}
-      <section className="bg-white rounded-xl border border-gray-200 p-5 space-y-3">
-        <h2 className="text-[14px] font-bold text-gray-900">연결된 병원</h2>
+      <PartnerPanel className="overflow-hidden">
+        <div className="px-5 py-4 border-b border-[rgba(0,27,55,0.06)]">
+          <h2>연결된 병원</h2>
+        </div>
         {hospital ? (
-          <div>
-            <p className="text-[15px] font-bold text-gray-900">{hospital.name}</p>
-            <p className="text-[12px] text-gray-500 mt-1">상태: {hospital.status}</p>
-            <Link
-              href="/partner/hospital-info"
-              className="inline-block mt-3 text-[12px] text-[#7C3AED] font-bold"
-            >
-              병원 정보 편집 →
-            </Link>
-          </div>
+          <PartnerListRow
+            href="/partner/hospital-info"
+            icon={<Building2 size={16} />}
+            title={hospital.name}
+            description={`상태: ${hospital.status}`}
+          />
         ) : (
-          <div>
-            <p className="text-[12px] text-gray-500 mb-3">아직 등록된 병원이 없습니다.</p>
-            <Link
-              href="/hospital/register"
-              className="inline-block px-4 py-2 bg-[#7C3AED] text-white text-[12px] font-bold rounded-lg"
-            >
+          <div className="p-5">
+            <p className="text-[13px] text-[rgba(0,19,43,0.58)] mb-3">아직 등록된 병원이 없습니다.</p>
+            <PartnerButton href="/hospital/register" size="m">
               병원 등록 신청
-            </Link>
+            </PartnerButton>
           </div>
         )}
-      </section>
+      </PartnerPanel>
 
-      {/* Logout */}
-      <section className="bg-white rounded-xl border border-gray-200 p-5">
-        <h2 className="text-[14px] font-bold text-gray-900 mb-3">계정 관리</h2>
-        <button
+      <PartnerPanel className="p-5">
+        <h2 className="mb-3">계정 관리</h2>
+        <PartnerButton
+          type="button"
+          variant="weak"
+          tone="neutral"
           onClick={async () => {
             await signOut();
             window.location.href = '/';
           }}
-          className="w-full py-2.5 border border-gray-200 text-gray-700 text-sm font-bold rounded-lg hover:bg-gray-50"
+          className="w-full"
         >
           로그아웃
-        </button>
-      </section>
-    </div>
-  );
-}
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <label className="block text-[12px] font-bold text-gray-700 mb-1.5">{label}</label>
-      {children}
+        </PartnerButton>
+      </PartnerPanel>
     </div>
   );
 }

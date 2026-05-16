@@ -2,9 +2,21 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Plus, X } from 'lucide-react';
+import { Megaphone, Plus } from 'lucide-react';
 import { useStore } from '@/store';
 import { useSession } from '@/lib/supabase/SessionProvider';
+import {
+  PartnerButton,
+  PartnerEmpty,
+  PartnerField,
+  PartnerInput,
+  PartnerListRow,
+  PartnerModal,
+  PartnerPanel,
+  PartnerSelect,
+  PartnerStatusBadge,
+  PartnerTop,
+} from '@/components/partner/tds';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type Ad = {
@@ -27,11 +39,11 @@ const TYPE_LABEL: Record<Ad['type'], string> = {
   featured: '추천 노출',
 };
 
-const STATUS_LABEL: Record<Ad['status'], { text: string; bg: string; color: string }> = {
-  draft: { text: '대기', bg: '#F3F4F6', color: '#6B7280' },
-  active: { text: '노출중', bg: '#E6F7EB', color: '#15803D' },
-  paused: { text: '일시정지', bg: '#FFF8E1', color: '#B45309' },
-  ended: { text: '종료', bg: '#F3F4F6', color: '#6B7280' },
+const STATUS_LABEL: Record<Ad['status'], { text: string; tone: 'neutral' | 'success' | 'warning' }> = {
+  draft: { text: '대기', tone: 'neutral' },
+  active: { text: '노출중', tone: 'success' },
+  paused: { text: '일시정지', tone: 'warning' },
+  ended: { text: '종료', tone: 'neutral' },
 };
 
 export default function AdsPage() {
@@ -131,7 +143,7 @@ export default function AdsPage() {
     return (
       <div className="bg-white rounded-xl p-10 text-center">
         <p className="text-sm text-gray-500 mb-4">로그인이 필요합니다.</p>
-        <Link href="/login" className="inline-block px-5 py-2.5 bg-[#7C3AED] text-white text-sm font-bold rounded-xl">
+        <Link href="/login" className="inline-block px-5 py-2.5 bg-[#3182F6] text-white text-sm font-bold rounded-xl">
           로그인
         </Link>
       </div>
@@ -139,161 +151,126 @@ export default function AdsPage() {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-[18px] font-bold text-gray-900">부가 광고 관리</h1>
-          <p className="text-[12px] text-gray-500 mt-1">홈 배너, 추천 노출 등 부가 광고를 관리합니다.</p>
-        </div>
-        <button
-          onClick={() => setShowAdd(true)}
-          className="flex items-center gap-1.5 px-4 py-2 bg-[#7C3AED] text-white text-[13px] font-bold rounded-lg btn-press"
-        >
-          <Plus size={14} /> 캠페인 추가
-        </button>
-      </div>
+    <div className="space-y-5">
+      <PartnerTop
+        eyebrow="광고"
+        title="부가 광고 관리"
+        description="홈 배너, 추천 노출 등 부가 광고를 관리합니다."
+        icon={<Megaphone size={28} />}
+        action={
+          <PartnerButton type="button" size="m" leftIcon={<Plus size={16} />} onClick={() => setShowAdd(true)}>
+            추가
+          </PartnerButton>
+        }
+      />
 
       {loading ? (
         <div className="text-center py-20 text-sm text-gray-400">불러오는 중…</div>
       ) : ads.length === 0 ? (
-        <div className="bg-white rounded-xl border border-gray-200 py-16 text-center">
-          <p className="text-sm text-gray-400 mb-4">진행 중인 캠페인이 없습니다.</p>
-          <button onClick={() => setShowAdd(true)} className="text-[#7C3AED] text-sm font-bold">
-            첫 광고 캠페인 만들기
-          </button>
-        </div>
+        <PartnerEmpty
+          icon={<Megaphone size={24} />}
+          title="진행 중인 캠페인이 없습니다."
+          action={<PartnerButton type="button" variant="weak" size="m" onClick={() => setShowAdd(true)}>첫 광고 캠페인 만들기</PartnerButton>}
+        />
       ) : (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden divide-y divide-gray-100">
+        <PartnerPanel className="overflow-hidden">
           {ads.map((ad) => {
             const s = STATUS_LABEL[ad.status];
+            const period = ad.start_at && ad.end_at
+              ? `${new Date(ad.start_at).toLocaleDateString('ko-KR')} ~ ${new Date(ad.end_at).toLocaleDateString('ko-KR')}`
+              : '기간 미설정';
             return (
-              <div key={ad.id} className="px-5 py-4">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[14px] font-bold text-gray-900">{ad.name}</span>
-                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded" style={{ backgroundColor: s.bg, color: s.color }}>
-                      {s.text}
-                    </span>
-                  </div>
-                  <button
-                    onClick={() => togglePause(ad)}
-                    className="text-[11px] text-[#7C3AED] font-bold"
-                  >
-                    {ad.status === 'active' ? '일시정지' : '활성화'}
-                  </button>
-                </div>
-                <div className="grid grid-cols-3 gap-3 text-[12px] text-gray-500">
-                  <div>
-                    <span className="block text-[10px] text-gray-400">유형</span>
-                    {TYPE_LABEL[ad.type]}
-                  </div>
-                  <div>
-                    <span className="block text-[10px] text-gray-400">예산 / 사용</span>
-                    {ad.spent.toLocaleString()} / {ad.budget.toLocaleString()}원
-                  </div>
-                  <div>
-                    <span className="block text-[10px] text-gray-400">기간</span>
-                    {ad.start_at && ad.end_at
-                      ? `${new Date(ad.start_at).toLocaleDateString('ko-KR')} ~ ${new Date(ad.end_at).toLocaleDateString('ko-KR')}`
-                      : '미설정'}
-                  </div>
-                </div>
-                {ad.event?.title && (
-                  <p className="text-[11px] text-gray-400 mt-2">대상 이벤트: {ad.event.title}</p>
-                )}
-              </div>
+              <PartnerListRow
+                key={ad.id}
+                icon={<Megaphone size={16} />}
+                title={
+                  <span className="flex items-center gap-2">
+                    <span className="truncate">{ad.name}</span>
+                    <PartnerStatusBadge tone={s.tone}>{s.text}</PartnerStatusBadge>
+                  </span>
+                }
+                description={`${TYPE_LABEL[ad.type]} · ${period}${ad.event?.title ? ` · ${ad.event.title}` : ''}`}
+                meta={`${ad.spent.toLocaleString()} / ${ad.budget.toLocaleString()}원`}
+                action={
+                  <PartnerButton type="button" variant="text" size="s" onClick={() => togglePause(ad)}>
+                    {ad.status === 'active' ? '정지' : '활성'}
+                  </PartnerButton>
+                }
+              />
             );
           })}
-        </div>
+        </PartnerPanel>
       )}
 
       {showAdd && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md mx-4">
-            <div className="flex items-center justify-between mb-5">
-              <h3 className="text-[15px] font-bold text-gray-900">광고 캠페인 추가</h3>
-              <button onClick={() => setShowAdd(false)}>
-                <X size={18} className="text-gray-400" />
-              </button>
-            </div>
-            <div className="space-y-3">
-              <Field label="캠페인명">
-                <input
-                  value={form.name}
-                  onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                  className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:border-[#7C3AED]"
-                />
-              </Field>
-              <Field label="유형">
-                <select
-                  value={form.type}
-                  onChange={(e) => setForm((f) => ({ ...f, type: e.target.value as Ad['type'] }))}
-                  className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:border-[#7C3AED]"
-                >
-                  <option value="cpv">CPV (조회당 과금)</option>
-                  <option value="banner">배너 광고</option>
-                  <option value="featured">추천 노출</option>
-                </select>
-              </Field>
-              <Field label="대상 이벤트 (선택)">
-                <select
-                  value={form.eventId}
-                  onChange={(e) => setForm((f) => ({ ...f, eventId: e.target.value }))}
-                  className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:border-[#7C3AED]"
-                >
-                  <option value="">선택 안함</option>
-                  {events.map((e) => (
-                    <option key={e.id} value={e.id}>{e.title}</option>
-                  ))}
-                </select>
-              </Field>
-              <Field label="예산 (원)">
-                <input
-                  type="number"
-                  value={form.budget}
-                  onChange={(e) => setForm((f) => ({ ...f, budget: e.target.value }))}
-                  className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:border-[#7C3AED]"
-                />
-              </Field>
-              <div className="grid grid-cols-2 gap-2">
-                <Field label="시작일">
-                  <input
-                    type="date"
-                    value={form.startAt}
-                    onChange={(e) => setForm((f) => ({ ...f, startAt: e.target.value }))}
-                    className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:border-[#7C3AED]"
-                  />
-                </Field>
-                <Field label="종료일">
-                  <input
-                    type="date"
-                    value={form.endAt}
-                    onChange={(e) => setForm((f) => ({ ...f, endAt: e.target.value }))}
-                    className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:border-[#7C3AED]"
-                  />
-                </Field>
-              </div>
-            </div>
-            <div className="flex gap-2 mt-5">
-              <button onClick={() => setShowAdd(false)} className="flex-1 py-2.5 border border-gray-200 rounded-lg text-sm font-medium text-gray-700">
+        <PartnerModal
+          title="광고 캠페인 추가"
+          onClose={() => setShowAdd(false)}
+          footer={
+            <>
+              <PartnerButton type="button" variant="weak" tone="neutral" className="flex-1" onClick={() => setShowAdd(false)}>
                 취소
-              </button>
-              <button onClick={handleAdd} disabled={creating} className="flex-1 py-2.5 bg-[#7C3AED] text-white rounded-lg text-sm font-bold disabled:opacity-50">
+              </PartnerButton>
+              <PartnerButton type="button" className="flex-1" onClick={handleAdd} disabled={creating}>
                 {creating ? '추가 중…' : '추가'}
-              </button>
+              </PartnerButton>
+            </>
+          }
+        >
+          <div className="space-y-3">
+            <PartnerField label="캠페인명">
+              <PartnerInput
+                value={form.name}
+                onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+              />
+            </PartnerField>
+            <PartnerField label="유형">
+              <PartnerSelect
+                value={form.type}
+                onChange={(e) => setForm((f) => ({ ...f, type: e.target.value as Ad['type'] }))}
+              >
+                <option value="cpv">CPV (조회당 과금)</option>
+                <option value="banner">배너 광고</option>
+                <option value="featured">추천 노출</option>
+              </PartnerSelect>
+            </PartnerField>
+            <PartnerField label="대상 이벤트 (선택)">
+              <PartnerSelect
+                value={form.eventId}
+                onChange={(e) => setForm((f) => ({ ...f, eventId: e.target.value }))}
+              >
+                <option value="">선택 안함</option>
+                {events.map((e) => (
+                  <option key={e.id} value={e.id}>{e.title}</option>
+                ))}
+              </PartnerSelect>
+            </PartnerField>
+            <PartnerField label="예산 (원)">
+              <PartnerInput
+                type="number"
+                value={form.budget}
+                onChange={(e) => setForm((f) => ({ ...f, budget: e.target.value }))}
+              />
+            </PartnerField>
+            <div className="grid grid-cols-2 gap-2">
+              <PartnerField label="시작일">
+                <PartnerInput
+                  type="date"
+                  value={form.startAt}
+                  onChange={(e) => setForm((f) => ({ ...f, startAt: e.target.value }))}
+                />
+              </PartnerField>
+              <PartnerField label="종료일">
+                <PartnerInput
+                  type="date"
+                  value={form.endAt}
+                  onChange={(e) => setForm((f) => ({ ...f, endAt: e.target.value }))}
+                />
+              </PartnerField>
             </div>
           </div>
-        </div>
+        </PartnerModal>
       )}
-    </div>
-  );
-}
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <label className="block text-[12px] font-bold text-gray-700 mb-1.5">{label}</label>
-      {children}
     </div>
   );
 }

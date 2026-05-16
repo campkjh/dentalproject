@@ -172,7 +172,7 @@ export default function CouponsPage() {
                   <span
                     className="ml-1 text-[11px] font-bold"
                     style={{
-                      color: isActive ? '#7C3AED' : '#C5CAD4',
+                      color: isActive ? '#3182F6' : '#C5CAD4',
                     }}
                   >
                     {c}
@@ -182,7 +182,7 @@ export default function CouponsPage() {
             })}
             <span
               aria-hidden
-              className="absolute bottom-0 h-[2px] bg-[#7C3AED] pointer-events-none rounded-full"
+              className="absolute bottom-0 h-[2px] bg-[#3182F6] pointer-events-none rounded-full"
               style={{
                 left: indicator.left,
                 width: indicator.width,
@@ -221,7 +221,7 @@ export default function CouponsPage() {
                     borderRadius: 16,
                     border: '1px solid #EFF0F3',
                     boxShadow: isAvailable
-                      ? '0 1px 2px rgba(16,24,40,0.03), 0 6px 18px rgba(124,58,237,0.06)'
+                      ? '0 1px 2px rgba(16,24,40,0.03), 0 6px 18px rgba(49,130,246,0.06)'
                       : '0 1px 2px rgba(16,24,40,0.03)',
                     opacity: isAvailable ? 1 : 0.78,
                   }}
@@ -232,7 +232,7 @@ export default function CouponsPage() {
                       className="absolute top-0 left-0 right-0 h-[3px]"
                       style={{
                         background:
-                          'linear-gradient(90deg, #7C3AED 0%, #A78BFA 50%, #7C3AED 100%)',
+                          'linear-gradient(90deg, #3182F6 0%, #86B7FF 50%, #3182F6 100%)',
                       }}
                     />
                   )}
@@ -244,7 +244,7 @@ export default function CouponsPage() {
                         <p
                           className="text-[11px] font-bold tracking-wider uppercase mb-1"
                           style={{
-                            color: isAvailable ? '#7C3AED' : '#9CA3AF',
+                            color: isAvailable ? '#3182F6' : '#9CA3AF',
                           }}
                         >
                           Discount
@@ -316,7 +316,7 @@ export default function CouponsPage() {
                             {coupon.expiryDate}까지
                           </span>
                           {isAvailable && coupon.daysLeft !== undefined && !urgent && (
-                            <span className="text-[10px] font-bold text-[#7C3AED] bg-[#F4EFFF] px-1.5 py-0.5 rounded">
+                            <span className="text-[10px] font-bold text-[#3182F6] bg-[#F4EFFF] px-1.5 py-0.5 rounded">
                               D-{coupon.daysLeft}
                             </span>
                           )}
@@ -334,7 +334,7 @@ export default function CouponsPage() {
                         onClick={() => showToast('결제 시 자동 적용됩니다.')}
                         className="btn-press text-[12px] font-bold px-3 py-1.5 rounded-full flex-shrink-0"
                         style={{
-                          color: '#7C3AED',
+                          color: '#3182F6',
                           backgroundColor: '#F4EFFF',
                         }}
                       >

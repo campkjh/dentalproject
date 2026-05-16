@@ -174,7 +174,7 @@ function PartnerChatPage() {
     return (
       <div className="bg-white rounded-xl p-10 text-center">
         <p className="text-sm text-gray-500 mb-4">로그인이 필요합니다.</p>
-        <Link href="/login" className="inline-block px-5 py-2.5 bg-[#7C3AED] text-white text-sm font-bold rounded-xl">
+        <Link href="/login" className="inline-block px-5 py-2.5 bg-[#3182F6] text-white text-sm font-bold rounded-xl">
           로그인
         </Link>
       </div>
@@ -213,7 +213,7 @@ function PartnerChatPage() {
                   <button
                     onClick={() => setActiveId(t.id)}
                     className="w-full text-left p-3 flex items-start gap-2 hover:bg-gray-50 transition-colors"
-                    style={{ backgroundColor: activeId === t.id ? '#F4EFFF' : undefined }}
+                    style={{ backgroundColor: activeId === t.id ? '#E8F3FF' : undefined }}
                   >
                     <Avatar seed={t.user_id} size={36} className="flex-shrink-0" />
                     <div className="flex-1 min-w-0">
@@ -257,7 +257,7 @@ function PartnerChatPage() {
                         <div
                           className="rounded-2xl px-3.5 py-2.5 text-[13px] leading-relaxed whitespace-pre-wrap"
                           style={{
-                            backgroundColor: m.from === 'me' ? '#7C3AED' : '#fff',
+                            backgroundColor: m.from === 'me' ? '#3182F6' : '#fff',
                             color: m.from === 'me' ? '#fff' : '#2B313D',
                             border: m.from === 'me' ? 'none' : '1px solid #F2F3F5',
                             borderTopRightRadius: m.from === 'me' ? 4 : 16,
@@ -304,7 +304,7 @@ function PartnerChatPage() {
                   disabled={!input.trim() || pending}
                   className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
                   style={{
-                    backgroundColor: input.trim() && !pending ? '#7C3AED' : '#E5E7EB',
+                    backgroundColor: input.trim() && !pending ? '#3182F6' : '#E5E7EB',
                     color: '#fff',
                   }}
                 >
