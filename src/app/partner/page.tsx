@@ -1,49 +1,143 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Bell, Building2, CalendarDays, ChevronRight, MessageSquare, RefreshCw, Star } from 'lucide-react';
-import { useStore } from '@/store';
+import { ChevronRight } from 'lucide-react';
 import { useSession } from '@/lib/supabase/SessionProvider';
-import {
-  PartnerButton,
-  PartnerEmpty,
-  PartnerListRow,
-  PartnerPanel,
-  PartnerStatCard,
-  PartnerStatusBadge,
-  PartnerTop,
-} from '@/components/partner/tds';
+import { useStore } from '@/store';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-type ConsultRoom = {
+type ReservationRow = {
   id: string;
-  user_id: string;
-  last_message: string | null;
-  last_at: string;
-  user?: { name?: string | null } | null;
-  unread?: number;
+  visit_at: string | null;
+  reservation_at?: string | null;
+  status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
+  amount?: number | null;
+  customer_name?: string | null;
+  customer_phone?: string | null;
+  user?: { name?: string | null; phone?: string | null } | null;
+  product?: { title?: string | null; image_url?: string | null } | null;
 };
 
-function relTime(iso?: string) {
-  if (!iso) return '';
-  const d = new Date(iso);
-  const diff = (Date.now() - d.getTime()) / 1000;
-  if (diff < 60) return '방금';
-  if (diff < 3600) return `${Math.floor(diff / 60)}분 전`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}시간 전`;
-  return d.toLocaleDateString('ko-KR');
+type HospitalRow = {
+  id: string;
+  name?: string | null;
+  address?: string | null;
+  location?: string | null;
+};
+
+const FALLBACK_IMAGE = '/images/banner_img_1751346038.jpg';
+const FILTERS = ['all', 'pending', 'confirmed', 'cancelled'] as const;
+type Filter = (typeof FILTERS)[number];
+
+const FILTER_LABEL: Record<Filter, string> = {
+  all: '전체',
+  pending: '새로운예약',
+  confirmed: '확정된예약',
+  cancelled: '취소된예약',
+};
+
+function formatDate(value?: string | null) {
+  if (!value) return '';
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return '';
+  return `${d.getFullYear()}년${d.getMonth() + 1}월${d.getDate()}일`;
+}
+
+function formatVisit(value?: string | null) {
+  if (!value) return '일정 미정';
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return '일정 미정';
+  const hours = d.getHours();
+  const minutes = String(d.getMinutes()).padStart(2, '0');
+  const period = hours < 12 ? '오전' : '오후';
+  const hour12 = hours % 12 || 12;
+  return `${d.getFullYear()}년${d.getMonth() + 1}월${d.getDate()}일 ${period} ${hour12}:${minutes}`;
+}
+
+function money(value?: number | null) {
+  return `${(value ?? 0).toLocaleString('ko-KR')}원`;
+}
+
+function getStatus(row: ReservationRow) {
+  if (row.status === 'confirmed' || row.status === 'completed') {
+    return { label: '예약확정', tone: 'confirmed' as const };
+  }
+  if (row.status === 'cancelled') {
+    return { label: '예약취소', tone: 'cancelled' as const };
+  }
+  return { label: '예약확인중...', tone: 'pending' as const };
+}
+
+function ReservationCard({
+  row,
+  hospital,
+  onStatus,
+}: {
+  row: ReservationRow;
+  hospital: HospitalRow | null;
+  onStatus: (id: string, status: ReservationRow['status']) => void;
+}) {
+  const status = getStatus(row);
+  const customerName = row.user?.name ?? row.customer_name ?? '예약자';
+  const title = row.product?.title ?? '예약 상품';
+  const hospitalName = hospital?.name ?? '병원명';
+  const address = hospital?.address ?? hospital?.location ?? '주소 정보 없음';
+
+  return (
+    <article className="partner-reservation-card">
+      <div className="partner-reservation-card-head">
+        <strong className={`is-${status.tone}`}>{status.label}</strong>
+        <span>
+          {formatDate(row.reservation_at ?? row.visit_at)}
+          <ChevronRight size={22} strokeWidth={2.2} />
+        </span>
+      </div>
+      <div className="partner-reservation-card-body">
+        <div className="partner-reservation-product">
+          <img src={row.product?.image_url || FALLBACK_IMAGE} alt="" />
+          <div>
+            <h2>{title}</h2>
+            <p>{hospitalName}</p>
+            <p>{address}</p>
+          </div>
+        </div>
+        <dl className="partner-reservation-facts">
+          <div>
+            <dt>예약자</dt>
+            <dd>{customerName}</dd>
+          </div>
+          <div>
+            <dt>예약일시</dt>
+            <dd>{formatVisit(row.visit_at)}</dd>
+          </div>
+          <div>
+            <dt>금액</dt>
+            <dd>{money(row.amount)}</dd>
+          </div>
+        </dl>
+        {row.status === 'pending' && (
+          <div className="partner-reservation-actions">
+            <button type="button" onClick={() => onStatus(row.id, 'confirmed')}>
+              예약확정
+            </button>
+            <button type="button" onClick={() => onStatus(row.id, 'cancelled')}>
+              예약취소
+            </button>
+          </div>
+        )}
+      </div>
+    </article>
+  );
 }
 
 export default function PartnerHomePage() {
-  const announcements = useStore((s) => s.announcements);
   const { authUser } = useSession();
-  const [hospital, setHospital] = useState<any>(null);
-  const [reservations, setReservations] = useState<any[]>([]);
-  const [reviews, setReviews] = useState<any[]>([]);
-  const [chats, setChats] = useState<ConsultRoom[]>([]);
+  const showToast = useStore((s) => s.showToast);
+  const [hospital, setHospital] = useState<HospitalRow | null>(null);
+  const [reservations, setReservations] = useState<ReservationRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [page, setPage] = useState(1);
+  const [filter, setFilter] = useState<Filter>('all');
 
   useEffect(() => {
     if (!authUser) {
@@ -53,20 +147,14 @@ export default function PartnerHomePage() {
     let cancelled = false;
     (async () => {
       try {
-        const [myRes, chatRes] = await Promise.all([
-          fetch('/api/my-hospital', { cache: 'no-store' }),
-          fetch('/api/partner/consult-rooms', { cache: 'no-store' }),
-        ]);
-        if (!myRes.ok) return;
-        const my = await myRes.json();
-        const chatsJson = chatRes.ok ? await chatRes.json() : { rooms: [] };
+        const res = await fetch('/api/my-hospital', { cache: 'no-store' });
+        if (!res.ok) return;
+        const data = await res.json();
         if (cancelled) return;
-        setHospital(my.hospital);
-        setReservations(my.reservations ?? []);
-        setReviews(my.reviews ?? []);
-        setChats(chatsJson.rooms ?? []);
+        setHospital(data.hospital ?? null);
+        setReservations(data.reservations ?? []);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     })();
     return () => {
@@ -74,183 +162,94 @@ export default function PartnerHomePage() {
     };
   }, [authUser]);
 
-  // KPI computations
-  const today = new Date();
-  const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
-  const tomorrowStart = todayStart + 86400000;
-  const dayAfter = todayStart + 2 * 86400000;
+  const counts = useMemo(() => {
+    return {
+      all: reservations.length,
+      pending: reservations.filter((r) => r.status === 'pending').length,
+      confirmed: reservations.filter((r) => r.status === 'confirmed' || r.status === 'completed').length,
+      cancelled: reservations.filter((r) => r.status === 'cancelled').length,
+    };
+  }, [reservations]);
 
-  const todayConsults = chats.length;
-  const tomorrowReservations = reservations.filter((r) => {
-    if (!r.visit_at) return false;
-    const t = new Date(r.visit_at).getTime();
-    return t >= tomorrowStart && t < dayAfter;
-  });
-  const tomorrowConfirmed = tomorrowReservations.filter((r) => r.status === 'confirmed').length;
-  const pendingReservations = reservations.filter((r) => r.status === 'pending').length;
+  const visible = useMemo(() => {
+    const rows = [...reservations].sort((a, b) => {
+      const ad = new Date(a.visit_at ?? a.reservation_at ?? 0).getTime();
+      const bd = new Date(b.visit_at ?? b.reservation_at ?? 0).getTime();
+      return bd - ad;
+    });
+    if (filter === 'all') return rows;
+    if (filter === 'confirmed') return rows.filter((r) => r.status === 'confirmed' || r.status === 'completed');
+    return rows.filter((r) => r.status === filter);
+  }, [filter, reservations]);
 
-  const reviewWithoutReply = reviews.length;
-
-  const pageSize = 6;
-  const totalPages = Math.max(1, Math.ceil(announcements.length / pageSize));
-  const pageNotices = announcements.slice((page - 1) * pageSize, page * pageSize);
-
-  const unreadChats = useMemo(() => chats.filter((c) => (c.unread ?? 0) > 0), [chats]);
-
-  if (!authUser) {
-    return (
-      <div className="bg-white rounded-[16px] p-10 text-center">
-        <p className="text-[15px] text-[rgba(0,19,43,0.58)] mb-4">파트너센터는 로그인 후 이용 가능합니다.</p>
-        <Link href="/partner/login" className="tds-button-primary inline-flex min-w-[120px]">
-          로그인
-        </Link>
-      </div>
-    );
-  }
+  const updateStatus = async (id: string, status: ReservationRow['status']) => {
+    setReservations((prev) => prev.map((r) => (r.id === id ? { ...r, status } : r)));
+    try {
+      const res = await fetch(`/api/reservations/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          status,
+          ...(status === 'cancelled' ? { cancelReason: '병원 사정으로 취소되었습니다.' } : {}),
+        }),
+      });
+      if (!res.ok) {
+        const payload = await res.json().catch(() => ({}));
+        showToast(payload.error || '예약 상태 변경에 실패했습니다.');
+      } else {
+        showToast(status === 'confirmed' ? '예약을 확정했습니다.' : '예약을 취소했습니다.');
+      }
+    } catch {
+      showToast('네트워크 오류가 발생했습니다.');
+    }
+  };
 
   if (loading) {
-    return <div className="text-center py-20 text-sm text-gray-400">불러오는 중…</div>;
+    return <div className="partner-loading">불러오는 중...</div>;
   }
 
   if (!hospital) {
     return (
-      <div className="bg-white rounded-[16px] p-10 text-center">
-        <p className="text-[15px] text-[rgba(0,19,43,0.58)] mb-2">등록된 병원이 없습니다.</p>
-        <p className="text-[13px] text-[rgba(0,19,43,0.58)] mb-6">병원 등록 후 파트너센터를 이용할 수 있어요.</p>
-        <Link href="/hospital/register" className="tds-button-primary inline-flex min-w-[160px]">
-          병원 등록하기
-        </Link>
+      <div className="partner-empty-state">
+        <p>등록된 병원이 없습니다.</p>
+        <span>병원 등록 후 파트너센터를 이용할 수 있습니다.</span>
+        <Link href="/hospital/register">병원 등록하기</Link>
       </div>
     );
   }
 
   return (
-    <div className="space-y-5">
-      <PartnerTop
-        eyebrow="파트너센터"
-        title="운영 현황"
-        description={`${hospital.name}의 상담, 예약, 후기를 확인합니다.`}
-        icon={<Building2 size={28} strokeWidth={2.2} />}
-      />
+    <div className="partner-mobile-screen">
+      <header className="partner-screen-title">
+        <h1>홈</h1>
+      </header>
 
-      {hospital.status === 'pending' && (
-        <PartnerPanel className="bg-[#FFF8E1] border-[#F3D28A] p-5">
-          <p className="text-[17px] font-bold leading-[23px] text-[#191F28]">
-            {hospital.name} 승인 대기 중
-          </p>
-          <p className="mt-1 text-[13px] leading-[19.5px] text-[rgba(3,18,40,0.7)]">
-            관리자 승인 후 카탈로그에 노출되고 예약을 받을 수 있습니다.
-          </p>
-        </PartnerPanel>
-      )}
-
-      <div className="grid grid-cols-2 gap-3">
-        <PartnerStatCard
-          label="진행 중 채팅 상담"
-          value={todayConsults.toString()}
-          sub={unreadChats.length > 0 ? `미답변 ${unreadChats.length}` : '모두 응답'}
-          accent={unreadChats.length > 0}
-          icon={<MessageSquare size={18} />}
-        />
-        <PartnerStatCard
-          label="확정 대기 예약"
-          value={pendingReservations.toString()}
-          sub={pendingReservations > 0 ? '확인 필요' : '모두 처리됨'}
-          accent={pendingReservations > 0}
-          icon={<CalendarDays size={18} />}
-        />
-        <PartnerStatCard
-          label="내일 예약"
-          value={tomorrowReservations.length.toString()}
-          sub={`확정 ${tomorrowConfirmed}`}
-          icon={<CalendarDays size={18} />}
-        />
-        <PartnerStatCard
-          label="총 후기"
-          value={reviewWithoutReply.toString()}
-          sub="누적"
-          icon={<Star size={18} />}
-        />
+      <div className="partner-home-filter hide-scrollbar">
+        {FILTERS.map((item) => (
+          <button
+            key={item}
+            type="button"
+            onClick={() => setFilter(item)}
+            className={filter === item ? 'is-active' : undefined}
+          >
+            <span>{FILTER_LABEL[item]}</span>
+            {counts[item] > 0 && <span>{counts[item]}</span>}
+          </button>
+        ))}
       </div>
 
-      <PartnerPanel className="overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-[rgba(0,27,55,0.06)]">
-          <h2>공지사항</h2>
-          <PartnerButton href="/partner/notices" variant="text" tone="neutral" size="s" rightIcon={<ChevronRight size={15} />}>
-            전체
-          </PartnerButton>
-        </div>
-          {pageNotices.length === 0 ? (
-            <PartnerEmpty icon={<Bell size={24} />} title="등록된 공지가 없어요" />
-          ) : (
-            <div>
-              {pageNotices.map((n) => (
-                <PartnerListRow
-                  key={n.id}
-                  href={`/mypage/announcements/${n.id}`}
-                  icon={<Bell size={16} />}
-                  title={n.title}
-                  description={<PartnerStatusBadge tone="info">공지</PartnerStatusBadge>}
-                  meta={n.date}
-                />
-              ))}
-            </div>
-          )}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-center gap-1 py-3 border-t border-gray-100">
-              {Array.from({ length: totalPages }).map((_, i) => {
-                const p = i + 1;
-                return (
-                  <button
-                    key={p}
-                    onClick={() => setPage(p)}
-                    className="w-6 h-6 rounded text-[11px] font-semibold flex items-center justify-center"
-                    style={{
-                      backgroundColor: page === p ? '#2B313D' : 'transparent',
-                      color: page === p ? '#fff' : '#51535C',
-                    }}
-                  >
-                    {p}
-                  </button>
-                );
-              })}
-            </div>
-          )}
-      </PartnerPanel>
-
-      <PartnerPanel className="overflow-hidden">
-          <div className="flex items-center justify-between px-5 py-4 border-b border-[rgba(0,27,55,0.06)]">
-            <h2>최근 채팅 상담</h2>
-            <button
-              aria-label="새로고침"
-              onClick={() => location.reload()}
-              className="w-8 h-8 rounded-full bg-[rgba(7,25,76,0.05)] hover:bg-[rgba(7,25,76,0.08)] text-[rgba(3,18,40,0.7)] flex items-center justify-center"
-            >
-              <RefreshCw size={13} />
-            </button>
+      <section className="partner-reservation-stack">
+        {visible.length === 0 ? (
+          <div className="partner-empty-state compact">
+            <p>표시할 예약이 없습니다.</p>
+            <span>예약이 접수되면 이 화면에 바로 표시됩니다.</span>
           </div>
-          {chats.length === 0 ? (
-            <PartnerEmpty icon={<MessageSquare size={24} />} title="아직 상담이 없어요" />
-          ) : (
-            <div>
-              {chats.slice(0, 5).map((c) => (
-                <PartnerListRow
-                  key={c.id}
-                  href={`/partner/chat?roomId=${c.id}`}
-                  icon={<span className="text-[12px] font-bold">{c.user?.name?.[0] ?? '?'}</span>}
-                  title={c.user?.name ?? '익명'}
-                  description={c.last_message ?? '(메시지 없음)'}
-                  meta={
-                    <span className="flex flex-col items-end gap-1">
-                      <span>{relTime(c.last_at)}</span>
-                      {(c.unread ?? 0) > 0 && <PartnerStatusBadge tone="danger">{c.unread}</PartnerStatusBadge>}
-                    </span>
-                  }
-                />
-              ))}
-            </div>
-          )}
-      </PartnerPanel>
+        ) : (
+          visible.map((row) => (
+            <ReservationCard key={row.id} row={row} hospital={hospital} onStatus={updateStatus} />
+          ))
+        )}
+      </section>
     </div>
   );
 }

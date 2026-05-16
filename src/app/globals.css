@@ -1524,3 +1524,886 @@ textarea.tds-input {
     padding-right: 20px;
   }
 }
+
+/* ===== Partner hospital template mobile shell ===== */
+.partner-shell-bg {
+  min-height: 100dvh;
+  background: #eef2f6;
+}
+
+.partner-phone-shell {
+  position: relative;
+  width: 100%;
+  max-width: 375px;
+  min-height: 100dvh;
+  margin: 0 auto;
+  overflow-x: hidden;
+  background: #fff;
+  box-shadow: 0 24px 80px rgba(25, 31, 40, 0.14);
+}
+
+.partner-status-bar {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  z-index: 60;
+  display: flex;
+  width: min(100%, 375px);
+  height: 44px;
+  transform: translateX(-50%);
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(255, 255, 255, 0.96);
+  padding: 0 18px 0 28px;
+  color: #111;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 20px;
+}
+
+.partner-status-icons {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.partner-signal {
+  display: flex;
+  height: 12px;
+  align-items: flex-end;
+  gap: 1.5px;
+}
+
+.partner-signal i {
+  display: block;
+  width: 3px;
+  border-radius: 2px;
+  background: #111;
+}
+
+.partner-signal i:nth-child(1) { height: 4px; }
+.partner-signal i:nth-child(2) { height: 6px; }
+.partner-signal i:nth-child(3) { height: 8px; }
+.partner-signal i:nth-child(4) { height: 10px; }
+
+.partner-wifi {
+  width: 14px;
+  height: 10px;
+  border: 2px solid #111;
+  border-bottom: 0;
+  border-left-color: transparent;
+  border-right-color: transparent;
+  border-radius: 14px 14px 0 0;
+}
+
+.partner-battery {
+  position: relative;
+  width: 22px;
+  height: 10px;
+  border: 1.6px solid #111;
+  border-radius: 3px;
+}
+
+.partner-battery::before {
+  position: absolute;
+  top: 1.8px;
+  right: -3.6px;
+  width: 2px;
+  height: 4px;
+  border-radius: 0 2px 2px 0;
+  background: #111;
+  content: "";
+}
+
+.partner-battery::after {
+  position: absolute;
+  inset: 1.5px 4px 1.5px 1.5px;
+  border-radius: 1.5px;
+  background: #111;
+  content: "";
+}
+
+.partner-app-main {
+  min-height: 100dvh;
+  padding-top: 44px;
+  padding-bottom: 92px;
+}
+
+.partner-page {
+  color: #2b313d;
+  font-family: -apple-system, BlinkMacSystemFont, 'Pretendard', 'Segoe UI', sans-serif;
+  letter-spacing: 0;
+}
+
+.partner-mobile-screen {
+  min-height: calc(100dvh - 136px);
+  background: #fff;
+}
+
+.partner-screen-title {
+  display: flex;
+  height: 64px;
+  align-items: center;
+  padding: 12px 16px;
+}
+
+.partner-screen-title.with-action {
+  justify-content: space-between;
+}
+
+.partner-screen-title h1,
+.partner-page .partner-screen-title h1 {
+  margin: 0;
+  color: #2b313d;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.partner-inline-segment {
+  display: flex;
+  height: 40px;
+  align-items: center;
+  overflow: hidden;
+  border-radius: 16px;
+  background: #f2f3f5;
+  padding: 3px;
+}
+
+.partner-inline-segment a,
+.partner-inline-segment button {
+  display: flex;
+  min-height: 34px;
+  align-items: center;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  padding: 6px 8px;
+  color: #a4abba;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.partner-inline-segment .is-active {
+  background: #fff;
+  color: #2b313d;
+}
+
+.partner-bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  z-index: 55;
+  display: flex;
+  width: min(100%, 375px);
+  height: calc(78px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  align-items: flex-start;
+  justify-content: space-between;
+  border-top: 1px solid #f2f3f5;
+  background: rgba(255, 255, 255, 0.96);
+  padding: 12px 24px calc(12px + env(safe-area-inset-bottom));
+  backdrop-filter: blur(18px);
+}
+
+.partner-bottom-nav a {
+  display: flex;
+  width: 50px;
+  height: 50px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: 14px;
+  color: #2b313d;
+  opacity: 0.4;
+}
+
+.partner-bottom-nav a.is-active {
+  opacity: 1;
+}
+
+.partner-bottom-nav a:active {
+  transform: scale(0.96);
+}
+
+.partner-bottom-nav a > span:last-child {
+  color: currentColor;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.partner-my-icon {
+  display: flex;
+  width: 30px;
+  height: 30px;
+  align-items: center;
+  justify-content: center;
+}
+
+.partner-my-icon::before {
+  display: flex;
+  min-width: 25px;
+  height: 22px;
+  align-items: center;
+  justify-content: center;
+  border: 1.6px solid currentColor;
+  border-radius: 999px;
+  content: "My";
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.partner-my-icon {
+  font-size: 0;
+}
+
+.partner-loading {
+  display: flex;
+  min-height: calc(100dvh - 136px);
+  align-items: center;
+  justify-content: center;
+  color: #a4abba;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.partner-loading.small {
+  min-height: 120px;
+}
+
+.partner-empty-state {
+  margin: 24px 12px;
+  border: 1px solid #f2f3f5;
+  border-radius: 12px;
+  background: #fff;
+  padding: 28px 18px;
+  text-align: center;
+}
+
+.partner-empty-state.compact {
+  margin: 0;
+}
+
+.partner-empty-state p {
+  color: #2b313d;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.partner-empty-state span {
+  display: block;
+  margin-top: 4px;
+  color: #a4abba;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.partner-empty-state a {
+  display: inline-flex;
+  height: 44px;
+  align-items: center;
+  justify-content: center;
+  margin-top: 18px;
+  border-radius: 12px;
+  background: #2b313d;
+  padding: 0 18px;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.partner-home-filter {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 2px 0 12px 12px;
+}
+
+.partner-home-filter button {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  padding: 12px;
+  color: #a4abba;
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.partner-home-filter button.is-active {
+  background: #2b313d;
+  color: #fff;
+}
+
+.partner-reservation-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 0 8px 20px;
+}
+
+.partner-reservation-card {
+  overflow: hidden;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.partner-reservation-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-radius: 12px 12px 0 0;
+  background: #f2f3f5;
+  padding: 10px;
+}
+
+.partner-reservation-card-head strong {
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.partner-reservation-card-head strong.is-confirmed { color: #00bd79; }
+.partner-reservation-card-head strong.is-pending { color: #ff925b; }
+.partner-reservation-card-head strong.is-cancelled { color: #a4abba; }
+
+.partner-reservation-card-head span {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  color: #51535c;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.partner-reservation-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border: 1px solid #f2f3f5;
+  border-top: 0;
+  border-radius: 0 0 12px 12px;
+  padding: 10px;
+}
+
+.partner-reservation-product {
+  display: flex;
+  min-height: 80px;
+  gap: 8px;
+}
+
+.partner-reservation-product img {
+  width: 80px;
+  height: 80px;
+  flex: 0 0 auto;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.partner-reservation-product div {
+  min-width: 0;
+  flex: 1;
+}
+
+.partner-reservation-product h2 {
+  overflow: hidden;
+  margin: 0 0 8px;
+  color: #212121;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.partner-reservation-product p {
+  overflow: hidden;
+  margin: 0;
+  color: #51535c;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.partner-reservation-product p:first-of-type {
+  color: #a4abba;
+}
+
+.partner-reservation-facts {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  border-top: 1px solid #f2f3f5;
+  padding: 16px 0 8px;
+}
+
+.partner-reservation-facts div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.partner-reservation-facts dt,
+.partner-reservation-facts dd {
+  margin: 0;
+  color: #212121;
+  font-size: 16px;
+  line-height: 1.4;
+}
+
+.partner-reservation-facts dt {
+  flex: 0 0 auto;
+  font-weight: 700;
+}
+
+.partner-reservation-facts dd {
+  min-width: 0;
+  font-weight: 500;
+  text-align: right;
+}
+
+.partner-reservation-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.partner-reservation-actions button {
+  display: flex;
+  height: 48px;
+  flex: 1 1 0;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 12px;
+  background: #2b313d;
+  color: #fff;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.partner-reservation-actions button + button {
+  background: #f2f3f5;
+  color: #51535c;
+}
+
+.partner-hospital-cover {
+  position: relative;
+  height: 140px;
+  background: #f2f3f5;
+}
+
+.partner-hospital-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.partner-edit-button {
+  display: flex;
+  width: 34px;
+  height: 34px;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 999px;
+  background: #f2f3f5;
+  color: #a4abba;
+}
+
+.partner-hospital-cover .partner-edit-button {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: transparent;
+}
+
+.partner-hospital-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 10px 12px 24px;
+}
+
+.partner-hospital-profile {
+  display: flex;
+  min-height: 139px;
+  gap: 10px;
+}
+
+.partner-hospital-logo {
+  display: flex;
+  width: 76px;
+  height: 76px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 1px solid #f2f3f5;
+  border-radius: 12px;
+  background: #fff;
+  color: #2b313d;
+}
+
+.partner-hospital-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.partner-hospital-summary {
+  min-width: 0;
+  flex: 1;
+}
+
+.partner-category-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: #f9f0ff;
+  padding: 4px 6px;
+  color: #8037ff;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.partner-hospital-summary h2,
+.partner-info-section h2 {
+  margin: 0;
+  color: #2b313d;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.partner-hospital-summary h2 {
+  margin-top: 6px;
+}
+
+.partner-hospital-summary p {
+  margin: 2px 0 0;
+  color: #51535c;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.partner-tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.partner-tag-row span {
+  display: inline-flex;
+  border-radius: 8px;
+  background: rgba(200, 206, 218, 0.2);
+  padding: 5px 8px;
+  color: #2b313d;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.partner-info-section {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.partner-info-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.partner-info-copy p,
+.partner-info-description,
+.partner-info-placeholder {
+  margin: 0;
+  color: #51535c;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.partner-info-placeholder {
+  color: #c8ceda;
+}
+
+.partner-map-card {
+  position: relative;
+  overflow: hidden;
+  height: 189px;
+  border: 1px solid #f2f3f5;
+  border-radius: 12px;
+  background: #f2f3f5;
+}
+
+.partner-map-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.72;
+}
+
+.partner-map-card button {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: flex;
+  width: 31px;
+  height: 31px;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 8px;
+  background: #fff;
+  color: #2b313d;
+  box-shadow: 0 0 2px rgba(0, 0, 0, 0.06);
+}
+
+.partner-calendar-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+}
+
+.partner-month-label {
+  align-self: flex-start;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  padding: 6px 10px;
+  color: #2b313d;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.partner-weekdays,
+.partner-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+}
+
+.partner-weekdays span {
+  display: flex;
+  height: 22px;
+  align-items: center;
+  justify-content: center;
+  color: #2b313d;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 21px;
+}
+
+.partner-weekdays span.weekend {
+  color: #ff544a;
+}
+
+.partner-calendar-grid button {
+  display: flex;
+  aspect-ratio: 1 / 1;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: transparent;
+  padding: 4px;
+}
+
+.partner-calendar-grid span {
+  display: flex;
+  width: 38px;
+  height: 38px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  color: #51535c;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.partner-calendar-grid button.is-weekend span {
+  color: #ff544a;
+}
+
+.partner-calendar-grid button.is-muted span {
+  opacity: 0.6;
+}
+
+.partner-calendar-grid button.has-event span {
+  background: #f2f3f5;
+}
+
+.partner-calendar-grid button.is-active span {
+  background: #8037ff;
+  color: #fff;
+  font-weight: 700;
+}
+
+.partner-schedule-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 0 12px 24px;
+}
+
+.partner-schedule-section h2 {
+  margin: 0;
+  color: #2b313d;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.partner-schedule-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.partner-schedule-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border: 1px solid #f2f3f5;
+  border-radius: 12px;
+  background: #fff;
+  padding: 8px;
+}
+
+.partner-schedule-row {
+  display: flex;
+  min-height: 38px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.partner-schedule-row.top > div {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+}
+
+.partner-schedule-row strong,
+.partner-schedule-row p,
+.partner-schedule-row span {
+  margin: 0;
+  color: #2b313d;
+  font-size: 16px;
+  line-height: 1.4;
+}
+
+.partner-schedule-row strong {
+  font-weight: 700;
+}
+
+.partner-schedule-row span,
+.partner-schedule-row p {
+  font-weight: 500;
+}
+
+.partner-schedule-row em {
+  color: #a4abba;
+  font-style: normal;
+}
+
+.partner-schedule-row em.purple {
+  color: #8037ff;
+}
+
+.partner-schedule-row button {
+  border: 0;
+  background: transparent;
+  color: #2b313d;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.partner-badge-row {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 6px;
+}
+
+.partner-badge-row span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: #f9f0ff;
+  padding: 4px 6px;
+  color: #8037ff;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.partner-badge-row span.blue {
+  background: #f0f5ff;
+  color: #3773ff;
+}
+
+.partner-schedule-memo {
+  min-height: 80px;
+  white-space: pre-line;
+  border-radius: 12px;
+  background: #f9f9f9;
+  padding: 8px;
+  color: #2b313d;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+@media (max-width: 374px) {
+  .partner-screen-title,
+  .partner-calendar-section,
+  .partner-schedule-section,
+  .partner-hospital-content {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .partner-inline-segment a,
+  .partner-inline-segment button {
+    font-size: 14px;
+  }
+
+  .partner-reservation-facts dd,
+  .partner-schedule-row strong,
+  .partner-schedule-row p,
+  .partner-schedule-row span {
+    font-size: 14px;
+  }
+}
