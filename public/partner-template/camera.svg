@@ -1,0 +1,6 @@
+<svg preserveAspectRatio="none" width="100%" height="100%" overflow="visible" style="display: block;" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="Camera">
+<path id="Icon" d="M23 19.8298C23 20.4231 22.7893 20.9921 22.4142 21.4117C22.0391 21.8312 21.5304 22.0669 21 22.0669H3C2.46957 22.0669 1.96086 21.8312 1.58579 21.4117C1.21071 20.9921 1 20.4231 1 19.8298V6.54789C1 5.95458 1.21071 5.38557 1.58579 4.96603C1.96086 4.54649 2.46957 4.3108 3 4.3108H7L9 1.93311H15L17 4.3108H21C21.5304 4.3108 22.0391 4.54649 22.4142 4.96603C22.7893 5.38557 23 5.95458 23 6.54789V19.8298Z" fill="var(--fill-0, #2B313D)"/>
+<circle id="Ellipse 1273" cx="12" cy="12.9426" r="5.04102" fill="var(--fill-0, #2B313D)" stroke="var(--stroke-0, white)" stroke-width="2"/>
+</g>
+</svg>

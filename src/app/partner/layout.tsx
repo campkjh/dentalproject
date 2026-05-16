@@ -3,34 +3,39 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
-import { Building2, CalendarDays, Home, UsersRound } from 'lucide-react';
 import { useSession } from '@/lib/supabase/SessionProvider';
 import { useStore } from '@/store';
 
 const BOTTOM_NAV = [
-  { label: '홈', href: '/partner', Icon: Home, match: ['/partner'] },
-  { label: '병원관리', href: '/partner/hospital-info', Icon: Building2, match: ['/partner/hospital-info', '/partner/doctors', '/partner/reviews', '/partner/contact'] },
-  { label: '예약관리', href: '/partner/reservations', Icon: CalendarDays, match: ['/partner/reservations'] },
-  { label: '커뮤니티', href: '/community', Icon: UsersRound, match: ['/community'] },
-  { label: '마이홈', href: '/partner/account', Icon: null, match: ['/partner/account'] },
+  { label: '홈', href: '/partner', asset: 'home', match: ['/partner'] },
+  { label: '병원관리', href: '/partner/hospital-info', asset: 'hospital', match: ['/partner/hospital-info', '/partner/doctors', '/partner/reviews', '/partner/contact'] },
+  { label: '예약관리', href: '/partner/reservations', asset: 'reservation', match: ['/partner/reservations'] },
+  { label: '커뮤니티', href: '/community', asset: 'community', match: ['/community'] },
+  { label: '마이홈', href: '/partner/account', asset: 'my', match: ['/partner/account'] },
 ] as const;
 
 function PartnerStatusBar() {
   return (
     <div className="partner-status-bar" aria-hidden="true">
       <span>9:41</span>
-      <div className="partner-status-icons">
-        <span className="partner-signal">
-          <i />
-          <i />
-          <i />
-          <i />
-        </span>
-        <span className="partner-wifi" />
-        <span className="partner-battery" />
-      </div>
+      <img src="/partner-template/status-right.svg" alt="" />
     </div>
   );
+}
+
+function PartnerNavIcon({ asset }: { asset: (typeof BOTTOM_NAV)[number]['asset'] }) {
+  if (asset === 'home') return <img src="/partner-template/nav-home.svg" alt="" />;
+  if (asset === 'hospital') return <img src="/partner-template/nav-hospital.svg" alt="" />;
+  if (asset === 'reservation') return <img src="/partner-template/nav-reservation.svg" alt="" />;
+  if (asset === 'community') {
+    return (
+      <span className="partner-community-icon" aria-hidden="true">
+        <img src="/partner-template/nav-community-a.svg" alt="" />
+        <img src="/partner-template/nav-community-b.svg" alt="" />
+      </span>
+    );
+  }
+  return <span className="partner-my-icon">My</span>;
 }
 
 export default function PartnerLayout({ children }: { children: React.ReactNode }) {
@@ -79,7 +84,6 @@ export default function PartnerLayout({ children }: { children: React.ReactNode 
         <nav className="partner-bottom-nav" aria-label="파트너 하단 내비게이션">
           {BOTTOM_NAV.map((item) => {
             const active = isActive(item);
-            const Icon = item.Icon;
             return (
               <Link
                 key={item.href}
@@ -87,11 +91,7 @@ export default function PartnerLayout({ children }: { children: React.ReactNode 
                 className={active ? 'is-active' : undefined}
                 aria-current={active ? 'page' : undefined}
               >
-                {Icon ? (
-                  <Icon size={24} strokeWidth={active ? 2.4 : 2.2} />
-                ) : (
-                  <span className="partner-my-icon">My</span>
-                )}
+                <PartnerNavIcon asset={item.asset} />
                 <span>{item.label}</span>
               </Link>
             );

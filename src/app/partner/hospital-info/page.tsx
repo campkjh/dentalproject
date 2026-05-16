@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Camera, Expand, Pencil } from 'lucide-react';
 import { useSession } from '@/lib/supabase/SessionProvider';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -28,7 +27,7 @@ type HospitalRow = {
 };
 
 const DAY_ORDER = ['월', '화', '수', '목', '금', '토', '일'];
-const FALLBACK_MAP = '/images/banner_img_1772505033.jpg';
+const FALLBACK_MAP = '/partner-template/map.png';
 
 function SegmentNav() {
   return (
@@ -43,7 +42,7 @@ function SegmentNav() {
 function EditButton({ label }: { label: string }) {
   return (
     <button className="partner-edit-button" type="button" aria-label={label}>
-      <Pencil size={18} strokeWidth={2.4} />
+      <img src="/partner-template/edit.svg" alt="" />
     </button>
   );
 }
@@ -65,6 +64,7 @@ export default function PartnerHospitalInfoPage() {
   const { authUser } = useSession();
   const [hospital, setHospital] = useState<HospitalRow | null>(null);
   const [loading, setLoading] = useState(true);
+  const [photoMenuOpen, setPhotoMenuOpen] = useState(false);
 
   useEffect(() => {
     if (!authUser) {
@@ -113,14 +113,26 @@ export default function PartnerHospitalInfoPage() {
 
       <section className="partner-hospital-cover">
         {cover ? <img src={cover} alt="" /> : null}
-        <EditButton label="대문사진 수정" />
+        <button
+          className="partner-edit-button"
+          type="button"
+          aria-label="대문사진 수정"
+          onClick={() => setPhotoMenuOpen((value) => !value)}
+        >
+          <img src="/partner-template/edit.svg" alt="" />
+        </button>
       </section>
 
       <section className="partner-hospital-content">
         <div className="partner-hospital-profile">
-          <div className="partner-hospital-logo">
-            {hospital.image_url ? <img src={hospital.image_url} alt="" /> : <Camera size={24} strokeWidth={2.4} />}
-          </div>
+          <button
+            type="button"
+            className="partner-hospital-logo"
+            onClick={() => setPhotoMenuOpen((value) => !value)}
+            aria-label="병원 사진 등록"
+          >
+            {hospital.image_url ? <img src={hospital.image_url} alt="" /> : <img src="/partner-template/camera.svg" alt="" />}
+          </button>
           <div className="partner-hospital-summary">
             <span className="partner-category-chip">{hospital.category ?? '치과'}</span>
             <h2>{hospital.name ?? '병원명'}</h2>
@@ -164,7 +176,7 @@ export default function PartnerHospitalInfoPage() {
           <div className="partner-map-card">
             <img src={FALLBACK_MAP} alt="" />
             <button type="button" aria-label="지도 확대">
-              <Expand size={18} strokeWidth={2.2} />
+              <img src="/partner-template/expand.svg" alt="" />
             </button>
           </div>
           <p className="partner-info-description">{address}</p>
@@ -174,6 +186,13 @@ export default function PartnerHospitalInfoPage() {
           </p>
         </section>
       </section>
+
+      {photoMenuOpen && (
+        <div className="partner-photo-action-menu">
+          <button type="button" onClick={() => setPhotoMenuOpen(false)}>앨범에서 사진 선택</button>
+          <button type="button" onClick={() => setPhotoMenuOpen(false)}>사진촬영</button>
+        </div>
+      )}
     </div>
   );
 }

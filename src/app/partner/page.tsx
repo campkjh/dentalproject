@@ -26,7 +26,12 @@ type HospitalRow = {
   location?: string | null;
 };
 
-const FALLBACK_IMAGE = '/images/banner_img_1751346038.jpg';
+const FIGMA_RESERVATION_IMAGES = [
+  '/partner-template/reservation-1.png',
+  '/partner-template/reservation-1.png',
+  '/partner-template/reservation-2a.png',
+  '/partner-template/reservation-3c.png',
+];
 const FILTERS = ['all', 'pending', 'confirmed', 'cancelled'] as const;
 type Filter = (typeof FILTERS)[number];
 
@@ -71,12 +76,14 @@ function getStatus(row: ReservationRow) {
 
 function ReservationCard({
   row,
+  index,
   hospital,
-  onStatus,
+  onConfirmRequest,
 }: {
   row: ReservationRow;
+  index: number;
   hospital: HospitalRow | null;
-  onStatus: (id: string, status: ReservationRow['status']) => void;
+  onConfirmRequest: (action: { id: string; status: ReservationRow['status'] }) => void;
 }) {
   const status = getStatus(row);
   const customerName = row.user?.name ?? row.customer_name ?? '예약자';
@@ -95,7 +102,7 @@ function ReservationCard({
       </div>
       <div className="partner-reservation-card-body">
         <div className="partner-reservation-product">
-          <img src={row.product?.image_url || FALLBACK_IMAGE} alt="" />
+          <img src={row.product?.image_url || FIGMA_RESERVATION_IMAGES[index % FIGMA_RESERVATION_IMAGES.length]} alt="" />
           <div>
             <h2>{title}</h2>
             <p>{hospitalName}</p>
@@ -118,10 +125,10 @@ function ReservationCard({
         </dl>
         {row.status === 'pending' && (
           <div className="partner-reservation-actions">
-            <button type="button" onClick={() => onStatus(row.id, 'confirmed')}>
+            <button type="button" onClick={() => onConfirmRequest({ id: row.id, status: 'confirmed' })}>
               예약확정
             </button>
-            <button type="button" onClick={() => onStatus(row.id, 'cancelled')}>
+            <button type="button" onClick={() => onConfirmRequest({ id: row.id, status: 'cancelled' })}>
               예약취소
             </button>
           </div>
@@ -138,6 +145,7 @@ export default function PartnerHomePage() {
   const [reservations, setReservations] = useState<ReservationRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<Filter>('all');
+  const [pendingAction, setPendingAction] = useState<{ id: string; status: ReservationRow['status'] } | null>(null);
 
   useEffect(() => {
     if (!authUser) {
@@ -204,6 +212,15 @@ export default function PartnerHomePage() {
     }
   };
 
+  const closeConfirm = () => setPendingAction(null);
+
+  const runConfirm = () => {
+    if (!pendingAction) return;
+    const action = pendingAction;
+    setPendingAction(null);
+    void updateStatus(action.id, action.status);
+  };
+
   if (loading) {
     return <div className="partner-loading">불러오는 중...</div>;
   }
@@ -241,15 +258,47 @@ export default function PartnerHomePage() {
       <section className="partner-reservation-stack">
         {visible.length === 0 ? (
           <div className="partner-empty-state compact">
+            <div className="partner-empty-calendar">
+              <img src="/partner-template/calendar-empty.svg" alt="" />
+            </div>
             <p>표시할 예약이 없습니다.</p>
             <span>예약이 접수되면 이 화면에 바로 표시됩니다.</span>
           </div>
         ) : (
-          visible.map((row) => (
-            <ReservationCard key={row.id} row={row} hospital={hospital} onStatus={updateStatus} />
+          visible.map((row, index) => (
+            <ReservationCard
+              key={row.id}
+              row={row}
+              index={index}
+              hospital={hospital}
+              onConfirmRequest={setPendingAction}
+            />
           ))
         )}
       </section>
+
+      {pendingAction && (
+        <div className="partner-figma-dialog-backdrop" role="presentation">
+          <div className="partner-figma-alert" role="dialog" aria-modal="true">
+            <div className="partner-figma-alert-copy">
+              <h2>
+                {pendingAction.status === 'confirmed'
+                  ? '정말로 예약을 확정 하시겠습니까?'
+                  : '정말로 예약을 취소 하시겠습니까?'}
+              </h2>
+              <p>
+                {pendingAction.status === 'confirmed'
+                  ? '예약이 확정되며 스케줄에 표시됩니다'
+                  : '예약이 취소되며 취소 내역에 표시됩니다'}
+              </p>
+            </div>
+            <div className="partner-figma-alert-actions">
+              <button type="button" onClick={runConfirm}>네</button>
+              <button type="button" onClick={closeConfirm}>아니요</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

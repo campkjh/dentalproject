@@ -1562,66 +1562,9 @@ textarea.tds-input {
   line-height: 20px;
 }
 
-.partner-status-icons {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-
-.partner-signal {
-  display: flex;
-  height: 12px;
-  align-items: flex-end;
-  gap: 1.5px;
-}
-
-.partner-signal i {
-  display: block;
-  width: 3px;
-  border-radius: 2px;
-  background: #111;
-}
-
-.partner-signal i:nth-child(1) { height: 4px; }
-.partner-signal i:nth-child(2) { height: 6px; }
-.partner-signal i:nth-child(3) { height: 8px; }
-.partner-signal i:nth-child(4) { height: 10px; }
-
-.partner-wifi {
-  width: 14px;
-  height: 10px;
-  border: 2px solid #111;
-  border-bottom: 0;
-  border-left-color: transparent;
-  border-right-color: transparent;
-  border-radius: 14px 14px 0 0;
-}
-
-.partner-battery {
-  position: relative;
-  width: 22px;
-  height: 10px;
-  border: 1.6px solid #111;
-  border-radius: 3px;
-}
-
-.partner-battery::before {
-  position: absolute;
-  top: 1.8px;
-  right: -3.6px;
-  width: 2px;
-  height: 4px;
-  border-radius: 0 2px 2px 0;
-  background: #111;
-  content: "";
-}
-
-.partner-battery::after {
-  position: absolute;
-  inset: 1.5px 4px 1.5px 1.5px;
-  border-radius: 1.5px;
-  background: #111;
-  content: "";
+.partner-status-bar img {
+  width: 66.66px;
+  height: 11.337px;
 }
 
 .partner-app-main {
@@ -1699,7 +1642,7 @@ textarea.tds-input {
   z-index: 55;
   display: flex;
   width: min(100%, 375px);
-  height: calc(78px + env(safe-area-inset-bottom));
+  height: calc(82px + env(safe-area-inset-bottom));
   transform: translateX(-50%);
   align-items: flex-start;
   justify-content: space-between;
@@ -1737,6 +1680,33 @@ textarea.tds-input {
   line-height: 1;
   text-align: center;
   white-space: nowrap;
+}
+
+.partner-bottom-nav a > img,
+.partner-community-icon {
+  width: 30px;
+  height: 30px;
+  flex: 0 0 auto;
+}
+
+.partner-community-icon {
+  position: relative;
+  display: block;
+}
+
+.partner-community-icon img {
+  position: absolute;
+  top: 7px;
+  width: 14.567px;
+  height: 16.34px;
+}
+
+.partner-community-icon img:first-child {
+  left: 3.4px;
+}
+
+.partner-community-icon img:last-child {
+  left: 12px;
 }
 
 .partner-my-icon {
@@ -1790,6 +1760,22 @@ textarea.tds-input {
 
 .partner-empty-state.compact {
   margin: 0;
+}
+
+.partner-empty-calendar {
+  display: flex;
+  width: 62px;
+  height: 62px;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+  border-radius: 31px;
+  background: #f9f9f9;
+}
+
+.partner-empty-calendar img {
+  width: 40px;
+  height: 40px;
 }
 
 .partner-empty-state p {
@@ -2009,6 +1995,81 @@ textarea.tds-input {
   color: #51535c;
 }
 
+.partner-figma-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  left: 50%;
+  z-index: 80;
+  width: min(100%, 375px);
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.32);
+}
+
+.partner-figma-alert {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: flex;
+  width: 340px;
+  transform: translate(-50%, -50%);
+  flex-direction: column;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 24px;
+  background: #fff;
+  padding: 18px 0 12px;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+}
+
+.partner-figma-alert-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 16px 16px;
+}
+
+.partner-figma-alert-copy h2 {
+  margin: 0;
+  color: #2b313d;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.partner-figma-alert-copy p {
+  margin: 0;
+  color: #8a909c;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.partner-figma-alert-actions {
+  display: flex;
+  gap: 8px;
+  padding: 0 12px;
+}
+
+.partner-figma-alert-actions button {
+  display: flex;
+  height: 48px;
+  flex: 1 1 0;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 12px;
+  background: #8037ff;
+  color: #fff;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.partner-figma-alert-actions button + button {
+  background: #f2f3f5;
+  color: #51535c;
+}
+
 .partner-hospital-cover {
   position: relative;
   height: 140px;
@@ -2031,6 +2092,11 @@ textarea.tds-input {
   border-radius: 999px;
   background: #f2f3f5;
   color: #a4abba;
+}
+
+.partner-edit-button img {
+  width: 34.345px;
+  height: 34.345px;
 }
 
 .partner-hospital-cover .partner-edit-button {
@@ -2068,9 +2134,14 @@ textarea.tds-input {
 }
 
 .partner-hospital-logo img {
+  width: 24px;
+  height: 24px;
+  object-fit: cover;
+}
+
+.partner-hospital-logo > img:not([src$=".svg"]) {
   width: 100%;
   height: 100%;
-  object-fit: cover;
 }
 
 .partner-hospital-summary {
@@ -2186,6 +2257,45 @@ textarea.tds-input {
   background: #fff;
   color: #2b313d;
   box-shadow: 0 0 2px rgba(0, 0, 0, 0.06);
+}
+
+.partner-map-card button img {
+  width: 20px;
+  height: 20px;
+}
+
+.partner-photo-action-menu {
+  position: absolute;
+  top: 283px;
+  left: 37px;
+  z-index: 40;
+  display: flex;
+  width: 200px;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  backdrop-filter: blur(18px);
+}
+
+.partner-photo-action-menu button {
+  position: relative;
+  height: 45px;
+  border: 0;
+  border-bottom: 0.4px solid rgba(128, 128, 128, 0.55);
+  background: rgba(255, 255, 255, 0.82);
+  padding: 0 16px;
+  color: #000;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 22px;
+  text-align: left;
+}
+
+.partner-photo-action-menu button:last-child {
+  border-bottom: 0;
 }
 
 .partner-calendar-section {
