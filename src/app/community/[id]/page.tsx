@@ -65,9 +65,11 @@ export default function PostDetailPage() {
       return;
     }
     if (!commentText.trim()) return;
-    const result = await addComment({
+
+    const postId = params.id as string;
+    const tempComment = {
       id: `comment-${Date.now()}`,
-      postId: params.id as string,
+      postId,
       authorName: user.name,
       authorId: user.id,
       isAnonymous: post?.boardType === 'free',
@@ -75,18 +77,31 @@ export default function PostDetailPage() {
       content: commentText.trim(),
       date: new Date().toLocaleDateString('ko-KR'),
       likeCount: 0,
-    });
+    };
+
+    // 낙관적 업데이트: 즉시 화면에 표시
+    setDbComments((prev) => (prev !== null ? [...prev, tempComment] : [tempComment]));
+    setCommentText('');
+
+    const result = await addComment(tempComment);
+
     if (result.error) {
       showToast(result.error);
+      // 실패 시 롤백
+      setDbComments((prev) => prev ? prev.filter((c) => c.id !== tempComment.id) : prev);
+      setCommentText(tempComment.content);
       return;
     }
+
     showToast('댓글이 등록되었습니다.');
-    setCommentText('');
-    const postId = params.id as string;
-    fetch(`/api/comments?postId=${postId}`)
-      .then((r) => r.json())
-      .then((data) => { if (data.comments) setDbComments(data.comments); })
-      .catch(() => {});
+
+    // UUID 포스트만 DB에서 재조회 (실제 ID로 교체)
+    if (/^[0-9a-f]{8}-/.test(postId)) {
+      fetch(`/api/comments?postId=${postId}`)
+        .then((r) => r.json())
+        .then((data) => { if (data.comments) setDbComments(data.comments); })
+        .catch(() => {});
+    }
   };
 
   const handleReport = () => {
