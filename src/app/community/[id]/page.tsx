@@ -2,7 +2,7 @@
 
 import Avatar from '@/components/common/Avatar';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
   Eye,
@@ -25,15 +25,19 @@ export default function PostDetailPage() {
   const [showMenu, setShowMenu] = useState(false);
   const [showWarning, setShowWarning] = useState(true);
   const [dbComments, setDbComments] = useState<typeof comments | null>(null);
+  const fetchSeqRef = useRef(0);
 
   const post = posts.find((p) => p.id === params.id);
 
   useEffect(() => {
     const postId = params.id as string;
     if (!/^[0-9a-f]{8}-/.test(postId)) return;
+    const seq = ++fetchSeqRef.current;
     fetch(`/api/comments?postId=${postId}`)
       .then((r) => r.json())
-      .then((data) => { if (data.comments) setDbComments(data.comments); })
+      .then((data) => {
+        if (data.comments && seq === fetchSeqRef.current) setDbComments(data.comments);
+      })
       .catch(() => {});
   }, [params.id]);
 
@@ -79,7 +83,10 @@ export default function PostDetailPage() {
       likeCount: 0,
     };
 
-    // 낙관적 업데이트: 즉시 화면에 표시
+    const tempId = tempComment.id;
+
+    // stale 초기 fetch 무효화 + 낙관적 업데이트
+    fetchSeqRef.current++;
     setDbComments((prev) => (prev !== null ? [...prev, tempComment] : [tempComment]));
     setCommentText('');
 
@@ -87,20 +94,17 @@ export default function PostDetailPage() {
 
     if (result.error) {
       showToast(result.error);
-      // 실패 시 롤백
-      setDbComments((prev) => prev ? prev.filter((c) => c.id !== tempComment.id) : prev);
+      setDbComments((prev) => prev ? prev.filter((c) => c.id !== tempId) : prev);
       setCommentText(tempComment.content);
       return;
     }
 
     showToast('댓글이 등록되었습니다.');
-
-    // UUID 포스트만 DB에서 재조회 (실제 ID로 교체)
-    if (/^[0-9a-f]{8}-/.test(postId)) {
-      fetch(`/api/comments?postId=${postId}`)
-        .then((r) => r.json())
-        .then((data) => { if (data.comments) setDbComments(data.comments); })
-        .catch(() => {});
+    // 임시 ID → 실제 UUID로 교체 (GET 재조회 없이 즉시 반영)
+    if (result.id) {
+      setDbComments((prev) =>
+        prev ? prev.map((c) => c.id === tempId ? { ...c, id: result.id as string } : c) : prev
+      );
     }
   };
 
