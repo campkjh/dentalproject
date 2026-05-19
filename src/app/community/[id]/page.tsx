@@ -2,7 +2,7 @@
 
 import Avatar from '@/components/common/Avatar';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
   Eye,
@@ -24,9 +24,22 @@ export default function PostDetailPage() {
   const [liked, setLiked] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [showWarning, setShowWarning] = useState(true);
+  const [dbComments, setDbComments] = useState<typeof comments | null>(null);
 
   const post = posts.find((p) => p.id === params.id);
-  const postComments = comments.filter((c) => c.postId === params.id);
+
+  useEffect(() => {
+    const postId = params.id as string;
+    if (!/^[0-9a-f]{8}-/.test(postId)) return;
+    fetch(`/api/comments?postId=${postId}`)
+      .then((r) => r.json())
+      .then((data) => { if (data.comments) setDbComments(data.comments); })
+      .catch(() => {});
+  }, [params.id]);
+
+  const postComments = dbComments !== null
+    ? dbComments
+    : comments.filter((c) => c.postId === params.id);
 
   if (!post) {
     return (
@@ -69,6 +82,11 @@ export default function PostDetailPage() {
     }
     showToast('댓글이 등록되었습니다.');
     setCommentText('');
+    const postId = params.id as string;
+    fetch(`/api/comments?postId=${postId}`)
+      .then((r) => r.json())
+      .then((data) => { if (data.comments) setDbComments(data.comments); })
+      .catch(() => {});
   };
 
   const handleReport = () => {
@@ -354,6 +372,7 @@ export default function PostDetailPage() {
                       onClick={() => {
                         showModal('댓글 삭제', '이 댓글을 삭제하시겠습니까?', () => {
                           deleteComment(comment.id);
+                          setDbComments((prev) => prev ? prev.filter((c) => c.id !== comment.id) : prev);
                           showToast('댓글이 삭제되었습니다.');
                         });
                       }}
