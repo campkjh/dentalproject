@@ -240,21 +240,11 @@ export const useStore = create<AppState>((set, get) => ({
       set({
         wishlist: data.wishlist ?? [],
         recentlyViewed: data.recentlyViewed ?? [],
-        reservations:
-          (data.reservations ?? []).length > 0
-            ? (data.reservations ?? []).map(reservationFromRow)
-            : get().reservations,
+        reservations: (data.reservations ?? []).map(reservationFromRow),
         interestedCategories: data.interestedCategories ?? [],
-        notifications:
-          (data.notifications ?? []).length > 0
-            ? (data.notifications ?? []).map(notificationFromRow)
-            : get().notifications,
-        pointHistory:
-          (data.pointHistory ?? []).length > 0
-            ? (data.pointHistory ?? []).map(pointFromRow)
-            : get().pointHistory,
-        recentSearches:
-          (data.recentSearches ?? []).length > 0 ? data.recentSearches : get().recentSearches,
+        notifications: (data.notifications ?? []).map(notificationFromRow),
+        pointHistory: (data.pointHistory ?? []).map(pointFromRow),
+        recentSearches: data.recentSearches ?? [],
         meHydrated: true,
       });
       // patch coupons + points into user

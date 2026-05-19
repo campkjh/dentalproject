@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import { broadcastReservationChange } from '@/lib/realtime/server';
 import { createClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
@@ -10,6 +11,21 @@ export async function PATCH(
   const { id } = await params;
   const body = await req.json();
   const sb = await createClient();
+  const {
+    data: { user },
+  } = await sb.auth.getUser();
+  if (!user) return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 });
+
+  const { data: ownedReservation } = await sb
+    .from('reservations')
+    .select('id, user_id, hospital_id, hospital:hospitals!inner(owner_id)')
+    .eq('id', id)
+    .eq('hospital.owner_id', user.id)
+    .maybeSingle();
+
+  if (!ownedReservation) {
+    return NextResponse.json({ error: '예약을 찾을 수 없습니다.' }, { status: 404 });
+  }
 
   const patch: Record<string, unknown> = {};
   if (body.status) patch.status = body.status;
@@ -55,6 +71,13 @@ export async function PATCH(
       });
     }
   }
+
+  await broadcastReservationChange({
+    event: 'UPDATE',
+    reservationId: id,
+    hospitalId: ownedReservation.hospital_id,
+    userId: ownedReservation.user_id,
+  });
 
   return NextResponse.json({ ok: true });
 }

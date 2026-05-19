@@ -7,6 +7,8 @@ import { ChevronRight } from 'lucide-react';
 import { IconMapPin, IconCalendarMini } from '@/components/icons/AppIcons';
 import EmptyState from '@/components/common/EmptyState';
 import LoginRequired from '@/components/common/LoginRequired';
+import { useSession } from '@/lib/supabase/SessionProvider';
+import { useReservationRealtimeRefresh } from '@/lib/realtime/reservations';
 import { useStore } from '@/store';
 import { Reservation } from '@/types';
 
@@ -74,7 +76,8 @@ const statusStyle: Record<
 
 export default function ReservationsPage() {
   const router = useRouter();
-  const { isLoggedIn, reservations, showModal, showToast, updateReservationStatus } = useStore();
+  const { authUser } = useSession();
+  const { isLoggedIn, reservations, showModal, showToast, updateReservationStatus, hydrateMe } = useStore();
   const [activeTab, setActiveTab] = useState('전체');
   const prevIndexRef = useRef(0);
   const [direction, setDirection] = useState<'left' | 'right'>('right');
@@ -83,6 +86,12 @@ export default function ReservationsPage() {
   const [indicator, setIndicator] = useState({ left: 0, width: 0 });
 
   const activeIndex = statusTabs.indexOf(activeTab);
+
+  useReservationRealtimeRefresh({
+    enabled: Boolean(isLoggedIn && authUser?.id),
+    userId: authUser?.id,
+    onChange: hydrateMe,
+  });
 
   const changeTab = (tab: string) => {
     const nextIdx = statusTabs.indexOf(tab);

@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse, type NextRequest } from 'next/server';
+import { broadcastReservationChange } from '@/lib/realtime/server';
 import { createClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
@@ -68,6 +69,13 @@ export async function POST(req: NextRequest) {
       link: `/hospital/appointments`,
     });
   }
+
+  await broadcastReservationChange({
+    event: 'INSERT',
+    reservationId: data.id,
+    hospitalId,
+    userId: user.id,
+  });
 
   return NextResponse.json({ id: data.id });
 }

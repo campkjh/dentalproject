@@ -1,20 +1,31 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Eye, EyeOff, Info } from 'lucide-react';
 import { useSession } from '@/lib/supabase/SessionProvider';
+import { useStore } from '@/store';
 
 export default function PartnerLoginPage() {
   const router = useRouter();
-  const { signInWithEmail } = useSession();
-  const [userId, setUserId] = useState('');
+  const { authUser, loading: sessionLoading, signInWithEmail } = useSession();
+  const isDoctor = useStore((s) => s.isDoctor);
+  const [userId, setUserId] = useState(() => (
+    typeof window === 'undefined' ? '' : window.localStorage.getItem('partner_login_email') ?? ''
+  ));
   const [pw, setPw] = useState('');
   const [showPw, setShowPw] = useState(false);
-  const [remember, setRemember] = useState(false);
+  const [remember, setRemember] = useState(() => (
+    typeof window === 'undefined' ? false : Boolean(window.localStorage.getItem('partner_login_email'))
+  ));
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (sessionLoading || !authUser) return;
+    if (isDoctor) router.replace('/partner');
+  }, [authUser, isDoctor, router, sessionLoading]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,6 +44,11 @@ export default function PartnerLoginPage() {
     if (!isDoctor) {
       setError('병원 관리자 계정만 이용할 수 있습니다.');
       return;
+    }
+    if (remember) {
+      window.localStorage.setItem('partner_login_email', userId.trim());
+    } else {
+      window.localStorage.removeItem('partner_login_email');
     }
     router.replace('/partner');
   };

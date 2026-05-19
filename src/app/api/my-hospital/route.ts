@@ -65,6 +65,7 @@ export async function PATCH(req: NextRequest) {
   if (typeof body.addressDetail === 'string') patch.address_detail = body.addressDetail;
   if (typeof body.introduction === 'string') patch.introduction = body.introduction;
   if (typeof body.holidayNotice === 'string') patch.holiday_notice = body.holidayNotice;
+  if (typeof body.imageUrl === 'string') patch.image_url = body.imageUrl;
   if (Array.isArray(body.tags)) patch.tags = body.tags;
   if (Array.isArray(body.coverImages)) patch.cover_images = body.coverImages;
 

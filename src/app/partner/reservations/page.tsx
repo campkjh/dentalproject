@@ -1,13 +1,16 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
 import { useSession } from '@/lib/supabase/SessionProvider';
+import { useReservationRealtimeRefresh } from '@/lib/realtime/reservations';
+import { useStore } from '@/store';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type ReservationRow = {
   id: string;
+  doctor_id?: string | null;
   visit_at: string | null;
   reservation_at?: string | null;
   status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
@@ -19,6 +22,12 @@ type ReservationRow = {
   user?: { name?: string | null; phone?: string | null } | null;
   product?: { title?: string | null } | null;
   doctor?: { name?: string | null } | null;
+};
+
+type DoctorRow = {
+  id: string;
+  name: string;
+  title?: string | null;
 };
 
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
@@ -53,9 +62,15 @@ function timeOf(value?: string | null) {
   return d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false });
 }
 
-function ReservationScheduleCard({ row }: { row: ReservationRow }) {
+function ReservationScheduleCard({
+  row,
+  onAssignRequest,
+}: {
+  row: ReservationRow;
+  onAssignRequest: (row: ReservationRow) => void;
+}) {
   const name = row.user?.name ?? row.customer_name ?? '환자';
-  const phone = row.user?.phone ?? row.customer_phone ?? '010-1234-5123';
+  const phone = row.user?.phone ?? row.customer_phone ?? '';
   const doctor = row.doctor?.name ? `${row.doctor.name} 원장` : '미지정';
   const assigned = doctor !== '미지정';
   const isPaid = row.payment_type === 'app' || row.payment_method === 'app' || row.payment_method === '앱결제';
@@ -65,13 +80,13 @@ function ReservationScheduleCard({ row }: { row: ReservationRow }) {
       <div className="partner-schedule-row top">
         <div>
           <strong>{timeOf(row.visit_at)}</strong>
-          <span>{name} <em>여/20</em></span>
-          <span>{phone}</span>
+          <span>{name}</span>
+          {phone ? <span>{phone}</span> : null}
         </div>
         <ChevronRight size={22} strokeWidth={2.2} />
       </div>
       <div className="partner-schedule-row">
-        <strong>{row.product?.title ?? '예약 상품'}</strong>
+        <strong>{row.product?.title ?? '상품 정보 없음'}</strong>
         <div className="partner-badge-row">
           {isPaid && <span className="blue">앱결제</span>}
           <span>앱예약</span>
@@ -81,10 +96,10 @@ function ReservationScheduleCard({ row }: { row: ReservationRow }) {
         <p>
           담당 <em className={assigned ? 'purple' : undefined}>{doctor}</em>
         </p>
-        <button type="button">{assigned ? '변경' : '지정'}</button>
+        <button type="button" onClick={() => onAssignRequest(row)}>{assigned ? '변경' : '지정'}</button>
       </div>
       <div className="partner-schedule-memo">
-        {row.memo || (row.status === 'confirmed' ? '[즉시확정완료]' : '희망일1: 2026/03/25 11:00\n희망일2: 2026/04/25 12:00...')}
+        {row.memo || '메모 없음'}
       </div>
     </article>
   );
@@ -92,33 +107,59 @@ function ReservationScheduleCard({ row }: { row: ReservationRow }) {
 
 export default function PartnerReservationsPage() {
   const { authUser } = useSession();
+  const showToast = useStore((s) => s.showToast);
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth());
   const [selected, setSelected] = useState(dateKey(now));
   const [items, setItems] = useState<ReservationRow[]>([]);
+  const [doctors, setDoctors] = useState<DoctorRow[]>([]);
+  const [assignTarget, setAssignTarget] = useState<ReservationRow | null>(null);
+  const [assignDoctorId, setAssignDoctorId] = useState('');
+  const [assigning, setAssigning] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [hospitalId, setHospitalId] = useState<string | null>(null);
+  const mountedRef = useRef(false);
 
   useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  const loadHospitalReservations = useCallback(async ({ showLoading = false }: { showLoading?: boolean } = {}) => {
     if (!authUser) {
+      setHospitalId(null);
+      setItems([]);
+      setDoctors([]);
       setLoading(false);
       return;
     }
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await fetch('/api/my-hospital', { cache: 'no-store' });
-        if (!res.ok) return;
-        const data = await res.json();
-        if (!cancelled) setItems(data.reservations ?? []);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
+
+    if (showLoading) setLoading(true);
+    try {
+      const res = await fetch('/api/my-hospital', { cache: 'no-store' });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (!mountedRef.current) return;
+      setHospitalId(data.hospital?.id ?? null);
+      setItems(data.reservations ?? []);
+      setDoctors(data.hospital?.doctors ?? []);
+    } finally {
+      if (mountedRef.current && showLoading) setLoading(false);
+    }
   }, [authUser]);
+
+  useEffect(() => {
+    void loadHospitalReservations({ showLoading: true });
+  }, [loadHospitalReservations]);
+
+  useReservationRealtimeRefresh({
+    enabled: Boolean(authUser && hospitalId),
+    hospitalId,
+    onChange: () => loadHospitalReservations({ showLoading: false }),
+  });
 
   const cells = useMemo(() => getMonthCells(year, month), [year, month]);
   const countByDate = useMemo(() => {
@@ -138,6 +179,42 @@ export default function PartnerReservationsPage() {
   }, [items, selected]);
 
   const selectedDate = new Date(selected);
+  const isToday = selected === dateKey(now);
+
+  const openAssign = (row: ReservationRow) => {
+    setAssignTarget(row);
+    setAssignDoctorId(row.doctor_id ?? '');
+  };
+
+  const saveAssign = async () => {
+    if (!assignTarget) return;
+    setAssigning(true);
+    try {
+      const doctorId = assignDoctorId || null;
+      const res = await fetch(`/api/reservations/${assignTarget.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ doctorId }),
+      });
+      if (!res.ok) {
+        const payload = await res.json().catch(() => ({}));
+        showToast(payload.error || '담당의 저장에 실패했습니다.');
+        return;
+      }
+      const doctor = doctors.find((item) => item.id === doctorId);
+      setItems((prev) => prev.map((row) => (
+        row.id === assignTarget.id
+          ? { ...row, doctor_id: doctorId, doctor: doctor ? { name: doctor.name } : null }
+          : row
+      )));
+      setAssignTarget(null);
+      showToast('담당의를 저장했습니다.');
+    } catch {
+      showToast('네트워크 오류가 발생했습니다.');
+    } finally {
+      setAssigning(false);
+    }
+  };
 
   if (!authUser) {
     return (
@@ -210,7 +287,8 @@ export default function PartnerReservationsPage() {
 
       <section className="partner-schedule-section">
         <h2>
-          오늘 {Number.isNaN(selectedDate.getTime()) ? month + 1 : selectedDate.getMonth() + 1}월
+          {isToday ? '오늘 ' : ''}
+          {Number.isNaN(selectedDate.getTime()) ? month + 1 : selectedDate.getMonth() + 1}월
           {Number.isNaN(selectedDate.getTime()) ? now.getDate() : selectedDate.getDate()}일
         </h2>
         {loading ? (
@@ -223,11 +301,36 @@ export default function PartnerReservationsPage() {
         ) : (
           <div className="partner-schedule-list">
             {dayItems.map((row) => (
-              <ReservationScheduleCard key={row.id} row={row} />
+              <ReservationScheduleCard key={row.id} row={row} onAssignRequest={openAssign} />
             ))}
           </div>
         )}
       </section>
+
+      {assignTarget && (
+        <div className="partner-figma-dialog-backdrop" role="presentation">
+          <div className="partner-figma-alert partner-assign-dialog" role="dialog" aria-modal="true">
+            <div className="partner-figma-alert-copy">
+              <h2>담당의 지정</h2>
+              <p>{assignTarget.user?.name ?? assignTarget.customer_name ?? '환자'} 예약에 담당의를 연결합니다.</p>
+            </div>
+            <div className="partner-assign-field">
+              <select value={assignDoctorId} onChange={(event) => setAssignDoctorId(event.target.value)}>
+                <option value="">미지정</option>
+                {doctors.map((doctor) => (
+                  <option key={doctor.id} value={doctor.id}>
+                    {doctor.name}{doctor.title ? ` ${doctor.title}` : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="partner-figma-alert-actions">
+              <button type="button" onClick={saveAssign} disabled={assigning}>저장</button>
+              <button type="button" onClick={() => setAssignTarget(null)} disabled={assigning}>취소</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

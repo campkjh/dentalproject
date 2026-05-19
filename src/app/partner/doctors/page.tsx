@@ -28,7 +28,7 @@ export default function PartnerDoctorsPage() {
   const { authUser } = useSession();
   const showToast = useStore((s) => s.showToast);
   const [doctors, setDoctors] = useState<Doctor[]>([]);
-  const [hospitalName, setHospitalName] = useState('참포도나무치과의원');
+  const [hospitalName, setHospitalName] = useState('병원명 미등록');
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState<'add' | 'edit' | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -39,7 +39,7 @@ export default function PartnerDoctorsPage() {
     const res = await fetch('/api/my-hospital', { cache: 'no-store' });
     if (!res.ok) return;
     const { hospital } = await res.json();
-    setHospitalName(hospital?.name ?? '참포도나무치과의원');
+    setHospitalName(hospital?.name ?? '병원명 미등록');
     setDoctors(hospital?.doctors ?? []);
   };
 
@@ -109,11 +109,33 @@ export default function PartnerDoctorsPage() {
     }
   };
 
+  const handleDelete = async () => {
+    if (!editingId) return;
+    if (!window.confirm('의료진을 삭제하시겠습니까?')) return;
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/my-hospital/doctors/${editingId}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        showToast(j.error || '삭제에 실패했습니다.');
+      } else {
+        showToast('의료진을 삭제했습니다.');
+        setShowModal(null);
+        setEditingId(null);
+        await reload();
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const editingDoctor = editingId ? doctors.find((doctor) => doctor.id === editingId) : null;
+
   if (!authUser) {
     return (
       <div className="bg-white rounded-xl p-10 text-center">
         <p className="text-sm text-gray-500 mb-4">로그인이 필요합니다.</p>
-        <Link href="/login" className="inline-block px-5 py-2.5 bg-[#3182F6] text-white text-sm font-bold rounded-xl">
+        <Link href="/partner/login" className="inline-block px-5 py-2.5 bg-[#3182F6] text-white text-sm font-bold rounded-xl">
           로그인
         </Link>
       </div>
@@ -156,7 +178,7 @@ export default function PartnerDoctorsPage() {
                       {d.name}
                       {d.is_owner ? <span>My</span> : null}
                     </h2>
-                    <p>{d.specialty || d.title || '치과교정과 전문의'}</p>
+                    <p>{d.specialty || d.title || '전문분야 미등록'}</p>
                   </div>
                   <p>{hospitalName}</p>
                 </div>
@@ -174,6 +196,11 @@ export default function PartnerDoctorsPage() {
           onClose={() => { setShowModal(null); setEditingId(null); }}
           footer={
             <>
+              {showModal === 'edit' && !editingDoctor?.is_owner && (
+                <PartnerButton type="button" variant="weak" tone="danger" className="flex-1" disabled={saving} onClick={handleDelete}>
+                  삭제
+                </PartnerButton>
+              )}
               <PartnerButton type="button" variant="weak" tone="neutral" className="flex-1" onClick={() => { setShowModal(null); setEditingId(null); }}>
                 취소
               </PartnerButton>

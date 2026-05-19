@@ -13,6 +13,8 @@ import {
   Copy,
   CheckCircle2,
 } from 'lucide-react';
+import { useSession } from '@/lib/supabase/SessionProvider';
+import { useReservationRealtimeRefresh } from '@/lib/realtime/reservations';
 import { useStore } from '@/store';
 import { Reservation } from '@/types';
 
@@ -36,9 +38,16 @@ const statusStyle: Record<
 export default function ReservationDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const { reservations, hospitals, updateReservationStatus, showModal, showToast } = useStore();
+  const { authUser } = useSession();
+  const { reservations, hospitals, updateReservationStatus, showModal, showToast, hydrateMe } = useStore();
 
   const reservation = reservations.find((r) => r.id === id);
+
+  useReservationRealtimeRefresh({
+    enabled: Boolean(authUser?.id),
+    userId: authUser?.id,
+    onChange: hydrateMe,
+  });
 
   if (!reservation) {
     return (

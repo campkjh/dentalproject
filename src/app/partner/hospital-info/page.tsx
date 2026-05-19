@@ -1,10 +1,17 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useSession } from '@/lib/supabase/SessionProvider';
+import { useStore } from '@/store';
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
+type OperatingHour = {
+  day?: string | null;
+  start_time?: string | null;
+  end_time?: string | null;
+  is_closed?: boolean | null;
+};
+
 type HospitalRow = {
   id: string;
   name?: string | null;
@@ -18,21 +25,33 @@ type HospitalRow = {
   tags?: string[] | null;
   cover_images?: string[] | null;
   image_url?: string | null;
-  operating_hours?: Array<{
-    day?: string | null;
-    start_time?: string | null;
-    end_time?: string | null;
-    is_closed?: boolean | null;
-  }> | null;
+  operating_hours?: OperatingHour[] | null;
 };
 
-const DAY_ORDER = ['월', '화', '수', '목', '금', '토', '일'];
+type Mode = 'overview' | 'cover' | 'hours' | 'intro';
+type PhotoTarget = 'cover' | 'logo';
+type HourDraft = { day: string; start_time: string; end_time: string };
+
+const DISPLAY_DAY_ORDER = ['월', '화', '수', '목', '금', '토', '일'];
+const EDIT_DAY_ORDER = ['일', '월', '화', '수', '목', '금', '토'];
 const FALLBACK_MAP = '/partner-template/map.png';
+const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
 
 function usableImage(src?: string | null) {
   if (!src) return null;
   if (src.startsWith('/images/hospital_')) return null;
   return src;
+}
+
+function buildHourDrafts(hospital: HospitalRow | null): HourDraft[] {
+  return EDIT_DAY_ORDER.map((day) => {
+    const row = hospital?.operating_hours?.find((item) => item.day === day);
+    return {
+      day,
+      start_time: row?.is_closed ? '' : row?.start_time ?? '',
+      end_time: row?.is_closed ? '' : row?.end_time ?? '',
+    };
+  });
 }
 
 function SegmentNav() {
@@ -55,24 +74,44 @@ function EditButton({ label, onClick }: { label: string; onClick?: () => void })
 
 function hourLines(hospital: HospitalRow) {
   const rows = hospital.operating_hours ?? [];
-  const ordered = DAY_ORDER.map((day) => rows.find((row) => row.day === day)).filter(Boolean);
-  if (ordered.length === 0) {
-    return ['월 10:00~19:00', '화 10:00~21:00', '수 10:00~19:00', '목 10:00~19:00', '금 10:00~21:00', '토 10:00~16:00'];
-  }
-  return ordered.map((row) => {
-    if (!row) return '';
-    if (row.is_closed) return `${row.day} 휴진`;
-    return `${row.day} ${row.start_time ?? '10:00'}~${row.end_time ?? '19:00'}`;
-  });
+  return DISPLAY_DAY_ORDER
+    .map((day) => rows.find((row) => row.day === day))
+    .filter((row): row is OperatingHour => Boolean(row))
+    .map((row) => {
+      if (row.is_closed || !row.start_time || !row.end_time) return `${row.day} 휴진`;
+      return `${row.day} ${row.start_time}~${row.end_time}`;
+    });
 }
 
 export default function PartnerHospitalInfoPage() {
   const { authUser } = useSession();
+  const showToast = useStore((s) => s.showToast);
+  const coverInputRef = useRef<HTMLInputElement>(null);
+  const logoInputRef = useRef<HTMLInputElement>(null);
   const [hospital, setHospital] = useState<HospitalRow | null>(null);
   const [loading, setLoading] = useState(true);
-  const [photoMenuOpen, setPhotoMenuOpen] = useState(false);
-  const [mode, setMode] = useState<'overview' | 'cover' | 'hours' | 'intro'>('overview');
+  const [photoMenuTarget, setPhotoMenuTarget] = useState<PhotoTarget | null>(null);
+  const [mode, setMode] = useState<Mode>('overview');
   const [introDraft, setIntroDraft] = useState('');
+  const [holidayDraft, setHolidayDraft] = useState('');
+  const [hoursDraft, setHoursDraft] = useState<HourDraft[]>(() => buildHourDrafts(null));
+  const [saving, setSaving] = useState(false);
+  const [uploadingTarget, setUploadingTarget] = useState<PhotoTarget | null>(null);
+
+  const syncDrafts = useCallback((row: HospitalRow | null) => {
+    setIntroDraft(row?.introduction ?? '');
+    setHolidayDraft(row?.holiday_notice ?? '');
+    setHoursDraft(buildHourDrafts(row));
+  }, []);
+
+  const reloadHospital = useCallback(async () => {
+    const res = await fetch('/api/my-hospital', { cache: 'no-store' });
+    if (!res.ok) return;
+    const data = await res.json();
+    const nextHospital = data.hospital ?? null;
+    setHospital(nextHospital);
+    syncDrafts(nextHospital);
+  }, [syncDrafts]);
 
   useEffect(() => {
     if (!authUser) {
@@ -82,13 +121,7 @@ export default function PartnerHospitalInfoPage() {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch('/api/my-hospital', { cache: 'no-store' });
-        if (!res.ok) return;
-        const data = await res.json();
-        if (!cancelled) {
-          setHospital(data.hospital ?? null);
-          setIntroDraft(data.hospital?.introduction ?? '');
-        }
+        await reloadHospital();
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -96,7 +129,7 @@ export default function PartnerHospitalInfoPage() {
     return () => {
       cancelled = true;
     };
-  }, [authUser]);
+  }, [authUser, reloadHospital]);
 
   useEffect(() => {
     document.body.classList.toggle('partner-editing', mode !== 'overview');
@@ -104,6 +137,173 @@ export default function PartnerHospitalInfoPage() {
       document.body.classList.remove('partner-editing');
     };
   }, [mode]);
+
+  const openMode = (nextMode: Mode) => {
+    setPhotoMenuTarget(null);
+    window.scrollTo(0, 0);
+    setMode(nextMode);
+  };
+
+  const goOverview = () => openMode('overview');
+
+  const patchHospital = async (body: Record<string, unknown>) => {
+    const res = await fetch('/api/my-hospital', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      const payload = await res.json().catch(() => ({}));
+      throw new Error(payload.error || '저장에 실패했습니다.');
+    }
+  };
+
+  const saveIntro = async () => {
+    setSaving(true);
+    try {
+      await patchHospital({ introduction: introDraft });
+      setHospital((prev) => (prev ? { ...prev, introduction: introDraft } : prev));
+      showToast('병원소개를 저장했습니다.');
+      goOverview();
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : '저장에 실패했습니다.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const saveHours = async () => {
+    const hours = hoursDraft.map((row) => {
+      const start = row.start_time.trim();
+      const end = row.end_time.trim();
+      return {
+        day: row.day,
+        start_time: start || null,
+        end_time: end || null,
+        is_closed: !start && !end,
+      };
+    });
+
+    const hasInvalidRange = hours.some((row) => !row.is_closed && (!row.start_time || !row.end_time));
+    if (hasInvalidRange) {
+      showToast('운영 시작시간과 마감시간을 모두 입력해주세요.');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const [hoursRes] = await Promise.all([
+        fetch('/api/my-hospital/hours', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ hours }),
+        }),
+        patchHospital({ holidayNotice: holidayDraft }),
+      ]);
+      if (!hoursRes.ok) {
+        const payload = await hoursRes.json().catch(() => ({}));
+        throw new Error(payload.error || '운영시간 저장에 실패했습니다.');
+      }
+      setHospital((prev) => (
+        prev
+          ? { ...prev, holiday_notice: holidayDraft, operating_hours: hours }
+          : prev
+      ));
+      showToast('운영시간을 저장했습니다.');
+      goOverview();
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : '저장에 실패했습니다.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const updateHourDraft = (day: string, field: 'start_time' | 'end_time', value: string) => {
+    setHoursDraft((prev) => prev.map((row) => (
+      row.day === day ? { ...row, [field]: value } : row
+    )));
+  };
+
+  const selectImage = (target: PhotoTarget) => {
+    setPhotoMenuTarget(null);
+    const input = target === 'cover' ? coverInputRef.current : logoInputRef.current;
+    input?.click();
+  };
+
+  const uploadImage = async (target: PhotoTarget, file: File) => {
+    if (!file.type.startsWith('image/')) {
+      showToast('이미지 파일만 등록할 수 있습니다.');
+      return;
+    }
+    if (file.size > MAX_IMAGE_SIZE) {
+      showToast('10MB 이하 이미지만 등록할 수 있습니다.');
+      return;
+    }
+
+    setUploadingTarget(target);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('folder', target === 'cover' ? 'hospital-covers' : 'hospital-logos');
+      const uploadRes = await fetch('/api/upload', { method: 'POST', body: formData });
+      if (!uploadRes.ok) {
+        const payload = await uploadRes.json().catch(() => ({}));
+        throw new Error(payload.error || '이미지 업로드에 실패했습니다.');
+      }
+      const blob = await uploadRes.json();
+      const url = blob.url as string | undefined;
+      if (!url) throw new Error('업로드 URL을 확인할 수 없습니다.');
+
+      if (target === 'cover') {
+        await patchHospital({ coverImages: [url] });
+        setHospital((prev) => (prev ? { ...prev, cover_images: [url] } : prev));
+      } else {
+        await patchHospital({ imageUrl: url });
+        setHospital((prev) => (prev ? { ...prev, image_url: url } : prev));
+      }
+      showToast('이미지를 저장했습니다.');
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : '이미지 저장에 실패했습니다.');
+    } finally {
+      setUploadingTarget(null);
+    }
+  };
+
+  const renderImageInputs = () => (
+    <>
+      <input
+        ref={coverInputRef}
+        type="file"
+        accept="image/png,image/jpeg,image/jpg,image/avif,image/webp"
+        className="partner-hidden-file"
+        onChange={(event) => {
+          const file = event.currentTarget.files?.[0];
+          event.currentTarget.value = '';
+          if (file) void uploadImage('cover', file);
+        }}
+      />
+      <input
+        ref={logoInputRef}
+        type="file"
+        accept="image/png,image/jpeg,image/jpg,image/avif,image/webp"
+        className="partner-hidden-file"
+        onChange={(event) => {
+          const file = event.currentTarget.files?.[0];
+          event.currentTarget.value = '';
+          if (file) void uploadImage('logo', file);
+        }}
+      />
+    </>
+  );
+
+  const renderPhotoMenu = () => (
+    photoMenuTarget ? (
+      <div className={`partner-photo-action-menu ${mode === 'cover' ? 'edit' : ''}`}>
+        <button type="button" onClick={() => selectImage(photoMenuTarget)}>앨범에서 사진 선택</button>
+        <button type="button" onClick={() => selectImage(photoMenuTarget)}>사진촬영</button>
+      </div>
+    ) : null
+  );
 
   if (loading) return <div className="partner-loading">불러오는 중...</div>;
 
@@ -117,22 +317,28 @@ export default function PartnerHospitalInfoPage() {
     );
   }
 
-  const tags = hospital.tags?.length ? hospital.tags.slice(0, 3) : ['치아교정', '임플란트', '라미네이트'];
-  const address = hospital.address ?? hospital.location ?? '주소 정보 없음';
+  const tags = hospital.tags?.filter(Boolean).slice(0, 3) ?? [];
+  const address = hospital.address ?? hospital.location ?? '';
   const cover = usableImage(hospital.cover_images?.[0]) ?? usableImage(hospital.image_url);
   const logo = usableImage(hospital.image_url);
   const hours = hourLines(hospital);
 
-  const openMode = (nextMode: typeof mode) => {
-    setPhotoMenuOpen(false);
-    window.scrollTo(0, 0);
-    setMode(nextMode);
+  const openMap = () => {
+    if (!address) {
+      showToast('주소가 등록되어 있지 않습니다.');
+      return;
+    }
+    window.open(
+      `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`,
+      '_blank',
+      'noopener,noreferrer',
+    );
   };
-  const goOverview = () => openMode('overview');
 
   if (mode === 'cover') {
     return (
       <div className="partner-mobile-screen partner-edit-screen cover">
+        {renderImageInputs()}
         <button className="partner-edit-back" type="button" onClick={goOverview} aria-label="뒤로">
           <img src="/partner-template/chevron-left.svg" alt="" />
         </button>
@@ -142,18 +348,18 @@ export default function PartnerHospitalInfoPage() {
             <p>이미지는 3:1비율의 사진으로 첨부해주세요.<br />jpg, png, jpeg, avif 10mb이하의 이미지 파일</p>
           </div>
           <div className="partner-cover-upload-grid">
-            <button type="button" onClick={() => setPhotoMenuOpen(true)}>
-              <span><img src="/partner-template/camera.svg" alt="" /></span>
+            <button type="button" onClick={() => setPhotoMenuTarget('cover')} disabled={uploadingTarget === 'cover'}>
+              {cover ? (
+                <img className="partner-cover-upload-preview" src={cover} alt="" />
+              ) : (
+                <span><img src="/partner-template/camera.svg" alt="" /></span>
+              )}
             </button>
             <button type="button" className="is-hidden" aria-hidden="true" tabIndex={-1} />
           </div>
+          {uploadingTarget === 'cover' && <p className="partner-upload-status">업로드 중...</p>}
         </section>
-        {photoMenuOpen && (
-          <div className="partner-photo-action-menu edit">
-            <button type="button" onClick={() => setPhotoMenuOpen(false)}>앨범에서 사진 선택</button>
-            <button type="button" onClick={() => setPhotoMenuOpen(false)}>사진촬영</button>
-          </div>
-        )}
+        {renderPhotoMenu()}
       </div>
     );
   }
@@ -169,22 +375,38 @@ export default function PartnerHospitalInfoPage() {
             <h1>운영일 및 시간</h1>
             <p>운영시간 미기입 시 휴무일로 간주됩니다.</p>
           </div>
-          <textarea className="partner-hours-note" placeholder="기타 휴진일 안내" defaultValue={hospital.holiday_notice ?? ''} />
+          <textarea
+            className="partner-hours-note"
+            placeholder="기타 휴진일 안내"
+            value={holidayDraft}
+            onChange={(event) => setHolidayDraft(event.target.value)}
+          />
           <div className="partner-hours-table">
-            {['일', '월', '화', '수', '목', '금', '토'].map((day, index) => {
-              const matched = hospital.operating_hours?.find((row) => row.day === day);
+            {hoursDraft.map((row, index) => {
               const weekend = index === 0 || index === 6;
               return (
-                <div key={day} className="partner-hours-row">
-                  <span className={weekend ? 'weekend' : undefined}>{day}</span>
-                  <input aria-label={`${day} 시작시간`} defaultValue={matched?.start_time ?? (day === '일' ? '' : '10:00')} placeholder="시작시간" />
-                  <input aria-label={`${day} 마감시간`} defaultValue={matched?.end_time ?? (day === '일' ? '' : day === '화' || day === '금' ? '21:00' : day === '토' ? '16:00' : '19:00')} placeholder="마감시간" />
+                <div key={row.day} className="partner-hours-row">
+                  <span className={weekend ? 'weekend' : undefined}>{row.day}</span>
+                  <input
+                    aria-label={`${row.day} 시작시간`}
+                    value={row.start_time}
+                    placeholder="시작시간"
+                    onChange={(event) => updateHourDraft(row.day, 'start_time', event.target.value)}
+                  />
+                  <input
+                    aria-label={`${row.day} 마감시간`}
+                    value={row.end_time}
+                    placeholder="마감시간"
+                    onChange={(event) => updateHourDraft(row.day, 'end_time', event.target.value)}
+                  />
                 </div>
               );
             })}
           </div>
         </section>
-        <button className="partner-edit-save" type="button" onClick={goOverview}>저장하기</button>
+        <button className="partner-edit-save" type="button" onClick={saveHours} disabled={saving}>
+          {saving ? '저장 중...' : '저장하기'}
+        </button>
       </div>
     );
   }
@@ -210,15 +432,8 @@ export default function PartnerHospitalInfoPage() {
             placeholder="병원소개글 등록"
           />
         </section>
-        <button
-          className="partner-edit-save"
-          type="button"
-          onClick={() => {
-            setHospital((prev) => prev ? { ...prev, introduction: introDraft } : prev);
-            goOverview();
-          }}
-        >
-          저장하기
+        <button className="partner-edit-save" type="button" onClick={saveIntro} disabled={saving}>
+          {saving ? '저장 중...' : '저장하기'}
         </button>
       </div>
     );
@@ -226,6 +441,7 @@ export default function PartnerHospitalInfoPage() {
 
   return (
     <div className="partner-mobile-screen">
+      {renderImageInputs()}
       <header className="partner-screen-title with-action">
         <h1>병원관리</h1>
         <SegmentNav />
@@ -256,21 +472,28 @@ export default function PartnerHospitalInfoPage() {
           <button
             type="button"
             className="partner-hospital-logo"
-            onClick={() => setPhotoMenuOpen((value) => !value)}
+            onClick={() => setPhotoMenuTarget('logo')}
             aria-label="병원 사진 등록"
+            disabled={uploadingTarget === 'logo'}
           >
             {logo ? <img src={logo} alt="" /> : <img src="/partner-template/camera.svg" alt="" />}
           </button>
           <div className="partner-hospital-summary">
-            <span className="partner-category-chip">{hospital.category ?? '치과'}</span>
-            <h2>{hospital.name ?? '병원명'}</h2>
-            <p>{address}</p>
-            <p>{hospital.phone ?? '1588-0831'}</p>
-            <div className="partner-tag-row">
-              {tags.map((tag) => (
-                <span key={tag}>{tag}</span>
-              ))}
-            </div>
+            <span className="partner-category-chip">{hospital.category ?? '진료과 미등록'}</span>
+            <h2>{hospital.name ?? '병원명 미등록'}</h2>
+            {address ? (
+              <p>{address}</p>
+            ) : (
+              <p className="partner-info-placeholder">주소를 등록해주세요.</p>
+            )}
+            {hospital.phone ? <p>{hospital.phone}</p> : null}
+            {tags.length > 0 && (
+              <div className="partner-tag-row">
+                {tags.map((tag) => (
+                  <span key={tag}>{tag}</span>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
@@ -280,10 +503,12 @@ export default function PartnerHospitalInfoPage() {
             <EditButton label="운영일 및 시간 수정" onClick={() => openMode('hours')} />
           </div>
           <div className="partner-info-copy">
-            <p>*{hospital.holiday_notice || '공휴일 휴진'}</p>
-            {hours.map((line) => (
-              <p key={line}>{line}</p>
-            ))}
+            {hospital.holiday_notice ? <p>*{hospital.holiday_notice}</p> : null}
+            {hours.length > 0 ? (
+              hours.map((line) => <p key={line}>{line}</p>)
+            ) : (
+              <p className="partner-info-placeholder">운영시간을 등록해주세요.</p>
+            )}
           </div>
         </section>
 
@@ -305,24 +530,23 @@ export default function PartnerHospitalInfoPage() {
           <h2>병원위치</h2>
           <div className="partner-map-card">
             <img src={FALLBACK_MAP} alt="" />
-            <button type="button" aria-label="지도 확대">
+            <button type="button" aria-label="지도 열기" onClick={openMap}>
               <img src="/partner-template/expand.svg" alt="" />
             </button>
           </div>
-          <p className="partner-info-description">{address}</p>
-          <p className="partner-info-description">
-            {hospital.address_detail ||
-              '양재역 8번 출구 방향 도보 5분 이내 위치 양재역 7번 출구에서 셔틀버스 통해 간편하게 내원 가능합니다.(운영 시간 병원 문의)'}
-          </p>
+          {address ? (
+            <p className="partner-info-description">{address}</p>
+          ) : (
+            <p className="partner-info-placeholder">주소를 등록해주세요.</p>
+          )}
+          {hospital.address_detail ? (
+            <p className="partner-info-description">{hospital.address_detail}</p>
+          ) : null}
         </section>
       </section>
 
-      {photoMenuOpen && (
-        <div className="partner-photo-action-menu">
-          <button type="button" onClick={() => setPhotoMenuOpen(false)}>앨범에서 사진 선택</button>
-          <button type="button" onClick={() => setPhotoMenuOpen(false)}>사진촬영</button>
-        </div>
-      )}
+      {uploadingTarget === 'logo' && <p className="partner-upload-status floating">업로드 중...</p>}
+      {renderPhotoMenu()}
     </div>
   );
 }

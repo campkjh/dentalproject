@@ -34,7 +34,7 @@ export async function GET() {
 }
 
 /**
- * POST /api/my-hospital/budget — charge points (mock for now)
+ * POST /api/my-hospital/budget — charge points into hospital ledger.
  * Body: { amount, description }
  */
 export async function POST(req: NextRequest) {

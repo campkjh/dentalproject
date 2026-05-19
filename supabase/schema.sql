@@ -215,6 +215,23 @@ create index if not exists idx_reservations_user on public.reservations(user_id)
 create index if not exists idx_reservations_hospital on public.reservations(hospital_id);
 create index if not exists idx_reservations_status on public.reservations(status);
 
+do $$
+begin
+  if exists (
+    select 1
+    from pg_publication
+    where pubname = 'supabase_realtime'
+  ) and not exists (
+    select 1
+    from pg_publication_tables
+    where pubname = 'supabase_realtime'
+      and schemaname = 'public'
+      and tablename = 'reservations'
+  ) then
+    alter publication supabase_realtime add table public.reservations;
+  end if;
+end $$;
+
 alter table public.reviews
   add constraint reviews_reservation_fk
   foreign key (reservation_id) references public.reservations(id) on delete set null;

@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
 import { useSession } from '@/lib/supabase/SessionProvider';
+import { useReservationRealtimeRefresh } from '@/lib/realtime/reservations';
 import { useStore } from '@/store';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -26,12 +27,6 @@ type HospitalRow = {
   location?: string | null;
 };
 
-const FIGMA_RESERVATION_IMAGES = [
-  '/partner-template/reservation-1.png',
-  '/partner-template/reservation-1.png',
-  '/partner-template/reservation-2a.png',
-  '/partner-template/reservation-3c.png',
-];
 const FILTERS = ['all', 'pending', 'confirmed', 'cancelled'] as const;
 type Filter = (typeof FILTERS)[number];
 
@@ -61,7 +56,8 @@ function formatVisit(value?: string | null) {
 }
 
 function money(value?: number | null) {
-  return `${(value ?? 0).toLocaleString('ko-KR')}원`;
+  if (typeof value !== 'number') return '결제정보 없음';
+  return `${value.toLocaleString('ko-KR')}원`;
 }
 
 function getStatus(row: ReservationRow) {
@@ -76,20 +72,18 @@ function getStatus(row: ReservationRow) {
 
 function ReservationCard({
   row,
-  index,
   hospital,
   onConfirmRequest,
 }: {
   row: ReservationRow;
-  index: number;
   hospital: HospitalRow | null;
   onConfirmRequest: (action: { id: string; status: ReservationRow['status'] }) => void;
 }) {
   const status = getStatus(row);
-  const customerName = row.user?.name ?? row.customer_name ?? '예약자';
-  const title = row.product?.title ?? '예약 상품';
-  const hospitalName = hospital?.name ?? '병원명';
-  const address = hospital?.address ?? hospital?.location ?? '주소 정보 없음';
+  const customerName = row.user?.name ?? row.customer_name ?? '예약자 정보 없음';
+  const title = row.product?.title ?? '상품 정보 없음';
+  const hospitalName = hospital?.name ?? '병원명 미등록';
+  const address = hospital?.address ?? hospital?.location ?? '';
 
   return (
     <article className="partner-reservation-card">
@@ -102,11 +96,15 @@ function ReservationCard({
       </div>
       <div className="partner-reservation-card-body">
         <div className="partner-reservation-product">
-          <img src={row.product?.image_url || FIGMA_RESERVATION_IMAGES[index % FIGMA_RESERVATION_IMAGES.length]} alt="" />
+          {row.product?.image_url ? (
+            <img src={row.product.image_url} alt="" />
+          ) : (
+            <div className="partner-reservation-image-empty" aria-hidden="true" />
+          )}
           <div>
             <h2>{title}</h2>
             <p>{hospitalName}</p>
-            <p>{address}</p>
+            {address ? <p>{address}</p> : <p className="partner-info-placeholder">주소 미등록</p>}
           </div>
         </div>
         <dl className="partner-reservation-facts">
@@ -146,29 +144,45 @@ export default function PartnerHomePage() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<Filter>('all');
   const [pendingAction, setPendingAction] = useState<{ id: string; status: ReservationRow['status'] } | null>(null);
+  const mountedRef = useRef(false);
 
   useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  const loadHospital = useCallback(async ({ showLoading = false }: { showLoading?: boolean } = {}) => {
     if (!authUser) {
+      setHospital(null);
+      setReservations([]);
       setLoading(false);
       return;
     }
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await fetch('/api/my-hospital', { cache: 'no-store' });
-        if (!res.ok) return;
-        const data = await res.json();
-        if (cancelled) return;
-        setHospital(data.hospital ?? null);
-        setReservations(data.reservations ?? []);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
+
+    if (showLoading) setLoading(true);
+    try {
+      const res = await fetch('/api/my-hospital', { cache: 'no-store' });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (!mountedRef.current) return;
+      setHospital(data.hospital ?? null);
+      setReservations(data.reservations ?? []);
+    } finally {
+      if (mountedRef.current && showLoading) setLoading(false);
+    }
   }, [authUser]);
+
+  useEffect(() => {
+    void loadHospital({ showLoading: true });
+  }, [loadHospital]);
+
+  useReservationRealtimeRefresh({
+    enabled: Boolean(authUser && hospital?.id),
+    hospitalId: hospital?.id,
+    onChange: () => loadHospital({ showLoading: false }),
+  });
 
   const counts = useMemo(() => {
     return {
@@ -191,6 +205,7 @@ export default function PartnerHomePage() {
   }, [filter, reservations]);
 
   const updateStatus = async (id: string, status: ReservationRow['status']) => {
+    const previous = reservations;
     setReservations((prev) => prev.map((r) => (r.id === id ? { ...r, status } : r)));
     try {
       const res = await fetch(`/api/reservations/${id}`, {
@@ -202,12 +217,14 @@ export default function PartnerHomePage() {
         }),
       });
       if (!res.ok) {
+        setReservations(previous);
         const payload = await res.json().catch(() => ({}));
         showToast(payload.error || '예약 상태 변경에 실패했습니다.');
       } else {
         showToast(status === 'confirmed' ? '예약을 확정했습니다.' : '예약을 취소했습니다.');
       }
     } catch {
+      setReservations(previous);
       showToast('네트워크 오류가 발생했습니다.');
     }
   };
@@ -265,11 +282,10 @@ export default function PartnerHomePage() {
             <span>예약이 접수되면 이 화면에 바로 표시됩니다.</span>
           </div>
         ) : (
-          visible.map((row, index) => (
+          visible.map((row) => (
             <ReservationCard
               key={row.id}
               row={row}
-              index={index}
               hospital={hospital}
               onConfirmRequest={setPendingAction}
             />

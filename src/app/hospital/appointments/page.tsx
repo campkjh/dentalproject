@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useCallback, useState, useMemo, useEffect, useRef } from 'react';
 import {
   ChevronLeft,
   ChevronRight,
@@ -9,6 +9,7 @@ import {
   MessageSquare,
 } from 'lucide-react';
 import TabBar from '@/components/common/TabBar';
+import { useReservationRealtimeRefresh } from '@/lib/realtime/reservations';
 import { useStore } from '@/store';
 
 interface TimeSlot {
@@ -85,33 +86,47 @@ export default function AppointmentsPage() {
   const [timeSlots, setTimeSlots] = useState<Record<number, TimeSlot[]>>({});
   const [disabledDays, setDisabledDays] = useState<Set<number>>(new Set());
   const [appointments, setAppointments] = useState<AppointmentData[]>([]);
+  const [hospitalId, setHospitalId] = useState<string | null>(null);
+  const mountedRef = useRef(false);
 
   const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
   const firstDayOfMonth = new Date(currentYear, currentMonth, 1).getDay();
 
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await fetch('/api/my-hospital', { cache: 'no-store' });
-        if (!res.ok) return;
-        const { reservations } = await res.json();
-        if (cancelled) return;
-        const monthAppts = (reservations ?? [])
-          .map(reservationToAppointment)
-          .filter((a: AppointmentData) => {
-            const visitDate = (reservations as { id: string; visit_at?: string }[]).find((r) => r.id === a.id)?.visit_at;
-            if (!visitDate) return false;
-            const d = new Date(visitDate);
-            return d.getFullYear() === currentYear && d.getMonth() === currentMonth;
-          });
-        setAppointments(monthAppts);
-      } catch {/* ignore */}
-    })();
+    mountedRef.current = true;
     return () => {
-      cancelled = true;
+      mountedRef.current = false;
     };
-  }, [currentYear, currentMonth]);
+  }, []);
+
+  const loadAppointments = useCallback(async () => {
+    try {
+      const res = await fetch('/api/my-hospital', { cache: 'no-store' });
+      if (!res.ok) return;
+      const { hospital, reservations } = await res.json();
+      if (!mountedRef.current) return;
+      setHospitalId(hospital?.id ?? null);
+      const monthAppts = (reservations ?? [])
+        .map(reservationToAppointment)
+        .filter((a: AppointmentData) => {
+          const visitDate = (reservations as { id: string; visit_at?: string }[]).find((r) => r.id === a.id)?.visit_at;
+          if (!visitDate) return false;
+          const d = new Date(visitDate);
+          return d.getFullYear() === currentYear && d.getMonth() === currentMonth;
+        });
+      setAppointments(monthAppts);
+    } catch {/* ignore */}
+  }, [currentMonth, currentYear]);
+
+  useEffect(() => {
+    void loadAppointments();
+  }, [loadAppointments]);
+
+  useReservationRealtimeRefresh({
+    enabled: Boolean(hospitalId),
+    hospitalId,
+    onChange: loadAppointments,
+  });
 
   const appointmentDates = useMemo(
     () => new Set(appointments.map((a) => a.date)),

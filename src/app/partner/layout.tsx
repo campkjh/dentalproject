@@ -14,15 +14,6 @@ const BOTTOM_NAV = [
   { label: '마이홈', href: '/partner/account', asset: 'my', match: ['/partner/account'] },
 ] as const;
 
-function PartnerStatusBar() {
-  return (
-    <div className="partner-status-bar" aria-hidden="true">
-      <span>9:41</span>
-      <img src="/partner-template/status-right.svg" alt="" />
-    </div>
-  );
-}
-
 function PartnerNavIcon({ asset }: { asset: (typeof BOTTOM_NAV)[number]['asset'] }) {
   if (asset === 'home') return <img src="/partner-template/nav-home.svg" alt="" />;
   if (asset === 'hospital') return <img src="/partner-template/nav-hospital.svg" alt="" />;
@@ -51,7 +42,9 @@ export default function PartnerLayout({ children }: { children: React.ReactNode 
       router.replace('/partner/login');
       return;
     }
-    if (!isDoctor) router.replace('/');
+    if (!isDoctor) {
+      router.replace('/');
+    }
   }, [authUser, isDoctor, isLoginPage, router, sessionLoading]);
 
   if (isLoginPage) return <>{children}</>;
@@ -60,7 +53,6 @@ export default function PartnerLayout({ children }: { children: React.ReactNode 
     return (
       <div className="partner-shell-bg">
         <div className="partner-phone-shell">
-          <PartnerStatusBar />
           <div className="partner-loading">불러오는 중...</div>
         </div>
       </div>
@@ -75,7 +67,6 @@ export default function PartnerLayout({ children }: { children: React.ReactNode 
   return (
     <div className="partner-shell-bg">
       <div className="partner-phone-shell">
-        <PartnerStatusBar />
         <main className="partner-app-main">
           <div key={pathname} className="partner-page">
             {children}
