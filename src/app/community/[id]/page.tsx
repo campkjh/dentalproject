@@ -102,8 +102,10 @@ export default function PostDetailPage() {
     if (!commentText.trim()) return;
 
     const postId = params.id as string;
+    const isRealPost = /^[0-9a-f]{8}-/.test(postId);
+    const tempId = `comment-${Date.now()}`;
     const tempComment = {
-      id: `comment-${Date.now()}`,
+      id: tempId,
       postId,
       authorName: user.name,
       authorId: user.id,
@@ -114,33 +116,46 @@ export default function PostDetailPage() {
       likeCount: 0,
     };
 
-    const tempId = tempComment.id;
-
-    // stale 초기 fetch 무효화 + 낙관적 업데이트
+    // 낙관적 업데이트 (stale fetch 무효화)
     fetchSeqRef.current++;
     setDbComments((prev) => (prev !== null ? [...prev, tempComment] : [tempComment]));
     setCommentText('');
 
-    const result = await addComment(tempComment);
+    if (isRealPost && hasSupabaseEnv()) {
+      // 클라이언트 SDK로 직접 INSERT — 서버 auth 우회
+      const sb = createClient();
+      const { data, error } = await sb
+        .from('comments')
+        .insert({
+          post_id: postId,
+          author_id: user.id,
+          content: tempComment.content,
+          is_anonymous: tempComment.isAnonymous,
+          anonymous_id: tempComment.anonymousId ?? null,
+          parent_comment_id: null,
+        })
+        .select('id')
+        .single();
 
-    if (result.error) {
-      showToast(result.error);
-      setDbComments((prev) => prev ? prev.filter((c) => c.id !== tempId) : prev);
-      setCommentText(tempComment.content);
-      return;
-    }
+      if (error) {
+        showToast('댓글 등록에 실패했습니다: ' + error.message);
+        setDbComments((prev) => prev ? prev.filter((c) => c.id !== tempId) : prev);
+        setCommentText(tempComment.content);
+        return;
+      }
 
-    showToast('댓글이 등록되었습니다.');
-    // 임시 ID → 실제 UUID로 교체
-    if (result.id) {
+      showToast('댓글이 등록되었습니다.');
+      // 임시 ID → 실제 UUID 교체
       setDbComments((prev) =>
-        prev ? prev.map((c) => c.id === tempId ? { ...c, id: result.id as string } : c) : prev
+        prev ? prev.map((c) => c.id === tempId ? { ...c, id: data.id } : c) : prev
       );
-    }
-    // 클라이언트에서 직접 최신 댓글 재조회
-    if (/^[0-9a-f]{8}-/.test(postId)) {
+      // DB에서 최신 목록 재조회
       const seq = ++fetchSeqRef.current;
       fetchComments(postId, seq);
+    } else {
+      // mock 포스트: store만 업데이트
+      await addComment(tempComment);
+      showToast('댓글이 등록되었습니다.');
     }
   };
 
