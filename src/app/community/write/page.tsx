@@ -250,8 +250,8 @@ function CommunityWritePage() {
           )}
         </div>
 
-        {/* Hashtag Selection */}
-        <div>
+        {/* Hashtag Selection — 질문게시판에서는 숨김 */}
+        <div className={boardType === 'question' ? 'hidden' : ''}>
           <label className="text-sm font-bold text-gray-900 mb-2 block">
             <span className="text-gray-400 font-normal">[선택]</span> 해시태그 등록
             <span className="text-xs text-gray-400 font-normal ml-2">

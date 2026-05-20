@@ -10,7 +10,7 @@ const BOTTOM_NAV = [
   { label: '홈', href: '/partner', asset: 'home', match: ['/partner'] },
   { label: '병원관리', href: '/partner/hospital-info', asset: 'hospital', match: ['/partner/hospital-info', '/partner/doctors', '/partner/reviews', '/partner/contact'] },
   { label: '예약관리', href: '/partner/reservations', asset: 'reservation', match: ['/partner/reservations'] },
-  { label: '커뮤니티', href: '/community', asset: 'community', match: ['/community'] },
+  { label: '커뮤니티', href: '/partner/community', asset: 'community', match: ['/partner/community'] },
   { label: '마이홈', href: '/partner/account', asset: 'my', match: ['/partner/account'] },
 ] as const;
 
@@ -42,14 +42,16 @@ export default function PartnerLayout({ children }: { children: React.ReactNode 
       router.replace('/partner/login');
       return;
     }
-    if (!isDoctor) {
+    // isDoctor가 아직 확인 안 된 경우 리다이렉트하지 않음 (로딩 중 깜빡임 방지)
+    if (authUser && isDoctor === false) {
       router.replace('/');
     }
   }, [authUser, isDoctor, isLoginPage, router, sessionLoading]);
 
   if (isLoginPage) return <>{children}</>;
 
-  if (sessionLoading || !authUser || !isDoctor) {
+  // isDoctor가 null/undefined이면 잠깐 기다림 (세션 확인 중)
+  if (sessionLoading || !authUser) {
     return (
       <div className="partner-shell-bg">
         <div className="partner-phone-shell">
@@ -58,6 +60,8 @@ export default function PartnerLayout({ children }: { children: React.ReactNode 
       </div>
     );
   }
+
+  if (!isDoctor) return null;
 
   const isActive = (item: (typeof BOTTOM_NAV)[number]) => {
     if (item.href === '/partner') return pathname === '/partner';

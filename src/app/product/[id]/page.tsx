@@ -7,8 +7,6 @@ import {
   Heart,
   Share2,
   Star,
-  Phone,
-  MessageCircle,
   ChevronDown,
   ChevronUp,
   MapPin,
@@ -43,7 +41,7 @@ const faqItems = [
 export default function ProductDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const { products, hospitals, reviews, wishlist, toggleWishlist, addRecentlyViewed, showToast } = useStore();
+  const { products, hospitals, reviews, wishlist, toggleWishlist, addRecentlyViewed, showToast, user } = useStore();
   const tabs = ['상품설명', '병원정보', '리뷰'];
   const [activeTab, setActiveTab] = useState('상품설명');
   const [tabDirection, setTabDirection] = useState<'left' | 'right'>('right');
@@ -127,7 +125,7 @@ export default function ProductDetailPage() {
             <ChevronLeft size={24} style={{ color: '#2B313D' }} />
           </button>
           <div className="flex items-center gap-3">
-            <button
+            {user && <button
               onClick={() => { toggleWishlist(product.id); setHeartAnim(true); setTimeout(() => setHeartAnim(false), 400); }}
             >
               <Heart
@@ -136,7 +134,7 @@ export default function ProductDetailPage() {
                 style={{ color: isWished ? '#EF4444' : '#2B313D' }}
                 fill={isWished ? '#EF4444' : 'none'}
               />
-            </button>
+            </button>}
             <button onClick={() => { if (navigator.share) { navigator.share({ title: product.title, url: window.location.href }); } else { navigator.clipboard.writeText(window.location.href); showToast('링크가 복사되었습니다.'); } }}>
               <Share2 size={22} style={{ color: '#2B313D' }} />
             </button>
@@ -717,27 +715,18 @@ export default function ProductDetailPage() {
         <div className="bg-white px-2.5" style={{ borderTop: '1px solid #F2F3F5', paddingTop: 10, paddingBottom: 10 }}>
           <div className="flex items-center gap-2">
             <button
-              onClick={() => {
-                if (hospital?.phone) {
-                  window.location.href = `tel:${hospital.phone}`;
-                } else {
-                  showToast('전화번호 정보가 없습니다.');
-                }
-              }}
-              style={{ width: 48, height: 48, borderRadius: 10, border: '1px solid #C8CEDA' }} className="flex items-center justify-center btn-press">
-              <Phone size={18} style={{ color: '#51535C' }} />
-            </button>
-            <button
-              onClick={() => router.push(`/consult/${product.hospitalId}`)}
-              style={{ width: 48, height: 48, borderRadius: 10, border: '1px solid #C8CEDA' }} className="flex items-center justify-center btn-press">
-              <MessageCircle size={18} style={{ color: '#51535C' }} />
-            </button>
-            <button
               onClick={() => router.push(`/booking?productId=${product.id}`)}
-              style={{ height: 48, borderRadius: 10, backgroundColor: '#8037FF', fontSize: 18, fontWeight: 600 }}
+              style={{ height: 48, borderRadius: 10, backgroundColor: '#8037FF', fontSize: 16, fontWeight: 600 }}
               className="flex-1 text-white btn-press"
             >
               예약하기
+            </button>
+            <button
+              onClick={() => router.push(`/booking?productId=${product.id}&payment=app`)}
+              style={{ height: 48, borderRadius: 10, backgroundColor: '#2B313D', fontSize: 16, fontWeight: 600 }}
+              className="flex-1 text-white btn-press"
+            >
+              앱결제
             </button>
           </div>
         </div>

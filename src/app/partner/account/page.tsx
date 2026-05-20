@@ -135,7 +135,8 @@ export default function PartnerAccountPage() {
           tone="neutral"
           onClick={async () => {
             await signOut();
-            window.location.href = '/';
+            // replace로 history 없이 고객 홈으로 이동 (layout 리다이렉트보다 먼저)
+            window.location.replace('/');
           }}
           className="w-full"
         >

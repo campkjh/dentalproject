@@ -362,25 +362,30 @@ export default function PostDetailPage() {
       </div>
 
       {/* Answer needed / answer count section */}
-      {post.boardType === 'question' && (
-        <div className="px-2.5 py-3 bg-gray-50 border-y border-gray-100">
-          {post.hasAnswer && post.answerCount && post.answerCount > 0 ? (
-            <div className="flex items-center gap-2">
-              <MessageCircle size={16} className="text-[#3182F6]" />
-              <span className="text-sm font-medium text-[#3182F6]">
-                {post.answerCount}명이 답변했어요
-              </span>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2">
-              <MessageCircle size={16} className="text-red-500" />
-              <span className="text-sm font-medium text-red-500">
-                답변이 필요해요!
-              </span>
-            </div>
-          )}
-        </div>
-      )}
+      {post.boardType === 'question' && (() => {
+        const doctorAnswerCount = postComments.filter((c) => c.authorTitle === '의사').length;
+        const hasAnswer = doctorAnswerCount > 0 || (post.hasAnswer && (post.answerCount ?? 0) > 0);
+        const answerCount = doctorAnswerCount || post.answerCount || 0;
+        return (
+          <div className="px-2.5 py-3 bg-gray-50 border-y border-gray-100">
+            {hasAnswer ? (
+              <div className="flex items-center gap-2">
+                <MessageCircle size={16} className="text-[#3182F6]" />
+                <span className="text-sm font-medium text-[#3182F6]">
+                  {answerCount}명이 답변했어요
+                </span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <MessageCircle size={16} className="text-red-500" />
+                <span className="text-sm font-medium text-red-500">
+                  답변이 필요해요!
+                </span>
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* Comments section */}
       <div className="px-2.5 py-4">
@@ -402,18 +407,19 @@ export default function PostDetailPage() {
                 <div className="flex items-center gap-2.5 mb-2">
                   <Avatar seed={comment.anonymousId || comment.authorId || comment.id} size={32} className="flex-shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5 flex-wrap">
                       <span className="text-xs font-bold text-gray-900">
                         {comment.isAnonymous
                           ? `익명 ${comment.anonymousId}`
                           : comment.authorName}
                       </span>
-                      {comment.authorTitle && (
-                        <span className="text-[10px] text-gray-400">
-                          {comment.authorTitle}
-                          {comment.authorHospital &&
-                            ` | ${comment.authorHospital}`}
+                      {comment.authorTitle === '의사' && (
+                        <span className="px-1.5 py-0.5 bg-[#3182F6] text-white text-[10px] rounded font-medium">
+                          의사
                         </span>
+                      )}
+                      {comment.authorHospital && (
+                        <span className="text-[10px] text-gray-400">{comment.authorHospital}</span>
                       )}
                     </div>
                   </div>
