@@ -2,16 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useStore } from '@/store';
 import { useSession } from '@/lib/supabase/SessionProvider';
-import {
-  PartnerButton,
-  PartnerField,
-  PartnerInput,
-  PartnerModal,
-  PartnerSelect,
-  PartnerTextarea,
-} from '@/components/partner/tds';
+import { createClient, hasSupabaseEnv } from '@/lib/supabase/client';
+import { UserPlus } from 'lucide-react';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type Doctor = {
@@ -22,125 +17,83 @@ type Doctor = {
   bio: string | null;
   profile_image: string | null;
   is_owner: boolean;
+  is_active: boolean;
 };
 
 export default function PartnerDoctorsPage() {
+  const router = useRouter();
   const { authUser } = useSession();
   const showToast = useStore((s) => s.showToast);
   const [doctors, setDoctors] = useState<Doctor[]>([]);
-  const [hospitalName, setHospitalName] = useState('병원명 미등록');
+  const [hospitalId, setHospitalId] = useState<string | null>(null);
+  const [hospitalName, setHospitalName] = useState('');
+  const [isOwner, setIsOwner] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [showModal, setShowModal] = useState<'add' | 'edit' | null>(null);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({ name: '', title: '원장', specialty: '', bio: '', profileImage: '' });
 
   const reload = async () => {
-    const res = await fetch('/api/my-hospital', { cache: 'no-store' });
-    if (!res.ok) return;
-    const { hospital } = await res.json();
-    setHospitalName(hospital?.name ?? '병원명 미등록');
-    setDoctors(hospital?.doctors ?? []);
+    if (!hasSupabaseEnv() || !authUser) return;
+    const sb = createClient();
+    const { data: hospital } = await sb
+      .from('hospitals')
+      .select('id, name, doctors(*)')
+      .eq('owner_id', authUser.id)
+      .maybeSingle();
+    if (hospital) {
+      setHospitalId(hospital.id);
+      setHospitalName(hospital.name ?? '');
+      setIsOwner(true);
+      setDoctors((hospital as any).doctors ?? []);
+    } else {
+      // 멤버인 경우: user_id로 소속 병원 찾기
+      const { data: doc } = await sb
+        .from('doctors')
+        .select('id, hospital_id, is_owner')
+        .eq('user_id', authUser.id)
+        .maybeSingle();
+      if (doc?.hospital_id) {
+        setHospitalId(doc.hospital_id);
+        setIsOwner(doc.is_owner ?? false);
+        const { data: hosp } = await sb
+          .from('hospitals')
+          .select('name, doctors(*)')
+          .eq('id', doc.hospital_id)
+          .maybeSingle();
+        setHospitalName((hosp as any)?.name ?? '');
+        setDoctors((hosp as any)?.doctors ?? []);
+      }
+    }
   };
 
   useEffect(() => {
-    if (!authUser) {
-      setLoading(false);
-      return;
-    }
-    let cancelled = false;
     (async () => {
-      try {
-        await reload();
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
+      try { await reload(); }
+      finally { setLoading(false); }
     })();
-    return () => {
-      cancelled = true;
-    };
   }, [authUser]);
 
-  const openAdd = () => {
-    setForm({ name: '', title: '원장', specialty: '', bio: '', profileImage: '' });
-    setEditingId(null);
-    setShowModal('add');
+  const handleFire = async (doctor: Doctor) => {
+    if (!hospitalId || !hasSupabaseEnv()) return;
+    if (!window.confirm(`${doctor.name}을(를) 해고하시겠습니까?`)) return;
+    const sb = createClient();
+    // is_active 컬럼이 없으면 삭제로 처리
+    const { error } = await sb.from('doctors').delete().eq('id', doctor.id);
+    if (error) { showToast('해고 처리에 실패했습니다.'); return; }
+    showToast(`${doctor.name}이(가) 해고 처리되었습니다.`);
+    await reload();
   };
 
-  const openEdit = (d: Doctor) => {
-    setForm({
-      name: d.name,
-      title: d.title ?? '원장',
-      specialty: d.specialty ?? '',
-      bio: d.bio ?? '',
-      profileImage: d.profile_image ?? '',
-    });
-    setEditingId(d.id);
-    setShowModal('edit');
-  };
+  const handleAdd = () => router.push('/partner/doctors/new');
 
-  const handleSave = async () => {
-    if (!form.name.trim()) {
-      showToast('의사명을 입력해주세요.');
-      return;
-    }
-    setSaving(true);
-    try {
-      const isEdit = showModal === 'edit' && editingId;
-      const url = isEdit ? `/api/my-hospital/doctors/${editingId}` : '/api/my-hospital/doctors';
-      const method = isEdit ? 'PATCH' : 'POST';
-      const res = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
-      });
-      if (!res.ok) {
-        const j = await res.json().catch(() => ({}));
-        showToast(j.error || '저장에 실패했습니다.');
-      } else {
-        showToast(isEdit ? '의료진 정보가 수정되었습니다.' : '의료진이 추가되었습니다.');
-        setForm({ name: '', title: '원장', specialty: '', bio: '', profileImage: '' });
-        setShowModal(null);
-        setEditingId(null);
-        await reload();
-      }
-    } finally {
-      setSaving(false);
-    }
-  };
+  const active = doctors.filter((d) => d.is_active !== false);
+  const owners = active.filter((d) => d.is_owner);
+  const members = active.filter((d) => !d.is_owner);
 
-  const handleDelete = async () => {
-    if (!editingId) return;
-    if (!window.confirm('의료진을 삭제하시겠습니까?')) return;
-    setSaving(true);
-    try {
-      const res = await fetch(`/api/my-hospital/doctors/${editingId}`, { method: 'DELETE' });
-      if (!res.ok) {
-        const j = await res.json().catch(() => ({}));
-        showToast(j.error || '삭제에 실패했습니다.');
-      } else {
-        showToast('의료진을 삭제했습니다.');
-        setShowModal(null);
-        setEditingId(null);
-        await reload();
-      }
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const editingDoctor = editingId ? doctors.find((doctor) => doctor.id === editingId) : null;
-
-  if (!authUser) {
-    return (
-      <div className="bg-white rounded-xl p-10 text-center">
-        <p className="text-sm text-gray-500 mb-4">로그인이 필요합니다.</p>
-        <Link href="/partner/login" className="inline-block px-5 py-2.5 bg-[#3182F6] text-white text-sm font-bold rounded-xl">
-          로그인
-        </Link>
-      </div>
-    );
-  }
+  if (!authUser) return (
+    <div className="bg-white rounded-xl p-10 text-center">
+      <p className="text-sm text-gray-500 mb-4">로그인이 필요합니다.</p>
+      <Link href="/partner/login" className="inline-block px-5 py-2.5 bg-[#3182F6] text-white text-sm font-bold rounded-xl">로그인</Link>
+    </div>
+  );
 
   return (
     <div className="partner-mobile-screen">
@@ -148,108 +101,94 @@ export default function PartnerDoctorsPage() {
         <h1>병원관리</h1>
         <nav className="partner-inline-segment" aria-label="병원관리 탭">
           <Link href="/partner/hospital-info">병원</Link>
-          <Link href="/partner/doctors" className="is-active">{`멤버(${doctors.length.toLocaleString()})`}</Link>
+          <Link href="/partner/doctors" className="is-active">{`멤버(${active.length})`}</Link>
           <Link href="/partner/reviews">리뷰</Link>
         </nav>
       </header>
+
       {loading ? (
         <div className="partner-loading small">불러오는 중...</div>
-      ) : doctors.length === 0 ? (
-        <section className="partner-member-content">
-          <button className="partner-member-empty" type="button" onClick={openAdd}>
-            <span>멤버 추가</span>
-          </button>
-        </section>
       ) : (
         <section className="partner-member-content">
-          {doctors.map((d) => (
+          {/* 파티장 */}
+          {owners.map((d) => (
             <article key={d.id} className="partner-member-row">
-                <div className="partner-member-avatar">
-                  {d.profile_image ? (
-                    /* eslint-disable-next-line @next/next/no-img-element */
-                    <img src={d.profile_image} alt={d.name} />
-                  ) : (
-                    <img src="/partner-template/doctor-avatar.png" alt="" />
-                  )}
+              <div className="partner-member-avatar">
+                <img src={d.profile_image || '/partner-template/doctor-avatar.png'} alt={d.name} />
+              </div>
+              <div className="partner-member-summary">
+                <div>
+                  <h2>
+                    {d.name}
+                    <span style={{ marginLeft: 6, fontSize: 11, fontWeight: 700, color: '#8037FF', background: '#F3EEFF', padding: '2px 7px', borderRadius: 20 }}>파티장</span>
+                    {d.is_owner && d.id === doctors.find(x => x.is_owner)?.id && (
+                      <span style={{ marginLeft: 4, fontSize: 11, color: '#3182F6', background: '#EFF6FF', padding: '2px 7px', borderRadius: 20 }}>My</span>
+                    )}
+                  </h2>
+                  <p>{d.specialty || d.title || '전문분야 미등록'}</p>
                 </div>
-                <div className="partner-member-summary">
-                  <div>
-                    <h2>
-                      {d.name}
-                      {d.is_owner ? <span>My</span> : null}
-                    </h2>
-                    <p>{d.specialty || d.title || '전문분야 미등록'}</p>
-                  </div>
-                  <p>{hospitalName}</p>
-                </div>
-                <button className="partner-edit-button" type="button" aria-label={`${d.name} 수정`} onClick={() => openEdit(d)}>
-                  <img src="/partner-template/edit.svg" alt="" />
+                <p>{hospitalName}</p>
+              </div>
+              {isOwner && (
+                <button className="partner-edit-button" type="button" onClick={() => router.push(`/partner/doctors/${d.id}`)}>
+                  <img src="/partner-template/edit.svg" alt="수정" />
                 </button>
+              )}
             </article>
           ))}
+
+          {/* 멤버 */}
+          {members.map((d) => (
+            <article key={d.id} className="partner-member-row">
+              <div className="partner-member-avatar">
+                <img src={d.profile_image || '/partner-template/doctor-avatar.png'} alt={d.name} />
+              </div>
+              <div className="partner-member-summary">
+                <div>
+                  <h2>
+                    {d.name}
+                    <span style={{ marginLeft: 6, fontSize: 11, fontWeight: 600, color: '#6B7280', background: '#F3F4F6', padding: '2px 7px', borderRadius: 20 }}>멤버</span>
+                  </h2>
+                  <p>{d.specialty || d.title || '전문분야 미등록'}</p>
+                </div>
+                <p>{hospitalName}</p>
+              </div>
+              {isOwner && (
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <button className="partner-edit-button" type="button" onClick={() => router.push(`/partner/doctors/${d.id}`)}>
+                    <img src="/partner-template/edit.svg" alt="수정" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleFire(d)}
+                    style={{ fontSize: 12, color: '#EF4444', background: '#FEF2F2', border: 'none', borderRadius: 8, padding: '4px 10px', cursor: 'pointer', fontWeight: 600 }}
+                  >
+                    해고
+                  </button>
+                </div>
+              )}
+            </article>
+          ))}
+
+          {active.length === 0 && (
+            <button className="partner-member-empty" type="button" onClick={handleAdd}>
+              <span>멤버 추가</span>
+            </button>
+          )}
         </section>
       )}
 
-      {showModal && (
-        <PartnerModal
-          title={showModal === 'edit' ? '의료진 수정' : '의사 추가'}
-          onClose={() => { setShowModal(null); setEditingId(null); }}
-          footer={
-            <>
-              {showModal === 'edit' && !editingDoctor?.is_owner && (
-                <PartnerButton type="button" variant="weak" tone="danger" className="flex-1" disabled={saving} onClick={handleDelete}>
-                  삭제
-                </PartnerButton>
-              )}
-              <PartnerButton type="button" variant="weak" tone="neutral" className="flex-1" onClick={() => { setShowModal(null); setEditingId(null); }}>
-                취소
-              </PartnerButton>
-              <PartnerButton type="button" disabled={saving} className="flex-1" onClick={handleSave}>
-                {saving ? '저장 중…' : showModal === 'edit' ? '수정' : '추가'}
-              </PartnerButton>
-            </>
-          }
-        >
-            <div className="space-y-3">
-              <PartnerField label="이름 *">
-                <PartnerInput
-                  value={form.name}
-                  onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                />
-              </PartnerField>
-              <PartnerField label="직함">
-                <PartnerSelect
-                  value={form.title}
-                  onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-                >
-                  {['대표원장', '원장', '부원장', '수석원장'].map((t) => (
-                    <option key={t} value={t}>{t}</option>
-                  ))}
-                </PartnerSelect>
-              </PartnerField>
-              <PartnerField label="전문 분야">
-                <PartnerInput
-                  value={form.specialty}
-                  onChange={(e) => setForm((f) => ({ ...f, specialty: e.target.value }))}
-                  placeholder="예) 보존과 전문의, 치과교정과 전문의"
-                />
-              </PartnerField>
-              <PartnerField label="소개 (선택)">
-                <PartnerTextarea
-                  value={form.bio}
-                  onChange={(e) => setForm((f) => ({ ...f, bio: e.target.value }))}
-                  rows={3}
-                />
-              </PartnerField>
-              <PartnerField label="프로필 이미지 URL (선택)">
-                <PartnerInput
-                  value={form.profileImage}
-                  onChange={(e) => setForm((f) => ({ ...f, profileImage: e.target.value }))}
-                  placeholder="https://..."
-                />
-              </PartnerField>
-            </div>
-        </PartnerModal>
+      {isOwner && active.length > 0 && (
+        <div style={{ padding: '0 16px 16px' }}>
+          <button
+            type="button"
+            onClick={handleAdd}
+            style={{ width: '100%', height: 48, borderRadius: 14, border: '1.5px dashed #C8CEDA', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 14, color: '#6B7280', cursor: 'pointer' }}
+          >
+            <UserPlus size={16} />
+            멤버 추가
+          </button>
+        </div>
       )}
     </div>
   );

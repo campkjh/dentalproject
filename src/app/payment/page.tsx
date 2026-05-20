@@ -26,9 +26,11 @@ function PaymentPage() {
   const productId = searchParams.get('productId');
   const dateParam = searchParams.get('date'); // YYYY-MM-DD
   const timeParam = searchParams.get('time'); // HH:mm
+  const paymentParam = searchParams.get('payment'); // 'app' | null
   const { user, showToast, addReservation, products } = useStore();
   const coupons = user?.coupons ?? [];
   const [submitting, setSubmitting] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<'후불결제' | '앱결제'>(paymentParam === 'app' ? '앱결제' : '후불결제');
 
   const [showCouponSheet, setShowCouponSheet] = useState(false);
   const [selectedCouponId, setSelectedCouponId] = useState<string | null>(null);
@@ -142,7 +144,7 @@ function PaymentPage() {
       amount: totalPrice,
       customerName: user.name ?? '',
       customerPhone: user.phone ?? '',
-      paymentMethod: '카드결제',
+      paymentMethod,
     };
     const result = await addReservation(newReservation, { visitAtIso: visitIso });
     setSubmitting(false);
@@ -218,6 +220,34 @@ function PaymentPage() {
           <Row label="연락처" value={user?.phone || '연락처 미등록'} />
           <Row label="예약일시" value={selectedVisitLabel} />
           <Row label="위치" value={product.location} valueClass="truncate max-w-[200px]" />
+        </Section>
+
+        <Divider />
+
+        {/* 결제수단 */}
+        <Section title="결제수단">
+          <div className="flex gap-2">
+            {(['후불결제', '앱결제'] as const).map((method) => (
+              <button
+                key={method}
+                type="button"
+                onClick={() => setPaymentMethod(method)}
+                className={`flex-1 py-3 rounded-xl text-sm font-semibold border transition-colors btn-press ${
+                  paymentMethod === method
+                    ? 'border-[#8037FF] bg-[#F3EEFF] text-[#8037FF]'
+                    : 'border-gray-200 text-gray-500'
+                }`}
+              >
+                {method}
+              </button>
+            ))}
+          </div>
+          {paymentMethod === '후불결제' && (
+            <p className="text-xs text-gray-400 mt-2">진료 후 병원에서 직접 결제합니다.</p>
+          )}
+          {paymentMethod === '앱결제' && (
+            <p className="text-xs text-gray-400 mt-2">앱에서 카드결제로 미리 결제합니다.</p>
+          )}
         </Section>
 
         <Divider />

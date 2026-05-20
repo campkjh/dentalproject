@@ -29,7 +29,7 @@ type HospitalRow = {
   operating_hours?: OperatingHour[] | null;
 };
 
-type Mode = 'overview' | 'cover' | 'hours' | 'intro';
+type Mode = 'overview' | 'cover' | 'hours' | 'intro' | 'location';
 type PhotoTarget = 'cover' | 'logo';
 type HourDraft = { day: string; start_time: string; end_time: string };
 
@@ -96,6 +96,8 @@ export default function PartnerHospitalInfoPage() {
   const [introDraft, setIntroDraft] = useState('');
   const [holidayDraft, setHolidayDraft] = useState('');
   const [hoursDraft, setHoursDraft] = useState<HourDraft[]>(() => buildHourDrafts(null));
+  const [addressDraft, setAddressDraft] = useState('');
+  const [addressDetailDraft, setAddressDetailDraft] = useState('');
   const [saving, setSaving] = useState(false);
   const [uploadingTarget, setUploadingTarget] = useState<PhotoTarget | null>(null);
 
@@ -103,6 +105,8 @@ export default function PartnerHospitalInfoPage() {
     setIntroDraft(row?.introduction ?? '');
     setHolidayDraft(row?.holiday_notice ?? '');
     setHoursDraft(buildHourDrafts(row));
+    setAddressDraft(row?.address ?? '');
+    setAddressDetailDraft(row?.address_detail ?? '');
   }, []);
 
   const reloadHospital = useCallback(async () => {
@@ -218,6 +222,20 @@ export default function PartnerHospitalInfoPage() {
           : prev
       ));
       showToast('운영시간을 저장했습니다.');
+      goOverview();
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : '저장에 실패했습니다.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const saveLocation = async () => {
+    setSaving(true);
+    try {
+      await patchHospital({ address: addressDraft, addressDetail: addressDetailDraft });
+      setHospital((prev) => prev ? { ...prev, address: addressDraft, address_detail: addressDetailDraft } : prev);
+      showToast('위치 정보를 저장했습니다.');
       goOverview();
     } catch (error) {
       showToast(error instanceof Error ? error.message : '저장에 실패했습니다.');
@@ -419,6 +437,50 @@ export default function PartnerHospitalInfoPage() {
     );
   }
 
+  if (mode === 'location') {
+    return (
+      <div className="partner-mobile-screen partner-edit-screen with-save">
+        <button className="partner-edit-back" type="button" onClick={goOverview} aria-label="뒤로">
+          <img src="/partner-template/chevron-left.svg" alt="" />
+        </button>
+        <section className="partner-edit-content compact" style={{ gap: 16 }}>
+          <div className="partner-edit-title"><h1>병원위치 수정</h1></div>
+          {addressDraft && (
+            <iframe
+              title="지도"
+              src={`https://maps.google.com/maps?q=${encodeURIComponent(addressDraft)}&output=embed&hl=ko`}
+              style={{ width: '100%', height: 200, border: 0, borderRadius: 14 }}
+              loading="lazy"
+            />
+          )}
+          <div>
+            <label style={{ fontSize: 13, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 6 }}>주소</label>
+            <input
+              type="text"
+              value={addressDraft}
+              onChange={(e) => setAddressDraft(e.target.value)}
+              placeholder="예) 서울특별시 강남구 테헤란로 123"
+              style={{ width: '100%', border: '1.5px solid #E5E7EB', borderRadius: 10, padding: '12px 14px', fontSize: 14, boxSizing: 'border-box' }}
+            />
+          </div>
+          <div>
+            <label style={{ fontSize: 13, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 6 }}>상세주소</label>
+            <input
+              type="text"
+              value={addressDetailDraft}
+              onChange={(e) => setAddressDetailDraft(e.target.value)}
+              placeholder="예) 3층 301호"
+              style={{ width: '100%', border: '1.5px solid #E5E7EB', borderRadius: 10, padding: '12px 14px', fontSize: 14, boxSizing: 'border-box' }}
+            />
+          </div>
+        </section>
+        <button className="partner-edit-save" type="button" onClick={saveLocation} disabled={saving}>
+          {saving ? '저장 중...' : '저장하기'}
+        </button>
+      </div>
+    );
+  }
+
   if (mode === 'intro') {
     return (
       <div className="partner-mobile-screen partner-edit-screen with-save">
@@ -535,12 +597,28 @@ export default function PartnerHospitalInfoPage() {
         </section>
 
         <section className="partner-info-section">
-          <h2>병원위치</h2>
-          <div className="partner-map-card">
-            <img src={FALLBACK_MAP} alt="" />
-            <button type="button" aria-label="지도 열기" onClick={openMap}>
-              <img src="/partner-template/expand.svg" alt="" />
-            </button>
+          <h2>
+            병원위치
+            <button type="button" onClick={() => openMode('location')} style={{ marginLeft: 'auto', fontSize: 13, color: '#8037FF', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}>수정</button>
+          </h2>
+          <div className="partner-map-card" style={{ position: 'relative', overflow: 'hidden', borderRadius: 14, height: 180 }}>
+            {address ? (
+              <iframe
+                title="병원위치 지도"
+                src={`https://maps.google.com/maps?q=${encodeURIComponent(address)}&output=embed&hl=ko`}
+                style={{ width: '100%', height: '100%', border: 0 }}
+                loading="lazy"
+              />
+            ) : (
+              <div style={{ width: '100%', height: '100%', background: '#F3F4F6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <span style={{ fontSize: 13, color: '#9CA3AF' }}>주소를 등록하면 지도가 표시됩니다</span>
+              </div>
+            )}
+            {address && (
+              <button type="button" aria-label="지도 열기" onClick={openMap} style={{ position: 'absolute', top: 8, right: 8, background: 'white', border: 'none', borderRadius: 8, padding: 6, cursor: 'pointer', boxShadow: '0 1px 4px rgba(0,0,0,0.15)' }}>
+                <img src="/partner-template/expand.svg" alt="" style={{ width: 16, height: 16 }} />
+              </button>
+            )}
           </div>
           {address ? (
             <p className="partner-info-description">{address}</p>

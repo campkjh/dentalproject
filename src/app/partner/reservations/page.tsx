@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, ToggleLeft, ToggleRight, Clock } from 'lucide-react';
+import { createClient, hasSupabaseEnv } from '@/lib/supabase/client';
 import { useSession } from '@/lib/supabase/SessionProvider';
 import { useReservationRealtimeRefresh } from '@/lib/realtime/reservations';
 import { useStore } from '@/store';
@@ -108,11 +109,144 @@ function ReservationScheduleCard({
   );
 }
 
+const DAYS = ['월', '화', '수', '목', '금', '토', '일'] as const;
+type DaySchedule = { day: string; is_closed: boolean; start_time: string; end_time: string };
+
+function ScheduleSettingsView({ hospitalId }: { hospitalId: string | null }) {
+  const showToast = useStore((s) => s.showToast);
+  const [schedule, setSchedule] = useState<DaySchedule[]>(
+    DAYS.map((d) => ({ day: d, is_closed: d === '일', start_time: '09:00', end_time: '18:00' }))
+  );
+  const [saving, setSaving] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    if (!hospitalId || !hasSupabaseEnv()) return;
+    const sb = createClient();
+    sb.from('operating_hours')
+      .select('day, is_closed, start_time, end_time')
+      .eq('hospital_id', hospitalId)
+      .then(({ data }) => {
+        if (!data || data.length === 0) return;
+        setSchedule(DAYS.map((d) => {
+          const row = data.find((r: any) => r.day === d);
+          return row
+            ? { day: d, is_closed: row.is_closed ?? false, start_time: row.start_time ?? '09:00', end_time: row.end_time ?? '18:00' }
+            : { day: d, is_closed: false, start_time: '09:00', end_time: '18:00' };
+        }));
+        setLoaded(true);
+      });
+  }, [hospitalId]);
+
+  const toggle = (day: string) =>
+    setSchedule((prev) => prev.map((r) => r.day === day ? { ...r, is_closed: !r.is_closed } : r));
+
+  const setTime = (day: string, field: 'start_time' | 'end_time', val: string) =>
+    setSchedule((prev) => prev.map((r) => r.day === day ? { ...r, [field]: val } : r));
+
+  const save = async () => {
+    if (!hospitalId || !hasSupabaseEnv()) { showToast('병원 정보를 불러올 수 없습니다.'); return; }
+    setSaving(true);
+    try {
+      const sb = createClient();
+      const rows = schedule.map((r) => ({
+        hospital_id: hospitalId,
+        day: r.day,
+        is_closed: r.is_closed,
+        start_time: r.is_closed ? null : r.start_time,
+        end_time: r.is_closed ? null : r.end_time,
+      }));
+      const { error } = await sb.from('operating_hours').upsert(rows, { onConflict: 'hospital_id,day' });
+      if (error) throw error;
+      showToast('진료 스케줄을 저장했습니다.');
+    } catch (e: any) {
+      showToast(e?.message || '저장에 실패했습니다.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="partner-mobile-screen">
+      <header className="partner-screen-title with-action">
+        <h1>예약관리</h1>
+        <nav className="partner-inline-segment" aria-label="예약관리 탭">
+          <a href="/partner/reservations">병원예약</a>
+          <a className="is-active">예약설정</a>
+        </nav>
+      </header>
+
+      <div style={{ padding: '16px 16px 100px' }}>
+        <p className="text-xs text-gray-400 mb-4">요일별 진료일과 운영시간을 설정하세요.</p>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {schedule.map((row) => (
+            <div key={row.day} style={{
+              background: row.is_closed ? '#F9FAFB' : '#fff',
+              border: '1px solid #E5E7EB',
+              borderRadius: 14,
+              padding: '14px 16px',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: row.is_closed ? 0 : 12 }}>
+                <span style={{ fontWeight: 600, fontSize: 15, color: row.is_closed ? '#9CA3AF' : '#111827' }}>
+                  {row.day}요일
+                </span>
+                <button
+                  type="button"
+                  onClick={() => toggle(row.day)}
+                  style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: row.is_closed ? '#9CA3AF' : '#3182F6', fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer' }}
+                >
+                  {row.is_closed
+                    ? <><ToggleLeft size={22} /><span>휴진</span></>
+                    : <><ToggleRight size={22} /><span>진료</span></>
+                  }
+                </button>
+              </div>
+
+              {!row.is_closed && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Clock size={14} color="#6B7280" />
+                  <input
+                    type="time"
+                    value={row.start_time}
+                    onChange={(e) => setTime(row.day, 'start_time', e.target.value)}
+                    style={{ fontSize: 14, border: '1px solid #E5E7EB', borderRadius: 8, padding: '6px 10px', flex: 1 }}
+                  />
+                  <span style={{ color: '#9CA3AF', fontSize: 13 }}>~</span>
+                  <input
+                    type="time"
+                    value={row.end_time}
+                    onChange={(e) => setTime(row.day, 'end_time', e.target.value)}
+                    style={{ fontSize: 14, border: '1px solid #E5E7EB', borderRadius: 8, padding: '6px 10px', flex: 1 }}
+                  />
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Save button */}
+      <div style={{ position: 'fixed', bottom: 72, left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: 480, padding: '0 16px' }}>
+        <button
+          type="button"
+          onClick={save}
+          disabled={saving}
+          style={{ width: '100%', height: 52, borderRadius: 14, backgroundColor: saving ? '#C4B5FD' : '#8037FF', color: '#fff', fontSize: 16, fontWeight: 700, border: 'none', cursor: 'pointer' }}
+        >
+          {saving ? '저장 중...' : '스케줄 저장'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function PartnerReservationsPage() {
   const router = useRouter();
   const { authUser } = useSession();
   const showToast = useStore((s) => s.showToast);
   const now = new Date();
+  const [activeTab, setActiveTab] = useState<'reservations' | 'settings'>('reservations');
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth());
   const [selected, setSelected] = useState(dateKey(now));
@@ -229,13 +363,15 @@ export default function PartnerReservationsPage() {
     );
   }
 
+  if (activeTab === 'settings') return <ScheduleSettingsView hospitalId={hospitalId} />;
+
   return (
     <div className="partner-mobile-screen">
       <header className="partner-screen-title with-action">
         <h1>예약관리</h1>
         <nav className="partner-inline-segment" aria-label="예약관리 탭">
-          <a className="is-active">병원예약</a>
-          <a>예약설정</a>
+          <a className="is-active" onClick={() => setActiveTab('reservations')} style={{ cursor: 'pointer' }}>병원예약</a>
+          <a onClick={() => setActiveTab('settings')} style={{ cursor: 'pointer' }}>예약설정</a>
         </nav>
       </header>
 
