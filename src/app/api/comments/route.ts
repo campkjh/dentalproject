@@ -11,19 +11,33 @@ export async function GET(req: NextRequest) {
   const sb = await createClient();
   const { data, error } = await sb
     .from('comments')
-    .select(`id, post_id, author_id, parent_comment_id, content, is_anonymous, anonymous_id, like_count, created_at,
-             author:profiles!comments_author_id_fkey (name, is_doctor)`)
+    .select('id, post_id, author_id, parent_comment_id, content, is_anonymous, anonymous_id, like_count, created_at')
     .eq('post_id', postId)
     .order('created_at', { ascending: true });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  const comments = (data ?? []).map((c: any) => ({
+  const rows = data ?? [];
+
+  // 작성자 이름 별도 조회
+  const authorIds = [...new Set(rows.map((c: any) => c.author_id))];
+  const profileMap: Record<string, { name: string; is_doctor: boolean }> = {};
+  if (authorIds.length > 0) {
+    const { data: profiles } = await sb
+      .from('profiles')
+      .select('id, name, is_doctor')
+      .in('id', authorIds);
+    for (const p of profiles ?? []) {
+      profileMap[(p as any).id] = { name: (p as any).name, is_doctor: (p as any).is_doctor };
+    }
+  }
+
+  const comments = rows.map((c: any) => ({
     id: c.id,
     postId: c.post_id,
     authorId: c.author_id,
-    authorName: c.author?.name ?? '익명',
-    authorTitle: c.author?.is_doctor ? '의사' : undefined,
+    authorName: profileMap[c.author_id]?.name ?? '익명',
+    authorTitle: profileMap[c.author_id]?.is_doctor ? '의사' : undefined,
     parentCommentId: c.parent_comment_id ?? undefined,
     content: c.content,
     isAnonymous: c.is_anonymous,
