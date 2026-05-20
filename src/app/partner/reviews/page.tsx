@@ -79,15 +79,18 @@ export default function PartnerReviewsPage() {
   const canAddText = canAddInitial && initialTextCount < MAX_INITIAL_TEXT;
 
   const toggleHide = async (id: string) => {
-    if (hiddenIds.has(id)) {
-      setHiddenIds((prev) => { const next = new Set(prev); next.delete(id); return next; });
-      showToast('리뷰를 다시 표시합니다.');
-    } else {
+    const willHide = !hiddenIds.has(id);
+    if (willHide) {
       setHiddenIds((prev) => new Set([...prev, id]));
-      showToast('리뷰를 숨겼습니다.');
+    } else {
+      setHiddenIds((prev) => { const next = new Set(prev); next.delete(id); return next; });
     }
-    // TODO: DB에 hidden 컬럼 추가 후 실제 저장
-    // await sb.from('reviews').update({ hidden: !hiddenIds.has(id) }).eq('id', id);
+    showToast(willHide ? '리뷰를 숨겼습니다.' : '리뷰를 다시 표시합니다.');
+
+    if (!hasSupabaseEnv()) return;
+    const sb = createClient();
+    const { error } = await sb.from('reviews').update({ hidden: willHide }).eq('id', id);
+    if (error) showToast('저장 실패: ' + error.message);
   };
 
   const handleAddReview = async () => {
