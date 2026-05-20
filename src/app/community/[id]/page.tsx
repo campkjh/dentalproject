@@ -2,7 +2,8 @@
 
 import Avatar from '@/components/common/Avatar';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { createClient, hasSupabaseEnv } from '@/lib/supabase/client';
 import { useParams, useRouter } from 'next/navigation';
 import {
   Eye,
@@ -29,17 +30,47 @@ export default function PostDetailPage() {
 
   const post = posts.find((p) => p.id === params.id);
 
+  const fetchComments = useCallback(async (postId: string, seq: number) => {
+    if (!hasSupabaseEnv()) return;
+    const sb = createClient();
+    const { data: rows } = await sb
+      .from('comments')
+      .select('id, post_id, author_id, parent_comment_id, content, is_anonymous, anonymous_id, like_count, created_at')
+      .eq('post_id', postId)
+      .order('created_at', { ascending: true });
+    if (!rows || seq !== fetchSeqRef.current) return;
+
+    const authorIds = [...new Set(rows.map((c) => c.author_id))];
+    const profileMap: Record<string, { name: string; is_doctor: boolean }> = {};
+    if (authorIds.length > 0) {
+      const { data: profiles } = await sb.from('profiles').select('id, name, is_doctor').in('id', authorIds);
+      for (const p of profiles ?? []) {
+        profileMap[(p as any).id] = { name: (p as any).name, is_doctor: (p as any).is_doctor };
+      }
+    }
+    if (seq !== fetchSeqRef.current) return;
+
+    setDbComments(rows.map((c) => ({
+      id: c.id,
+      postId: c.post_id,
+      authorId: c.author_id,
+      authorName: profileMap[c.author_id]?.name ?? '익명',
+      authorTitle: profileMap[c.author_id]?.is_doctor ? '의사' : undefined,
+      parentCommentId: (c as any).parent_comment_id ?? undefined,
+      content: c.content,
+      isAnonymous: c.is_anonymous,
+      anonymousId: (c as any).anonymous_id ?? undefined,
+      likeCount: c.like_count ?? 0,
+      date: c.created_at ? new Date(c.created_at).toLocaleDateString('ko-KR') : '',
+    })));
+  }, []);
+
   useEffect(() => {
     const postId = params.id as string;
     if (!/^[0-9a-f]{8}-/.test(postId)) return;
     const seq = ++fetchSeqRef.current;
-    fetch(`/api/comments?postId=${postId}`)
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.comments && seq === fetchSeqRef.current) setDbComments(data.comments);
-      })
-      .catch(() => {});
-  }, [params.id]);
+    fetchComments(postId, seq);
+  }, [params.id, fetchComments]);
 
   const postComments = dbComments !== null
     ? dbComments
@@ -100,11 +131,16 @@ export default function PostDetailPage() {
     }
 
     showToast('댓글이 등록되었습니다.');
-    // 임시 ID → 실제 UUID로 교체 (GET 재조회 없이 즉시 반영)
+    // 임시 ID → 실제 UUID로 교체
     if (result.id) {
       setDbComments((prev) =>
         prev ? prev.map((c) => c.id === tempId ? { ...c, id: result.id as string } : c) : prev
       );
+    }
+    // 클라이언트에서 직접 최신 댓글 재조회
+    if (/^[0-9a-f]{8}-/.test(postId)) {
+      const seq = ++fetchSeqRef.current;
+      fetchComments(postId, seq);
     }
   };
 
