@@ -31,13 +31,18 @@ export default function PostDetailPage() {
   const post = posts.find((p) => p.id === params.id);
 
   const fetchComments = useCallback(async (postId: string, seq: number) => {
-    if (!hasSupabaseEnv()) return;
+    if (!hasSupabaseEnv()) {
+      console.log('[comment] Supabase env 없음 — fetch 스킵');
+      return;
+    }
     const sb = createClient();
-    const { data: rows } = await sb
+    console.log('[comment] SELECT 시도:', postId);
+    const { data: rows, error: fetchErr } = await sb
       .from('comments')
       .select('id, post_id, author_id, parent_comment_id, content, is_anonymous, anonymous_id, like_count, created_at')
       .eq('post_id', postId)
       .order('created_at', { ascending: true });
+    console.log('[comment] SELECT 결과:', { rows, fetchErr });
     if (!rows || seq !== fetchSeqRef.current) return;
 
     const authorIds = [...new Set(rows.map((c) => c.author_id))];
@@ -124,6 +129,7 @@ export default function PostDetailPage() {
     if (isRealPost && hasSupabaseEnv()) {
       // 클라이언트 SDK로 직접 INSERT — 서버 auth 우회
       const sb = createClient();
+      console.log('[comment] INSERT 시도:', { postId, userId: user.id });
       const { data, error } = await sb
         .from('comments')
         .insert({
@@ -137,8 +143,10 @@ export default function PostDetailPage() {
         .select('id')
         .single();
 
+      console.log('[comment] INSERT 결과:', { data, error });
+
       if (error) {
-        showToast('댓글 등록에 실패했습니다: ' + error.message);
+        showToast('댓글 등록 실패: ' + error.message);
         setDbComments((prev) => prev ? prev.filter((c) => c.id !== tempId) : prev);
         setCommentText(tempComment.content);
         return;
