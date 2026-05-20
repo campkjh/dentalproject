@@ -61,12 +61,37 @@ export default function ProfilePage() {
     });
   };
 
-  const onAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+
+  const onAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
+    e.target.value = '';
     if (!f) return;
-    const url = URL.createObjectURL(f);
-    updateUser({ profileImage: url });
-    showToast('프로필 사진이 변경되었습니다.');
+    if (!f.type.startsWith('image/')) { showToast('이미지 파일만 선택해주세요.'); return; }
+    if (f.size > 5 * 1024 * 1024) { showToast('5MB 이하 이미지만 등록할 수 있습니다.'); return; }
+
+    // 미리보기 즉시 표시
+    const previewUrl = URL.createObjectURL(f);
+    updateUser({ profileImage: previewUrl });
+
+    setUploadingPhoto(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', f);
+      formData.append('folder', 'profile-images');
+      const res = await fetch('/api/upload', { method: 'POST', body: formData });
+      if (!res.ok) throw new Error('업로드 실패');
+      const blob = await res.json();
+      const url = blob.url as string;
+      updateUser({ profileImage: url });
+      showToast('프로필 사진이 변경되었습니다.');
+    } catch {
+      showToast('사진 업로드에 실패했습니다.');
+      updateUser({ profileImage: undefined });
+    } finally {
+      URL.revokeObjectURL(previewUrl);
+      setUploadingPhoto(false);
+    }
   };
 
   const infoItems: { label: string; value: string; onClick?: () => void; readonly?: boolean }[] = [
@@ -100,8 +125,8 @@ export default function ProfilePage() {
               alt={user?.name || '프로필'}
             />
           </div>
-          <label className="absolute bottom-0 right-0 w-8 h-8 bg-[#3182F6] rounded-full flex items-center justify-center shadow-lg border-2 border-white cursor-pointer btn-press">
-            <Camera size={14} className="text-white" />
+          <label className={`absolute bottom-0 right-0 w-8 h-8 rounded-full flex items-center justify-center shadow-lg border-2 border-white cursor-pointer btn-press ${uploadingPhoto ? 'bg-gray-400' : 'bg-[#3182F6]'}`}>
+            {uploadingPhoto ? <span className="text-white text-[10px]">...</span> : <Camera size={14} className="text-white" />}
             <input
               type="file"
               accept="image/*"

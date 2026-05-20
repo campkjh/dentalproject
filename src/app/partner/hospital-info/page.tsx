@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useSession } from '@/lib/supabase/SessionProvider';
 import { useStore } from '@/store';
+import { createClient, hasSupabaseEnv } from '@/lib/supabase/client';
 
 type OperatingHour = {
   day?: string | null;
@@ -147,15 +148,22 @@ export default function PartnerHospitalInfoPage() {
   const goOverview = () => openMode('overview');
 
   const patchHospital = async (body: Record<string, unknown>) => {
-    const res = await fetch('/api/my-hospital', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-    if (!res.ok) {
-      const payload = await res.json().catch(() => ({}));
-      throw new Error(payload.error || '저장에 실패했습니다.');
-    }
+    if (!hospital?.id) throw new Error('병원 정보를 찾을 수 없습니다.');
+    if (!hasSupabaseEnv()) throw new Error('Supabase 환경변수가 설정되지 않았습니다.');
+
+    const sb = createClient();
+    const patch: Record<string, unknown> = {};
+    if (typeof body.introduction === 'string') patch.introduction = body.introduction;
+    if (typeof body.holidayNotice === 'string') patch.holiday_notice = body.holidayNotice;
+    if (typeof body.imageUrl === 'string') patch.image_url = body.imageUrl;
+    if (Array.isArray(body.coverImages)) patch.cover_images = body.coverImages;
+    if (typeof body.name === 'string') patch.name = body.name;
+    if (typeof body.phone === 'string') patch.phone = body.phone;
+    if (typeof body.address === 'string') patch.address = body.address;
+    if (Array.isArray(body.tags)) patch.tags = body.tags;
+
+    const { error } = await sb.from('hospitals').update(patch).eq('id', hospital.id);
+    if (error) throw new Error(error.message);
   };
 
   const saveIntro = async () => {
@@ -192,18 +200,18 @@ export default function PartnerHospitalInfoPage() {
 
     setSaving(true);
     try {
-      const [hoursRes] = await Promise.all([
-        fetch('/api/my-hospital/hours', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ hours }),
-        }),
-        patchHospital({ holidayNotice: holidayDraft }),
-      ]);
-      if (!hoursRes.ok) {
-        const payload = await hoursRes.json().catch(() => ({}));
-        throw new Error(payload.error || '운영시간 저장에 실패했습니다.');
-      }
+      if (!hospital?.id) throw new Error('병원 정보를 찾을 수 없습니다.');
+      const sb = createClient();
+      const upsertRows = hours.map((h) => ({
+        hospital_id: hospital.id,
+        day: h.day,
+        start_time: h.start_time ?? null,
+        end_time: h.end_time ?? null,
+        is_closed: h.is_closed ?? false,
+      }));
+      const { error: hoursErr } = await sb.from('operating_hours').upsert(upsertRows, { onConflict: 'hospital_id,day' });
+      if (hoursErr) throw new Error(hoursErr.message);
+      await patchHospital({ holidayNotice: holidayDraft });
       setHospital((prev) => (
         prev
           ? { ...prev, holiday_notice: holidayDraft, operating_hours: hours }

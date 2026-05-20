@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useRef, useEffect, useLayoutEffect } from 'react';
+import { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react';
+import { createClient, hasSupabaseEnv } from '@/lib/supabase/client';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Avatar from '@/components/common/Avatar';
@@ -28,7 +29,9 @@ const boardTypeMap: Record<string, Post['boardType']> = {
 };
 
 export default function CommunityPage() {
-  const { isDoctor, posts, catalogHydrated } = useStore();
+  const { isDoctor, posts: storePosts, catalogHydrated } = useStore();
+  const [dbPosts, setDbPosts] = useState<typeof storePosts | null>(null);
+  const posts = dbPosts ?? storePosts;
   const [activeBoard, setActiveBoard] = useState('질문게시판');
   const [sortBy, setSortBy] = useState('최신순');
   const [showSortDropdown, setShowSortDropdown] = useState(false);
@@ -42,6 +45,36 @@ export default function CommunityPage() {
   const categoryTabsRef = useRef<HTMLDivElement>(null);
   const categoryBtnRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const [categoryIndicator, setCategoryIndicator] = useState({ left: 0, width: 0 });
+
+  useEffect(() => {
+    if (!hasSupabaseEnv()) return;
+    const sb = createClient();
+    sb.from('posts')
+      .select('id, board_type, title, content, author_id, view_count, like_count, comment_count, tags, has_answer, answer_count, is_anonymous, anonymous_id, created_at, author:profiles!posts_author_id_fkey(name, is_doctor)')
+      .order('created_at', { ascending: false })
+      .limit(100)
+      .then(({ data }) => {
+        if (!data) return;
+        setDbPosts(data.map((p: any) => ({
+          id: p.id,
+          boardType: p.board_type,
+          title: p.title,
+          content: p.content,
+          authorName: p.author?.name ?? '익명',
+          authorTitle: p.author?.is_doctor ? '의사' : undefined,
+          authorId: p.author_id,
+          isAnonymous: p.is_anonymous,
+          anonymousId: p.anonymous_id ?? undefined,
+          date: p.created_at ? new Date(p.created_at).toLocaleDateString('ko-KR') : '',
+          viewCount: p.view_count ?? 0,
+          likeCount: p.like_count ?? 0,
+          commentCount: p.comment_count ?? 0,
+          tags: p.tags ?? [],
+          hasAnswer: p.has_answer ?? false,
+          answerCount: p.answer_count ?? 0,
+        })));
+      });
+  }, []);
 
   const changeCategory = (cat: string) => {
     const nextIdx = questionCategories.indexOf(cat);

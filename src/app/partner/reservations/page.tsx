@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { ChevronRight } from 'lucide-react';
 import { useSession } from '@/lib/supabase/SessionProvider';
 import { useReservationRealtimeRefresh } from '@/lib/realtime/reservations';
@@ -65,9 +66,11 @@ function timeOf(value?: string | null) {
 function ReservationScheduleCard({
   row,
   onAssignRequest,
+  onDetailRequest,
 }: {
   row: ReservationRow;
   onAssignRequest: (row: ReservationRow) => void;
+  onDetailRequest: (id: string) => void;
 }) {
   const name = row.user?.name ?? row.customer_name ?? '환자';
   const phone = row.user?.phone ?? row.customer_phone ?? '';
@@ -77,7 +80,7 @@ function ReservationScheduleCard({
 
   return (
     <article className="partner-schedule-card">
-      <div className="partner-schedule-row top">
+      <div className="partner-schedule-row top" onClick={() => onDetailRequest(row.id)} style={{ cursor: 'pointer' }}>
         <div>
           <strong>{timeOf(row.visit_at)}</strong>
           <span>{name}</span>
@@ -106,6 +109,7 @@ function ReservationScheduleCard({
 }
 
 export default function PartnerReservationsPage() {
+  const router = useRouter();
   const { authUser } = useSession();
   const showToast = useStore((s) => s.showToast);
   const now = new Date();
@@ -301,7 +305,7 @@ export default function PartnerReservationsPage() {
         ) : (
           <div className="partner-schedule-list">
             {dayItems.map((row) => (
-              <ReservationScheduleCard key={row.id} row={row} onAssignRequest={openAssign} />
+              <ReservationScheduleCard key={row.id} row={row} onAssignRequest={openAssign} onDetailRequest={(id) => router.push(`/partner/reservations/${id}`)} />
             ))}
           </div>
         )}

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { ChevronRight } from 'lucide-react';
 import { useSession } from '@/lib/supabase/SessionProvider';
 import { useReservationRealtimeRefresh } from '@/lib/realtime/reservations';
@@ -74,10 +75,12 @@ function ReservationCard({
   row,
   hospital,
   onConfirmRequest,
+  onDetailRequest,
 }: {
   row: ReservationRow;
   hospital: HospitalRow | null;
   onConfirmRequest: (action: { id: string; status: ReservationRow['status'] }) => void;
+  onDetailRequest: (id: string) => void;
 }) {
   const status = getStatus(row);
   const customerName = row.user?.name ?? row.customer_name ?? '예약자 정보 없음';
@@ -87,7 +90,7 @@ function ReservationCard({
 
   return (
     <article className="partner-reservation-card">
-      <div className="partner-reservation-card-head">
+      <div className="partner-reservation-card-head" onClick={() => onDetailRequest(row.id)} style={{ cursor: 'pointer' }}>
         <strong className={`is-${status.tone}`}>{status.label}</strong>
         <span>
           {formatDate(row.reservation_at ?? row.visit_at)}
@@ -137,6 +140,7 @@ function ReservationCard({
 }
 
 export default function PartnerHomePage() {
+  const router = useRouter();
   const { authUser } = useSession();
   const showToast = useStore((s) => s.showToast);
   const [hospital, setHospital] = useState<HospitalRow | null>(null);
@@ -288,6 +292,7 @@ export default function PartnerHomePage() {
               row={row}
               hospital={hospital}
               onConfirmRequest={setPendingAction}
+              onDetailRequest={(id) => router.push(`/partner/reservations/${id}`)}
             />
           ))
         )}
