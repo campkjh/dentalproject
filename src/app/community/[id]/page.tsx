@@ -97,17 +97,20 @@ export default function PostDetailPage() {
     createClient().from('posts').update({ view_count: newCount }).eq('id', postId);
   }, [isRealPost, postId, post]);
 
-  /* ── 좋아요 초기 상태 로드 ── */
+  /* ── 좋아요 초기 상태 + 카운트 DB에서 직접 로드 ── */
   useEffect(() => {
-    if (!isRealPost || !hasSupabaseEnv() || !user) return;
+    if (!isRealPost || !hasSupabaseEnv()) return;
     const sb = createClient();
-    sb.from('post_likes').select('post_id').eq('post_id', postId).eq('user_id', user.id).maybeSingle()
-      .then(({ data }) => setLiked(!!data));
-  }, [isRealPost, postId, user]);
-
-  useEffect(() => {
-    setLikeCount(post?.likeCount ?? 0);
-  }, [post?.likeCount]);
+    // DB에서 최신 like_count 가져오기
+    sb.from('posts').select('like_count').eq('id', postId).single()
+      .then(({ data }) => { if (data) setLikeCount((data as any).like_count ?? 0); });
+    // 로그인 유저의 좋아요 여부 (auth.getUser로 실제 uid 사용)
+    sb.auth.getUser().then(({ data: { user: au } }) => {
+      if (!au) return;
+      sb.from('post_likes').select('post_id').eq('post_id', postId).eq('user_id', au.id).maybeSingle()
+        .then(({ data }) => setLiked(!!data));
+    });
+  }, [isRealPost, postId]);
 
   const postComments = dbComments ?? [];
   const topComments = postComments.filter((c) => !c.parentCommentId);
