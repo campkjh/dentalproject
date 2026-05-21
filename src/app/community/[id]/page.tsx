@@ -171,11 +171,17 @@ export default function PostDetailPage() {
     // 댓글 좋아요
     const commentIds = rows.map((c) => c.id);
     if (commentIds.length > 0) {
-      const { data: clikes } = await sb.from('comment_likes').select('comment_id, user_id').in('comment_id', commentIds);
+      // comment_likes는 RLS로 본인 것만 보임 → liked 여부 체크용으로만 사용
+      // count는 comments.like_count(트리거가 유지)로 읽음
+      let clikesData: { comment_id: string }[] | null = null;
+      if (user?.id) {
+        const { data } = await sb.from('comment_likes').select('comment_id').in('comment_id', commentIds).eq('user_id', user.id);
+        clikesData = data as { comment_id: string }[] | null;
+      }
+      const likedSet = new Set((clikesData ?? []).map((cl) => cl.comment_id));
       const likeMap: Record<string, { liked: boolean; count: number }> = {};
-      for (const id of commentIds) {
-        const cRows = (clikes ?? []).filter((cl: any) => cl.comment_id === id);
-        likeMap[id] = { liked: user?.id ? cRows.some((cl: any) => cl.user_id === user.id) : false, count: cRows.length };
+      for (const row of rows) {
+        likeMap[row.id] = { liked: likedSet.has(row.id), count: (row as any).like_count ?? 0 };
       }
       if (seq === fetchSeqRef.current) setCommentLikes(likeMap);
     }
@@ -221,14 +227,21 @@ export default function PostDetailPage() {
       .catch(() => {});
   }, [isRealPost, postId]);
 
-  /* ── 좋아요 초기 상태 서버 API로 로드 ── */
+  /* ── 좋아요 초기 상태 (클라이언트 Supabase로 로드) ── */
   useEffect(() => {
-    if (!isRealPost) return;
-    fetch(`/api/community/like?postId=${postId}`)
-      .then((r) => r.json())
-      .then(({ liked, count }) => { setLiked(liked); setLikeCount(count); })
+    if (!isRealPost || !hasSupabaseEnv()) return;
+    const sb = createClient();
+    const postPromise = Promise.resolve(sb.from('posts').select('like_count').eq('id', postId).single());
+    const likePromise = user?.id
+      ? Promise.resolve(sb.from('post_likes').select('user_id').eq('post_id', postId).eq('user_id', user.id).maybeSingle())
+      : Promise.resolve({ data: null } as { data: null });
+    Promise.all([postPromise, likePromise])
+      .then(([{ data: p }, { data: userLike }]) => {
+        if (p) setLikeCount((p as any).like_count ?? 0);
+        setLiked(!!userLike);
+      })
       .catch(() => {});
-  }, [isRealPost, postId]);
+  }, [isRealPost, postId, user?.id]);
 
   const postComments = dbComments ?? [];
   const topComments = postComments.filter((c) => !c.parentCommentId);
@@ -247,56 +260,54 @@ export default function PostDetailPage() {
 
   const isOwnPost = user?.id === post.authorId;
 
-  /* ── 좋아요 토글 (서버 API) ── */
+  /* ── 좋아요 토글 (클라이언트 Supabase 직접 사용) ── */
   const handleLike = async () => {
     if (!user?.id) { showToast('로그인이 필요합니다.'); return; }
-    if (!isRealPost) return;
-    setLiked((prev) => !prev);
-    setLikeCount((n) => liked ? Math.max(0, n - 1) : n + 1);
+    if (!isRealPost || !hasSupabaseEnv()) return;
+    const wasLiked = liked;
+    setLiked(!wasLiked);
+    setLikeCount((n) => wasLiked ? Math.max(0, n - 1) : n + 1);
     try {
-      const res = await fetch('/api/community/like', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ postId }),
-      });
-      if (!res.ok) {
-        setLiked((prev) => !prev);
-        setLikeCount((n) => liked ? n + 1 : Math.max(0, n - 1));
-        const { error } = await res.json().catch(() => ({}));
-        showToast(error || '좋아요 오류: ' + res.status);
-        return;
+      const sb = createClient();
+      if (wasLiked) {
+        const { error } = await sb.from('post_likes').delete().eq('post_id', postId).eq('user_id', user.id);
+        if (error) throw error;
+      } else {
+        const { error } = await sb.from('post_likes').insert({ post_id: postId, user_id: user.id });
+        if (error) throw error;
       }
-      const { liked: newLiked, count } = await res.json();
-      setLiked(newLiked);
-      setLikeCount(count);
+      // 트리거가 업데이트한 정확한 카운트 읽기
+      const { data: p } = await sb.from('posts').select('like_count').eq('id', postId).single();
+      if (p) setLikeCount((p as any).like_count ?? 0);
     } catch (e: any) {
-      setLiked((prev) => !prev);
-      setLikeCount((n) => liked ? n + 1 : Math.max(0, n - 1));
-      showToast('네트워크 오류: ' + (e?.message || '알 수 없음'));
+      setLiked(wasLiked);
+      setLikeCount((n) => wasLiked ? n + 1 : Math.max(0, n - 1));
+      showToast(e?.message || '좋아요 처리 중 오류가 발생했습니다.');
     }
   };
 
-  /* ── 댓글 좋아요 (서버 API) ── */
+  /* ── 댓글 좋아요 (클라이언트 Supabase 직접 사용) ── */
   const handleCommentLike = useCallback(async (commentId: string) => {
     if (!user?.id) { showToast('로그인이 필요합니다.'); return; }
-    if (!isRealPost) return;
+    if (!isRealPost || !hasSupabaseEnv()) return;
     const current = commentLikes[commentId] ?? { liked: false, count: 0 };
     setCommentLikes((prev) => ({
       ...prev,
       [commentId]: { liked: !current.liked, count: current.liked ? Math.max(0, current.count - 1) : current.count + 1 },
     }));
-    const res = await fetch('/api/community/comment-like', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ commentId }),
-    });
-    if (!res.ok) {
+    try {
+      const sb = createClient();
+      if (current.liked) {
+        const { error } = await sb.from('comment_likes').delete().eq('comment_id', commentId).eq('user_id', user.id);
+        if (error) throw error;
+      } else {
+        const { error } = await sb.from('comment_likes').insert({ comment_id: commentId, user_id: user.id });
+        if (error) throw error;
+      }
+    } catch (e: any) {
       setCommentLikes((prev) => ({ ...prev, [commentId]: current }));
-      showToast('댓글 좋아요 오류');
-      return;
+      showToast(e?.message || '댓글 좋아요 오류');
     }
-    const { liked: newLiked, count } = await res.json();
-    setCommentLikes((prev) => ({ ...prev, [commentId]: { liked: newLiked, count } }));
   }, [user?.id, isRealPost, commentLikes, showToast]);
 
   /* ── 댓글 등록 ── */
