@@ -165,7 +165,7 @@ export default function PartnerCommunityPage() {
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
                   <Avatar
                     seed={post.isAnonymous ? (post.anonymousId || post.id) : (post.authorId || post.id)}
-                    role={post.boardType === 'dental' ? 'doctor' : 'user'}
+                    role={post.authorTitle ? 'doctor' : 'user'}
                     size={34}
                   />
                   <div style={{ flex: 1, minWidth: 0 }}>
@@ -199,8 +199,8 @@ export default function PartnerCommunityPage() {
         )}
       </div>
 
-      {/* 글쓰기 플로팅 버튼 */}
-      <div style={{ position: 'fixed', bottom: 80, right: 16, zIndex: 30 }}>
+      {/* 글쓰기 플로팅 버튼 — 네비바(82px) + 12px gap */}
+      <div style={{ position: 'fixed', bottom: 94, right: 16, zIndex: 30 }}>
         <button
           onClick={() => router.push(writeHref)}
           style={{ display: 'flex', alignItems: 'center', gap: 8, height: 44, padding: '0 16px 0 4px', borderRadius: 9999, background: '#9255FD', boxShadow: '0 6px 20px rgba(146,85,253,0.4)', border: 'none', cursor: 'pointer' }}

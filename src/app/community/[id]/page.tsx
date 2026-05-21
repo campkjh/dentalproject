@@ -125,7 +125,39 @@ export default function PostDetailPage() {
   const [commentLikes, setCommentLikes] = useState<Record<string, { liked: boolean; count: number }>>({});
   const fetchSeqRef = useRef(0);
 
-  const post = posts.find((p) => p.id === postId);
+  // store에 없으면 DB에서 직접 로드
+  const [dbPost, setDbPost] = useState<typeof posts[0] | null>(null);
+  const [loadingPost, setLoadingPost] = useState(false);
+  const storePost = posts.find((p) => p.id === postId);
+
+  useEffect(() => {
+    if (!isRealPost || storePost || !hasSupabaseEnv()) return;
+    setLoadingPost(true);
+    Promise.resolve(
+      createClient()
+        .from('posts')
+        .select('id, board_type, title, content, author_id, view_count, like_count, comment_count, tags, has_answer, answer_count, is_anonymous, anonymous_id, image_url, created_at, author:profiles!posts_author_id_fkey(name, is_doctor)')
+        .eq('id', postId)
+        .single()
+    ).then(({ data: p }) => {
+      if (!p) return;
+      setDbPost({
+        id: p.id, boardType: (p as any).board_type, title: p.title, content: p.content,
+        authorName: (p as any).author?.name ?? '익명',
+        authorTitle: (p as any).author?.is_doctor ? '의사' : undefined,
+        authorId: p.author_id, isAnonymous: (p as any).is_anonymous,
+        anonymousId: (p as any).anonymous_id ?? undefined,
+        date: (p as any).created_at ? new Date((p as any).created_at).toLocaleDateString('ko-KR') : '',
+        viewCount: (p as any).view_count ?? 0, likeCount: (p as any).like_count ?? 0,
+        commentCount: (p as any).comment_count ?? 0,
+        imageUrl: (p as any).image_url ?? undefined,
+        tags: (p as any).tags ?? [], hasAnswer: (p as any).has_answer ?? false,
+        answerCount: (p as any).answer_count ?? 0,
+      } as typeof posts[0]);
+    }).finally(() => setLoadingPost(false));
+  }, [isRealPost, storePost, postId]);
+
+  const post = storePost ?? dbPost;
 
   /* ── 댓글 로드 (의사 병원/전문의 포함) ── */
   const fetchComments = useCallback(async (seq: number) => {
@@ -252,7 +284,7 @@ export default function PostDetailPage() {
       <div className="min-h-screen bg-white">
         <TopBar title="" />
         <div className="flex items-center justify-center py-20">
-          <p className="text-gray-400">게시글을 찾을 수 없습니다.</p>
+          <p className="text-gray-400">{loadingPost ? '불러오는 중...' : '게시글을 찾을 수 없습니다.'}</p>
         </div>
       </div>
     );
@@ -352,10 +384,7 @@ export default function PostDetailPage() {
       showToast('댓글이 등록되었습니다.');
       setDbComments((prev) => prev ? prev.map((c) => c.id === tempId ? { ...c, id: data.id } : c) : prev);
 
-      // 의사가 답변한 경우 has_answer 업데이트
-      if (user.isDoctor && post.boardType === 'question') {
-        await sb.from('posts').update({ has_answer: true }).eq('id', postId);
-      }
+      // has_answer/answer_count 는 DB 트리거(trg_doctor_answer_count)가 자동 처리
 
       const seq = ++fetchSeqRef.current;
       fetchComments(seq);
@@ -447,7 +476,7 @@ export default function PostDetailPage() {
 
       <div className="px-2.5 pb-4">
         <div className="flex items-center gap-3 mb-4">
-          <Avatar role={post.boardType === 'dental' ? 'doctor' : 'user'} seed={post.anonymousId || post.authorId || post.id} size={40} className="flex-shrink-0" />
+          <Avatar role={post.authorTitle ? 'doctor' : 'user'} seed={post.anonymousId || post.authorId || post.id} size={40} className="flex-shrink-0" />
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
               <span className="text-sm font-bold text-gray-900">

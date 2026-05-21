@@ -40,6 +40,7 @@ function CommunityWritePage() {
   const [content, setContent] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
+  const [uploadingThumb, setUploadingThumb] = useState(false);
 
   const currentBoardLabel = boardOptions.find((b) => b.value === boardType)?.label || '질문게시판';
 
@@ -62,14 +63,29 @@ function CommunityWritePage() {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/*';
-    input.onchange = (e) => {
+    input.onchange = async (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          setThumbnailPreview(reader.result as string);
-        };
-        reader.readAsDataURL(file);
+      if (!file) return;
+      if (!file.type.startsWith('image/')) { showToast('이미지 파일만 선택해주세요.'); return; }
+      if (file.size > 10 * 1024 * 1024) { showToast('10MB 이하 이미지만 등록할 수 있습니다.'); return; }
+
+      const previewUrl = URL.createObjectURL(file);
+      setThumbnailPreview(previewUrl);
+      setUploadingThumb(true);
+      try {
+        const fd = new FormData();
+        fd.append('file', file);
+        fd.append('folder', 'community-posts');
+        const res = await fetch('/api/upload', { method: 'POST', body: fd });
+        if (!res.ok) throw new Error('업로드 실패');
+        const blob = await res.json();
+        setThumbnailPreview(blob.url as string);
+      } catch {
+        showToast('이미지 업로드에 실패했습니다.');
+        setThumbnailPreview(null);
+      } finally {
+        URL.revokeObjectURL(previewUrl);
+        setUploadingThumb(false);
       }
     };
     input.click();
@@ -98,7 +114,7 @@ function CommunityWritePage() {
       showToast('내용을 입력해주세요.');
       return;
     }
-    if (submitting) return;
+    if (submitting || uploadingThumb) return;
 
     setSubmitting(true);
     const isFreeBoard = boardType === 'free';
@@ -137,7 +153,7 @@ function CommunityWritePage() {
     router.push('/community');
   };
 
-  const isFormValid = title.trim().length > 0 && content.trim().length > 0;
+  const isFormValid = title.trim().length > 0 && content.trim().length > 0 && !uploadingThumb;
 
   return (
     <div className="min-h-screen bg-white">
@@ -231,13 +247,20 @@ function CommunityWritePage() {
                   alt="썸네일 미리보기"
                   className="w-full h-full object-cover"
                 />
+                {uploadingThumb && (
+                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center rounded-xl">
+                    <p className="text-white text-[10px] font-medium">업로드 중...</p>
+                  </div>
+                )}
               </div>
-              <button
-                onClick={() => setThumbnailPreview(null)}
-                className="absolute -top-2 -right-2 w-5 h-5 bg-gray-800 text-white rounded-full flex items-center justify-center"
-              >
-                <X size={12} />
-              </button>
+              {!uploadingThumb && (
+                <button
+                  onClick={() => setThumbnailPreview(null)}
+                  className="absolute -top-2 -right-2 w-5 h-5 bg-gray-800 text-white rounded-full flex items-center justify-center"
+                >
+                  <X size={12} />
+                </button>
+              )}
             </div>
           ) : (
             <button

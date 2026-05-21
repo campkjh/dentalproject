@@ -21,7 +21,10 @@ function EditPostPage() {
   const router = useRouter();
   const { posts, showToast } = useStore();
   const postId = params.id as string;
-  const post = posts.find((p) => p.id === postId);
+  const storePost = posts.find((p) => p.id === postId);
+  const [dbPost, setDbPost] = useState<typeof posts[0] | null>(null);
+  const [loadingPost, setLoadingPost] = useState(false);
+  const post = storePost ?? dbPost;
 
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -29,6 +32,30 @@ function EditPostPage() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (storePost || !hasSupabaseEnv()) return;
+    const isReal = /^[0-9a-f]{8}-/.test(postId);
+    if (!isReal) return;
+    setLoadingPost(true);
+    Promise.resolve(
+      createClient()
+        .from('posts')
+        .select('id, board_type, title, content, author_id, tags, image_url, is_anonymous, anonymous_id, created_at')
+        .eq('id', postId)
+        .single()
+    ).then(({ data: p }) => {
+      if (!p) return;
+      setDbPost({
+        id: p.id, boardType: (p as any).board_type, title: p.title, content: p.content,
+        authorId: p.author_id, authorName: '', isAnonymous: (p as any).is_anonymous,
+        anonymousId: (p as any).anonymous_id ?? undefined,
+        date: '', viewCount: 0, likeCount: 0, commentCount: 0,
+        imageUrl: (p as any).image_url ?? undefined,
+        tags: (p as any).tags ?? [], hasAnswer: false, answerCount: 0,
+      } as typeof posts[0]);
+    }).finally(() => setLoadingPost(false));
+  }, [storePost, postId]);
 
   useEffect(() => {
     if (post) {
@@ -102,7 +129,7 @@ function EditPostPage() {
       <div className="min-h-screen bg-white">
         <TopBar title="글수정" />
         <div className="flex items-center justify-center py-20">
-          <p className="text-gray-400">게시글을 찾을 수 없습니다.</p>
+          <p className="text-gray-400">{loadingPost ? '불러오는 중...' : '게시글을 찾을 수 없습니다.'}</p>
         </div>
       </div>
     );

@@ -301,7 +301,7 @@ export default function CommunityPage() {
                             : '0 1px 2px rgba(16,24,40,0.03)',
                         }}
                       >
-                        <Avatar seed={post.authorId || post.id} size={40} className="flex-shrink-0" />
+                        <Avatar role={post.authorTitle ? 'doctor' : 'user'} seed={post.authorId || post.id} size={40} className="flex-shrink-0" />
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-semibold text-gray-900 truncate">
                             {post.title}
@@ -462,7 +462,7 @@ export default function CommunityPage() {
                   {post.boardType === 'question' && (
                     <>
                       <div className="flex items-start gap-3">
-                        <Avatar seed={post.authorId || post.id} size={36} className="flex-shrink-0" />
+                        <Avatar role={post.authorTitle ? 'doctor' : 'user'} seed={post.authorId || post.id} size={36} className="flex-shrink-0" />
                         <div className="flex-1 min-w-0">
                           <p className="text-[13px] text-gray-500 mb-1">
                             {post.authorName || '익명'}

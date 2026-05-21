@@ -63,6 +63,9 @@ export default function PartnerLayout({ children }: { children: React.ReactNode 
 
   if (!isDoctor) return null;
 
+  // 커뮤니티 게시글 상세에서는 네비바 숨김 (댓글 입력창 가림 방지)
+  const hideNav = pathname.startsWith('/partner/community/') && pathname !== '/partner/community';
+
   const isActive = (item: (typeof BOTTOM_NAV)[number]) => {
     if (item.href === '/partner') return pathname === '/partner';
     return item.match.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
@@ -70,28 +73,30 @@ export default function PartnerLayout({ children }: { children: React.ReactNode 
 
   return (
     <div className="partner-shell-bg">
-      <div className="partner-phone-shell">
-        <main className="partner-app-main">
+      <div className="partner-phone-shell" style={hideNav ? { overflowX: 'visible' } : undefined}>
+        <main className="partner-app-main" style={hideNav ? { paddingBottom: 0 } : undefined}>
           <div key={pathname} className="partner-page">
             {children}
           </div>
         </main>
-        <nav className="partner-bottom-nav" aria-label="파트너 하단 내비게이션">
-          {BOTTOM_NAV.map((item) => {
-            const active = isActive(item);
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={active ? 'is-active' : undefined}
-                aria-current={active ? 'page' : undefined}
-              >
-                <PartnerNavIcon asset={item.asset} />
-                <span>{item.label}</span>
-              </Link>
-            );
-          })}
-        </nav>
+        {!hideNav && (
+          <nav className="partner-bottom-nav" aria-label="파트너 하단 내비게이션">
+            {BOTTOM_NAV.map((item) => {
+              const active = isActive(item);
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={active ? 'is-active' : undefined}
+                  aria-current={active ? 'page' : undefined}
+                >
+                  <PartnerNavIcon asset={item.asset} />
+                  <span>{item.label}</span>
+                </Link>
+              );
+            })}
+          </nav>
+        )}
       </div>
     </div>
   );
