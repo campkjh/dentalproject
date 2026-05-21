@@ -93,10 +93,10 @@ export default function PartnerCommunityPage() {
               onClick={() => { setActiveBoard(tab); setActiveCategory('전체'); }}
               style={{
                 flex: 1, padding: '14px 0', fontSize: 14, fontWeight: 600,
+                borderTop: 'none', borderLeft: 'none', borderRight: 'none',
                 borderBottom: activeBoard === tab ? '2px solid #3182F6' : '2px solid transparent',
                 color: activeBoard === tab ? '#3182F6' : '#9CA3AF',
-                background: 'none', border: 'none', borderBottom: activeBoard === tab ? '2px solid #3182F6' : '2px solid transparent',
-                cursor: 'pointer',
+                background: 'none', cursor: 'pointer',
               }}
             >
               {tab}
