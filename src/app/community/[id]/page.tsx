@@ -115,19 +115,17 @@ export default function PostDetailPage() {
     createClient().rpc('increment_view_count', { p_post_id: postId });
   }, [isRealPost, postId, post]);
 
-  /* ── 좋아요 초기 상태 + 카운트 DB에서 직접 로드 ── */
+  /* ── 좋아요 초기 상태 + 카운트 서버 API로 로드 ── */
   useEffect(() => {
-    if (!isRealPost || !hasSupabaseEnv()) return;
-    const sb = createClient();
-    // post_likes 테이블에서 직접 카운트 (posts.like_count RLS 우회)
-    sb.from('post_likes').select('*', { count: 'exact', head: true }).eq('post_id', postId)
-      .then(({ count }) => { if (count !== null) setLikeCount(count); });
-    // 스토어 user.id = auth.uid() 보장 (SessionProvider에서 검증됨)
-    if (user?.id) {
-      sb.from('post_likes').select('post_id').eq('post_id', postId).eq('user_id', user.id).maybeSingle()
-        .then(({ data }) => setLiked(!!data));
-    }
-  }, [isRealPost, postId, user?.id]);
+    if (!isRealPost) return;
+    fetch(`/api/community/like?postId=${postId}`)
+      .then((r) => r.json())
+      .then(({ liked, count }) => {
+        setLiked(liked);
+        setLikeCount(count);
+      })
+      .catch(() => {});
+  }, [isRealPost, postId]);
 
   const postComments = dbComments ?? [];
   const topComments = postComments.filter((c) => !c.parentCommentId);
@@ -148,35 +146,31 @@ export default function PostDetailPage() {
 
   /* ── 좋아요 토글 ── */
   const handleLike = async () => {
-    showToast(`①user.id: ${user?.id?.slice(0,8) ?? 'null'}`);
-    if (!user?.id) return;
-    if (!isRealPost) { showToast('비UUID 게시글'); return; }
-    if (!hasSupabaseEnv()) { showToast('env 없음'); return; }
+    if (!user?.id) { showToast('로그인이 필요합니다.'); return; }
+    if (!isRealPost) return;
 
-    const sb = createClient();
-    const { data: { user: authUser } } = await sb.auth.getUser();
-    showToast(`②auth: ${authUser?.id?.slice(0,8) ?? 'null'}`);
-    if (!authUser) return;
-
+    // 낙관적 업데이트
     setLiked((prev) => !prev);
     setLikeCount((n) => liked ? Math.max(0, n - 1) : n + 1);
 
-    const { data, error } = await sb.rpc('toggle_post_like', {
-      p_post_id: postId,
-      p_user_id: authUser.id,
+    const res = await fetch('/api/community/like', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ postId }),
     });
 
-    if (error) {
+    if (!res.ok) {
+      // 롤백
       setLiked((prev) => !prev);
       setLikeCount((n) => liked ? n + 1 : Math.max(0, n - 1));
-      showToast(`③err: ${error.message}`);
-    } else if (data) {
-      setLiked(data.liked);
-      setLikeCount(data.count);
-      showToast(`③ok: liked=${data.liked} count=${data.count}`);
-    } else {
-      showToast('③응답없음');
+      const { error } = await res.json().catch(() => ({}));
+      showToast(error || '좋아요 오류가 발생했습니다.');
+      return;
     }
+
+    const { liked: newLiked, count } = await res.json();
+    setLiked(newLiked);
+    setLikeCount(count);
   };
 
   /* ── 댓글 등록 ── */
