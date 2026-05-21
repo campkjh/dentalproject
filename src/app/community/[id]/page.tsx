@@ -148,23 +148,27 @@ export default function PostDetailPage() {
 
   /* ── 좋아요 토글 ── */
   const handleLike = async () => {
-    if (!user?.id) { showToast('로그인이 필요합니다.'); return; }
-    if (!isRealPost || !hasSupabaseEnv()) return;
-    // 낙관적 업데이트
+    if (!user?.id) { showToast('로그인 필요'); return; }
+    if (!isRealPost) { showToast('실제 게시글 아님'); return; }
+    if (!hasSupabaseEnv()) { showToast('Supabase 환경변수 없음'); return; }
+
     setLiked((prev) => !prev);
     setLikeCount((n) => liked ? Math.max(0, n - 1) : n + 1);
+
     const { data, error } = await createClient().rpc('toggle_post_like', {
       p_post_id: postId,
       p_user_id: user.id,
     });
+
     if (error) {
-      // 롤백
       setLiked((prev) => !prev);
       setLikeCount((n) => liked ? n + 1 : Math.max(0, n - 1));
-      showToast('오류: ' + error.message);
+      showToast('좋아요 오류: ' + error.message);
     } else if (data) {
       setLiked(data.liked);
       setLikeCount(data.count);
+    } else {
+      showToast('응답 없음');
     }
   };
 
