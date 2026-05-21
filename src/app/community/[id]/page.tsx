@@ -111,9 +111,8 @@ export default function PostDetailPage() {
   useEffect(() => {
     if (!isRealPost || !hasSupabaseEnv() || viewedRef.current || !post) return;
     viewedRef.current = true;
-    const newCount = (post.viewCount ?? 0) + 1;
-    setViewCount(newCount);
-    createClient().from('posts').update({ view_count: newCount }).eq('id', postId);
+    setViewCount((post.viewCount ?? 0) + 1);
+    createClient().rpc('increment_view_count', { p_post_id: postId });
   }, [isRealPost, postId, post]);
 
   /* ── 좋아요 초기 상태 + 카운트 DB에서 직접 로드 ── */
@@ -151,26 +150,21 @@ export default function PostDetailPage() {
   const handleLike = async () => {
     if (!user?.id) { showToast('로그인이 필요합니다.'); return; }
     if (!isRealPost || !hasSupabaseEnv()) return;
-    const sb = createClient();
-
-    if (liked) {
-      setLiked(false);
-      setLikeCount((n) => Math.max(0, n - 1));
-      const { error } = await sb.from('post_likes').delete().eq('post_id', postId).eq('user_id', user.id);
-      if (error) {
-        setLiked(true);
-        setLikeCount((n) => n + 1);
-        showToast('오류: ' + error.message);
-      }
-    } else {
-      setLiked(true);
-      setLikeCount((n) => n + 1);
-      const { error } = await sb.from('post_likes').insert({ post_id: postId, user_id: user.id });
-      if (error) {
-        setLiked(false);
-        setLikeCount((n) => Math.max(0, n - 1));
-        showToast('오류: ' + error.message);
-      }
+    // 낙관적 업데이트
+    setLiked((prev) => !prev);
+    setLikeCount((n) => liked ? Math.max(0, n - 1) : n + 1);
+    const { data, error } = await createClient().rpc('toggle_post_like', {
+      p_post_id: postId,
+      p_user_id: user.id,
+    });
+    if (error) {
+      // 롤백
+      setLiked((prev) => !prev);
+      setLikeCount((n) => liked ? n + 1 : Math.max(0, n - 1));
+      showToast('오류: ' + error.message);
+    } else if (data) {
+      setLiked(data.liked);
+      setLikeCount(data.count);
     }
   };
 
@@ -236,17 +230,20 @@ export default function PostDetailPage() {
     if (!user?.id) { showToast('로그인이 필요합니다.'); return; }
     if (!isRealPost || !hasSupabaseEnv()) return;
     const current = commentLikes[commentId] ?? { liked: false, count: 0 };
-    const sb = createClient();
-    if (current.liked) {
-      setCommentLikes((prev) => ({ ...prev, [commentId]: { liked: false, count: Math.max(0, current.count - 1) } }));
-      await sb.from('comment_likes').delete().eq('comment_id', commentId).eq('user_id', user.id);
-    } else {
-      setCommentLikes((prev) => ({ ...prev, [commentId]: { liked: true, count: current.count + 1 } }));
-      const { error } = await sb.from('comment_likes').insert({ comment_id: commentId, user_id: user.id });
-      if (error) {
-        setCommentLikes((prev) => ({ ...prev, [commentId]: current }));
-        showToast('오류: ' + error.message);
-      }
+    // 낙관적 업데이트
+    setCommentLikes((prev) => ({
+      ...prev,
+      [commentId]: { liked: !current.liked, count: current.liked ? Math.max(0, current.count - 1) : current.count + 1 },
+    }));
+    const { data, error } = await createClient().rpc('toggle_comment_like', {
+      p_comment_id: commentId,
+      p_user_id: user.id,
+    });
+    if (error) {
+      setCommentLikes((prev) => ({ ...prev, [commentId]: current }));
+      showToast('오류: ' + error.message);
+    } else if (data) {
+      setCommentLikes((prev) => ({ ...prev, [commentId]: { liked: data.liked, count: data.count } }));
     }
   };
 
