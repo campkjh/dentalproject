@@ -152,13 +152,29 @@ export default function PostDetailPage() {
     if (!isRealPost) { showToast('실제 게시글 아님'); return; }
     if (!hasSupabaseEnv()) { showToast('Supabase 환경변수 없음'); return; }
 
+    const sb = createClient();
+    const { data: { user: authUser } } = await sb.auth.getUser();
+
+    // 콘솔에서 확인용
+    console.log('[like] store user.id:', user.id);
+    console.log('[like] auth user.id:', authUser?.id);
+    console.log('[like] postId:', postId);
+    console.log('[like] isRealPost:', isRealPost);
+
+    if (!authUser) {
+      showToast('세션 만료: 다시 로그인해주세요');
+      return;
+    }
+
     setLiked((prev) => !prev);
     setLikeCount((n) => liked ? Math.max(0, n - 1) : n + 1);
 
-    const { data, error } = await createClient().rpc('toggle_post_like', {
+    const { data, error } = await sb.rpc('toggle_post_like', {
       p_post_id: postId,
-      p_user_id: user.id,
+      p_user_id: authUser.id,
     });
+
+    console.log('[like] RPC result:', { data, error });
 
     if (error) {
       setLiked((prev) => !prev);
