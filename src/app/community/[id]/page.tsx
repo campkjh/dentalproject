@@ -247,21 +247,27 @@ export default function PostDetailPage() {
     if (!isRealPost) return;
     setLiked((prev) => !prev);
     setLikeCount((n) => liked ? Math.max(0, n - 1) : n + 1);
-    const res = await fetch('/api/community/like', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ postId }),
-    });
-    if (!res.ok) {
+    try {
+      const res = await fetch('/api/community/like', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ postId }),
+      });
+      if (!res.ok) {
+        setLiked((prev) => !prev);
+        setLikeCount((n) => liked ? n + 1 : Math.max(0, n - 1));
+        const { error } = await res.json().catch(() => ({}));
+        showToast(error || '좋아요 오류: ' + res.status);
+        return;
+      }
+      const { liked: newLiked, count } = await res.json();
+      setLiked(newLiked);
+      setLikeCount(count);
+    } catch (e: any) {
       setLiked((prev) => !prev);
       setLikeCount((n) => liked ? n + 1 : Math.max(0, n - 1));
-      const { error } = await res.json().catch(() => ({}));
-      showToast(error || '좋아요 오류가 발생했습니다.');
-      return;
+      showToast('네트워크 오류: ' + (e?.message || '알 수 없음'));
     }
-    const { liked: newLiked, count } = await res.json();
-    setLiked(newLiked);
-    setLikeCount(count);
   };
 
   /* ── 댓글 좋아요 (서버 API) ── */
