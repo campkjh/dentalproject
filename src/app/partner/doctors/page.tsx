@@ -72,12 +72,13 @@ export default function PartnerDoctorsPage() {
   }, [authUser]);
 
   const handleFire = async (doctor: Doctor) => {
-    if (!hospitalId || !hasSupabaseEnv()) return;
     if (!window.confirm(`${doctor.name}을(를) 해고하시겠습니까?`)) return;
-    const sb = createClient();
-    // is_active 컬럼이 없으면 삭제로 처리
-    const { error } = await sb.from('doctors').delete().eq('id', doctor.id);
-    if (error) { showToast('해고 처리에 실패했습니다.'); return; }
+    const res = await fetch(`/api/my-hospital/doctors/${doctor.id}`, { method: 'DELETE' });
+    if (!res.ok) {
+      const j = await res.json().catch(() => ({}));
+      showToast((j as any).error || '해고 처리에 실패했습니다.');
+      return;
+    }
     showToast(`${doctor.name}이(가) 해고 처리되었습니다.`);
     await reload();
   };

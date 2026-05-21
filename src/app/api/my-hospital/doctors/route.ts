@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,7 +18,8 @@ export async function POST(req: NextRequest) {
     .maybeSingle();
   if (!hospital) return NextResponse.json({ error: '병원을 찾을 수 없습니다.' }, { status: 404 });
 
-  const { data, error } = await sb
+  const admin = await createAdminClient();
+  const { data, error } = await admin
     .from('doctors')
     .insert({
       hospital_id: hospital.id,

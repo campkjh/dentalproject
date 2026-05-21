@@ -76,8 +76,10 @@ export default function PartnerLayout({ children }: { children: React.ReactNode 
 
   if (!isDoctor) return null;
 
-  // 커뮤니티 게시글 상세에서는 네비바 숨김 (댓글 입력창 가림 방지)
-  const hideNav = pathname.startsWith('/partner/community/') && pathname !== '/partner/community';
+  // 3단계 이상 경로 (상세/수정 페이지)에서는 네비바 숨김
+  // 예: /partner/doctors/[id], /partner/community/[id], /partner/reservations/[id]
+  const pathDepth = pathname.split('/').filter(Boolean).length;
+  const hideNav = pathDepth >= 3;
 
   const isActive = (item: (typeof BOTTOM_NAV)[number]) => {
     if (item.href === '/partner') return pathname === '/partner';

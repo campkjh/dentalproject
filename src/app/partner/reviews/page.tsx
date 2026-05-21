@@ -80,17 +80,30 @@ export default function PartnerReviewsPage() {
 
   const toggleHide = async (id: string) => {
     const willHide = !hiddenIds.has(id);
+    // 낙관적 업데이트
     if (willHide) {
       setHiddenIds((prev) => new Set([...prev, id]));
     } else {
       setHiddenIds((prev) => { const next = new Set(prev); next.delete(id); return next; });
     }
+    // 서버 API (admin client: reviews RLS는 author만 수정 가능)
+    const res = await fetch('/api/my-hospital/reviews', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reviewId: id, hidden: willHide }),
+    });
+    if (!res.ok) {
+      // 롤백
+      if (willHide) {
+        setHiddenIds((prev) => { const next = new Set(prev); next.delete(id); return next; });
+      } else {
+        setHiddenIds((prev) => new Set([...prev, id]));
+      }
+      const j = await res.json().catch(() => ({}));
+      showToast((j as any).error || '저장에 실패했습니다.');
+      return;
+    }
     showToast(willHide ? '리뷰를 숨겼습니다.' : '리뷰를 다시 표시합니다.');
-
-    if (!hasSupabaseEnv()) return;
-    const sb = createClient();
-    const { error } = await sb.from('reviews').update({ hidden: willHide }).eq('id', id);
-    if (error) showToast('저장 실패: ' + error.message);
   };
 
   const handleAddReview = async () => {

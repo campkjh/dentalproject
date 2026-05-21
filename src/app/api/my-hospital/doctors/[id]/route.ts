@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse, type NextRequest } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,7 +32,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (body.bio !== undefined) patch.bio = body.bio;
   if (body.profileImage !== undefined) patch.profile_image = body.profileImage;
 
-  const { error } = await sb.from('doctors').update(patch).eq('id', id);
+  const admin = await createAdminClient();
+  const { error } = await admin.from('doctors').update(patch).eq('id', id);
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
   return NextResponse.json({ ok: true });
 }
@@ -54,7 +55,8 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
     return NextResponse.json({ error: '대표원장은 삭제할 수 없습니다.' }, { status: 400 });
   }
 
-  const { error } = await sb.from('doctors').delete().eq('id', id);
+  const admin = await createAdminClient();
+  const { error } = await admin.from('doctors').delete().eq('id', id);
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
   return NextResponse.json({ ok: true });
 }

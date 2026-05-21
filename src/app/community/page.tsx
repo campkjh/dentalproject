@@ -451,7 +451,24 @@ function CommunityPageInner() {
               : ''
           }`}
         >
-          {sortedPosts.length === 0 ? (
+          {dbPosts === null ? (
+            /* 로딩 스켈레톤 */
+            <div>
+              {[0,1,2,3,4,5].map((i) => (
+                <div key={i} className="px-2.5 py-4 border-b border-gray-100 animate-pulse">
+                  <div className="flex items-start gap-3">
+                    <div className="w-9 h-9 rounded-full bg-gray-100 flex-shrink-0" />
+                    <div className="flex-1">
+                      <div className="h-3 w-24 bg-gray-100 rounded mb-2" />
+                      <div className="h-4 w-full bg-gray-100 rounded mb-1.5" />
+                      <div className="h-3 w-4/5 bg-gray-100 rounded mb-1.5" />
+                      <div className="h-3 w-2/5 bg-gray-100 rounded" />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : sortedPosts.length === 0 ? (
             <div className="flex items-center justify-center py-20">
               <p className="text-sm text-gray-400">게시글이 없습니다.</p>
             </div>

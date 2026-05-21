@@ -163,7 +163,21 @@ export default function PartnerCommunityPage() {
 
       {/* 게시글 목록 */}
       <div ref={scrollContainerRef} style={{ flex: 1, overflowY: 'auto', paddingBottom: 80 }}>
-        {sortedPosts.length === 0 ? (
+        {dbPosts === null ? (
+          /* 로딩 스켈레톤 */
+          <div>
+            {[0,1,2,3,4].map((i) => (
+              <div key={i} style={{ padding: '16px 12px', borderBottom: '1px solid #F9FAFB', display: 'flex', gap: 10 }}>
+                <div style={{ width: 34, height: 34, borderRadius: '50%', background: '#F3F4F6', flexShrink: 0 }} className="animate-pulse" />
+                <div style={{ flex: 1 }}>
+                  <div style={{ height: 11, width: '28%', background: '#F3F4F6', borderRadius: 6, marginBottom: 8 }} className="animate-pulse" />
+                  <div style={{ height: 14, width: '90%', background: '#F3F4F6', borderRadius: 6, marginBottom: 6 }} className="animate-pulse" />
+                  <div style={{ height: 12, width: '65%', background: '#F3F4F6', borderRadius: 6 }} className="animate-pulse" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : sortedPosts.length === 0 ? (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '60px 0' }}>
             <p style={{ fontSize: 14, color: '#9CA3AF' }}>게시글이 없습니다.</p>
           </div>

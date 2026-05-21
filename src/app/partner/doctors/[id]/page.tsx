@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useStore } from '@/store';
 import { createClient, hasSupabaseEnv } from '@/lib/supabase/client';
 import { ChevronLeft, Camera } from 'lucide-react';
+import { compressImage } from '@/lib/compressImage';
 import {
   PartnerButton,
   PartnerField,
@@ -70,8 +71,9 @@ export default function DoctorEditPage() {
     if (!file) return;
     setUploading(true);
     try {
+      const compressed = await compressImage(file);
       const fd = new FormData();
-      fd.append('file', file);
+      fd.append('file', compressed);
       fd.append('folder', 'doctor-profiles');
       const res = await fetch('/api/upload', { method: 'POST', body: fd });
       if (!res.ok) throw new Error('업로드 실패');
@@ -86,33 +88,34 @@ export default function DoctorEditPage() {
 
   const handleSave = async () => {
     if (!form.name.trim()) { showToast('이름을 입력해주세요.'); return; }
-    if (!hospitalId && !hasSupabaseEnv()) { showToast('병원 정보를 불러올 수 없습니다.'); return; }
     setSaving(true);
     try {
-      const sb = createClient();
+      const body = {
+        name: form.name,
+        title: form.title,
+        specialty: form.specialty || null,
+        bio: form.bio || null,
+        profileImage: form.profile_image || null,
+      };
+      let res: Response;
       if (isNew) {
-        const { error } = await sb.from('doctors').insert({
-          hospital_id: hospitalId,
-          name: form.name,
-          title: form.title,
-          specialty: form.specialty || null,
-          bio: form.bio || null,
-          profile_image: form.profile_image || null,
-          is_owner: false,
+        res = await fetch('/api/my-hospital/doctors', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
         });
-        if (error) throw error;
-        showToast('멤버가 추가되었습니다.');
       } else {
-        const { error } = await sb.from('doctors').update({
-          name: form.name,
-          title: form.title,
-          specialty: form.specialty || null,
-          bio: form.bio || null,
-          profile_image: form.profile_image || null,
-        }).eq('id', id);
-        if (error) throw error;
-        showToast('멤버 정보가 수정되었습니다.');
+        res = await fetch(`/api/my-hospital/doctors/${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
       }
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        throw new Error((j as any).error || '저장에 실패했습니다.');
+      }
+      showToast(isNew ? '멤버가 추가되었습니다.' : '멤버 정보가 수정되었습니다.');
       router.back();
     } catch (e: any) {
       showToast(e?.message || '저장에 실패했습니다.');
