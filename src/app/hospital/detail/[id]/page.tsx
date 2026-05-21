@@ -14,6 +14,7 @@ import {
 import TopBar from '@/components/common/TopBar';
 import ProductCard from '@/components/common/ProductCard';
 import { useStore } from '@/store';
+import { createClient, hasSupabaseEnv } from '@/lib/supabase/client';
 
 const TABS = ['병원소개', '의료진', '진료시간', '리뷰'];
 
@@ -23,6 +24,8 @@ export default function HospitalDetailPage() {
   const { hospitals, products, reviews } = useStore();
   const [activeTab, setActiveTab] = useState('병원소개');
   const [tabDir, setTabDir] = useState<'left' | 'right'>('right');
+  const [coverIdx, setCoverIdx] = useState(0);
+  const [liveCoverImages, setLiveCoverImages] = useState<string[] | null>(null);
   const prevIdxRef = useRef(0);
   const tabBtnRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const [tabIndicator, setTabIndicator] = useState({ left: 0, width: 0 });
@@ -71,6 +74,24 @@ export default function HospitalDetailPage() {
     return (hospitalReviews.reduce((sum, r) => sum + r.rating, 0) / hospitalReviews.length).toFixed(1);
   }, [hospitalReviews, hospital]);
 
+  // DB에서 최신 cover_images/image_url 실시간 로드
+  useEffect(() => {
+    if (!hospital?.id || !hasSupabaseEnv()) return;
+    Promise.resolve(
+      createClient()
+        .from('hospitals')
+        .select('cover_images, image_url')
+        .eq('slug', hospital.id)
+        .maybeSingle()
+    ).then(({ data }) => {
+      if (!data) return;
+      const imgs = (data.cover_images ?? []).filter(
+        (u: string) => u && !u.startsWith('data:')
+      );
+      setLiveCoverImages(imgs.length > 0 ? imgs : null);
+    }).catch(() => {});
+  }, [hospital?.id]);
+
   if (!hospital) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
@@ -79,17 +100,53 @@ export default function HospitalDetailPage() {
     );
   }
 
+  const coverImages = liveCoverImages ?? hospital.coverImages?.filter(
+    (u) => u && !u.startsWith('data:')
+  ) ?? [];
+
   return (
     <div className="pb-[86px] lg:pb-0 bg-white min-h-screen">
       <div className="lg:max-w-5xl lg:mx-auto">
         {/* TopBar */}
         <TopBar title={hospital.name} showBack />
 
-        {/* Cover Image Area */}
-        <div className="relative aspect-[16/9] lg:aspect-[3/1] bg-gradient-to-br from-[#3182F6] to-blue-400 flex items-end lg:rounded-2xl lg:mt-2 overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-          <div className="relative z-10 p-4 lg:p-6">
-            <span className="inline-block text-xs bg-white/20 backdrop-blur-sm text-white rounded-full px-3 py-1 mb-2">
+        {/* Cover Image Slider */}
+        <div className="relative aspect-[16/9] lg:aspect-[3/1] lg:rounded-2xl lg:mt-2 overflow-hidden"
+          style={{ background: 'linear-gradient(135deg, #3182F6, #60A5FA)' }}>
+          {coverImages.length > 0 ? (
+            <img
+              key={coverImages[coverIdx % coverImages.length]}
+              src={coverImages[coverIdx % coverImages.length]}
+              alt=""
+              className="absolute inset-0 w-full h-full object-cover"
+              onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+            />
+          ) : null}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+
+          {/* 슬라이드 화살표 */}
+          {coverImages.length > 1 && (
+            <>
+              <button type="button" aria-label="이전"
+                onClick={() => setCoverIdx((p) => (p - 1 + coverImages.length) % coverImages.length)}
+                className="absolute left-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full flex items-center justify-center"
+                style={{ background: 'rgba(0,0,0,0.35)', border: 'none', color: '#fff', fontSize: 18, cursor: 'pointer' }}>‹</button>
+              <button type="button" aria-label="다음"
+                onClick={() => setCoverIdx((p) => (p + 1) % coverImages.length)}
+                className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full flex items-center justify-center"
+                style={{ background: 'rgba(0,0,0,0.35)', border: 'none', color: '#fff', fontSize: 18, cursor: 'pointer' }}>›</button>
+              <div className="absolute bottom-10 left-0 right-0 flex justify-center gap-1.5">
+                {coverImages.map((_, i) => (
+                  <button key={i} type="button" onClick={() => setCoverIdx(i)}
+                    style={{ width: 6, height: 6, borderRadius: '50%', border: 'none', cursor: 'pointer', padding: 0,
+                      background: i === coverIdx % coverImages.length ? '#fff' : 'rgba(255,255,255,0.45)' }} />
+                ))}
+              </div>
+            </>
+          )}
+
+          <div className="relative z-10 p-4 lg:p-6 flex flex-col justify-end h-full">
+            <span className="inline-block text-xs bg-white/20 backdrop-blur-sm text-white rounded-full px-3 py-1 mb-2 w-fit">
               {hospital.category}
             </span>
             <h1 className="text-xl lg:text-2xl font-bold text-white">{hospital.name}</h1>
