@@ -41,6 +41,7 @@ export default function PostDetailPage() {
   const [showWarning, setShowWarning] = useState(true);
   const [dbComments, setDbComments] = useState<CommentItem[] | null>(null);
   const [replyTo, setReplyTo] = useState<{ id: string; authorName: string } | null>(null);
+  const [commentLikes, setCommentLikes] = useState<Record<string, { liked: boolean; count: number }>>({});
   const fetchSeqRef = useRef(0);
   const viewedRef = useRef(false);
 
@@ -66,6 +67,24 @@ export default function PostDetailPage() {
       }
     }
     if (seq !== fetchSeqRef.current) return;
+
+    // 댓글 좋아요 수 로드
+    const commentIds = rows.map((c) => c.id);
+    if (commentIds.length > 0) {
+      const { data: clikes } = await sb
+        .from('comment_likes')
+        .select('comment_id, user_id')
+        .in('comment_id', commentIds);
+      const likeMap: Record<string, { liked: boolean; count: number }> = {};
+      for (const id of commentIds) {
+        const rows2 = (clikes ?? []).filter((cl: any) => cl.comment_id === id);
+        likeMap[id] = {
+          liked: user?.id ? rows2.some((cl: any) => cl.user_id === user.id) : false,
+          count: rows2.length,
+        };
+      }
+      if (seq === fetchSeqRef.current) setCommentLikes(likeMap);
+    }
 
     setDbComments(rows.map((c) => ({
       id: c.id,
@@ -212,6 +231,25 @@ export default function PostDetailPage() {
     }
   };
 
+  /* ── 댓글 좋아요 토글 ── */
+  const handleCommentLike = async (commentId: string) => {
+    if (!user?.id) { showToast('로그인이 필요합니다.'); return; }
+    if (!isRealPost || !hasSupabaseEnv()) return;
+    const current = commentLikes[commentId] ?? { liked: false, count: 0 };
+    const sb = createClient();
+    if (current.liked) {
+      setCommentLikes((prev) => ({ ...prev, [commentId]: { liked: false, count: Math.max(0, current.count - 1) } }));
+      await sb.from('comment_likes').delete().eq('comment_id', commentId).eq('user_id', user.id);
+    } else {
+      setCommentLikes((prev) => ({ ...prev, [commentId]: { liked: true, count: current.count + 1 } }));
+      const { error } = await sb.from('comment_likes').insert({ comment_id: commentId, user_id: user.id });
+      if (error) {
+        setCommentLikes((prev) => ({ ...prev, [commentId]: current }));
+        showToast('오류: ' + error.message);
+      }
+    }
+  };
+
   /* ── 댓글 삭제 ── */
   const handleDeleteComment = async (commentId: string) => {
     showModal('댓글 삭제', '이 댓글을 삭제하시겠습니까?', async () => {
@@ -280,8 +318,12 @@ export default function PostDetailPage() {
       <p className="text-sm text-gray-700 leading-relaxed ml-[38px] whitespace-pre-line">{comment.content}</p>
 
       <div className="flex items-center gap-4 ml-[38px] mt-2">
-        <button className="flex items-center gap-1 text-[10px] text-gray-400">
-          <Heart size={12} />{comment.likeCount}
+        <button
+          onClick={() => handleCommentLike(comment.id)}
+          className={`flex items-center gap-1 text-[10px] ${commentLikes[comment.id]?.liked ? 'text-red-400' : 'text-gray-400'}`}
+        >
+          <Heart size={12} className={commentLikes[comment.id]?.liked ? 'fill-red-400' : ''} />
+          {commentLikes[comment.id]?.count ?? comment.likeCount}
         </button>
         {!isReply && (
           <button
