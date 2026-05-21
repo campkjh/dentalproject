@@ -45,6 +45,17 @@ export async function POST(req: NextRequest) {
     const { data: { user } } = await sb.auth.getUser();
     if (!user) return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 });
 
+    // profiles 행 없으면 자동 생성 (FK 위반 방지)
+    const { data: profile } = await sb.from('profiles').select('id').eq('id', user.id).maybeSingle();
+    if (!profile) {
+      await sb.from('profiles').upsert({
+        id: user.id,
+        name: user.user_metadata?.name ?? '',
+        login_type: 'email',
+        country: '대한민국',
+      }, { onConflict: 'id', ignoreDuplicates: true });
+    }
+
     // 기존 좋아요 확인
     const { data: existing } = await sb
       .from('post_likes').select('user_id')

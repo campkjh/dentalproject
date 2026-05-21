@@ -22,6 +22,17 @@ export async function POST(req: NextRequest) {
     const { data: { user } } = await sb.auth.getUser();
     if (!user) return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 });
 
+    // profiles 행 없으면 자동 생성
+    const { data: profile } = await sb.from('profiles').select('id').eq('id', user.id).maybeSingle();
+    if (!profile) {
+      await sb.from('profiles').upsert({
+        id: user.id,
+        name: user.user_metadata?.name ?? '',
+        login_type: 'email',
+        country: '대한민국',
+      }, { onConflict: 'id', ignoreDuplicates: true });
+    }
+
     const { data: existing } = await sb
       .from('comment_likes').select('user_id')
       .eq('comment_id', commentId).eq('user_id', user.id).maybeSingle();
