@@ -266,17 +266,19 @@ export default function PostDetailPage() {
     }).then((r) => r.json()).then(({ count }) => { if (count) setViewCount(count); }).catch(() => {});
   }, [isRealPost, postId]);
 
-  /* ── 좋아요 초기 상태: like_count는 post 객체에서 즉시 사용, 유저 여부만 조회 ── */
+  /* ── 좋아요 초기 상태 (서버 API → admin client) ── */
   useEffect(() => {
     if (!post) return;
-    // post가 로드되면 즉시 likeCount 반영 (별도 API 호출 불필요)
     setLikeCount(post.likeCount ?? 0);
-    if (!isRealPost || !hasSupabaseEnv() || !user?.id) return;
-    Promise.resolve(
-      createClient().from('post_likes').select('user_id')
-        .eq('post_id', postId).eq('user_id', user.id).maybeSingle()
-    ).then(({ data }) => setLiked(!!data)).catch(() => {});
-  }, [post, isRealPost, postId, user?.id]);
+    if (!isRealPost) return;
+    fetch(`/api/community/like?postId=${postId}`)
+      .then((r) => r.json())
+      .then(({ liked: l, count: c }) => {
+        setLiked(!!l);
+        if (c !== undefined) setLikeCount(c);
+      })
+      .catch(() => {});
+  }, [post, isRealPost, postId]);
 
   const postComments = dbComments ?? [];
   const topComments = postComments.filter((c) => !c.parentCommentId);
@@ -295,25 +297,26 @@ export default function PostDetailPage() {
 
   const isOwnPost = user?.id === post.authorId;
 
-  /* ── 좋아요 토글 (클라이언트 Supabase 직접 사용) ── */
+  /* ── 좋아요 토글 (서버 API → admin client, RLS 우회) ── */
   const handleLike = async () => {
     if (!user?.id) { showToast('로그인이 필요합니다.'); return; }
-    if (!isRealPost || !hasSupabaseEnv()) return;
+    if (!isRealPost) return;
     const wasLiked = liked;
     setLiked(!wasLiked);
     setLikeCount((n) => wasLiked ? Math.max(0, n - 1) : n + 1);
     try {
-      const sb = createClient();
-      if (wasLiked) {
-        const { error } = await sb.from('post_likes').delete().eq('post_id', postId).eq('user_id', user.id);
-        if (error) throw error;
-      } else {
-        const { error } = await sb.from('post_likes').insert({ post_id: postId, user_id: user.id });
-        if (error) throw error;
+      const res = await fetch('/api/community/like', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ postId }),
+      });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        throw new Error((j as any).error || `오류 ${res.status}`);
       }
-      // 트리거가 업데이트한 정확한 카운트 읽기
-      const { data: p } = await sb.from('posts').select('like_count').eq('id', postId).single();
-      if (p) setLikeCount((p as any).like_count ?? 0);
+      const { liked: newLiked, count } = await res.json();
+      setLiked(newLiked);
+      setLikeCount(count);
     } catch (e: any) {
       setLiked(wasLiked);
       setLikeCount((n) => wasLiked ? n + 1 : Math.max(0, n - 1));
