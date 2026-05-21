@@ -132,15 +132,19 @@ export default function PostDetailPage() {
     if (!isRealPost || !hasSupabaseEnv()) return;
     const sb = createClient();
     if (liked) {
-      await sb.from('post_likes').delete().eq('post_id', postId).eq('user_id', user.id);
-      await sb.from('posts').update({ like_count: Math.max(0, likeCount - 1) }).eq('id', postId);
       setLiked(false);
       setLikeCount((n) => Math.max(0, n - 1));
+      // DB 트리거(trg_sync_post_like_count)가 like_count 자동 감소
+      await sb.from('post_likes').delete().eq('post_id', postId).eq('user_id', user.id);
     } else {
-      await sb.from('post_likes').insert({ post_id: postId, user_id: user.id });
-      await sb.from('posts').update({ like_count: likeCount + 1 }).eq('id', postId);
       setLiked(true);
       setLikeCount((n) => n + 1);
+      // DB 트리거(trg_sync_post_like_count)가 like_count 자동 증가
+      const { error } = await sb.from('post_likes').insert({ post_id: postId, user_id: user.id });
+      if (error) {
+        setLiked(false);
+        setLikeCount((n) => Math.max(0, n - 1));
+      }
     }
   };
 
