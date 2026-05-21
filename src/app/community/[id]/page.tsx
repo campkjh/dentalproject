@@ -101,16 +101,15 @@ export default function PostDetailPage() {
   useEffect(() => {
     if (!isRealPost || !hasSupabaseEnv()) return;
     const sb = createClient();
-    // DB에서 최신 like_count 가져오기
-    sb.from('posts').select('like_count').eq('id', postId).single()
-      .then(({ data }) => { if (data) setLikeCount((data as any).like_count ?? 0); });
-    // 로그인 유저의 좋아요 여부 (auth.getUser로 실제 uid 사용)
-    sb.auth.getUser().then(({ data: { user: au } }) => {
-      if (!au) return;
-      sb.from('post_likes').select('post_id').eq('post_id', postId).eq('user_id', au.id).maybeSingle()
+    // post_likes 테이블에서 직접 카운트 (posts.like_count RLS 우회)
+    sb.from('post_likes').select('*', { count: 'exact', head: true }).eq('post_id', postId)
+      .then(({ count }) => { if (count !== null) setLikeCount(count); });
+    // 스토어 user.id = auth.uid() 보장 (SessionProvider에서 검증됨)
+    if (user?.id) {
+      sb.from('post_likes').select('post_id').eq('post_id', postId).eq('user_id', user.id).maybeSingle()
         .then(({ data }) => setLiked(!!data));
-    });
-  }, [isRealPost, postId]);
+    }
+  }, [isRealPost, postId, user?.id]);
 
   const postComments = dbComments ?? [];
   const topComments = postComments.filter((c) => !c.parentCommentId);
@@ -131,20 +130,14 @@ export default function PostDetailPage() {
 
   /* ── 좋아요 토글 ── */
   const handleLike = async () => {
-    if (!user) { showToast('로그인이 필요합니다.'); return; }
-    if (!isRealPost || !hasSupabaseEnv()) {
-      showToast('좋아요를 사용할 수 없습니다.');
-      return;
-    }
+    if (!user?.id) { showToast('로그인이 필요합니다.'); return; }
+    if (!isRealPost || !hasSupabaseEnv()) return;
     const sb = createClient();
-    // 실제 auth uid 확인
-    const { data: { user: authUser } } = await sb.auth.getUser();
-    if (!authUser) { showToast('로그인 후 이용해주세요.'); return; }
 
     if (liked) {
       setLiked(false);
       setLikeCount((n) => Math.max(0, n - 1));
-      const { error } = await sb.from('post_likes').delete().eq('post_id', postId).eq('user_id', authUser.id);
+      const { error } = await sb.from('post_likes').delete().eq('post_id', postId).eq('user_id', user.id);
       if (error) {
         setLiked(true);
         setLikeCount((n) => n + 1);
@@ -153,7 +146,7 @@ export default function PostDetailPage() {
     } else {
       setLiked(true);
       setLikeCount((n) => n + 1);
-      const { error } = await sb.from('post_likes').insert({ post_id: postId, user_id: authUser.id });
+      const { error } = await sb.from('post_likes').insert({ post_id: postId, user_id: user.id });
       if (error) {
         setLiked(false);
         setLikeCount((n) => Math.max(0, n - 1));
