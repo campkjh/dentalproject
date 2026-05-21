@@ -7,6 +7,7 @@ import TopBar from '@/components/common/TopBar';
 import { useStore } from '@/store';
 import { useSession } from '@/lib/supabase/SessionProvider';
 import { communityTags, questionTags } from '@/lib/mock-data';
+import { compressImage } from '@/lib/compressImage';
 
 const boardOptions = [
   { label: '질문게시판', value: 'question' as const },
@@ -67,14 +68,15 @@ function CommunityWritePage() {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (!file) return;
       if (!file.type.startsWith('image/')) { showToast('이미지 파일만 선택해주세요.'); return; }
-      if (file.size > 10 * 1024 * 1024) { showToast('10MB 이하 이미지만 등록할 수 있습니다.'); return; }
+      if (file.size > 50 * 1024 * 1024) { showToast('50MB 이하 이미지만 등록할 수 있습니다.'); return; }
 
       const previewUrl = URL.createObjectURL(file);
       setThumbnailPreview(previewUrl);
       setUploadingThumb(true);
       try {
+        const compressed = await compressImage(file);
         const fd = new FormData();
-        fd.append('file', file);
+        fd.append('file', compressed);
         fd.append('folder', 'community-posts');
         const res = await fetch('/api/upload', { method: 'POST', body: fd });
         if (!res.ok) throw new Error('업로드 실패');

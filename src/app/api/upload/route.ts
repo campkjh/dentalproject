@@ -10,7 +10,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'No file provided' }, { status: 400 });
   }
 
-  const blob = await put(`${folder}/${file.name}`, file, {
+  const ext = file.name.split('.').pop()?.toLowerCase() ?? 'jpg';
+  const uniqueName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+  const blob = await put(`${folder}/${uniqueName}`, file, {
     access: 'public',
   });
 
