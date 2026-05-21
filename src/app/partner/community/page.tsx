@@ -35,24 +35,33 @@ export default function PartnerCommunityPage() {
   const [categoryIndicator, setCategoryIndicator] = useState({ left: 0, width: 0 });
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  // DB에서 직접 게시글 로드
+  // DB에서 직접 게시글 로드 + store 동기화
   useEffect(() => {
     if (!hasSupabaseEnv()) return;
     const sb = createClient();
     sb.from('posts')
-      .select('id, board_type, title, content, author_id, view_count, like_count, comment_count, tags, has_answer, answer_count, is_anonymous, anonymous_id, created_at, author:profiles!posts_author_id_fkey(name, is_doctor)')
+      .select('id, board_type, title, content, author_id, view_count, like_count, comment_count, tags, has_answer, answer_count, is_anonymous, anonymous_id, image_url, created_at, author:profiles!posts_author_id_fkey(name, is_doctor)')
       .order('created_at', { ascending: false })
       .limit(100)
       .then(({ data }) => {
         if (!data) return;
-        setDbPosts(data.map((p: any) => ({
+        const mapped = data.map((p: any) => ({
           id: p.id, boardType: p.board_type, title: p.title, content: p.content,
           authorName: p.author?.name ?? '익명', authorTitle: p.author?.is_doctor ? '의사' : undefined,
           authorId: p.author_id, isAnonymous: p.is_anonymous, anonymousId: p.anonymous_id ?? undefined,
           date: p.created_at ? new Date(p.created_at).toLocaleDateString('ko-KR') : '',
           viewCount: p.view_count ?? 0, likeCount: p.like_count ?? 0, commentCount: p.comment_count ?? 0,
+          imageUrl: p.image_url && !p.image_url.startsWith('data:') ? p.image_url : undefined,
           tags: p.tags ?? [], hasAnswer: p.has_answer ?? false, answerCount: p.answer_count ?? 0,
-        })));
+        }));
+        setDbPosts(mapped);
+        // 상세 페이지 store miss 방지
+        useStore.setState((s: any) => ({
+          posts: [
+            ...mapped,
+            ...s.posts.filter((p: any) => !/^[0-9a-f]{8}-/.test(p.id)),
+          ],
+        }));
       });
   }, []);
 

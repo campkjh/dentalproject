@@ -54,12 +54,12 @@ function CommunityPageInner() {
     if (!hasSupabaseEnv()) return;
     const sb = createClient();
     sb.from('posts')
-      .select('id, board_type, title, content, author_id, view_count, like_count, comment_count, tags, has_answer, answer_count, is_anonymous, anonymous_id, created_at, author:profiles!posts_author_id_fkey(name, is_doctor)')
+      .select('id, board_type, title, content, author_id, view_count, like_count, comment_count, tags, has_answer, answer_count, is_anonymous, anonymous_id, image_url, created_at, author:profiles!posts_author_id_fkey(name, is_doctor)')
       .order('created_at', { ascending: false })
       .limit(100)
       .then(({ data }) => {
         if (!data) return;
-        setDbPosts(data.map((p: any) => ({
+        const mapped = data.map((p: any) => ({
           id: p.id,
           boardType: p.board_type,
           title: p.title,
@@ -73,10 +73,21 @@ function CommunityPageInner() {
           viewCount: p.view_count ?? 0,
           likeCount: p.like_count ?? 0,
           commentCount: p.comment_count ?? 0,
+          // base64 URL은 제외 (용량 이슈)
+          imageUrl: p.image_url && !p.image_url.startsWith('data:') ? p.image_url : undefined,
           tags: p.tags ?? [],
           hasAnswer: p.has_answer ?? false,
           answerCount: p.answer_count ?? 0,
-        })));
+        }));
+        setDbPosts(mapped);
+        // ★ 상세 페이지에서 store miss 없도록 Zustand store도 동기화
+        useStore.setState((s: any) => ({
+          posts: [
+            ...mapped,
+            // store에만 있는 임시 포스트(UUID 아닌 것) 유지
+            ...s.posts.filter((p: any) => !/^[0-9a-f]{8}-/.test(p.id)),
+          ],
+        }));
       });
   }, []);
 

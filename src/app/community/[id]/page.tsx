@@ -250,34 +250,33 @@ export default function PostDetailPage() {
     fetchComments(seq);
   }, [fetchComments]);
 
-  /* ── 조회수: 방문할 때마다 API로 증가 + 최신 카운트 표시 ── */
+  /* ── 조회수: post 로드 시 즉시 표시 + 백그라운드로 서버 증가 ── */
+  useEffect(() => {
+    if (!post) return;
+    setViewCount(post.viewCount ?? 0);
+  }, [post]);
+
   useEffect(() => {
     if (!isRealPost) return;
+    // 백그라운드로 조회수 증가 (표시에 영향 없음)
     fetch('/api/community/view', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ postId }),
-    })
-      .then((r) => r.json())
-      .then(({ count }) => { if (count) setViewCount(count); })
-      .catch(() => {});
+    }).then((r) => r.json()).then(({ count }) => { if (count) setViewCount(count); }).catch(() => {});
   }, [isRealPost, postId]);
 
-  /* ── 좋아요 초기 상태 (클라이언트 Supabase로 로드) ── */
+  /* ── 좋아요 초기 상태: like_count는 post 객체에서 즉시 사용, 유저 여부만 조회 ── */
   useEffect(() => {
-    if (!isRealPost || !hasSupabaseEnv()) return;
-    const sb = createClient();
-    const postPromise = Promise.resolve(sb.from('posts').select('like_count').eq('id', postId).single());
-    const likePromise = user?.id
-      ? Promise.resolve(sb.from('post_likes').select('user_id').eq('post_id', postId).eq('user_id', user.id).maybeSingle())
-      : Promise.resolve({ data: null } as { data: null });
-    Promise.all([postPromise, likePromise])
-      .then(([{ data: p }, { data: userLike }]) => {
-        if (p) setLikeCount((p as any).like_count ?? 0);
-        setLiked(!!userLike);
-      })
-      .catch(() => {});
-  }, [isRealPost, postId, user?.id]);
+    if (!post) return;
+    // post가 로드되면 즉시 likeCount 반영 (별도 API 호출 불필요)
+    setLikeCount(post.likeCount ?? 0);
+    if (!isRealPost || !hasSupabaseEnv() || !user?.id) return;
+    Promise.resolve(
+      createClient().from('post_likes').select('user_id')
+        .eq('post_id', postId).eq('user_id', user.id).maybeSingle()
+    ).then(({ data }) => setLiked(!!data)).catch(() => {});
+  }, [post, isRealPost, postId, user?.id]);
 
   const postComments = dbComments ?? [];
   const topComments = postComments.filter((c) => !c.parentCommentId);
@@ -507,7 +506,7 @@ export default function PostDetailPage() {
         <h1 className="text-lg font-bold text-gray-900 mb-3">{post.title}</h1>
         <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">{post.content}</p>
 
-        {post.imageUrl && (
+        {post.imageUrl && !post.imageUrl.startsWith('data:') && (
           <div className="mt-4 rounded-xl overflow-hidden">
             <img src={post.imageUrl} alt="" className="w-full object-cover rounded-xl" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
           </div>
