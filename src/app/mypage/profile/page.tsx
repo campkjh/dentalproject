@@ -54,10 +54,20 @@ export default function ProfilePage() {
   }
 
   const handleWithdraw = () => {
-    showModal('회원탈퇴', '정말 탈퇴하시겠습니까? 모든 데이터가 삭제됩니다.', () => {
-      logout();
+    showModal('회원탈퇴', '정말 탈퇴하시겠습니까? 모든 데이터가 영구 삭제됩니다.', async () => {
       hideModal();
-      router.push('/');
+      try {
+        const res = await fetch('/api/auth/withdraw', { method: 'DELETE' });
+        if (!res.ok) {
+          const { error } = await res.json().catch(() => ({}));
+          showToast(error || '탈퇴 처리 중 오류가 발생했습니다.');
+          return;
+        }
+        logout();
+        router.push('/');
+      } catch {
+        showToast('네트워크 오류가 발생했습니다.');
+      }
     });
   };
 
