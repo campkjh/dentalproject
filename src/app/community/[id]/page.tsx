@@ -208,12 +208,18 @@ export default function PostDetailPage() {
     fetchComments(seq);
   }, [fetchComments]);
 
-  /* ── 조회수: 방문할 때마다 증가 ── */
+  /* ── 조회수: 방문할 때마다 API로 증가 + 최신 카운트 표시 ── */
   useEffect(() => {
-    if (!isRealPost || !hasSupabaseEnv() || !post) return;
-    setViewCount((post.viewCount ?? 0) + 1);
-    createClient().rpc('increment_view_count', { p_post_id: postId });
-  }, [isRealPost, postId]); // post 의존성 제거로 매방문 증가
+    if (!isRealPost) return;
+    fetch('/api/community/view', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ postId }),
+    })
+      .then((r) => r.json())
+      .then(({ count }) => { if (count) setViewCount(count); })
+      .catch(() => {});
+  }, [isRealPost, postId]);
 
   /* ── 좋아요 초기 상태 서버 API로 로드 ── */
   useEffect(() => {
