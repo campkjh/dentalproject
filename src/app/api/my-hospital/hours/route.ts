@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse, type NextRequest } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,7 +34,9 @@ export async function PUT(req: NextRequest) {
     is_closed: !!h.is_closed,
   }));
 
-  const { error } = await sb
+  // operating_hours 테이블에 RLS 쓰기 정책 없음 → admin client로 upsert
+  const admin = await createAdminClient();
+  const { error } = await admin
     .from('operating_hours')
     .upsert(rows, { onConflict: 'hospital_id,day' });
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });

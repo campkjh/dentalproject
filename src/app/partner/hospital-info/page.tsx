@@ -271,16 +271,21 @@ export default function PartnerHospitalInfoPage() {
     setHoursDraft((prev) => prev.map((r) => r.day === day ? { ...r, [field]: value } : r));
   };
 
-  const backBtn = (
-    <button
-      className="partner-edit-back"
-      type="button"
-      onClick={goOverview}
-      aria-label="뒤로"
-      style={{ width: 24, height: 24, padding: 0 }}
-    >
-      <img src="/partner-template/chevron-left.svg" alt="" style={{ width: 24, height: 24 }} />
-    </button>
+  /* 수정 화면 공통 헤더 — 뒤로 버튼 + 타이틀 */
+  const EditHeader = ({ title }: { title: string }) => (
+    <div style={{
+      display: 'flex', alignItems: 'center', height: 56, padding: '0 4px',
+      background: '#fff', borderBottom: '1px solid #F3F4F6',
+      position: 'sticky', top: 0, zIndex: 10, flexShrink: 0,
+    }}>
+      <button type="button" onClick={goOverview} aria-label="뒤로"
+        style={{ width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer' }}>
+        <img src="/partner-template/chevron-left.svg" alt="" style={{ width: 24, height: 24 }} />
+      </button>
+      <span style={{ flex: 1, textAlign: 'center', fontSize: 17, fontWeight: 700, color: '#2B313D', marginRight: 44 }}>
+        {title}
+      </span>
+    </div>
   );
 
   if (loading) return <div className="partner-loading">불러오는 중...</div>;
@@ -304,11 +309,11 @@ export default function PartnerHospitalInfoPage() {
   /* ── 대문사진 수정 화면 ── */
   if (mode === 'cover') {
     return (
-      <div className="partner-mobile-screen partner-edit-screen cover">
+      <div className="partner-mobile-screen partner-edit-screen cover" style={{ display: 'flex', flexDirection: 'column' }}>
         <input
           ref={coverInputRef}
           type="file"
-          accept="image/png,image/jpeg,image/jpg,image/avif,image/webp"
+          accept="image/*"
           className="partner-hidden-file"
           onChange={(e) => {
             const f = e.currentTarget.files?.[0];
@@ -316,8 +321,8 @@ export default function PartnerHospitalInfoPage() {
             if (f) void handleCoverUpload(f);
           }}
         />
-        {backBtn}
-        <section className="partner-edit-content">
+        <EditHeader title="대문사진" />
+        <section className="partner-edit-content" style={{ paddingTop: 20 }}>
           <div className="partner-edit-title">
             <h1>대문사진</h1>
             <p>슬라이드 배너용 사진을 최대 5장까지 등록할 수 있습니다.<br />jpg, png, avif 50MB 이하 (자동 압축)</p>
@@ -373,9 +378,9 @@ export default function PartnerHospitalInfoPage() {
   /* ── 운영시간 수정 화면 ── */
   if (mode === 'hours') {
     return (
-      <div className="partner-mobile-screen partner-edit-screen with-save">
-        {backBtn}
-        <section className="partner-edit-content compact">
+      <div className="partner-mobile-screen partner-edit-screen with-save" style={{ display: 'flex', flexDirection: 'column' }}>
+        <EditHeader title="운영일 및 시간" />
+        <section className="partner-edit-content compact" style={{ paddingTop: 20 }}>
           <div className="partner-edit-title small-gap">
             <h1>운영일 및 시간</h1>
             <p>운영시간 미기입 시 휴무일로 간주됩니다.</p>
@@ -419,10 +424,9 @@ export default function PartnerHospitalInfoPage() {
   /* ── 위치 수정 화면 ── */
   if (mode === 'location') {
     return (
-      <div className="partner-mobile-screen partner-edit-screen with-save">
-        {backBtn}
-        <section className="partner-edit-content compact" style={{ gap: 16 }}>
-          <div className="partner-edit-title"><h1>병원위치 수정</h1></div>
+      <div className="partner-mobile-screen partner-edit-screen with-save" style={{ display: 'flex', flexDirection: 'column' }}>
+        <EditHeader title="병원위치 수정" />
+        <section className="partner-edit-content compact" style={{ gap: 16, paddingTop: 20 }}>
           {addressDraft && (
             <iframe
               title="지도"
@@ -462,10 +466,10 @@ export default function PartnerHospitalInfoPage() {
   /* ── 병원소개 수정 화면 ── */
   if (mode === 'intro') {
     return (
-      <div className="partner-mobile-screen partner-edit-screen with-save">
-        {backBtn}
-        <section className="partner-edit-content compact">
-          <div className="partner-edit-title"><h1>병원소개</h1></div>
+      <div className="partner-mobile-screen partner-edit-screen with-save" style={{ display: 'flex', flexDirection: 'column' }}>
+        <EditHeader title="병원소개" />
+        <section className="partner-edit-content compact" style={{ paddingTop: 20 }}>
+
           <p className="partner-intro-count">{introDraft.length}/<span>220</span></p>
           <textarea
             className="partner-intro-textarea"

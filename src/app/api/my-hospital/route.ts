@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse, type NextRequest } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -52,12 +52,18 @@ export async function GET() {
 
 export async function PATCH(req: NextRequest) {
   const body = await req.json();
+
+  // 1) 유저 인증
   const sb = await createClient();
-  const {
-    data: { user },
-  } = await sb.auth.getUser();
+  const { data: { user } } = await sb.auth.getUser();
   if (!user) return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 });
 
+  // 2) 소유 병원 확인 (anon client: SELECT 가능)
+  const { data: hospital } = await sb
+    .from('hospitals').select('id').eq('owner_id', user.id).maybeSingle();
+  if (!hospital) return NextResponse.json({ error: '병원을 찾을 수 없습니다.' }, { status: 404 });
+
+  // 3) admin client로 업데이트 (RLS 우회 — 소유 확인은 위에서 완료)
   const patch: Record<string, any> = {};
   if (typeof body.name === 'string') patch.name = body.name;
   if (typeof body.phone === 'string') patch.phone = body.phone;
@@ -69,7 +75,10 @@ export async function PATCH(req: NextRequest) {
   if (Array.isArray(body.tags)) patch.tags = body.tags;
   if (Array.isArray(body.coverImages)) patch.cover_images = body.coverImages;
 
-  const { error } = await sb.from('hospitals').update(patch).eq('owner_id', user.id);
+  if (Object.keys(patch).length === 0) return NextResponse.json({ ok: true });
+
+  const admin = await createAdminClient();
+  const { error } = await admin.from('hospitals').update(patch).eq('id', hospital.id);
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
   return NextResponse.json({ ok: true });
 }
