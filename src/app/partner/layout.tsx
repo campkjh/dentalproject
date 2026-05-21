@@ -10,7 +10,7 @@ const BOTTOM_NAV = [
   { label: '홈', href: '/partner', asset: 'home', match: ['/partner'] },
   { label: '병원관리', href: '/partner/hospital-info', asset: 'hospital', match: ['/partner/hospital-info', '/partner/doctors', '/partner/reviews', '/partner/contact'] },
   { label: '예약관리', href: '/partner/reservations', asset: 'reservation', match: ['/partner/reservations'] },
-  { label: '커뮤니티', href: '/partner/community', asset: 'community', match: ['/partner/community'] },
+  { label: '커뮤니티', href: '/partner/community', asset: 'community', match: ['/partner/community', '/partner/community/'] },
   { label: '마이홈', href: '/partner/account', asset: 'my', match: ['/partner/account'] },
 ] as const;
 

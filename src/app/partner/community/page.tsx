@@ -160,7 +160,7 @@ export default function PartnerCommunityPage() {
           </div>
         ) : (
           sortedPosts.map((post, index) => (
-            <Link key={post.id} href={`/community/${post.id}`} style={{ display: 'block', textDecoration: 'none' }}>
+            <Link key={post.id} href={`/partner/community/${post.id}`} style={{ display: 'block', textDecoration: 'none' }}>
               <div style={{ padding: '16px 12px', borderBottom: index < sortedPosts.length - 1 ? '1px solid #F3F4F6' : 'none', background: '#fff' }}>
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
                   <Avatar
