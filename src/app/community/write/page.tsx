@@ -6,7 +6,7 @@ import { Camera, ChevronDown, X } from 'lucide-react';
 import TopBar from '@/components/common/TopBar';
 import { useStore } from '@/store';
 import { useSession } from '@/lib/supabase/SessionProvider';
-import { communityTags } from '@/lib/mock-data';
+import { communityTags, questionTags } from '@/lib/mock-data';
 
 const boardOptions = [
   { label: '질문게시판', value: 'question' as const },
@@ -150,7 +150,10 @@ function CommunityWritePage() {
       return;
     }
     showToast('게시글이 등록되었습니다.');
-    router.push('/community');
+    // 태그가 있으면 해당 카테고리 탭으로 이동
+    const firstTag = selectedTags[0];
+    const categoryParam = firstTag ? `?category=${encodeURIComponent(firstTag)}` : '';
+    router.push(`/community${categoryParam}`);
   };
 
   const isFormValid = title.trim().length > 0 && content.trim().length > 0 && !uploadingThumb;
@@ -273,16 +276,16 @@ function CommunityWritePage() {
           )}
         </div>
 
-        {/* Hashtag Selection — 질문게시판에서는 숨김 */}
-        <div className={boardType === 'question' ? 'hidden' : ''}>
+        {/* 태그 선택 — 질문게시판: 환자용, 자유/과별: 의사용 */}
+        <div>
           <label className="text-sm font-bold text-gray-900 mb-2 block">
-            <span className="text-gray-400 font-normal">[선택]</span> 해시태그 등록
+            <span className="text-gray-400 font-normal">[선택]</span> {boardType === 'question' ? '진료 분야' : '해시태그 등록'}
             <span className="text-xs text-gray-400 font-normal ml-2">
               {selectedTags.length}/{MAX_TAGS}
             </span>
           </label>
           <div className="flex flex-wrap gap-2">
-            {communityTags.map((tag) => {
+            {(boardType === 'question' ? questionTags : communityTags).map((tag) => {
               const isSelected = selectedTags.includes(tag);
               return (
                 <button

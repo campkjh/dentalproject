@@ -126,12 +126,16 @@ export default function PostDetailPage() {
   const fetchSeqRef = useRef(0);
 
   // store에 없으면 DB에서 직접 로드
-  const [dbPost, setDbPost] = useState<typeof posts[0] | null>(null);
-  const [loadingPost, setLoadingPost] = useState(false);
   const storePost = posts.find((p) => p.id === postId);
+  const [dbPost, setDbPost] = useState<typeof posts[0] | null>(null);
+  // 첫 렌더에서 바로 "찾을 수 없습니다" 대신 "불러오는 중..." 표시
+  const [loadingPost, setLoadingPost] = useState(() => isRealPost && !posts.find((p) => p.id === postId));
 
   useEffect(() => {
-    if (!isRealPost || storePost || !hasSupabaseEnv()) return;
+    if (!isRealPost || storePost || !hasSupabaseEnv()) {
+      setLoadingPost(false);
+      return;
+    }
     setLoadingPost(true);
     Promise.resolve(
       createClient()
@@ -384,7 +388,14 @@ export default function PostDetailPage() {
       showToast('댓글이 등록되었습니다.');
       setDbComments((prev) => prev ? prev.map((c) => c.id === tempId ? { ...c, id: data.id } : c) : prev);
 
-      // has_answer/answer_count 는 DB 트리거(trg_doctor_answer_count)가 자동 처리
+      // 의사가 질문 게시판에 답변하면 answer_count 업데이트 (admin API)
+      if (user.isDoctor && post.boardType === 'question') {
+        fetch('/api/community/doctor-answered', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ postId }),
+        }).catch(() => {});
+      }
 
       const seq = ++fetchSeqRef.current;
       fetchComments(seq);
@@ -543,7 +554,26 @@ export default function PostDetailPage() {
 
       <div className="px-2.5 py-4">
         <h3 className="text-sm font-bold text-gray-900 mb-4">댓글 {postComments.length}</h3>
-        {topComments.length === 0 ? (
+        {dbComments === null ? (
+          /* 댓글 로딩 스켈레톤 */
+          <div className="space-y-4">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="pb-4 border-b border-gray-100 animate-pulse">
+                <div className="flex items-center gap-2.5 mb-2">
+                  <div className="w-8 h-8 rounded-full bg-gray-100 flex-shrink-0" />
+                  <div className="flex-1">
+                    <div className="h-3 bg-gray-100 rounded w-20 mb-1" />
+                    <div className="h-2 bg-gray-100 rounded w-14" />
+                  </div>
+                </div>
+                <div className="ml-[38px] space-y-1.5">
+                  <div className="h-3 bg-gray-100 rounded w-full" />
+                  <div className="h-3 bg-gray-100 rounded w-3/4" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : topComments.length === 0 ? (
           <div className="flex items-center justify-center py-10">
             <p className="text-sm text-gray-400">아직 댓글이 없습니다. 첫 댓글을 남겨보세요!</p>
           </div>

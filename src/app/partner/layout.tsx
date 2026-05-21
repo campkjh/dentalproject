@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useSession } from '@/lib/supabase/SessionProvider';
 import { useStore } from '@/store';
 
@@ -36,16 +36,29 @@ export default function PartnerLayout({ children }: { children: React.ReactNode 
   const isDoctor = useStore((s) => s.isDoctor);
   const isLoginPage = pathname === '/partner/login';
 
+  // sessionLoading이 막 false가 된 직후의 첫 렌더에서 Zustand isDoctor가
+  // 아직 갱신되지 않을 수 있어 300ms 유예 후 리다이렉트
+  const redirectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   useEffect(() => {
+    if (redirectTimerRef.current) clearTimeout(redirectTimerRef.current);
+
     if (isLoginPage || sessionLoading) return;
     if (!authUser) {
       router.replace('/partner/login');
       return;
     }
-    // isDoctor가 아직 확인 안 된 경우 리다이렉트하지 않음 (로딩 중 깜빡임 방지)
     if (authUser && isDoctor === false) {
-      router.replace('/');
+      redirectTimerRef.current = setTimeout(() => {
+        // 유예 후에도 여전히 non-doctor이면 리다이렉트
+        if (!useStore.getState().isDoctor) {
+          router.replace('/');
+        }
+      }, 400);
     }
+    return () => {
+      if (redirectTimerRef.current) clearTimeout(redirectTimerRef.current);
+    };
   }, [authUser, isDoctor, isLoginPage, router, sessionLoading]);
 
   if (isLoginPage) return <>{children}</>;

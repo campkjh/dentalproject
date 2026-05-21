@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useLayoutEffect, useCallback, Suspense } from 'react';
 import { createClient, hasSupabaseEnv } from '@/lib/supabase/client';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Avatar from '@/components/common/Avatar';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import {
@@ -28,7 +28,8 @@ const boardTypeMap: Record<string, Post['boardType']> = {
   '치과게시판': 'dental',
 };
 
-export default function CommunityPage() {
+function CommunityPageInner() {
+  const searchParams = useSearchParams();
   const { isDoctor, posts: storePosts, catalogHydrated } = useStore();
   const [dbPosts, setDbPosts] = useState<typeof storePosts | null>(null);
   const posts = dbPosts ?? storePosts;
@@ -38,8 +39,11 @@ export default function CommunityPage() {
   const [showScrollTop, setShowScrollTop] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  // Question category sub-tabs (only shown when 질문게시판)
-  const [activeCategory, setActiveCategory] = useState('전체');
+  // Question category sub-tabs — URL ?category= 파라미터로 초기화
+  const [activeCategory, setActiveCategory] = useState(() => {
+    const cat = searchParams.get('category');
+    return cat && questionCategories.includes(cat) ? cat : '전체';
+  });
   const [categoryDir, setCategoryDir] = useState<'left' | 'right'>('right');
   const prevCategoryIdxRef = useRef(0);
   const categoryTabsRef = useRef<HTMLDivElement>(null);
@@ -295,10 +299,6 @@ export default function CommunityPage() {
                         className="flex items-center gap-3 bg-white h-full w-full px-3 border border-gray-100"
                         style={{
                           borderRadius: 12,
-                          transition: 'box-shadow 400ms ease',
-                          boxShadow: isCurrent
-                            ? '0 4px 14px rgba(16,24,40,0.06)'
-                            : '0 1px 2px rgba(16,24,40,0.03)',
                         }}
                       >
                         <Avatar role={post.authorTitle ? 'doctor' : 'user'} seed={post.authorId || post.id} size={40} className="flex-shrink-0" />
@@ -797,5 +797,13 @@ function CommunitySkeleton() {
         ))}
       </div>
     </div>
+  );
+}
+
+export default function CommunityPage() {
+  return (
+    <Suspense fallback={null}>
+      <CommunityPageInner />
+    </Suspense>
   );
 }

@@ -62,6 +62,11 @@ export const communityTags = [
   '메디컬네트워크',
 ];
 
+// 질문게시판 카테고리 필터와 일치하는 환자용 태그 (커뮤니티 탭 필터링에 사용)
+export const questionTags = [
+  '임플란트', '교정', '치아미백', '사랑니', '스케일링', '일반진료',
+];
+
 /* -------------------- Empty entity fallbacks -------------------- */
 export const products: Product[] = [];
 export const hospitals: Hospital[] = [];

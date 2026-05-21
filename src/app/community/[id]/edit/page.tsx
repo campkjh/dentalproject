@@ -117,6 +117,14 @@ function EditPostPage() {
         }).eq('id', postId);
         if (error) { showToast('수정 실패: ' + error.message); return; }
       }
+      // DB 성공 후 Zustand store도 즉시 갱신 (상세 페이지 stale 방지)
+      useStore.setState((state: any) => ({
+        posts: state.posts.map((p: any) =>
+          p.id === postId
+            ? { ...p, title: title.trim(), content: content.trim(), tags: selectedTags, imageUrl: imagePreview || undefined }
+            : p
+        ),
+      }));
       showToast('게시글이 수정되었습니다.');
       router.push(`/community/${postId}`);
     } finally {
