@@ -129,21 +129,32 @@ export default function PostDetailPage() {
   /* ── 좋아요 토글 ── */
   const handleLike = async () => {
     if (!user) { showToast('로그인이 필요합니다.'); return; }
-    if (!isRealPost || !hasSupabaseEnv()) return;
+    if (!isRealPost || !hasSupabaseEnv()) {
+      showToast('좋아요를 사용할 수 없습니다.');
+      return;
+    }
     const sb = createClient();
+    // 실제 auth uid 확인
+    const { data: { user: authUser } } = await sb.auth.getUser();
+    if (!authUser) { showToast('로그인 후 이용해주세요.'); return; }
+
     if (liked) {
       setLiked(false);
       setLikeCount((n) => Math.max(0, n - 1));
-      // DB 트리거(trg_sync_post_like_count)가 like_count 자동 감소
-      await sb.from('post_likes').delete().eq('post_id', postId).eq('user_id', user.id);
+      const { error } = await sb.from('post_likes').delete().eq('post_id', postId).eq('user_id', authUser.id);
+      if (error) {
+        setLiked(true);
+        setLikeCount((n) => n + 1);
+        showToast('오류: ' + error.message);
+      }
     } else {
       setLiked(true);
       setLikeCount((n) => n + 1);
-      // DB 트리거(trg_sync_post_like_count)가 like_count 자동 증가
-      const { error } = await sb.from('post_likes').insert({ post_id: postId, user_id: user.id });
+      const { error } = await sb.from('post_likes').insert({ post_id: postId, user_id: authUser.id });
       if (error) {
         setLiked(false);
         setLikeCount((n) => Math.max(0, n - 1));
+        showToast('오류: ' + error.message);
       }
     }
   };
