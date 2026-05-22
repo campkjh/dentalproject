@@ -257,7 +257,7 @@ export default function PartnerHomePage() {
   }
 
   return (
-    <div className="partner-mobile-screen">
+    <div className="partner-mobile-screen has-fixed-title">
       <header className="partner-screen-title">
         <h1>홈</h1>
       </header>

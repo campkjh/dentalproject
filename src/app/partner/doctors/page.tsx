@@ -97,7 +97,7 @@ export default function PartnerDoctorsPage() {
   );
 
   return (
-    <div className="partner-mobile-screen">
+    <div className="partner-mobile-screen has-fixed-title">
       <header className="partner-screen-title with-action">
         <h1>병원관리</h1>
         <nav className="partner-inline-segment" aria-label="병원관리 탭">

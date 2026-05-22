@@ -488,7 +488,7 @@ export default function PartnerHospitalInfoPage() {
 
   /* ── 메인 개요 화면 ── */
   return (
-    <div className="partner-mobile-screen">
+    <div className="partner-mobile-screen has-fixed-title">
       {/* 숨겨진 파일 인풋 */}
       <input ref={coverInputRef} type="file" accept="image/*" className="partner-hidden-file"
         onChange={(e) => { const f = e.currentTarget.files?.[0]; e.currentTarget.value = ''; if (f) void handleCoverUpload(f); }} />
