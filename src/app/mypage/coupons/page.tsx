@@ -124,7 +124,7 @@ export default function CouponsPage() {
             </div>
             <p className="text-[13px] text-white/70 mb-1.5">사용가능 쿠폰 혜택</p>
             <p className="text-white leading-none">
-              <span className="text-[34px] font-extrabold tracking-tight">
+              <span className="text-[34px] font-bold tracking-tight">
                 {availableTotal.toLocaleString()}
               </span>
               <span className="text-[18px] font-semibold ml-1">원</span>
@@ -172,7 +172,7 @@ export default function CouponsPage() {
                   <span
                     className="ml-1 text-[11px] font-bold"
                     style={{
-                      color: isActive ? '#3182F6' : '#C5CAD4',
+                      color: isActive ? '#8037FF' : '#C5CAD4',
                     }}
                   >
                     {c}
@@ -182,7 +182,7 @@ export default function CouponsPage() {
             })}
             <span
               aria-hidden
-              className="absolute bottom-0 h-[2px] bg-[#3182F6] pointer-events-none rounded-full"
+              className="absolute bottom-0 h-[2px] bg-[#8037FF] pointer-events-none rounded-full"
               style={{
                 left: indicator.left,
                 width: indicator.width,
@@ -232,7 +232,7 @@ export default function CouponsPage() {
                       className="absolute top-0 left-0 right-0 h-[3px]"
                       style={{
                         background:
-                          'linear-gradient(90deg, #3182F6 0%, #86B7FF 50%, #3182F6 100%)',
+                          'linear-gradient(90deg, #8037FF 0%, #B18CFF 50%, #8037FF 100%)',
                       }}
                     />
                   )}
@@ -244,7 +244,7 @@ export default function CouponsPage() {
                         <p
                           className="text-[11px] font-bold tracking-wider uppercase mb-1"
                           style={{
-                            color: isAvailable ? '#3182F6' : '#9CA3AF',
+                            color: isAvailable ? '#8037FF' : '#9CA3AF',
                           }}
                         >
                           Discount
@@ -255,7 +255,7 @@ export default function CouponsPage() {
                             color: isAvailable ? '#2B313D' : '#6B7280',
                           }}
                         >
-                          <span className="text-[28px] font-extrabold tracking-tight">
+                          <span className="text-[28px] font-bold tracking-tight">
                             {coupon.discountAmount.toLocaleString()}
                           </span>
                           <span className="text-[14px] font-bold ml-0.5">원</span>
@@ -316,7 +316,7 @@ export default function CouponsPage() {
                             {coupon.expiryDate}까지
                           </span>
                           {isAvailable && coupon.daysLeft !== undefined && !urgent && (
-                            <span className="text-[10px] font-bold text-[#3182F6] bg-[#F4EFFF] px-1.5 py-0.5 rounded">
+                            <span className="text-[10px] font-bold text-[#8037FF] bg-[#F4EFFF] px-1.5 py-0.5 rounded">
                               D-{coupon.daysLeft}
                             </span>
                           )}
@@ -334,7 +334,7 @@ export default function CouponsPage() {
                         onClick={() => showToast('결제 시 자동 적용됩니다.')}
                         className="btn-press text-[12px] font-bold px-3 py-1.5 rounded-full flex-shrink-0"
                         style={{
-                          color: '#3182F6',
+                          color: '#8037FF',
                           backgroundColor: '#F4EFFF',
                         }}
                       >

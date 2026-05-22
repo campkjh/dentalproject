@@ -115,6 +115,8 @@ create table if not exists public.doctors (
   specialty      text,
   profile_image  text,
   is_owner       boolean not null default false,
+  is_active      boolean not null default true,
+  member_status  text not null default 'active' check (member_status in ('pending', 'active', 'rejected', 'left')),
   bio            text,
   careers        text[] not null default '{}',
   certifications text[] not null default '{}',
@@ -122,6 +124,7 @@ create table if not exists public.doctors (
 );
 
 create index if not exists idx_doctors_hospital on public.doctors(hospital_id);
+create index if not exists idx_doctors_member_status on public.doctors(member_status);
 
 alter table public.profiles
   add constraint profiles_doctor_id_fkey
@@ -143,16 +146,21 @@ create table if not exists public.products (
   review_count    integer not null default 0,
   like_count      integer not null default 0,
   image_url       text,
+  detail_image_url text,
   tags            text[] not null default '{}',
   category        text,
   sub_category    text,
   status          text not null default 'active' check (status in ('active', 'paused', 'removed')),
+  approval_status text not null default 'approved'
+                  check (approval_status in ('approved', 'pending_create', 'pending_update', 'pending_delete', 'rejected')),
+  pending_changes jsonb,
   created_at      timestamptz not null default now(),
   updated_at      timestamptz not null default now()
 );
 
 create index if not exists idx_products_hospital on public.products(hospital_id);
 create index if not exists idx_products_category on public.products(category);
+create index if not exists idx_products_approval_status on public.products(approval_status);
 
 create table if not exists public.product_options (
   id         uuid primary key default uuid_generate_v4(),
@@ -518,6 +526,12 @@ create policy "read_all_doctors" on public.doctors
 drop policy if exists "read_active_products" on public.products;
 create policy "read_active_products" on public.products
   for select using (status = 'active');
+drop policy if exists "owner_read_own_products" on public.products;
+create policy "owner_read_own_products" on public.products
+  for select using (
+    exists (select 1 from public.hospitals h where h.id = products.hospital_id and h.owner_id = auth.uid())
+    or exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin = true)
+  );
 drop policy if exists "read_all_product_options" on public.product_options;
 create policy "read_all_product_options" on public.product_options
   for select using (true);

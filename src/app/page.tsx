@@ -182,7 +182,7 @@ export default function HomePage() {
       >
         {/* Default Header (logo + icons) */}
         <div className={`flex items-center justify-between px-2.5 py-3 transition-all duration-300 ${scrolled ? 'h-0 overflow-hidden opacity-0 py-0' : 'opacity-100'}`}>
-          <span className="text-lg font-bold text-[#3182F6]">로고</span>
+          <span className="text-lg font-bold text-[#8037FF]">로고</span>
           {isLoggedIn ? (
             <div className="flex items-center gap-2">
               <Link
@@ -262,7 +262,7 @@ export default function HomePage() {
               className="flex items-center gap-1 flex-shrink-0 bg-white rounded-full px-2.5"
               style={{ height: 32, border: '1px solid #E5E7EB' }}
             >
-              <MapPin size={12} className="text-[#3182F6]" />
+              <MapPin size={12} className="text-[#8037FF]" />
               <span className="text-[12px] font-semibold text-gray-800 whitespace-nowrap leading-none">
                 {currentLocation}
               </span>
@@ -343,7 +343,7 @@ export default function HomePage() {
       <div className="lg:bg-white lg:rounded-2xl lg:shadow-sm lg:my-6">
 
         {/* Banner */}
-        <div className="mx-4 lg:mx-auto lg:max-w-7xl lg:px-6 rounded-2xl bg-gradient-to-r from-[#3182F6] to-[#1E6FD9] p-5 lg:p-8 mb-6 text-white relative overflow-hidden gradient-shift">
+        <div className="mx-4 lg:mx-auto lg:max-w-7xl lg:px-6 rounded-2xl bg-gradient-to-r from-[#8037FF] to-[#6D28D9] p-5 lg:p-8 mb-6 text-white relative overflow-hidden gradient-shift">
           <p className="text-sm opacity-90">첫방문 체험</p>
           <p className="text-xl font-bold mt-1">추가 15% 쿠폰 증정</p>
           <div className="absolute right-6 top-1/2 -translate-y-1/2 w-20 h-20 bg-white/20 rounded-full flex items-center justify-center float">
@@ -424,6 +424,7 @@ export default function HomePage() {
               {reviews.slice(0, 10).map((review) => {
                 const hospital = hospitals.find(h => h.id === review.hospitalId);
                 const relatedProduct = products.find(p => p.id === review.productId || p.hospitalId === review.hospitalId);
+                const hasReviewImages = Boolean(review.beforeImage || review.afterImage);
                 return (
 	                  <Link
 	                    key={review.id}
@@ -431,20 +432,26 @@ export default function HomePage() {
 	                    className="flex-shrink-0 block"
 	                    style={{ width: 230, scrollSnapAlign: 'start' }}
 	                  >
-	                    {/* 전후 이미지 영역 */}
-	                    <div className="relative overflow-hidden" style={{ borderRadius: '14px 14px 0 0', backgroundColor: '#111' }}>
-	                      <div className="flex">
-	                        <div className="flex-1 h-[104px] flex items-center justify-center" style={{ backgroundColor: '#EBEBEB' }}>
-	                          <span className="text-2xl">📷</span>
-	                        </div>
-	                        <div className="flex-1 h-[104px] flex items-center justify-center" style={{ backgroundColor: '#DEDEDE' }}>
-	                          <span className="text-2xl">📷</span>
-	                        </div>
-	                      </div>
-	                      <span style={{ position: 'absolute', top: 8, right: 8, fontSize: 11, fontWeight: 600, color: '#fff' }}>시술 후</span>
-	                    </div>
+                      {hasReviewImages && (
+                        <div className="relative overflow-hidden" style={{ borderRadius: '14px 14px 0 0', backgroundColor: '#111' }}>
+                          <div className="flex">
+                            {review.beforeImage && (
+                              <div className="relative flex-1 h-[104px]" style={{ backgroundColor: '#EBEBEB' }}>
+                                <img src={review.beforeImage} alt="시술 전" className="h-full w-full object-cover" />
+                                <span style={{ position: 'absolute', top: 8, left: 8, fontSize: 11, fontWeight: 700, color: '#fff', background: 'rgba(0,0,0,0.45)', borderRadius: 999, padding: '2px 6px' }}>전</span>
+                              </div>
+                            )}
+                            {review.afterImage && (
+                              <div className="relative flex-1 h-[104px]" style={{ backgroundColor: '#DEDEDE' }}>
+                                <img src={review.afterImage} alt="시술 후" className="h-full w-full object-cover" />
+                                <span style={{ position: 'absolute', top: 8, left: 8, fontSize: 11, fontWeight: 700, color: '#fff', background: 'rgba(49,130,246,0.84)', borderRadius: 999, padding: '2px 6px' }}>후</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
 	                    {/* 카드 본문 */}
-	                    <div style={{ backgroundColor: '#F6F6F8', borderRadius: '0 0 14px 14px', padding: '10px 12px' }}>
+	                    <div style={{ backgroundColor: '#F6F6F8', borderRadius: hasReviewImages ? '0 0 14px 14px' : '14px', padding: '10px 12px' }}>
 	                      <p className="truncate" style={{ fontSize: 12, color: '#C8CEDA' }}>
 	                        {hospital?.location || currentLocation} · {hospital?.name || review.authorName}
 	                      </p>
@@ -460,7 +467,7 @@ export default function HomePage() {
 	                        {review.totalCost.toLocaleString()}원
 	                      </p>
 	                      <div className="flex items-center gap-1" style={{ marginTop: 7 }}>
-	                        <span className="flex items-center gap-1" style={{ fontSize: 11, fontWeight: 500, color: '#3B82F6', backgroundColor: '#EFF6FF', borderRadius: 4, padding: '2px 6px' }}>
+	                        <span className="flex items-center gap-1" style={{ fontSize: 11, fontWeight: 500, color: '#8037FF', backgroundColor: '#F4EFFF', borderRadius: 4, padding: '2px 6px' }}>
 	                          <svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
 	                          앱결제
 	                        </span>
@@ -553,7 +560,7 @@ export default function HomePage() {
                     <div style={{ padding: '12px 4px' }}>
                       <h3 style={{ fontSize: 18, fontWeight: 600, color: '#2B313D' }}>{hp.name}</h3>
                       {topReview && (
-                        <p style={{ fontSize: 14, fontWeight: 600, color: '#3182F6', marginTop: 4 }}>
+                        <p style={{ fontSize: 14, fontWeight: 600, color: '#8037FF', marginTop: 4 }}>
                           {topReview.treatmentName} 후기 {hpReviews.length}개
                         </p>
                       )}
@@ -648,7 +655,7 @@ const HOTSPOTS = [
     region: '수원시',
     tags: ['#아늑한 카페'],
     image: `${BLOB}/etc_1620284296.jpg`,
-    color: '#3182F6',
+    color: '#8037FF',
   },
   {
     id: 'gangnam',
@@ -657,7 +664,7 @@ const HOTSPOTS = [
     region: '서울시 강남구',
     tags: ['#놀면뭐하니'],
     image: `${BLOB}/etc_1669967008.jpg`,
-    color: '#3B82F6',
+    color: '#8037FF',
   },
   {
     id: 'apgujeong',
@@ -863,7 +870,7 @@ function NearbyHotPlaces({
                   />
                   {/* Text inside image */}
                   <div className="absolute bottom-3 left-3 right-3">
-                    <p className="text-[16px] font-extrabold text-white leading-tight">
+                    <p className="text-[16px] font-bold text-white leading-tight">
                       {spot.name}
                     </p>
                     {spot.sub && (

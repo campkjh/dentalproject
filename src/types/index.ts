@@ -11,6 +11,7 @@ export interface Product {
   reviewCount: number;
   likeCount: number;
   imageUrl: string;
+  detailImageUrl?: string;
   tags: string[];
   category: string;
   subCategory: string;
@@ -103,6 +104,14 @@ export interface Reservation {
   assignedDoctor?: string;
   paymentMethod?: string;
   paymentType?: string;
+  scheduleHistory?: ScheduleHistoryItem[];
+}
+
+export interface ScheduleHistoryItem {
+  id: string;
+  title: string;
+  content: string;
+  createdAt: string;
 }
 
 export interface Post {

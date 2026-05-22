@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient, createClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,12 +29,32 @@ export async function PATCH(
   const { error } = await sb.from('hospitals').update({ status }).eq('id', id);
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
 
-  // Notify owner of status change
+  const admin = await createAdminClient();
   const { data: hospital } = await sb
     .from('hospitals')
     .select('owner_id, name')
     .eq('id', id)
     .maybeSingle();
+
+  if (hospital?.owner_id) {
+    const { data: ownerDoctor } = await admin
+      .from('doctors')
+      .select('id')
+      .eq('hospital_id', id)
+      .eq('user_id', hospital.owner_id)
+      .eq('is_owner', true)
+      .maybeSingle();
+
+    await admin
+      .from('profiles')
+      .update({
+        is_doctor: status === 'approved',
+        doctor_id: status === 'approved' ? ownerDoctor?.id ?? null : null,
+      })
+      .eq('id', hospital.owner_id);
+  }
+
+  // Notify owner of status change
   if (hospital?.owner_id) {
     const titleMap: Record<string, string> = {
       approved: '병원 등록이 승인되었습니다',
@@ -48,7 +68,7 @@ export async function PATCH(
       suspended: 'important',
       pending: 'info',
     };
-    await sb.from('notifications').insert({
+    await admin.from('notifications').insert({
       user_id: hospital.owner_id,
       type: typeMap[status],
       title: titleMap[status],

@@ -1,6 +1,10 @@
-import { createClient } from '@/lib/supabase/server';
+import { completePastConfirmedReservations } from '@/lib/db/reservation-status';
+import { createAdminClient, createClient } from '@/lib/supabase/server';
 
 export async function listMyReservations(userId: string) {
+  const admin = await createAdminClient();
+  await completePastConfirmedReservations(admin, { userId });
+
   const sb = await createClient();
   const { data, error } = await sb
     .from('reservations')
@@ -16,6 +20,9 @@ export async function listMyReservations(userId: string) {
 }
 
 export async function getReservation(id: string) {
+  const admin = await createAdminClient();
+  await completePastConfirmedReservations(admin, { reservationId: id });
+
   const sb = await createClient();
   const { data, error } = await sb
     .from('reservations')

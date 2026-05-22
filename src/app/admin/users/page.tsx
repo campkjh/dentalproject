@@ -41,8 +41,8 @@ const statusBadge: Record<UserStatus, string> = {
 };
 
 const roleBadge: Record<UserRole, string> = {
-  '일반': 'bg-blue-100 text-blue-700',
-  '의사': 'bg-blue-100 text-blue-700',
+  '일반': 'bg-purple-100 text-purple-700',
+  '의사': 'bg-purple-100 text-purple-700',
   '병원관리자': 'bg-orange-100 text-orange-700',
 };
 
@@ -88,9 +88,9 @@ export default function AdminUsersPage() {
   }, []);
 
   const stats = [
-    { label: '전체 회원', value: users.length.toLocaleString(), icon: Users, color: 'bg-blue-500' },
+    { label: '전체 회원', value: users.length.toLocaleString(), icon: Users, color: 'bg-purple-500' },
     { label: '일반 회원', value: users.filter(u => u.role === '일반').length.toLocaleString(), icon: UserCheck, color: 'bg-green-500' },
-    { label: '의사 회원', value: users.filter(u => u.role === '의사').length.toLocaleString(), icon: Stethoscope, color: 'bg-blue-500' },
+    { label: '의사 회원', value: users.filter(u => u.role === '의사').length.toLocaleString(), icon: Stethoscope, color: 'bg-purple-500' },
     { label: '병원관리자', value: users.filter(u => u.role === '병원관리자').length.toLocaleString(), icon: Building2, color: 'bg-orange-500' },
   ];
   const [currentPage, setCurrentPage] = useState(1);
@@ -205,14 +205,14 @@ export default function AdminUsersPage() {
               placeholder="이름, 이메일, 연락처로 검색..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#3182F6]/30 focus:border-[#3182F6] transition-colors"
+              className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#8037FF]/30 focus:border-[#8037FF] transition-colors"
             />
           </div>
           <div className="relative">
             <select
               value={filter}
               onChange={(e) => setFilter(e.target.value as (typeof filterOptions)[number])}
-              className="appearance-none pl-4 pr-10 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#3182F6]/30 focus:border-[#3182F6] transition-colors cursor-pointer"
+              className="appearance-none pl-4 pr-10 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#8037FF]/30 focus:border-[#8037FF] transition-colors cursor-pointer"
             >
               {filterOptions.map((opt) => (
                 <option key={opt} value={opt}>{opt}</option>
@@ -334,7 +334,7 @@ export default function AdminUsersPage() {
                   onClick={() => setCurrentPage(page)}
                   className={`min-w-[36px] h-9 rounded-lg text-sm font-medium transition-colors ${
                     currentPage === page
-                      ? 'bg-[#3182F6] text-white'
+                      ? 'bg-[#8037FF] text-white'
                       : 'text-gray-600 hover:bg-gray-100'
                   }`}
                 >

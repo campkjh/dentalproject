@@ -22,7 +22,7 @@ export default function ReviewDetailPage() {
         <TopBar title="리뷰" />
         <div className="flex flex-col items-center justify-center py-20 px-2.5">
           <p className="text-sm text-gray-500 mb-4">리뷰를 찾을 수 없습니다.</p>
-          <button onClick={() => router.back()} className="text-sm text-[#3182F6] font-semibold">
+          <button onClick={() => router.back()} className="text-sm text-[#8037FF] font-semibold">
             이전으로
           </button>
         </div>
@@ -116,8 +116,8 @@ export default function ReviewDetailPage() {
       {/* Before / After (only when uploaded) */}
       {imgs && (imgs.before || imgs.after) && (
         <div className="px-2.5 pt-4">
-          <div className="grid grid-cols-2 gap-2">
-            {imgs.before ? (
+          <div className={`grid gap-2 ${imgs.before && imgs.after ? 'grid-cols-2' : 'grid-cols-1'}`}>
+            {imgs.before && (
               <div className="relative aspect-square rounded-xl overflow-hidden bg-gray-100">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={imgs.before} alt="전" className="w-full h-full object-cover" />
@@ -128,19 +128,15 @@ export default function ReviewDetailPage() {
                   BEFORE
                 </span>
               </div>
-            ) : (
-              <div className="aspect-square rounded-xl bg-gray-50" />
             )}
-            {imgs.after ? (
+            {imgs.after && (
               <div className="relative aspect-square rounded-xl overflow-hidden bg-gray-100">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={imgs.after} alt="후" className="w-full h-full object-cover" />
-                <span className="absolute top-2 left-2 px-2 py-0.5 text-[10px] font-bold rounded bg-[#3182F6] text-white">
+                <span className="absolute top-2 left-2 px-2 py-0.5 text-[10px] font-bold rounded bg-[#8037FF] text-white">
                   AFTER
                 </span>
               </div>
-            ) : (
-              <div className="aspect-square rounded-xl bg-gray-50" />
             )}
           </div>
         </div>
@@ -169,7 +165,7 @@ export default function ReviewDetailPage() {
             href={`/product/${product.id}`}
             className="flex items-center gap-3 px-2.5 py-3 card-press"
           >
-            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-sky-100 to-blue-100 flex items-center justify-center flex-shrink-0">
+            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-100 to-purple-100 flex items-center justify-center flex-shrink-0">
               <span className="text-2xl">🦷</span>
             </div>
             <div className="flex-1 min-w-0">
@@ -222,22 +218,20 @@ export default function ReviewDetailPage() {
                   className="flex-shrink-0 w-44 card-press"
                 >
                   {hasImg ? (
-                    <div className="grid grid-cols-2 gap-1">
-                      <div className="aspect-square rounded-lg overflow-hidden bg-gray-100">
-                        {r.beforeImage && (
-                          // eslint-disable-next-line @next/next/no-img-element
+                    <div className={`grid gap-1 ${r.beforeImage && r.afterImage ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                      {r.beforeImage && (
+                        <div className="aspect-square rounded-lg overflow-hidden bg-gray-100">
                           <img src={r.beforeImage} alt="" className="w-full h-full object-cover" />
-                        )}
-                      </div>
-                      <div className="aspect-square rounded-lg overflow-hidden bg-gray-100">
-                        {r.afterImage && (
-                          // eslint-disable-next-line @next/next/no-img-element
+                        </div>
+                      )}
+                      {r.afterImage && (
+                        <div className="aspect-square rounded-lg overflow-hidden bg-gray-100">
                           <img src={r.afterImage} alt="" className="w-full h-full object-cover" />
-                        )}
-                      </div>
+                        </div>
+                      )}
                     </div>
                   ) : (
-                    <div className="aspect-[2/1] rounded-lg bg-gradient-to-br from-blue-50 to-blue-50 flex items-center justify-center">
+                    <div className="aspect-[2/1] rounded-lg bg-gradient-to-br from-purple-50 to-purple-50 flex items-center justify-center">
                       <span className="text-2xl">🦷</span>
                     </div>
                   )}

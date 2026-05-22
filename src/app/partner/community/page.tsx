@@ -103,8 +103,8 @@ export default function PartnerCommunityPage() {
               style={{
                 flex: 1, padding: '14px 0', fontSize: 14, fontWeight: 600,
                 borderTop: 'none', borderLeft: 'none', borderRight: 'none',
-                borderBottom: activeBoard === tab ? '2px solid #3182F6' : '2px solid transparent',
-                color: activeBoard === tab ? '#3182F6' : '#9CA3AF',
+                borderBottom: activeBoard === tab ? '2px solid #8037FF' : '2px solid transparent',
+                color: activeBoard === tab ? '#8037FF' : '#9CA3AF',
                 background: 'none', cursor: 'pointer',
               }}
             >
@@ -130,7 +130,7 @@ export default function PartnerCommunityPage() {
             <div style={{ position: 'absolute', right: 0, top: 28, background: '#fff', border: '1px solid #E5E7EB', borderRadius: 12, boxShadow: '0 4px 12px rgba(0,0,0,0.08)', zIndex: 20, overflow: 'hidden' }}>
               {sortOptions.map((opt) => (
                 <button key={opt} onClick={() => { setSortBy(opt); setShowSortDropdown(false); }}
-                  style={{ display: 'block', width: '100%', padding: '10px 16px', fontSize: 13, textAlign: 'left', color: sortBy === opt ? '#3182F6' : '#374151', background: sortBy === opt ? '#EFF6FF' : 'none', border: 'none', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                  style={{ display: 'block', width: '100%', padding: '10px 16px', fontSize: 13, textAlign: 'left', color: sortBy === opt ? '#8037FF' : '#374151', background: sortBy === opt ? '#F4EFFF' : 'none', border: 'none', cursor: 'pointer', whiteSpace: 'nowrap' }}>
                   {opt}
                 </button>
               ))}
@@ -144,7 +144,7 @@ export default function PartnerCommunityPage() {
         <div style={{ background: '#fff', padding: '4px 12px 8px', flexShrink: 0 }}>
           <div ref={categoryTabsRef} style={{ position: 'relative', display: 'flex', gap: 8, overflowX: 'auto' }} className="hide-scrollbar">
             <span aria-hidden style={{
-              position: 'absolute', top: 0, bottom: 0, borderRadius: 9999, background: '#3182F6', pointerEvents: 'none',
+              position: 'absolute', top: 0, bottom: 0, borderRadius: 9999, background: '#8037FF', pointerEvents: 'none',
               left: categoryIndicator.left, width: categoryIndicator.width,
               transition: 'left 420ms cubic-bezier(0.22, 1, 0.36, 1), width 420ms cubic-bezier(0.22, 1, 0.36, 1)',
             }} />
@@ -194,7 +194,7 @@ export default function PartnerCommunityPage() {
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{ fontSize: 12, color: '#9CA3AF', marginBottom: 2 }}>
                       {post.isAnonymous ? `익명 ${post.anonymousId}` : post.authorName}
-                      {post.authorTitle && <span style={{ marginLeft: 6, fontSize: 11, color: '#3182F6', fontWeight: 600 }}>의사</span>}
+                      {post.authorTitle && <span style={{ marginLeft: 6, fontSize: 11, color: '#8037FF', fontWeight: 600 }}>의사</span>}
                     </p>
                     <p style={{ fontSize: 14, fontWeight: 700, color: '#111827', marginBottom: 2, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                       {post.title}

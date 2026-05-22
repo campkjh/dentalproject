@@ -161,7 +161,7 @@ export default function FAQPage() {
                 className="w-full flex items-center justify-between px-2.5 py-4 hover:bg-gray-50 transition-colors text-left"
               >
                 <div className="flex items-start gap-2 flex-1 pr-3">
-                  <span className="text-[#3182F6] font-bold text-sm mt-0.5">Q</span>
+                  <span className="text-[#8037FF] font-bold text-sm mt-0.5">Q</span>
                   <span className="text-sm font-medium text-gray-900">{faq.question}</span>
                 </div>
                 <ChevronDown
@@ -174,7 +174,7 @@ export default function FAQPage() {
               {isOpen && (
                 <div className="px-2.5 pb-4">
                   <div className="flex items-start gap-2 bg-gray-50 rounded-xl p-4">
-                    <span className="text-[#3182F6] font-bold text-sm mt-0.5">A</span>
+                    <span className="text-[#8037FF] font-bold text-sm mt-0.5">A</span>
                     <p className="text-sm text-gray-600 leading-relaxed">{faq.answer}</p>
                   </div>
                 </div>

@@ -182,7 +182,7 @@ export default function ReservationsPage() {
             }}
           >
             <p className="text-[22px] font-bold text-gray-900 leading-tight">
-              총 <span className="text-[#3182F6]">{reservations.length}</span>건의 예약이 있어요
+              총 <span className="text-[#8037FF]">{reservations.length}</span>건의 예약이 있어요
             </p>
             <div className="mt-4 grid grid-cols-4 gap-2">
               {(
@@ -309,8 +309,12 @@ export default function ReservationsPage() {
 
                         {/* Product info */}
                         <div className="flex gap-2.5 mt-2">
-                          <div className="w-[64px] h-[64px] rounded-xl bg-gradient-to-br from-sky-100 to-blue-100 flex items-center justify-center flex-shrink-0">
-                            <span className="text-2xl">🦷</span>
+                          <div className="w-[64px] h-[64px] rounded-xl bg-gray-100 overflow-hidden flex items-center justify-center flex-shrink-0">
+                            {reservation.productImage ? (
+                              <img src={reservation.productImage} alt="" className="w-full h-full object-cover" />
+                            ) : (
+                              <span className="text-2xl">🦷</span>
+                            )}
                           </div>
                           <div className="flex-1 min-w-0 flex flex-col justify-center">
                             <p className="text-[14px] font-bold text-gray-900 line-clamp-1 leading-tight">
@@ -336,12 +340,17 @@ export default function ReservationsPage() {
                               <span className="text-[12px]">{reservation.reservationDate || reservation.visitDate}</span>
                             </div>
                             <div className="flex items-baseline gap-0.5">
-                              <span className="text-[15px] font-extrabold text-gray-900">
+                              <span className="text-[15px] font-bold text-gray-900">
                                 {reservation.amount.toLocaleString()}
                               </span>
                               <span className="text-[11px] text-gray-500 font-medium">원</span>
                             </div>
                           </div>
+                          {reservation.scheduleHistory?.[0] && (
+                            <p className="mt-1.5 text-[11px] font-semibold text-[#8037FF] line-clamp-1">
+                              변경내역: {reservation.scheduleHistory[0].content}
+                            </p>
+                          )}
                         </div>
 
                         {/* Action area */}
@@ -373,7 +382,7 @@ export default function ReservationsPage() {
                                 `/mypage/reviews/write?productId=${reservation.productId ?? ''}&reservationId=${reservation.id}`
                               );
                             }}
-                            className="btn-press mt-2.5 w-full py-2.5 bg-[#3182F6] text-white rounded-xl text-[13px] font-bold flex items-center justify-center gap-1.5"
+                            className="btn-press mt-2.5 w-full py-2.5 bg-[#8037FF] text-white rounded-xl text-[13px] font-bold flex items-center justify-center gap-1.5"
                           >
                             리뷰작성하고 500P 받기
                             <ChevronRight size={14} />

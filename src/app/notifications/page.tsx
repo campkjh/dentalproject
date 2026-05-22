@@ -8,10 +8,10 @@ import { useStore } from '@/store';
 import { Notification } from '@/types';
 
 const typeBadgeMap: Record<string, { label: string; color: string; bg: string }> = {
-  event: { label: '이벤트', color: '#3182F6', bg: '#E8F3FF' },
+  event: { label: '이벤트', color: '#8037FF', bg: '#F4EFFF' },
   important: { label: '중요', color: '#DC2626', bg: '#FEE2E2' },
   recommendation: { label: '추천', color: '#059669', bg: '#D1FAE5' },
-  info: { label: '안내', color: '#2563EB', bg: '#DBEAFE' },
+  info: { label: '안내', color: '#8037FF', bg: '#EDE9FE' },
   update: { label: '업데이트', color: '#D97706', bg: '#FEF3C7' },
 };
 
@@ -210,7 +210,7 @@ export default function NotificationsPage() {
                           {badge.label}
                         </span>
                         {isUnread && (
-                          <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: '#3182F6' }} />
+                          <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: '#8037FF' }} />
                         )}
                       </div>
                       <span style={{ fontSize: 12, color: '#A4ABBA' }}>{notification.date}</span>

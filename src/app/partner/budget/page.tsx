@@ -19,7 +19,7 @@ type Tx = {
 const TYPE_LABEL: Record<Tx['type'], { label: string; color: string }> = {
   charge: { label: '충전', color: '#15803D' },
   spend: { label: '소진', color: '#E5484D' },
-  refund: { label: '환불', color: '#3182F6' },
+  refund: { label: '환불', color: '#8037FF' },
 };
 
 const PRESET = [50000, 100000, 300000, 500000, 1000000, 3000000];
@@ -89,7 +89,7 @@ export default function BudgetPage() {
     return (
       <div className="bg-white rounded-xl p-10 text-center">
         <p className="text-sm text-gray-500 mb-4">로그인이 필요합니다.</p>
-        <Link href="/partner/login" className="inline-block px-5 py-2.5 bg-[#3182F6] text-white text-sm font-bold rounded-xl">
+        <Link href="/partner/login" className="inline-block px-5 py-2.5 bg-[#8037FF] text-white text-sm font-bold rounded-xl">
           로그인
         </Link>
       </div>
@@ -106,12 +106,12 @@ export default function BudgetPage() {
       </div>
 
       {/* Balance card */}
-      <div className="bg-gradient-to-br from-[#3182F6] to-[#1B64DA] rounded-2xl p-6 text-white">
+      <div className="bg-gradient-to-br from-[#8037FF] to-[#6D28D9] rounded-2xl p-6 text-white">
         <div className="flex items-center gap-3 mb-2">
           <Coins size={20} />
           <span className="text-[13px] font-bold opacity-90">현재 잔액</span>
         </div>
-        <p className="text-[36px] font-extrabold leading-none">
+        <p className="text-[36px] font-bold leading-none">
           {loading ? '—' : balance.toLocaleString()}
           <span className="text-[18px] font-bold ml-1 opacity-80">P</span>
         </p>
@@ -131,8 +131,8 @@ export default function BudgetPage() {
               onClick={() => setChargeAmount(String(amt))}
               className="py-2.5 rounded-lg border text-[12px] font-semibold transition-colors"
               style={{
-                borderColor: chargeAmount === String(amt) ? '#3182F6' : '#E5E7EB',
-                color: chargeAmount === String(amt) ? '#3182F6' : '#374151',
+                borderColor: chargeAmount === String(amt) ? '#8037FF' : '#E5E7EB',
+                color: chargeAmount === String(amt) ? '#8037FF' : '#374151',
               }}
             >
               {amt.toLocaleString()}원
@@ -145,12 +145,12 @@ export default function BudgetPage() {
             value={chargeAmount}
             onChange={(e) => setChargeAmount(e.target.value)}
             placeholder="직접 입력 (1,000원 이상)"
-            className="flex-1 px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:border-[#3182F6]"
+            className="flex-1 px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:border-[#8037FF]"
           />
           <button
             onClick={handleCharge}
             disabled={charging || !chargeAmount}
-            className="px-5 py-2.5 bg-[#3182F6] text-white text-sm font-bold rounded-lg disabled:opacity-50"
+            className="px-5 py-2.5 bg-[#8037FF] text-white text-sm font-bold rounded-lg disabled:opacity-50"
           >
             {charging ? '처리 중…' : '충전'}
           </button>
@@ -188,7 +188,7 @@ export default function BudgetPage() {
                     <p className="text-[10px] text-gray-400">{new Date(t.created_at).toLocaleString('ko-KR')}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-[14px] font-extrabold" style={{ color: cfg.color }}>
+                    <p className="text-[14px] font-bold" style={{ color: cfg.color }}>
                       {t.amount > 0 ? '+' : ''}{t.amount.toLocaleString()}P
                     </p>
                     <p className="text-[10px] text-gray-400">잔액 {t.balance_after.toLocaleString()}P</p>

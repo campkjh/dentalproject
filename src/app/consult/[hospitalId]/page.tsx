@@ -214,8 +214,8 @@ export default function ConsultChatPage() {
 
       {/* Info banner */}
       <div className="flex-shrink-0 px-2.5 py-2 bg-[#F4EFFF] flex items-start gap-2">
-        <Info size={12} className="text-[#3182F6] mt-0.5 flex-shrink-0" />
-        <p className="text-[11px] text-[#3182F6] leading-snug">
+        <Info size={12} className="text-[#8037FF] mt-0.5 flex-shrink-0" />
+        <p className="text-[11px] text-[#8037FF] leading-snug">
           의료 상담은 실제 진료를 대체하지 않습니다. 정확한 진단은 내원 후 안내받으세요.
         </p>
       </div>
@@ -284,7 +284,7 @@ export default function ConsultChatPage() {
           disabled={!input.trim() || pending || !authUser}
           className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 btn-press"
           style={{
-            backgroundColor: input.trim() && !pending && authUser ? '#3182F6' : '#E5E7EB',
+            backgroundColor: input.trim() && !pending && authUser ? '#8037FF' : '#E5E7EB',
             color: '#fff',
             transition: 'background-color 220ms ease',
             boxShadow: input.trim() && !pending && authUser ? '0 4px 12px rgba(49,130,246,0.3)' : 'none',
@@ -311,7 +311,7 @@ function Bubble({ msg, hospitalSeed }: { msg: Msg; hospitalSeed: string }) {
         <div
           className="rounded-2xl px-3.5 py-2.5 text-[13px] leading-relaxed whitespace-pre-wrap"
           style={{
-            backgroundColor: isUser ? '#3182F6' : '#fff',
+            backgroundColor: isUser ? '#8037FF' : '#fff',
             color: isUser ? '#fff' : '#2B313D',
             border: isUser ? 'none' : '1px solid #F2F3F5',
             borderTopRightRadius: isUser ? 4 : 16,

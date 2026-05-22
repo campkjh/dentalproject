@@ -67,6 +67,7 @@ export default function ReservationDetailPage() {
 
   const hospital = hospitals.find((h) => h.id === reservation.hospitalId);
   const style = statusStyle[reservation.status];
+  const latestScheduleHistory = reservation.scheduleHistory?.[0];
 
   const basePrice = reservation.amount;
   const vat = Math.round(basePrice * 0.1);
@@ -114,7 +115,7 @@ export default function ReservationDetailPage() {
             {style.label}
           </span>
         </div>
-        <p className="text-[22px] font-extrabold text-gray-900 leading-tight">
+        <p className="text-[22px] font-bold text-gray-900 leading-tight">
           {reservation.productTitle}
         </p>
         <p className="text-[13px] text-gray-500 mt-1">{reservation.hospitalName}</p>
@@ -123,8 +124,12 @@ export default function ReservationDetailPage() {
       {/* Product line */}
       <div className="mx-2.5 py-3 border-y border-gray-100 fade-in-up">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-sky-100 to-blue-100 flex items-center justify-center flex-shrink-0">
-            <span className="text-xl">🦷</span>
+          <div className="w-12 h-12 rounded-xl bg-gray-100 overflow-hidden flex items-center justify-center flex-shrink-0">
+            {reservation.productImage ? (
+              <img src={reservation.productImage} alt="" className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-xl">🦷</span>
+            )}
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-[11px] text-gray-500 leading-tight">{reservation.hospitalName}</p>
@@ -149,6 +154,14 @@ export default function ReservationDetailPage() {
             <Row label="방문 일시" value={reservation.visitDate} />
           )}
           <Row label="예약번호" value={reservation.id} mono />
+          {latestScheduleHistory && (
+            <div className="mt-3 rounded-xl bg-[#F7F8FA] px-3 py-2.5">
+              <p className="text-[11px] font-bold text-[#8037FF] mb-1">변경내역</p>
+              <p className="text-[12px] font-semibold text-gray-600 leading-relaxed whitespace-pre-line">
+                {latestScheduleHistory.content}
+              </p>
+            </div>
+          )}
         </Section>
 
         <Divider />
@@ -161,7 +174,7 @@ export default function ReservationDetailPage() {
               right={
                 <Link
                   href={`/hospital/detail/${hospital.id}`}
-                  className="text-[12px] text-[#3182F6] font-semibold"
+                  className="text-[12px] text-[#8037FF] font-semibold"
                 >
                   병원 상세
                 </Link>
@@ -221,7 +234,7 @@ export default function ReservationDetailPage() {
           <>
             <Section title="집도의">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-[#F4EFFF] text-[#3182F6] flex-shrink-0 flex items-center justify-center text-sm font-bold">
+                <div className="w-10 h-10 rounded-full bg-[#F4EFFF] text-[#8037FF] flex-shrink-0 flex items-center justify-center text-sm font-bold">
                   {reservation.assignedDoctor.charAt(0)}
                 </div>
                 <p className="text-[14px] font-semibold text-gray-900">
@@ -238,14 +251,14 @@ export default function ReservationDetailPage() {
           <Row label="상품 금액" value={`${basePrice.toLocaleString()}원`} />
           <Row label="부가세 VAT" value={`${vat.toLocaleString()}원`} />
           {discount > 0 && (
-            <Row label="할인" value={`-${discount.toLocaleString()}원`} accentColor="#3182F6" />
+            <Row label="할인" value={`-${discount.toLocaleString()}원`} accentColor="#8037FF" />
           )}
           <div
             className="mt-3 pt-3 flex items-end justify-between"
             style={{ borderTop: '1px solid #F2F3F5' }}
           >
             <span className="text-[13px] font-bold text-gray-900">총 결제금액</span>
-            <span className="text-[20px] font-extrabold text-gray-900 leading-none">
+            <span className="text-[20px] font-bold text-gray-900 leading-none">
               {total.toLocaleString()}
               <span className="text-[13px] font-semibold text-gray-600 ml-0.5">원</span>
             </span>
@@ -308,7 +321,7 @@ export default function ReservationDetailPage() {
               onClick={() =>
                 router.push(`/mypage/reviews/write?productId=${reservation.productId ?? ''}&reservationId=${reservation.id}`)
               }
-              className="flex-1 py-3.5 rounded-xl bg-[#3182F6] text-white text-[14px] font-bold btn-press"
+              className="flex-1 py-3.5 rounded-xl bg-[#8037FF] text-white text-[14px] font-bold btn-press"
               style={{ boxShadow: '0 6px 16px rgba(49,130,246,0.3)' }}
             >
               리뷰 작성하고 500P 받기
@@ -371,7 +384,7 @@ function Row({
       <span
         className="text-[13px] font-semibold text-right break-all"
         style={{
-          color: accentColor ?? (highlight ? '#3182F6' : '#2B313D'),
+          color: accentColor ?? (highlight ? '#8037FF' : '#2B313D'),
           fontFamily: mono ? 'ui-monospace, SFMono-Regular, monospace' : undefined,
           fontSize: highlight ? 14 : undefined,
         }}

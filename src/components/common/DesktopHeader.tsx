@@ -31,10 +31,10 @@ export default function DesktopHeader() {
         <div className="flex items-center justify-between h-16 px-6">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-[#3182F6] rounded-lg flex items-center justify-center">
+            <div className="w-8 h-8 bg-[#8037FF] rounded-lg flex items-center justify-center">
               <span className="text-lg">🦷</span>
             </div>
-            <span className="text-xl font-bold text-[#3182F6]">키닥터</span>
+            <span className="text-xl font-bold text-[#8037FF]">키닥터</span>
           </Link>
 
           {/* Search Bar */}
@@ -44,7 +44,7 @@ export default function DesktopHeader() {
               <input
                 type="text"
                 placeholder="시술, 병원, 지역을 검색해보세요"
-                className="w-full pl-11 pr-4 py-2.5 bg-gray-50 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-[#3182F6]/20 focus:bg-white border border-gray-200"
+                className="w-full pl-11 pr-4 py-2.5 bg-gray-50 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-[#8037FF]/20 focus:bg-white border border-gray-200"
               />
             </div>
           </div>
@@ -72,7 +72,7 @@ export default function DesktopHeader() {
                     onClick={() => setShowUserMenu(!showUserMenu)}
                     className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded-full transition-colors"
                   >
-                    <div className="w-8 h-8 bg-[#3182F6] rounded-full flex items-center justify-center text-white text-sm font-bold">
+                    <div className="w-8 h-8 bg-[#8037FF] rounded-full flex items-center justify-center text-white text-sm font-bold">
                       {user?.name?.charAt(0) ?? 'U'}
                     </div>
                     <ChevronDown size={14} className="text-gray-400" />
@@ -102,7 +102,7 @@ export default function DesktopHeader() {
                 <Link href="/login" className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 transition-colors">
                   로그인
                 </Link>
-                <Link href="/login?mode=signup" className="px-5 py-2 bg-[#3182F6] text-white text-sm font-medium rounded-full hover:bg-[#1E6FD9] transition-colors">
+                <Link href="/login?mode=signup" className="px-5 py-2 bg-[#8037FF] text-white text-sm font-medium rounded-full hover:bg-[#6D28D9] transition-colors">
                   회원가입
                 </Link>
               </div>
@@ -118,7 +118,7 @@ export default function DesktopHeader() {
               href={item.href}
               className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 ${
                 pathname === item.href
-                  ? 'text-[#3182F6] bg-[#E8F3FF]'
+                  ? 'text-[#8037FF] bg-[#F4EFFF]'
                   : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
               }`}
             >
@@ -153,7 +153,7 @@ export default function DesktopHeader() {
 
           <div className="flex-1" />
 
-          <Link href="/hospital/register" className="text-sm text-gray-400 hover:text-[#3182F6] transition-colors">
+          <Link href="/hospital/register" className="text-sm text-gray-400 hover:text-[#8037FF] transition-colors">
             병원 입점 신청
           </Link>
         </nav>

@@ -143,7 +143,7 @@ export default function HoursEditPage() {
             value={holidayNotice}
             onChange={(e) => setHolidayNotice(e.target.value)}
             placeholder="예) 공휴일 휴진, 설/추석 연휴 휴진"
-            className="w-full h-20 p-3 bg-gray-50 rounded-xl text-sm border border-gray-200 resize-none focus:outline-none focus:ring-1 focus:ring-[#3182F6] focus:border-[#3182F6]"
+            className="w-full h-20 p-3 bg-gray-50 rounded-xl text-sm border border-gray-200 resize-none focus:outline-none focus:ring-1 focus:ring-[#8037FF] focus:border-[#8037FF]"
           />
         </div>
 
@@ -181,7 +181,7 @@ export default function HoursEditPage() {
                       }
                       onBlur={() => setEditingCell(null)}
                       autoFocus
-                      className="w-full py-2 text-center text-sm bg-white border border-[#3182F6] rounded-lg focus:outline-none appearance-none"
+                      className="w-full py-2 text-center text-sm bg-white border border-[#8037FF] rounded-lg focus:outline-none appearance-none"
                     >
                       {timeOptions.map((t) => (
                         <option key={t} value={t}>
@@ -194,7 +194,7 @@ export default function HoursEditPage() {
                       onClick={() =>
                         setEditingCell({ dayIndex: idx, field: 'startTime' })
                       }
-                      className="w-full py-2.5 text-center text-sm bg-gray-50 rounded-lg border border-gray-200 hover:border-[#3182F6] transition-colors"
+                      className="w-full py-2.5 text-center text-sm bg-gray-50 rounded-lg border border-gray-200 hover:border-[#8037FF] transition-colors"
                     >
                       {s.startTime}
                     </button>
@@ -216,7 +216,7 @@ export default function HoursEditPage() {
                       }
                       onBlur={() => setEditingCell(null)}
                       autoFocus
-                      className="w-full py-2 text-center text-sm bg-white border border-[#3182F6] rounded-lg focus:outline-none appearance-none"
+                      className="w-full py-2 text-center text-sm bg-white border border-[#8037FF] rounded-lg focus:outline-none appearance-none"
                     >
                       {timeOptions.map((t) => (
                         <option key={t} value={t}>
@@ -229,7 +229,7 @@ export default function HoursEditPage() {
                       onClick={() =>
                         setEditingCell({ dayIndex: idx, field: 'endTime' })
                       }
-                      className="w-full py-2.5 text-center text-sm bg-gray-50 rounded-lg border border-gray-200 hover:border-[#3182F6] transition-colors"
+                      className="w-full py-2.5 text-center text-sm bg-gray-50 rounded-lg border border-gray-200 hover:border-[#8037FF] transition-colors"
                     >
                       {s.endTime}
                     </button>
@@ -241,7 +241,7 @@ export default function HoursEditPage() {
                   <button
                     onClick={() => toggleClosed(idx)}
                     className={`w-10 h-6 rounded-full transition-colors relative ${
-                      s.isClosed ? 'bg-[#3182F6]' : 'bg-gray-200'
+                      s.isClosed ? 'bg-[#8037FF]' : 'bg-gray-200'
                     }`}
                   >
                     <div
@@ -265,7 +265,7 @@ export default function HoursEditPage() {
           className={`w-full py-3.5 rounded-xl text-base font-bold transition-colors ${
             saving || loading
               ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-              : 'bg-[#3182F6] text-white'
+              : 'bg-[#8037FF] text-white'
           }`}
         >
           {saving ? '저장 중…' : loading ? '불러오는 중…' : '저장하기'}

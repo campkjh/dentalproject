@@ -119,7 +119,7 @@ export default function HospitalManagePage() {
           </p>
           <Link
             href="/hospital/register"
-            className="px-6 py-3 bg-[#3182F6] text-white rounded-xl text-sm font-bold btn-press"
+            className="px-6 py-3 bg-[#8037FF] text-white rounded-xl text-sm font-bold btn-press"
           >
             병원 등록하기
           </Link>
@@ -130,8 +130,8 @@ export default function HospitalManagePage() {
 
   const tabs = [
     '병원',
-    `멤버(${(hospital.doctors ?? []).length})`,
-    `리뷰(${(hospital.review_count ?? 0).toLocaleString()})`,
+    '멤버',
+    '리뷰',
   ];
 
   const handleAcceptDoctor = (name: string) => {
@@ -192,7 +192,7 @@ function HospitalTab({ hospital }: { hospital: HospitalRow }) {
       <div className="bg-white">
         <div className="flex items-center justify-between px-2.5 py-3">
           <h2 className="font-bold text-base">대문사진</h2>
-          <Link href="/hospital/manage/photos" className="text-[#3182F6] text-sm font-medium flex items-center gap-1">
+          <Link href="/hospital/manage/photos" className="text-[#8037FF] text-sm font-medium flex items-center gap-1">
             편집 <ChevronRight size={16} />
           </Link>
         </div>
@@ -215,7 +215,7 @@ function HospitalTab({ hospital }: { hospital: HospitalRow }) {
             <User size={24} className="text-gray-400" />
           </div>
           <div className="flex-1">
-            <span className="inline-block px-2 py-0.5 bg-[#E8F3FF] text-[#3182F6] text-xs rounded-full font-medium mb-1">
+            <span className="inline-block px-2 py-0.5 bg-[#F4EFFF] text-[#8037FF] text-xs rounded-full font-medium mb-1">
               {hospital.category}
             </span>
             <h3 className="font-bold text-base">{hospital.name}</h3>
@@ -253,7 +253,7 @@ function HospitalTab({ hospital }: { hospital: HospitalRow }) {
       <div className="bg-white px-2.5 py-4">
         <div className="flex items-center justify-between mb-3">
           <h2 className="font-bold text-base">운영일 및 시간</h2>
-          <Link href="/hospital/manage/hours" className="text-[#3182F6] text-sm font-medium flex items-center gap-1">
+          <Link href="/hospital/manage/hours" className="text-[#8037FF] text-sm font-medium flex items-center gap-1">
             편집 <ChevronRight size={16} />
           </Link>
         </div>
@@ -277,7 +277,7 @@ function HospitalTab({ hospital }: { hospital: HospitalRow }) {
       <div className="bg-white px-2.5 py-4">
         <div className="flex items-center justify-between mb-3">
           <h2 className="font-bold text-base">병원소개</h2>
-          <Link href="/hospital/manage/intro" className="text-[#3182F6] text-sm font-medium flex items-center gap-1">
+          <Link href="/hospital/manage/intro" className="text-[#8037FF] text-sm font-medium flex items-center gap-1">
             편집 <ChevronRight size={16} />
           </Link>
         </div>
@@ -324,7 +324,7 @@ function MemberTab({
       <div className="bg-white">
         <div className="px-2.5 py-3 flex items-center justify-between">
           <h2 className="font-bold text-sm text-gray-500">활성 멤버</h2>
-          <Link href="/hospital/manage/doctor" className="text-[#3182F6] text-xs font-bold">
+          <Link href="/hospital/manage/doctor" className="text-[#8037FF] text-xs font-bold">
             + 의료진 추가
           </Link>
         </div>
@@ -344,7 +344,7 @@ function MemberTab({
                   <span className="font-bold text-sm">{doctor.name}</span>
                   <span className="text-xs text-gray-500">{doctor.title}</span>
                   {doctor.is_owner && (
-                    <span className="px-1.5 py-0.5 bg-[#3182F6] text-white text-[10px] rounded font-medium">
+                    <span className="px-1.5 py-0.5 bg-[#8037FF] text-white text-[10px] rounded font-medium">
                       My
                     </span>
                   )}
@@ -399,7 +399,7 @@ function MemberTab({
                   </button>
                   <button
                     onClick={() => onAccept(request.name)}
-                    className="flex-1 py-2 bg-[#3182F6] text-white rounded-xl text-sm font-medium"
+                    className="flex-1 py-2 bg-[#8037FF] text-white rounded-xl text-sm font-medium"
                   >
                     수락
                   </button>

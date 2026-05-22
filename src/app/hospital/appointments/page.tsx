@@ -214,7 +214,7 @@ export default function AppointmentsPage() {
         <div
           key={`header-${day}`}
           className={`text-center text-xs font-medium py-2 ${
-            day === '일' ? 'text-red-400' : day === '토' ? 'text-blue-400' : 'text-gray-500'
+            day === '일' ? 'text-red-400' : day === '토' ? 'text-purple-400' : 'text-gray-500'
           }`}
         >
           {day}
@@ -240,19 +240,19 @@ export default function AppointmentsPage() {
           onClick={() => setSelectedDate(d)}
           className={`relative flex flex-col items-center justify-center py-1.5 rounded-lg text-sm transition-colors ${
             isSelected
-              ? 'bg-[#3182F6] text-white'
+              ? 'bg-[#8037FF] text-white'
               : isDisabled
                 ? 'text-gray-300 line-through'
                 : dayOfWeek === 0
                   ? 'text-red-400'
                   : dayOfWeek === 6
-                    ? 'text-blue-400'
+                    ? 'text-purple-400'
                     : 'text-gray-700'
           }`}
         >
           {d}
           {hasAppointment && !isSelected && (
-            <div className="w-1 h-1 bg-[#3182F6] rounded-full mt-0.5" />
+            <div className="w-1 h-1 bg-[#8037FF] rounded-full mt-0.5" />
           )}
           {hasAppointment && isSelected && (
             <div className="w-1 h-1 bg-white rounded-full mt-0.5" />
@@ -317,7 +317,7 @@ export default function AppointmentsPage() {
                   {/* Time + patient info */}
                   <div className="flex items-start gap-3">
                     <div className="w-14 text-center flex-shrink-0">
-                      <span className="text-sm font-bold text-[#3182F6]">
+                      <span className="text-sm font-bold text-[#8037FF]">
                         {apt.time}
                       </span>
                     </div>
@@ -338,7 +338,7 @@ export default function AppointmentsPage() {
                         {apt.treatmentName}
                       </p>
                       <div className="flex gap-2">
-                        <span className="px-2 py-0.5 bg-blue-50 text-blue-600 text-xs rounded-full font-medium">
+                        <span className="px-2 py-0.5 bg-purple-50 text-purple-600 text-xs rounded-full font-medium">
                           {apt.paymentType}
                         </span>
                         <span className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded-full font-medium">
@@ -359,7 +359,7 @@ export default function AppointmentsPage() {
                       </button>
                       <button
                         onClick={() => updateApptStatus(apt.id, 'confirmed')}
-                        className="flex-1 py-2 rounded-lg text-xs font-bold bg-[#3182F6] text-white btn-press"
+                        className="flex-1 py-2 rounded-lg text-xs font-bold bg-[#8037FF] text-white btn-press"
                       >
                         예약 확정
                       </button>
@@ -394,7 +394,7 @@ export default function AppointmentsPage() {
                     </div>
                     <a
                       href={`/hospital/manage/doctor?apt=${apt.id}`}
-                      className="text-xs text-[#3182F6] font-medium"
+                      className="text-xs text-[#8037FF] font-medium"
                     >
                       변경
                     </a>
@@ -412,7 +412,7 @@ export default function AppointmentsPage() {
                           [apt.id]: e.target.value,
                         }))
                       }
-                      className="flex-1 text-sm bg-gray-50 rounded-lg p-2 border-0 resize-none h-16 focus:outline-none focus:ring-1 focus:ring-[#3182F6]"
+                      className="flex-1 text-sm bg-gray-50 rounded-lg p-2 border-0 resize-none h-16 focus:outline-none focus:ring-1 focus:ring-[#8037FF]"
                     />
                   </div>
                 </div>
@@ -431,7 +431,7 @@ export default function AppointmentsPage() {
               onClick={() => handleDisableDay(selectedDate)}
               className={`px-3 py-1.5 text-xs font-medium rounded-lg ${
                 disabledDays.has(selectedDate)
-                  ? 'bg-[#3182F6] text-white'
+                  ? 'bg-[#8037FF] text-white'
                   : 'border border-red-300 text-red-500'
               }`}
             >
@@ -456,7 +456,7 @@ export default function AppointmentsPage() {
                     onClick={() => handleToggleSlot(selectedDate, slot.time)}
                     className={`py-2.5 rounded-lg text-sm font-medium transition-colors ${
                       slot.enabled
-                        ? 'bg-[#E8F3FF] text-[#3182F6] border border-[#3182F6]/20'
+                        ? 'bg-[#F4EFFF] text-[#8037FF] border border-[#8037FF]/20'
                         : 'bg-gray-100 text-gray-400 border border-gray-200'
                     }`}
                   >

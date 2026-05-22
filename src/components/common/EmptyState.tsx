@@ -19,7 +19,7 @@ export default function EmptyState({ icon = 'calendar', message }: EmptyStatePro
   return (
     <div className="flex flex-col items-center justify-center py-20">
       <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4 bounce-in">
-        <Icon size={28} className="text-[#3182F6]" />
+        <Icon size={28} className="text-[#8037FF]" />
       </div>
       <p className="text-gray-500 fade-in-up">{message}</p>
     </div>

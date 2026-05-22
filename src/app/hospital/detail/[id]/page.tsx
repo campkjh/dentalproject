@@ -112,7 +112,7 @@ export default function HospitalDetailPage() {
 
         {/* Cover Image Slider */}
         <div className="relative aspect-[16/9] lg:aspect-[3/1] lg:rounded-2xl lg:mt-2 overflow-hidden"
-          style={{ background: 'linear-gradient(135deg, #3182F6, #60A5FA)' }}>
+          style={{ background: 'linear-gradient(135deg, #8037FF, #A78BFA)' }}>
           {coverImages.length > 0 ? (
             <img
               key={coverImages[coverIdx % coverImages.length]}
@@ -156,7 +156,7 @@ export default function HospitalDetailPage() {
         {/* Hospital Info */}
         <div className="px-2.5 py-4">
           <div className="flex items-center gap-2 mb-2">
-            <span className="text-xs bg-blue-50 text-[#3182F6] font-medium rounded-full px-3 py-1">
+            <span className="text-xs bg-purple-50 text-[#8037FF] font-medium rounded-full px-3 py-1">
               {hospital.category}
             </span>
           </div>
@@ -184,7 +184,7 @@ export default function HospitalDetailPage() {
               const query = encodeURIComponent(hospital.address + ' ' + hospital.name);
               window.open(`https://map.naver.com/v5/search/${query}`, '_blank');
             }}
-            className="w-full py-2.5 bg-[#3182F6] text-white rounded-xl text-sm font-medium mb-4"
+            className="w-full py-2.5 bg-[#8037FF] text-white rounded-xl text-sm font-medium mb-4"
           >
             찾아가는길
           </button>
@@ -269,7 +269,7 @@ export default function HospitalDetailPage() {
               <div className="mb-4">
                 <h3 className="font-bold text-sm mb-2">주소</h3>
                 <div className="flex items-start gap-2 mb-3">
-                  <MapPin size={16} className="text-[#3182F6] flex-shrink-0 mt-0.5" />
+                  <MapPin size={16} className="text-[#8037FF] flex-shrink-0 mt-0.5" />
                   <div>
                     <p className="text-sm text-gray-700">{hospital.address}</p>
                     {hospital.addressDetail && (
@@ -304,7 +304,7 @@ export default function HospitalDetailPage() {
                   className="flex items-start gap-3 p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
                 >
                   {/* Avatar with initials */}
-                  <div className="w-14 h-14 bg-gradient-to-br from-[#3182F6] to-blue-400 rounded-full flex items-center justify-center flex-shrink-0">
+                  <div className="w-14 h-14 bg-gradient-to-br from-[#8037FF] to-purple-400 rounded-full flex items-center justify-center flex-shrink-0">
                     <span className="text-white font-bold text-sm">
                       {doctor.name.slice(-2)}
                     </span>
@@ -312,9 +312,9 @@ export default function HospitalDetailPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 mb-1">
                       <span className="text-sm font-bold">{doctor.name}</span>
-                      <span className="text-xs text-[#3182F6] font-medium">{doctor.title}</span>
+                      <span className="text-xs text-[#8037FF] font-medium">{doctor.title}</span>
                       {doctor.isOwner && (
-                        <span className="text-[10px] bg-[#3182F6] text-white rounded px-1.5 py-0.5">
+                        <span className="text-[10px] bg-[#8037FF] text-white rounded px-1.5 py-0.5">
                           대표원장
                         </span>
                       )}
@@ -336,7 +336,7 @@ export default function HospitalDetailPage() {
           {activeTab === '진료시간' && (
             <div>
               <div className="flex items-center gap-2 mb-3">
-                <Clock size={16} className="text-[#3182F6]" />
+                <Clock size={16} className="text-[#8037FF]" />
                 <h3 className="font-bold text-sm">진료시간</h3>
               </div>
               <div className="bg-gray-50 rounded-xl p-4">
@@ -367,7 +367,7 @@ export default function HospitalDetailPage() {
               {/* Average Rating Display */}
               <div className="flex items-center gap-4 mb-6 p-4 bg-gray-50 rounded-xl">
                 <div className="text-center">
-                  <p className="text-3xl font-bold text-[#3182F6]">{avgRating}</p>
+                  <p className="text-3xl font-bold text-[#8037FF]">{avgRating}</p>
                   <div className="flex items-center gap-0.5 mt-1 justify-center">
                     {[...Array(5)].map((_, i) => (
                       <Star
@@ -385,58 +385,65 @@ export default function HospitalDetailPage() {
               {/* Review List */}
               {hospitalReviews.length > 0 ? (
                 <div className="space-y-4">
-                  {hospitalReviews.map((review) => (
-                    <div key={review.id} className="border border-gray-100 rounded-xl p-4">
-                      {/* Reviewer info */}
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                            <User size={14} className="text-[#3182F6]" />
-                          </div>
-                          <div>
-                            <p className="text-sm font-bold">{review.authorName}</p>
-                            <p className="text-[11px] text-gray-400">{review.date}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-0.5">
-                          {[...Array(5)].map((_, i) => (
-                            <Star
-                              key={i}
-                              size={12}
-                              fill={i < review.rating ? '#FBBF24' : '#E5E7EB'}
-                              stroke={i < review.rating ? '#FBBF24' : '#E5E7EB'}
-                            />
-                          ))}
-                        </div>
-                      </div>
+                  {hospitalReviews.map((review) => {
+                    const hasReviewImages = Boolean(review.beforeImage || review.afterImage);
 
-                      {/* Treatment info */}
-                      <div className="bg-gray-50 rounded-lg p-3 mb-3">
-                        <p className="text-xs text-gray-500">시술명: {review.treatmentName}</p>
-                        <p className="text-xs text-gray-500 mt-1">
-                          비용: {review.totalCost.toLocaleString()}원
-                        </p>
-                        {review.doctorName && (
-                          <p className="text-xs text-[#3182F6] mt-1">담당의: {review.doctorName}</p>
+                    return (
+                      <div key={review.id} className="border border-gray-100 rounded-xl p-4">
+                        {/* Reviewer info */}
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                              <User size={14} className="text-[#8037FF]" />
+                            </div>
+                            <div>
+                              <p className="text-sm font-bold">{review.authorName}</p>
+                              <p className="text-[11px] text-gray-400">{review.date}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-0.5">
+                            {[...Array(5)].map((_, i) => (
+                              <Star
+                                key={i}
+                                size={12}
+                                fill={i < review.rating ? '#FBBF24' : '#E5E7EB'}
+                                stroke={i < review.rating ? '#FBBF24' : '#E5E7EB'}
+                              />
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Treatment info */}
+                        <div className="bg-gray-50 rounded-lg p-3 mb-3">
+                          <p className="text-xs text-gray-500">시술명: {review.treatmentName}</p>
+                          <p className="text-xs text-gray-500 mt-1">
+                            비용: {review.totalCost.toLocaleString()}원
+                          </p>
+                          {review.doctorName && (
+                            <p className="text-xs text-[#8037FF] mt-1">담당의: {review.doctorName}</p>
+                          )}
+                        </div>
+
+                        {hasReviewImages && (
+                          <div className="flex gap-2 mb-3">
+                            {review.beforeImage && (
+                              <div className="flex-1 aspect-[4/3] rounded-lg overflow-hidden bg-gray-100">
+                                <img src={review.beforeImage} alt="Before" className="h-full w-full object-cover" />
+                              </div>
+                            )}
+                            {review.afterImage && (
+                              <div className="flex-1 aspect-[4/3] rounded-lg overflow-hidden bg-gray-100">
+                                <img src={review.afterImage} alt="After" className="h-full w-full object-cover" />
+                              </div>
+                            )}
+                          </div>
                         )}
-                      </div>
 
-                      {/* Before/After placeholder */}
-                      <div className="flex gap-2 mb-3">
-                        <div className="flex-1 aspect-[4/3] bg-gradient-to-br from-gray-100 to-gray-50 rounded-lg flex flex-col items-center justify-center">
-                          <span className="text-xl">📷</span>
-                          <span className="text-[10px] text-gray-400 mt-1">Before</span>
-                        </div>
-                        <div className="flex-1 aspect-[4/3] bg-gradient-to-br from-blue-50 to-blue-50 rounded-lg flex flex-col items-center justify-center">
-                          <span className="text-xl">📷</span>
-                          <span className="text-[10px] text-gray-400 mt-1">After</span>
-                        </div>
+                        {/* Review content */}
+                        <p className="text-sm text-gray-700 leading-relaxed">{review.content}</p>
                       </div>
-
-                      {/* Review content */}
-                      <p className="text-sm text-gray-700 leading-relaxed">{review.content}</p>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="py-10 text-center text-gray-400 text-sm">

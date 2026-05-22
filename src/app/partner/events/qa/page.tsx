@@ -101,7 +101,7 @@ export default function PartnerQaPage() {
     return (
       <div className="bg-white rounded-xl p-10 text-center">
         <p className="text-sm text-gray-500 mb-4">로그인이 필요합니다.</p>
-        <Link href="/login" className="inline-block px-5 py-2.5 bg-[#3182F6] text-white text-sm font-bold rounded-xl">
+        <Link href="/login" className="inline-block px-5 py-2.5 bg-[#8037FF] text-white text-sm font-bold rounded-xl">
           로그인
         </Link>
       </div>
@@ -143,8 +143,8 @@ export default function PartnerQaPage() {
               <p className="text-[13px] text-gray-700 mb-3">{q.question}</p>
 
               {q.answer ? (
-                <div className="bg-[#E8F3FF] rounded-lg p-3">
-                  <p className="text-[11px] font-bold text-[#3182F6] mb-1">병원 답변</p>
+                <div className="bg-[#F4EFFF] rounded-lg p-3">
+                  <p className="text-[11px] font-bold text-[#8037FF] mb-1">병원 답변</p>
                   <p className="text-[12px] text-gray-700">{q.answer}</p>
                   {q.answered_at && (
                     <p className="text-[10px] text-gray-400 mt-1">{new Date(q.answered_at).toLocaleString('ko-KR')}</p>

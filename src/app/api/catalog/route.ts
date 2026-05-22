@@ -10,6 +10,11 @@ import {
 
 export const revalidate = 300; // ISR: 5분 캐시
 
+function isMissingProductColumn(error: { message?: string; details?: string | null; hint?: string | null } | null, column: string) {
+  const text = `${error?.message ?? ''} ${error?.details ?? ''} ${error?.hint ?? ''}`.toLowerCase();
+  return text.includes(column.toLowerCase());
+}
+
 export async function GET() {
   const sb = await createClient();
 
@@ -28,7 +33,7 @@ export async function GET() {
       .from('products')
       .select(
         `id, title, location, price, original_price, discount, rating, review_count, like_count,
-         image_url, tags, category, sub_category, hospital_id,
+         image_url, detail_image_url, tags, category, sub_category, hospital_id,
          hospitals (id, name, location)`
       )
       .eq('status', 'active'),
@@ -36,7 +41,7 @@ export async function GET() {
     sb
       .from('reviews')
       .select(
-        `id, author_id, hospital_id, doctor_id, product_id, rating, content, treatment_name, total_cost, treatment_date, created_at,
+        `id, author_id, hospital_id, doctor_id, product_id, rating, content, treatment_name, total_cost, treatment_date, before_image, after_image, created_at,
          author:profiles!reviews_author_id_fkey (name),
          doctor:doctors (name, title)`
       )
@@ -52,12 +57,28 @@ export async function GET() {
   ]);
 
   if (hospitalsRes.error) return NextResponse.json({ error: hospitalsRes.error.message }, { status: 500 });
-  if (productsRes.error) return NextResponse.json({ error: productsRes.error.message }, { status: 500 });
+  let productsData = productsRes.data as any[] | null;
+  let productsError = productsRes.error;
+
+  if (productsError && isMissingProductColumn(productsError, 'detail_image_url')) {
+    const fallback = await sb
+      .from('products')
+      .select(
+        `id, title, location, price, original_price, discount, rating, review_count, like_count,
+         image_url, tags, category, sub_category, hospital_id,
+         hospitals (id, name, location)`
+      )
+      .eq('status', 'active');
+    productsData = fallback.data;
+    productsError = fallback.error;
+  }
+
+  if (productsError) return NextResponse.json({ error: productsError.message }, { status: 500 });
   if (categoriesRes.error) return NextResponse.json({ error: categoriesRes.error.message }, { status: 500 });
   if (reviewsRes.error) return NextResponse.json({ error: reviewsRes.error.message }, { status: 500 });
 
   const hospitalsRaw = (hospitalsRes.data ?? []) as any[];
-  const productsRaw = (productsRes.data ?? []) as any[];
+  const productsRaw = (productsData ?? []) as any[];
   const reviewsRaw = (reviewsRes.data ?? []) as any[];
 
   const hospitals = hospitalsRaw.map(normalizeHospital);

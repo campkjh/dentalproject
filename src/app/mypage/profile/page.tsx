@@ -135,7 +135,7 @@ export default function ProfilePage() {
               alt={user?.name || '프로필'}
             />
           </div>
-          <label className={`absolute bottom-0 right-0 w-8 h-8 rounded-full flex items-center justify-center shadow-lg border-2 border-white cursor-pointer btn-press ${uploadingPhoto ? 'bg-gray-400' : 'bg-[#3182F6]'}`}>
+          <label className={`absolute bottom-0 right-0 w-8 h-8 rounded-full flex items-center justify-center shadow-lg border-2 border-white cursor-pointer btn-press ${uploadingPhoto ? 'bg-gray-400' : 'bg-[#8037FF]'}`}>
             {uploadingPhoto ? <span className="text-white text-[10px]">...</span> : <Camera size={14} className="text-white" />}
             <input
               type="file"
@@ -205,13 +205,13 @@ export default function ProfilePage() {
                 </div>
                 <span
                   className="text-[12px] font-medium"
-                  style={{ color: selected ? '#3182F6' : '#4B5563' }}
+                  style={{ color: selected ? '#8037FF' : '#4B5563' }}
                 >
                   {cat.name}
                 </span>
                 {selected && (
                   <span
-                    className="absolute top-0 right-0 w-5 h-5 bg-[#3182F6] rounded-full flex items-center justify-center check-pop"
+                    className="absolute top-0 right-0 w-5 h-5 bg-[#8037FF] rounded-full flex items-center justify-center check-pop"
                     style={{ boxShadow: '0 2px 6px rgba(49,130,246,0.3)' }}
                   >
                     <Check size={11} strokeWidth={3} className="text-white" />
@@ -338,7 +338,7 @@ function NameEditor({ name, onSave }: { name: string; onSave: (v: string) => voi
         onClick={() => onSave(val.trim())}
         className="w-full py-3.5 rounded-xl font-bold text-[15px] btn-press"
         style={{
-          backgroundColor: val.trim() ? '#3182F6' : '#E5E7EB',
+          backgroundColor: val.trim() ? '#8037FF' : '#E5E7EB',
           color: val.trim() ? '#fff' : '#A4ABBA',
         }}
       >
@@ -371,13 +371,13 @@ function ListChoice({
             <span
               className="text-[14px]"
               style={{
-                color: selected ? '#3182F6' : '#2B313D',
+                color: selected ? '#8037FF' : '#2B313D',
                 fontWeight: selected ? 700 : 500,
               }}
             >
               {opt}
             </span>
-            {selected && <Check size={16} strokeWidth={3} className="text-[#3182F6]" />}
+            {selected && <Check size={16} strokeWidth={3} className="text-[#8037FF]" />}
           </button>
         );
       })}

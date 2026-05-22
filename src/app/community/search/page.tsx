@@ -172,7 +172,7 @@ export default function CommunitySearchPage() {
                     />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5 mb-0.5">
-                        <span className="text-[10px] font-semibold text-[#3182F6] bg-[#E8F3FF] rounded px-1.5 py-0.5 leading-none">
+                        <span className="text-[10px] font-semibold text-[#8037FF] bg-[#F4EFFF] rounded px-1.5 py-0.5 leading-none">
                           {boardLabel[post.boardType]}
                         </span>
                         <span className="text-[11px] text-gray-400">
@@ -259,7 +259,7 @@ export default function CommunitySearchPage() {
                   className="flex items-center gap-1.5 pl-2 pr-3 rounded-full bg-white border border-gray-200"
                   style={{ height: 30 }}
                 >
-                  <span className="text-[11px] font-bold text-[#3182F6]">
+                  <span className="text-[11px] font-bold text-[#8037FF]">
                     {i + 1}
                   </span>
                   <span className="text-[12px] text-gray-700 font-medium">{t}</span>
@@ -280,7 +280,7 @@ function Highlight({ text, term }: { text: string; term: string }) {
   return (
     <>
       {text.slice(0, idx)}
-      <mark className="bg-transparent text-[#3182F6] font-bold">
+      <mark className="bg-transparent text-[#8037FF] font-bold">
         {text.slice(idx, idx + term.length)}
       </mark>
       {text.slice(idx + term.length)}

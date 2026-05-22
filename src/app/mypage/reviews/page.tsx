@@ -7,14 +7,6 @@ import EmptyState from '@/components/common/EmptyState';
 import LoginRequired from '@/components/common/LoginRequired';
 import { Star, MoreHorizontal } from 'lucide-react';
 
-// Mock before/after pairs for demo reviews
-const mockBeforeAfter: Record<string, { before: string; after: string }> = {
-  r1: { before: '/images/face_1.jpeg', after: '/images/face_2.jpeg' },
-  r2: { before: '/images/face_3.jpeg', after: '/images/face_4.jpeg' },
-  r3: { before: '/images/face_5.jpeg', after: '/images/face_6.jpeg' },
-  r4: { before: '/images/face_7.jpeg', after: '/images/face_8.jpeg' },
-};
-
 export default function MyReviewsPage() {
   const { isLoggedIn, reviews } = useStore();
   const [openMenu, setOpenMenu] = useState<string | null>(null);
@@ -52,10 +44,7 @@ export default function MyReviewsPage() {
 
       <div>
         {userReviews.map((review, idx) => {
-          const imgs = mockBeforeAfter[review.id] ?? {
-            before: '/images/face_1.jpeg',
-            after: '/images/face_2.jpeg',
-          };
+          const hasReviewImages = Boolean(review.beforeImage || review.afterImage);
           return (
             <article
               key={review.id}
@@ -119,32 +108,37 @@ export default function MyReviewsPage() {
                 </div>
               </div>
 
-              {/* Before / After comparison */}
-              <div className="grid grid-cols-2 gap-2">
-                <div className="relative aspect-square rounded-xl overflow-hidden bg-gray-100">
-                  <img
-                    src={imgs.before}
-                    alt="전"
-                    className="w-full h-full object-cover"
-                  />
-                  <span className="absolute top-2 left-2 px-2 py-0.5 bg-black/60 text-white text-[10px] font-bold rounded">
-                    BEFORE
-                  </span>
+              {hasReviewImages && (
+                <div className={`grid gap-2 ${review.beforeImage && review.afterImage ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                  {review.beforeImage && (
+                    <div className="relative aspect-square rounded-xl overflow-hidden bg-gray-100">
+                      <img
+                        src={review.beforeImage}
+                        alt="시술 전"
+                        className="w-full h-full object-cover"
+                      />
+                      <span className="absolute top-2 left-2 px-2 py-0.5 bg-black/60 text-white text-[10px] font-bold rounded">
+                        전
+                      </span>
+                    </div>
+                  )}
+                  {review.afterImage && (
+                    <div className="relative aspect-square rounded-xl overflow-hidden bg-gray-100">
+                      <img
+                        src={review.afterImage}
+                        alt="시술 후"
+                        className="w-full h-full object-cover"
+                      />
+                      <span className="absolute top-2 left-2 px-2 py-0.5 bg-[#8037FF] text-white text-[10px] font-bold rounded">
+                        후
+                      </span>
+                    </div>
+                  )}
                 </div>
-                <div className="relative aspect-square rounded-xl overflow-hidden bg-gray-100">
-                  <img
-                    src={imgs.after}
-                    alt="후"
-                    className="w-full h-full object-cover"
-                  />
-                  <span className="absolute top-2 left-2 px-2 py-0.5 bg-[#3182F6] text-white text-[10px] font-bold rounded">
-                    AFTER
-                  </span>
-                </div>
-              </div>
+              )}
 
               {/* Content */}
-              <p className="text-[13px] text-gray-700 leading-relaxed mt-3 line-clamp-4 whitespace-pre-line">
+              <p className={`text-[13px] text-gray-700 leading-relaxed line-clamp-4 whitespace-pre-line ${hasReviewImages ? 'mt-3' : 'mt-0'}`}>
                 {review.content}
               </p>
 

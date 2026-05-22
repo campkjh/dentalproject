@@ -33,7 +33,7 @@ export function IconMail({ size = 24 }: IconProps) {
     <svg {...wrap(size)}>
       <path
         d="M3 6.5a3 3 0 013-3h12a3 3 0 013 3v7a3 3 0 01-3 3h-6.2L8 21v-4.5H6a3 3 0 01-3-3v-7z"
-        fill="#3B82F6"
+        fill="#8037FF"
       />
       <circle cx="9" cy="10" r="1.2" fill="#fff" />
       <circle cx="12" cy="10" r="1.2" fill="#fff" />
@@ -67,7 +67,7 @@ export function IconCoin({ size = 24 }: IconProps) {
     <svg {...wrap(size)}>
       <circle cx="12" cy="12" r="9" fill="#FBBF24" />
       <circle cx="12" cy="12" r="7" fill="none" stroke="#F59E0B" strokeWidth="0.8" opacity="0.6" />
-      <text x="12" y="16" textAnchor="middle" fontWeight="800" fontSize="11" fill="#92400E" fontFamily="system-ui">
+      <text x="12" y="16" textAnchor="middle" fontWeight="700" fontSize="11" fill="#92400E" fontFamily="system-ui">
         ₩
       </text>
     </svg>
@@ -140,11 +140,11 @@ export function IconDoc({ size = 24 }: IconProps) {
 export function IconHeadset({ size = 24 }: IconProps) {
   return (
     <svg {...wrap(size)}>
-      <path d="M4 14a8 8 0 0116 0" fill="none" stroke="#3B82F6" strokeWidth="2" strokeLinecap="round" />
-      <rect x="2.5" y="13" width="4.5" height="7" rx="1.8" fill="#3B82F6" />
-      <rect x="17" y="13" width="4.5" height="7" rx="1.8" fill="#3B82F6" />
-      <path d="M19 20v.5a3 3 0 01-3 3h-1.5" stroke="#3B82F6" strokeWidth="1.6" fill="none" strokeLinecap="round" />
-      <circle cx="13.3" cy="23.5" r="1.3" fill="#3B82F6" />
+      <path d="M4 14a8 8 0 0116 0" fill="none" stroke="#8037FF" strokeWidth="2" strokeLinecap="round" />
+      <rect x="2.5" y="13" width="4.5" height="7" rx="1.8" fill="#8037FF" />
+      <rect x="17" y="13" width="4.5" height="7" rx="1.8" fill="#8037FF" />
+      <path d="M19 20v.5a3 3 0 01-3 3h-1.5" stroke="#8037FF" strokeWidth="1.6" fill="none" strokeLinecap="round" />
+      <circle cx="13.3" cy="23.5" r="1.3" fill="#8037FF" />
     </svg>
   );
 }
@@ -169,7 +169,7 @@ export function IconHospital({ size = 24 }: IconProps) {
   return (
     <svg {...wrap(size)}>
       <rect x="3" y="9" width="18" height="12.5" rx="1.5" fill="#E5E7EB" />
-      <path d="M2.5 9.5L12 2.5l9.5 7z" fill="#3B82F6" />
+      <path d="M2.5 9.5L12 2.5l9.5 7z" fill="#8037FF" />
       <rect x="10.5" y="12" width="3" height="7" rx="0.5" fill="#fff" />
       <rect x="11" y="13" width="2" height="5" fill="#EF4444" />
       <rect x="10.2" y="14.5" width="3.6" height="2" fill="#EF4444" />
