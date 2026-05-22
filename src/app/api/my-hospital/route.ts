@@ -16,13 +16,36 @@ export async function GET() {
     .select(
       `*,
        doctors (*),
-       operating_hours (*),
-       products!products_hospital_id_fkey (id, title, price, status)`
+       operating_hours (*)`
     )
     .eq('owner_id', user.id)
     .maybeSingle();
 
   if (!hospital) return NextResponse.json({ hospital: null });
+
+  let products: any[] = [];
+  if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    const admin = await createAdminClient();
+    const { data } = await admin
+      .from('products')
+      .select(
+        `id, title, location, price, original_price, discount, rating, review_count,
+         like_count, image_url, tags, category, sub_category, status, created_at`
+      )
+      .eq('hospital_id', hospital.id)
+      .order('created_at', { ascending: false });
+    products = data ?? [];
+  } else {
+    const { data } = await sb
+      .from('products')
+      .select(
+        `id, title, location, price, original_price, discount, rating, review_count,
+         like_count, image_url, tags, category, sub_category, status, created_at`
+      )
+      .eq('hospital_id', hospital.id)
+      .order('created_at', { ascending: false });
+    products = data ?? [];
+  }
 
   // Reviews + recent reservations
   const [reviewsRes, reservationsRes] = await Promise.all([
@@ -44,7 +67,7 @@ export async function GET() {
   ]);
 
   return NextResponse.json({
-    hospital,
+    hospital: { ...hospital, products },
     reviews: reviewsRes.data ?? [],
     reservations: reservationsRes.data ?? [],
   });

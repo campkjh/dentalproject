@@ -47,7 +47,7 @@ export default function ProfilePage() {
   if (!isLoggedIn) {
     return (
       <div className="min-h-screen bg-white max-w-[480px] mx-auto">
-        <TopBar title="프로필설정" />
+        <TopBar title="프로필 설정" />
         <LoginRequired />
       </div>
     );
@@ -119,23 +119,23 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-white max-w-[480px] mx-auto page-enter">
-      <TopBar title="프로필설정" />
+      <TopBar title="프로필 설정" />
 
       {/* Profile Avatar */}
-      <div className="bg-white py-8 flex flex-col items-center fade-in-up">
-        <div className="relative mb-3">
+      <div className="bg-white pt-5 pb-4 flex flex-col items-center fade-in-up">
+        <div className="relative mb-2.5">
           <div
-            className="w-24 h-24 rounded-full flex items-center justify-center overflow-hidden"
+            className="w-[72px] h-[72px] rounded-full flex items-center justify-center overflow-hidden"
             style={{ backgroundColor: '#F3F4F6' }}
           >
             <Avatar
               src={user?.profileImage}
               gender={user?.gender}
-              size={76}
+              size={58}
               alt={user?.name || '프로필'}
             />
           </div>
-          <label className={`absolute bottom-0 right-0 w-8 h-8 rounded-full flex items-center justify-center shadow-lg border-2 border-white cursor-pointer btn-press ${uploadingPhoto ? 'bg-gray-400' : 'bg-[#3182F6]'}`}>
+          <label className={`absolute bottom-0 right-0 w-7 h-7 rounded-full flex items-center justify-center shadow-md border-2 border-white cursor-pointer btn-press ${uploadingPhoto ? 'bg-gray-400' : 'bg-[#3182F6]'}`}>
             {uploadingPhoto ? <span className="text-white text-[10px]">...</span> : <Camera size={14} className="text-white" />}
             <input
               type="file"
@@ -145,13 +145,13 @@ export default function ProfilePage() {
             />
           </label>
         </div>
-        <h2 className="text-lg font-bold">{user?.name}</h2>
+        <h2 className="text-[16px] font-semibold text-gray-900">{user?.name}</h2>
       </div>
 
       {/* Customer Info */}
-      <div className="mt-2 bg-white">
-        <div className="px-2.5 pt-4 pb-2">
-          <h3 className="text-sm font-bold text-gray-900">고객정보</h3>
+      <div className="mt-1 bg-white">
+        <div className="px-5 pt-4 pb-1.5">
+          <h3 className="text-[15px] font-semibold text-gray-900">고객정보</h3>
         </div>
         <div className="divide-y divide-gray-50">
           {infoItems.map((item) => (
@@ -159,12 +159,12 @@ export default function ProfilePage() {
               key={item.label}
               disabled={item.readonly}
               onClick={item.onClick}
-              className="w-full flex items-center justify-between px-2.5 py-3.5 text-left disabled:cursor-default hover:bg-gray-50 disabled:hover:bg-transparent transition-colors"
+              className="w-full flex min-h-11 items-center justify-between px-5 py-2.5 text-left disabled:cursor-default hover:bg-gray-50 disabled:hover:bg-transparent transition-colors"
             >
-              <span className="text-sm text-gray-500">{item.label}</span>
-              <div className="flex items-center gap-1">
-                <span className="text-sm font-medium text-gray-900">{item.value}</span>
-                {!item.readonly && <ChevronRight size={14} className="text-gray-300" />}
+              <span className="text-[14px] font-medium text-gray-500">{item.label}</span>
+              <div className="flex min-w-0 items-center gap-1.5 pl-4">
+                <span className="truncate text-right text-[14px] font-medium text-gray-900">{item.value}</span>
+                {!item.readonly && <ChevronRight size={16} strokeWidth={1.8} className="h-4 w-4 flex-none text-gray-300" />}
               </div>
             </button>
           ))}
@@ -172,18 +172,18 @@ export default function ProfilePage() {
       </div>
 
       {/* Interested categories */}
-      <div className="h-2 bg-gray-50 mt-2" />
+      <div className="h-2 bg-gray-50 mt-1" />
       <div className="bg-white pb-4">
-        <div className="flex items-center justify-between px-2.5 pt-4 pb-2">
-          <h3 className="text-sm font-bold text-gray-900">관심있는 진료과목</h3>
+        <div className="flex items-center justify-between px-5 pt-4 pb-2">
+          <h3 className="text-[15px] font-semibold text-gray-900">관심있는 진료과목</h3>
           <span className="text-[11px] text-gray-400 font-medium">
             {interestedCategories.length}개 선택
           </span>
         </div>
-        <p className="text-[12px] text-gray-500 px-2.5 mb-3 leading-snug">
+        <p className="text-[12px] text-gray-500 px-5 mb-3 leading-snug">
           관심 있는 카테고리를 선택하면 홈에서 관련 시술과 병원을 더 많이 만날 수 있어요.
         </p>
-        <div className="px-2.5 grid grid-cols-4 gap-2">
+        <div className="px-5 grid grid-cols-4 gap-2">
           {categories.map((cat) => {
             const selected = interestedCategories.includes(cat.id);
             return (
@@ -224,10 +224,10 @@ export default function ProfilePage() {
       </div>
 
       {/* Withdraw Button */}
-      <div className="px-2.5 py-8">
+      <div className="px-5 py-6">
         <button
           onClick={handleWithdraw}
-          className="w-full py-3 text-sm text-gray-400 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
+          className="w-full py-3 text-sm text-gray-400 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
         >
           회원탈퇴
         </button>

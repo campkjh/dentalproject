@@ -1,10 +1,24 @@
 'use client';
 
-import { useState } from 'react';
-import { Bell, MapPin } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { Bell, MapPin, Package } from 'lucide-react';
 import EmptyState from '@/components/common/EmptyState';
 import { useStore } from '@/store';
 import { Reservation } from '@/types';
+
+type ProductApprovalTab = 'approved' | 'pending' | 'rejected';
+
+type HospitalProduct = {
+  id: string;
+  title: string;
+  price: number | null;
+  original_price?: number | null;
+  discount?: number | null;
+  image_url?: string | null;
+  category?: string | null;
+  sub_category?: string | null;
+  status?: string | null;
+};
 
 const statusLabel: Record<Reservation['status'], string> = {
   pending: '새로운예약',
@@ -23,6 +37,25 @@ const statusColor: Record<Reservation['status'], string> = {
 export default function HospitalHomePage() {
   const { reservations, showModal, showToast, updateReservationStatus } = useStore();
   const [activeTab, setActiveTab] = useState('전체');
+  const [productTab, setProductTab] = useState<ProductApprovalTab>('approved');
+  const [products, setProducts] = useState<HospitalProduct[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/my-hospital', { cache: 'no-store' });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!cancelled) setProducts(data.hospital?.products ?? []);
+      } catch {
+        if (!cancelled) setProducts([]);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const pendingCount = reservations.filter((r) => r.status === 'pending').length;
   const confirmedCount = reservations.filter((r) => r.status === 'confirmed').length;
@@ -43,6 +76,17 @@ export default function HospitalHomePage() {
     return true;
   });
 
+  const productCounts = useMemo(() => ({
+    approved: products.filter((product) => getProductApprovalTab(product.status) === 'approved').length,
+    pending: products.filter((product) => getProductApprovalTab(product.status) === 'pending').length,
+    rejected: products.filter((product) => getProductApprovalTab(product.status) === 'rejected').length,
+  }), [products]);
+
+  const filteredProducts = products.filter(
+    (product) => getProductApprovalTab(product.status) === productTab
+  );
+  const productTabIndex = ['approved', 'pending', 'rejected'].indexOf(productTab);
+
   const handleConfirm = (id: string) => {
     showModal('예약 확정', '해당 예약을 확정하시겠습니까?', () => {
       updateReservationStatus(id, 'confirmed');
@@ -58,14 +102,69 @@ export default function HospitalHomePage() {
   };
 
   return (
-    <div className="pb-[86px] bg-white min-h-screen">
+    <div className="pb-[86px] pt-12 bg-white min-h-screen">
       {/* Header */}
-      <div style={{ position: "sticky", top: 0, zIndex: 40 }} className="bg-white flex items-center justify-between h-12 px-2.5">
+      <div className="fixed left-1/2 top-0 z-50 flex h-12 w-full max-w-[480px] -translate-x-1/2 items-center justify-between bg-white px-2.5 lg:top-[112px]">
         <h1 className="text-lg font-bold">홈</h1>
         <button className="p-1">
           <Bell size={22} className="text-gray-700" />
         </button>
       </div>
+
+      <section className="bg-white">
+        <div className="px-5 pt-3 pb-2">
+          <h2 className="text-[17px] font-bold text-gray-900">등록상품</h2>
+        </div>
+        <div className="relative border-b border-gray-100">
+          <div className="grid grid-cols-3">
+            {[
+              { key: 'approved' as const, label: '승인완료' },
+              { key: 'pending' as const, label: '승인대기' },
+              { key: 'rejected' as const, label: '반려' },
+            ].map((tab) => {
+              const isActive = productTab === tab.key;
+              return (
+                <button
+                  key={tab.key}
+                  onClick={() => setProductTab(tab.key)}
+                  className={`h-12 text-[16px] font-medium transition-colors ${
+                    isActive
+                      ? 'text-gray-900'
+                      : 'text-gray-400'
+                  }`}
+                >
+                  {tab.label}({productCounts[tab.key]})
+                </button>
+              );
+            })}
+          </div>
+          <span
+            className="absolute bottom-[-1px] left-0 h-0.5 w-1/3 bg-gray-900 transition-transform duration-300 ease-out"
+            style={{ transform: `translateX(${productTabIndex * 100}%)` }}
+          />
+        </div>
+
+        <div className="px-5 py-3">
+          {filteredProducts.length === 0 ? (
+            <div className="flex min-h-[112px] flex-col items-center justify-center rounded-lg bg-gray-50 text-center">
+              <Package size={22} className="text-gray-300" />
+              <p className="mt-2 text-[13px] font-medium text-gray-400">
+                {productTab === 'approved'
+                  ? '승인완료 상품이 없습니다.'
+                  : productTab === 'pending'
+                    ? '승인대기 상품이 없습니다.'
+                    : '반려 상품이 없습니다.'}
+              </p>
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-100">
+              {filteredProducts.map((product) => (
+                <ProductRow key={product.id} product={product} />
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
 
       {/* Tab filters */}
       <div className="bg-white px-2.5 pb-3">
@@ -173,6 +272,51 @@ export default function HospitalHomePage() {
         )}
       </div>
 
+    </div>
+  );
+}
+
+function getProductApprovalTab(status?: string | null): ProductApprovalTab {
+  if (status === 'pending' || status === 'draft' || status === 'paused') return 'pending';
+  if (status === 'rejected' || status === 'removed') return 'rejected';
+  return 'approved';
+}
+
+function ProductRow({ product }: { product: HospitalProduct }) {
+  const price = product.price ?? 0;
+  const originalPrice = product.original_price ?? 0;
+  const category = product.sub_category || product.category;
+
+  return (
+    <div className="flex items-center gap-3 py-3">
+      <div className="h-[62px] w-[62px] flex-shrink-0 overflow-hidden rounded-lg bg-gray-100">
+        {product.image_url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={product.image_url} alt="" className="h-full w-full object-cover" />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center">
+            <Package size={20} className="text-gray-300" />
+          </div>
+        )}
+      </div>
+      <div className="min-w-0 flex-1">
+        {category && (
+          <p className="mb-1 text-[11px] font-medium text-[#3182F6]">{category}</p>
+        )}
+        <p className="line-clamp-2 text-[14px] font-semibold leading-[19px] text-gray-900">
+          {product.title}
+        </p>
+        <div className="mt-1 flex items-baseline gap-1.5">
+          <span className="text-[14px] font-bold text-gray-900">
+            {price.toLocaleString('ko-KR')}원
+          </span>
+          {originalPrice > price && (
+            <span className="text-[12px] text-gray-400 line-through">
+              {originalPrice.toLocaleString('ko-KR')}원
+            </span>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

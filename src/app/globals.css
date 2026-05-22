@@ -1196,6 +1196,27 @@ textarea.tds-input {
   box-shadow: 0 0 0 3px rgba(49, 130, 246, 0.12);
 }
 
+.partner-doctor-edit .partner-field label {
+  margin-bottom: 5px;
+  padding: 0;
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.partner-doctor-edit .partner-input {
+  min-height: 46px;
+  border-radius: 10px;
+  padding: 0 13px;
+  font-size: 15px;
+  line-height: 22px;
+}
+
+.partner-doctor-edit .partner-textarea {
+  min-height: 92px;
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
+
 .partner-textarea {
   min-height: 108px;
   padding-top: 14px;

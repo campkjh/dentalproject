@@ -265,9 +265,9 @@ export default function AppointmentsPage() {
   };
 
   return (
-    <div className="pb-[86px] bg-white min-h-screen">
+    <div className="pb-[86px] pt-12 bg-white min-h-screen">
       {/* Header */}
-      <div style={{ position: "sticky", top: 0, zIndex: 40 }} className="bg-white flex items-center justify-between h-12 px-2.5">
+      <div className="fixed left-1/2 top-0 z-50 flex h-12 w-full max-w-[480px] -translate-x-1/2 items-center justify-between bg-white px-2.5 lg:top-[112px]">
         <h1 className="text-lg font-bold">예약관리</h1>
       </div>
 
