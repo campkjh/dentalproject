@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { Bell, MapPin, Package } from 'lucide-react';
 import EmptyState from '@/components/common/EmptyState';
 import { useStore } from '@/store';
@@ -33,6 +33,12 @@ const statusColor: Record<Reservation['status'], string> = {
   completed: 'bg-green-100 text-green-700',
   cancelled: 'bg-gray-100 text-gray-500',
 };
+
+const PRODUCT_TABS = [
+  { key: 'approved' as const, label: '승인완료' },
+  { key: 'pending' as const, label: '승인대기' },
+  { key: 'rejected' as const, label: '반려' },
+];
 
 export default function HospitalHomePage() {
   const { reservations, showModal, showToast, updateReservationStatus } = useStore();
@@ -115,33 +121,26 @@ export default function HospitalHomePage() {
         <div className="px-5 pt-3 pb-2">
           <h2 className="text-[17px] font-bold text-gray-900">등록상품</h2>
         </div>
-        <div className="relative border-b border-gray-100">
-          <div className="grid grid-cols-3">
-            {[
-              { key: 'approved' as const, label: '승인완료' },
-              { key: 'pending' as const, label: '승인대기' },
-              { key: 'rejected' as const, label: '반려' },
-            ].map((tab) => {
+        <div
+          className="hospital-product-tabs"
+          style={{ '--product-tab-x': `${productTabIndex * 100}%` } as CSSProperties}
+        >
+          <div className="hospital-product-tab-list">
+            {PRODUCT_TABS.map((tab) => {
               const isActive = productTab === tab.key;
               return (
                 <button
                   key={tab.key}
+                  type="button"
                   onClick={() => setProductTab(tab.key)}
-                  className={`h-12 text-[16px] font-medium transition-colors ${
-                    isActive
-                      ? 'text-gray-900'
-                      : 'text-gray-400'
-                  }`}
+                  className={isActive ? 'is-active' : undefined}
                 >
                   {tab.label}({productCounts[tab.key]})
                 </button>
               );
             })}
           </div>
-          <span
-            className="absolute bottom-[-1px] left-0 h-0.5 w-1/3 bg-gray-900 transition-transform duration-300 ease-out"
-            style={{ transform: `translateX(${productTabIndex * 100}%)` }}
-          />
+          <span className="hospital-product-tab-indicator" />
         </div>
 
         <div className="px-5 py-3">
@@ -277,6 +276,7 @@ export default function HospitalHomePage() {
 }
 
 function getProductApprovalTab(status?: string | null): ProductApprovalTab {
+  if (status === 'active' || status === 'approved') return 'approved';
   if (status === 'pending' || status === 'draft' || status === 'paused') return 'pending';
   if (status === 'rejected' || status === 'removed') return 'rejected';
   return 'approved';

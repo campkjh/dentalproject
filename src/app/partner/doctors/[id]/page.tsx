@@ -126,30 +126,29 @@ export default function DoctorEditPage() {
 
   return (
     <div className="partner-mobile-screen partner-doctor-edit" style={{ paddingBottom: 88 }}>
-      <header className="flex h-12 items-center gap-2.5 border-b border-gray-100 px-4">
+      <header className="partner-doctor-edit-header">
         <button
           onClick={() => router.back()}
           aria-label="뒤로"
-          className="flex h-8 w-8 -ml-2 items-center justify-center rounded-full text-gray-800"
+          className="partner-doctor-edit-back"
         >
-          <ChevronLeft size={22} strokeWidth={2} />
+          <ChevronLeft size={20} strokeWidth={2.1} />
         </button>
-        <h1 style={{ fontSize: 16, fontWeight: 600, color: '#111827', flex: 1 }}>{isNew ? '멤버 추가' : '프로필 설정'}</h1>
+        <h1>{isNew ? '멤버 추가' : '프로필 설정'}</h1>
       </header>
 
       {loading ? (
         <div className="partner-loading small">불러오는 중...</div>
       ) : (
-        <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div className="partner-doctor-edit-form">
           {/* Profile photo */}
-          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 2 }}>
-            <div style={{ position: 'relative' }}>
+          <div className="partner-doctor-photo-field">
+            <div className="partner-doctor-photo-wrap">
               <img
                 src={form.profile_image || '/partner-template/doctor-avatar.png'}
                 alt=""
-                style={{ width: 64, height: 64, borderRadius: '50%', objectFit: 'cover', border: '1px solid #E5E7EB' }}
               />
-              <label style={{ position: 'absolute', bottom: -1, right: -1, width: 24, height: 24, borderRadius: '50%', background: '#3182F6', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: '2px solid white' }}>
+              <label>
                 <Camera size={12} color="white" />
                 <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handlePhotoUpload} disabled={uploading} />
               </label>
@@ -180,7 +179,7 @@ export default function DoctorEditPage() {
         </div>
       )}
 
-      <div style={{ position: 'fixed', bottom: 72, left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: 480, padding: '0 20px' }}>
+      <div className="partner-doctor-savebar">
         <PartnerButton type="button" size="m" disabled={saving || loading} onClick={handleSave} className="w-full">
           {saving ? '저장 중...' : isNew ? '멤버 추가' : '수정 완료'}
         </PartnerButton>

@@ -11,7 +11,7 @@ export async function GET() {
   } = await sb.auth.getUser();
   if (!user) return NextResponse.json({ hospital: null });
 
-  const { data: hospital } = await sb
+  let { data: hospital } = await sb
     .from('hospitals')
     .select(
       `*,
@@ -20,6 +20,27 @@ export async function GET() {
     )
     .eq('owner_id', user.id)
     .maybeSingle();
+
+  if (!hospital) {
+    const { data: doctor } = await sb
+      .from('doctors')
+      .select('hospital_id')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (doctor?.hospital_id) {
+      const { data } = await sb
+        .from('hospitals')
+        .select(
+          `*,
+           doctors (*),
+           operating_hours (*)`
+        )
+        .eq('id', doctor.hospital_id)
+        .maybeSingle();
+      hospital = data;
+    }
+  }
 
   if (!hospital) return NextResponse.json({ hospital: null });
 

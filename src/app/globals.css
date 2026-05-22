@@ -559,6 +559,49 @@ body {
   100% { transform: scale(2.2); opacity: 0; }
 }
 
+.hospital-product-tabs {
+  position: relative;
+  border-bottom: 1px solid #f2f3f5;
+  background: #fff;
+}
+
+.hospital-product-tab-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.hospital-product-tab-list button {
+  display: flex;
+  height: 48px;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: transparent;
+  color: #a4abba;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+.hospital-product-tab-list button.is-active {
+  color: #2b313d;
+}
+
+.hospital-product-tab-indicator {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 33.3333%;
+  height: 2px;
+  border-radius: 999px;
+  background: #2b313d;
+  transform: translateX(var(--product-tab-x, 0%));
+  transition: transform 240ms ease;
+}
+
 /* ===== Marquee (vertical, upward auto-scroll) ===== */
 .marquee-vertical {
   position: relative;
@@ -1215,6 +1258,89 @@ textarea.tds-input {
   min-height: 92px;
   padding-top: 12px;
   padding-bottom: 12px;
+}
+
+.partner-doctor-edit-header {
+  display: flex;
+  height: 48px;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid #f2f3f5;
+  background: #fff;
+  padding: 0 12px;
+}
+
+.partner-doctor-edit-back {
+  display: inline-flex;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #2b313d;
+}
+
+.partner-doctor-edit-header h1 {
+  min-width: 0;
+  flex: 1 1 auto;
+  margin: 0;
+  color: #2b313d;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.partner-doctor-edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px 96px;
+}
+
+.partner-doctor-photo-field {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 2px;
+}
+
+.partner-doctor-photo-wrap {
+  position: relative;
+}
+
+.partner-doctor-photo-wrap > img {
+  display: block;
+  width: 58px;
+  height: 58px;
+  border: 1px solid #e5e7eb;
+  border-radius: 999px;
+  object-fit: cover;
+}
+
+.partner-doctor-photo-wrap label {
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  display: flex;
+  width: 22px;
+  height: 22px;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #fff;
+  border-radius: 999px;
+  background: #3182f6;
+  cursor: pointer;
+}
+
+.partner-doctor-savebar {
+  position: fixed;
+  right: 0;
+  bottom: calc(16px + env(safe-area-inset-bottom));
+  left: 0;
+  z-index: 60;
+  padding: 0 16px;
 }
 
 .partner-textarea {
