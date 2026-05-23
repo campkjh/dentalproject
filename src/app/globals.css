@@ -4606,6 +4606,59 @@ body.partner-product-modal-open .partner-bottom-nav {
   line-height: 1;
 }
 
+.partner-review-tabs {
+  display: grid;
+  position: relative;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0;
+  margin: 0 -8px 16px;
+  border-bottom: 1px solid #edf0f4;
+  background: #fff;
+  padding: 0;
+}
+
+.partner-review-tabs-indicator {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 50%;
+  height: 2px;
+  border-radius: 999px;
+  background: #2b313d;
+  transition: transform 260ms ease;
+  will-change: transform;
+}
+
+.partner-review-tabs button {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  height: 48px;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  border: 0;
+  background: transparent;
+  padding: 0 4px;
+  color: #a4abba;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1;
+  text-align: center;
+  white-space: nowrap;
+  transition: color 180ms ease, transform 180ms ease;
+}
+
+.partner-review-tabs button:active {
+  transform: scale(0.98);
+}
+
+.partner-review-tabs button.is-active {
+  color: #2b313d;
+}
+
 .partner-review-empty {
   display: flex;
   height: 260px;

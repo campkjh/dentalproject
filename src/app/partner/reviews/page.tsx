@@ -170,7 +170,12 @@ export default function PartnerReviewsPage() {
         </div>
 
         {/* Review type tabs */}
-        <div style={{ display: 'flex', borderBottom: '1px solid #F3F4F6', marginBottom: 16 }}>
+        <div className="partner-review-tabs" role="tablist" aria-label="리뷰 유형">
+          <span
+            className="partner-review-tabs-indicator"
+            style={{ transform: `translateX(${tab === 'image' ? 0 : 100}%)` }}
+            aria-hidden="true"
+          />
           {([
             { key: 'image', label: '이미지 리뷰', icon: <ImageIcon size={14} />, count: imageReviews.length },
             { key: 'text', label: '텍스트 리뷰', icon: <FileText size={14} />, count: textReviews.length },
@@ -178,13 +183,10 @@ export default function PartnerReviewsPage() {
             <button
               key={t.key}
               type="button"
+              role="tab"
+              aria-selected={tab === t.key}
               onClick={() => setTab(t.key)}
-              style={{
-                flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
-                paddingBottom: 10, fontSize: 13, fontWeight: 600, border: 'none', background: 'none', cursor: 'pointer',
-                borderBottom: tab === t.key ? '2px solid #8037FF' : '2px solid transparent',
-                color: tab === t.key ? '#8037FF' : '#9CA3AF',
-              }}
+              className={tab === t.key ? 'is-active' : undefined}
             >
               {t.icon}{t.label} ({t.count})
             </button>
