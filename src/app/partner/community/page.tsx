@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { createClient, hasSupabaseEnv } from '@/lib/supabase/client';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -28,6 +28,8 @@ export default function PartnerCommunityPage() {
   const [sortBy, setSortBy] = useState('최신순');
   const [showSortDropdown, setShowSortDropdown] = useState(false);
   const [activeCategory, setActiveCategory] = useState('전체');
+  const categoryRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const [categoryIndicator, setCategoryIndicator] = useState({ x: 0, width: 0 });
 
   // DB에서 직접 게시글 로드 + store 동기화
   useEffect(() => {
@@ -62,6 +64,18 @@ export default function PartnerCommunityPage() {
   const changeCategory = (cat: string) => {
     setActiveCategory(cat);
   };
+
+  useLayoutEffect(() => {
+    const updateIndicator = () => {
+      const target = categoryRefs.current[activeCategory];
+      if (!target) return;
+      setCategoryIndicator({ x: target.offsetLeft, width: target.offsetWidth });
+    };
+
+    updateIndicator();
+    window.addEventListener('resize', updateIndicator);
+    return () => window.removeEventListener('resize', updateIndicator);
+  }, [activeCategory, activeBoard]);
 
   const boardType = boardTypeMap[activeBoard];
   const filteredPosts = posts.filter((p) => p.boardType === boardType);
@@ -140,11 +154,22 @@ export default function PartnerCommunityPage() {
       {isQuestionBoard && (
         <div className="partner-community-category-shell">
           <div className="partner-community-categories hide-scrollbar">
+            <span
+              className="partner-community-category-indicator"
+              style={{
+                width: categoryIndicator.width,
+                transform: `translateX(${categoryIndicator.x}px)`,
+              }}
+              aria-hidden="true"
+            />
             {questionCategories.map((cat) => {
               const isActive = activeCategory === cat;
               return (
                 <button
                   key={cat}
+                  ref={(node) => {
+                    categoryRefs.current[cat] = node;
+                  }}
                   type="button"
                   onClick={() => changeCategory(cat)}
                   className={isActive ? 'is-active' : undefined}
