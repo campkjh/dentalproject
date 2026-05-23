@@ -28,6 +28,9 @@ export default function PartnerCommunityPage() {
   const [sortBy, setSortBy] = useState('최신순');
   const [showSortDropdown, setShowSortDropdown] = useState(false);
   const [activeCategory, setActiveCategory] = useState('전체');
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const categoryRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   const [categoryIndicator, setCategoryIndicator] = useState({ x: 0, width: 0 });
 
@@ -65,6 +68,11 @@ export default function PartnerCommunityPage() {
     setActiveCategory(cat);
   };
 
+  useEffect(() => {
+    if (!searchOpen) return;
+    searchInputRef.current?.focus();
+  }, [searchOpen]);
+
   useLayoutEffect(() => {
     const updateIndicator = () => {
       const target = categoryRefs.current[activeCategory];
@@ -82,7 +90,20 @@ export default function PartnerCommunityPage() {
   const categoryFilteredPosts = activeBoard === '질문게시판' && activeCategory !== '전체'
     ? filteredPosts.filter((p) => p.tags?.includes(activeCategory))
     : filteredPosts;
-  const sortedPosts = [...categoryFilteredPosts].sort((a, b) => {
+  const searchTerm = searchQuery.trim().toLowerCase();
+  const searchedPosts = searchTerm
+    ? categoryFilteredPosts.filter((post) => {
+        const haystack = [
+          post.title,
+          post.content,
+          post.authorName,
+          post.anonymousId,
+          ...(post.tags ?? []),
+        ].filter(Boolean).join(' ').toLowerCase();
+        return haystack.includes(searchTerm);
+      })
+    : categoryFilteredPosts;
+  const sortedPosts = [...searchedPosts].sort((a, b) => {
     if (sortBy === '인기순') return b.viewCount - a.viewCount;
     if (sortBy === '댓글순') return b.commentCount - a.commentCount;
     return 0;
@@ -99,7 +120,7 @@ export default function PartnerCommunityPage() {
   const writeHref = `/community/write?board=${boardType}`;
 
   return (
-    <div className="partner-mobile-screen partner-community-screen">
+    <div className={`partner-mobile-screen partner-community-screen${searchOpen ? ' is-search-open' : ''}`}>
       <header className="partner-community-head">
         <div className="partner-community-tabs" role="tablist" aria-label="커뮤니티 게시판">
           {boardTabs.map((tab) => (
@@ -119,10 +140,34 @@ export default function PartnerCommunityPage() {
           type="button"
           className="partner-community-search"
           aria-label="커뮤니티 검색"
-          onClick={() => router.push('/community/search')}
+          aria-expanded={searchOpen}
+          onClick={() => setSearchOpen((open) => !open)}
         >
           <Search size={20} strokeWidth={2.2} />
         </button>
+
+        <div className="partner-community-search-panel" aria-hidden={!searchOpen}>
+          <Search size={18} strokeWidth={2.2} />
+          <input
+            ref={searchInputRef}
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder="커뮤니티 글 검색"
+            aria-label="커뮤니티 글 검색"
+            disabled={!searchOpen}
+          />
+          {(searchQuery || searchOpen) && (
+            <button
+              type="button"
+              onClick={() => {
+                setSearchQuery('');
+                setSearchOpen(false);
+              }}
+            >
+              취소
+            </button>
+          )}
+        </div>
       </header>
 
       <section className="partner-community-title-row">
@@ -198,7 +243,7 @@ export default function PartnerCommunityPage() {
           </div>
         ) : sortedPosts.length === 0 ? (
           <div className="partner-community-empty">
-            <p>게시글이 없습니다.</p>
+            <p>{searchTerm ? '검색 결과가 없습니다.' : '게시글이 없습니다.'}</p>
           </div>
         ) : (
           sortedPosts.map((post) => (
