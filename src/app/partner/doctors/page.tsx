@@ -33,10 +33,6 @@ function getMemberStatus(doctor: Doctor) {
   return doctor.is_active === false ? 'pending' : 'active';
 }
 
-function formatCount(value: number) {
-  return value.toLocaleString('ko-KR');
-}
-
 export default function PartnerDoctorsPage() {
   const router = useRouter();
   const { authUser } = useSession();
@@ -46,7 +42,6 @@ export default function PartnerDoctorsPage() {
   const [hospitalName, setHospitalName] = useState('');
   const [isOwner, setIsOwner] = useState(false);
   const [currentDoctorId, setCurrentDoctorId] = useState<string | null>(null);
-  const [reviewCount, setReviewCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [actingId, setActingId] = useState<string | null>(null);
 
@@ -61,16 +56,6 @@ export default function PartnerDoctorsPage() {
     setIsOwner(ownerMode);
     setCurrentDoctorId(selfDoctorId ?? selfDoctor?.id ?? null);
     setDoctors(nextDoctors);
-
-    if (hospital?.id) {
-      const { count } = await sb
-        .from('reviews')
-        .select('id', { count: 'exact', head: true })
-        .eq('hospital_id', hospital.id);
-      setReviewCount(count ?? 0);
-    } else {
-      setReviewCount(0);
-    }
   };
 
   const reload = async () => {
@@ -120,7 +105,6 @@ export default function PartnerDoctorsPage() {
     setIsOwner(false);
     setCurrentDoctorId(null);
     setDoctors([]);
-    setReviewCount(0);
   };
 
   useEffect(() => {
@@ -202,8 +186,8 @@ export default function PartnerDoctorsPage() {
         <h1>병원관리</h1>
         <nav className="partner-inline-segment" aria-label="병원관리 탭">
           <Link href="/partner/hospital-info">병원</Link>
-          <Link href="/partner/doctors" className="is-active">멤버({formatCount(visibleDoctors.length)})</Link>
-          <Link href="/partner/reviews">리뷰({formatCount(reviewCount)})</Link>
+          <Link href="/partner/doctors" className="is-active">멤버</Link>
+          <Link href="/partner/reviews">리뷰</Link>
         </nav>
       </header>
 
