@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { createPortal } from 'react-dom';
 import { Search, Send, ChevronLeft, ChevronRight, Star, MapPin, X, ArrowUp } from 'lucide-react';
 import ProductCard from '@/components/common/ProductCard';
+import HomeBannerSlider from '@/components/home/HomeBannerSlider';
 import { useStore } from '@/store';
 import { resolveHospitalImageUrl } from '@/lib/images';
 import { siteConfig } from '@/lib/site-config';
@@ -343,17 +344,7 @@ export default function HomePage() {
       {/* Desktop content wrapper */}
       <div className="lg:bg-white lg:rounded-2xl lg:shadow-sm lg:my-6">
 
-        {/* Banner */}
-        <div className="mx-4 lg:mx-auto lg:max-w-7xl lg:px-6 rounded-2xl bg-gradient-to-r from-[#8037FF] to-[#6D28D9] p-5 lg:p-8 mb-6 text-white relative overflow-hidden gradient-shift">
-          <p className="text-sm opacity-90">첫방문 체험</p>
-          <p className="text-xl font-bold mt-1">추가 15% 쿠폰 증정</p>
-          <div className="absolute right-6 top-1/2 -translate-y-1/2 w-20 h-20 bg-white/20 rounded-full flex items-center justify-center float">
-            <div className="text-center">
-              <div className="text-2xl font-bold">15%</div>
-              <div className="text-[10px]">COUPON</div>
-            </div>
-          </div>
-        </div>
+        <HomeBannerSlider />
 
         {/* Categories — 5x2 pager (swipe horizontally) */}
         <div ref={categorySectionRef}>

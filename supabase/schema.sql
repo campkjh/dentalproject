@@ -465,6 +465,28 @@ create table if not exists public.announcements (
 );
 
 -- =========================================================================
+-- 15. Home banners (customer home carousel)
+-- =========================================================================
+create table if not exists public.home_banners (
+  id               uuid primary key default uuid_generate_v4(),
+  title            text not null,
+  subtitle         text,
+  image_url        text not null,
+  mobile_image_url text,
+  target_url       text,
+  badge_text       text,
+  sort_order       integer not null default 0,
+  is_active        boolean not null default true,
+  starts_at        timestamptz,
+  ends_at          timestamptz,
+  created_at       timestamptz not null default now(),
+  updated_at       timestamptz not null default now()
+);
+
+create index if not exists idx_home_banners_visible
+  on public.home_banners(is_active, sort_order, starts_at, ends_at);
+
+-- =========================================================================
 -- Updated_at trigger helper
 -- =========================================================================
 create or replace function public.touch_updated_at()
@@ -477,7 +499,7 @@ end; $$;
 do $$
 declare t text;
 begin
-  for t in select unnest(array['profiles','hospitals','products','reservations','posts']) loop
+  for t in select unnest(array['profiles','hospitals','products','reservations','posts','home_banners']) loop
     execute format('drop trigger if exists trg_touch_updated_at on public.%I;', t);
     execute format(
       'create trigger trg_touch_updated_at before update on public.%I
@@ -513,6 +535,7 @@ alter table public.consultation_messages enable row level security;
 alter table public.live_messages enable row level security;
 alter table public.categories enable row level security;
 alter table public.announcements enable row level security;
+alter table public.home_banners enable row level security;
 
 -- Public read for catalog tables
 drop policy if exists "read_all_categories" on public.categories;
@@ -551,6 +574,20 @@ create policy "read_all_comments" on public.comments
 drop policy if exists "read_all_announcements" on public.announcements;
 create policy "read_all_announcements" on public.announcements
   for select using (true);
+drop policy if exists "read_visible_home_banners" on public.home_banners;
+create policy "read_visible_home_banners" on public.home_banners
+  for select using (
+    is_active = true
+    and (starts_at is null or starts_at <= now())
+    and (ends_at is null or ends_at >= now())
+  );
+drop policy if exists "admin_manage_home_banners" on public.home_banners;
+create policy "admin_manage_home_banners" on public.home_banners
+  for all using (
+    exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin = true)
+  ) with check (
+    exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin = true)
+  );
 drop policy if exists "read_all_live_messages" on public.live_messages;
 create policy "read_all_live_messages" on public.live_messages
   for select using (true);

@@ -25,6 +25,22 @@ export interface ProductOption {
   price: number;
 }
 
+export interface HomeBanner {
+  id: string;
+  title: string;
+  subtitle?: string;
+  imageUrl: string;
+  mobileImageUrl?: string;
+  targetUrl?: string;
+  badgeText?: string;
+  sortOrder: number;
+  isActive: boolean;
+  startsAt?: string;
+  endsAt?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface Hospital {
   id: string;
   name: string;

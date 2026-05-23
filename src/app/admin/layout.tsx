@@ -17,6 +17,7 @@ import {
   ChevronLeft,
   Menu,
   LayoutGrid,
+  Images,
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -25,6 +26,7 @@ const sidebarItems = [
   { href: '/admin/users', label: '회원 관리', icon: Users },
   { href: '/admin/hospitals', label: '병원 관리', icon: Building2 },
   { href: '/admin/products', label: '상품 관리', icon: Package },
+  { href: '/admin/banners', label: '홈 배너 관리', icon: Images },
   { href: '/admin/categories', label: '카테고리 관리', icon: LayoutGrid },
   { href: '/admin/reservations', label: '예약 관리', icon: CalendarDays },
   { href: '/admin/community', label: '커뮤니티 관리', icon: MessageSquare },
