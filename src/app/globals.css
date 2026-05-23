@@ -1897,8 +1897,8 @@ body.partner-product-modal-open .partner-bottom-nav {
 .partner-community-head {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 28px 24px 34px 31px;
+  gap: 10px;
+  padding: 20px 18px 18px;
 }
 
 .partner-community-tabs {
@@ -1907,19 +1907,19 @@ body.partner-product-modal-open .partner-bottom-nav {
   flex: 1 1 auto;
   grid-template-columns: repeat(3, minmax(max-content, 1fr));
   overflow: hidden;
-  border-radius: 28px;
+  border-radius: 22px;
   background: #f2f3f5;
   padding: 3px;
 }
 
 .partner-community-tabs button {
-  height: 36px;
+  height: 34px;
   border: 0;
-  border-radius: 24px;
+  border-radius: 18px;
   background: transparent;
   color: #a4abba;
   font-family: inherit;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
   letter-spacing: 0;
   line-height: 1;
@@ -1933,8 +1933,8 @@ body.partner-product-modal-open .partner-bottom-nav {
 
 .partner-community-search {
   display: flex;
-  width: 56px;
-  height: 56px;
+  width: 44px;
+  height: 44px;
   flex: 0 0 auto;
   align-items: center;
   justify-content: center;
@@ -1948,8 +1948,8 @@ body.partner-product-modal-open .partner-bottom-nav {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 18px;
-  padding: 0 24px 27px;
+  gap: 12px;
+  padding: 0 18px 16px;
 }
 
 .partner-community-title-row h1 {
@@ -1974,14 +1974,14 @@ body.partner-product-modal-open .partner-bottom-nav {
   background: transparent;
   color: #51535c;
   font-family: inherit;
-  font-size: 18px;
+  font-size: 15px;
   font-weight: 700;
   line-height: 1;
 }
 
 .partner-community-sort-menu {
   position: absolute;
-  top: 38px;
+  top: 28px;
   right: 0;
   z-index: 30;
   min-width: 112px;
@@ -2012,25 +2012,25 @@ body.partner-product-modal-open .partner-bottom-nav {
 
 .partner-community-category-shell {
   overflow: hidden;
-  padding: 0 0 14px 24px;
+  padding: 0 0 8px 18px;
 }
 
 .partner-community-categories {
   display: flex;
-  gap: 10px;
+  gap: 6px;
   overflow-x: auto;
-  padding-right: 24px;
+  padding-right: 18px;
 }
 
 .partner-community-categories button {
-  height: 34px;
+  height: 30px;
   border: 0;
   border-radius: 12px;
   background: transparent;
-  padding: 0 12px;
+  padding: 0 10px;
   color: #a4abba;
   font-family: inherit;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 600;
   line-height: 1;
   white-space: nowrap;
@@ -2044,7 +2044,7 @@ body.partner-product-modal-open .partner-bottom-nav {
 .partner-community-list {
   flex: 1 1 auto;
   overflow-y: auto;
-  padding-bottom: 24px;
+  padding-bottom: 16px;
 }
 
 .partner-community-post {
@@ -2055,13 +2055,13 @@ body.partner-product-modal-open .partner-bottom-nav {
 .partner-community-post article {
   border-bottom: 1px solid #edf0f4;
   background: #fff;
-  padding: 22px 24px 24px;
+  padding: 16px 18px 18px;
 }
 
 .partner-community-post h2 {
   display: -webkit-box;
   overflow: hidden;
-  margin: 0 0 14px;
+  margin: 0 0 8px;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   color: #2b313d;
@@ -2085,8 +2085,8 @@ body.partner-product-modal-open .partner-bottom-nav {
 .partner-community-question-meta {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-top: 20px;
+  gap: 7px;
+  margin-top: 12px;
   color: #2b313d;
 }
 
@@ -2106,7 +2106,7 @@ body.partner-product-modal-open .partner-bottom-nav {
 }
 
 .partner-community-anonymous {
-  margin: 0 0 20px;
+  margin: 0 0 12px;
   color: #a4abba;
   font-size: 16px;
   font-weight: 600;
@@ -2114,15 +2114,15 @@ body.partner-product-modal-open .partner-bottom-nav {
 }
 
 .partner-community-post.is-free article {
-  padding-top: 27px;
-  padding-bottom: 30px;
+  padding-top: 18px;
+  padding-bottom: 20px;
 }
 
 .partner-community-author-row {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 18px;
+  gap: 8px;
+  margin-bottom: 12px;
 }
 
 .partner-community-author-row > div {
@@ -2143,7 +2143,7 @@ body.partner-product-modal-open .partner-bottom-nav {
 
 .partner-community-author-row p {
   overflow: hidden;
-  margin: 6px 0 0;
+  margin: 4px 0 0;
   color: #a4abba;
   font-size: 14px;
   font-weight: 600;
@@ -2162,8 +2162,8 @@ body.partner-product-modal-open .partner-bottom-nav {
 
 .partner-community-write {
   position: fixed;
-  right: 16px;
-  bottom: calc(94px + env(safe-area-inset-bottom));
+  right: 14px;
+  bottom: calc(88px + env(safe-area-inset-bottom));
   z-index: 30;
 }
 
@@ -2250,22 +2250,22 @@ body.partner-product-modal-open .partner-bottom-nav {
 
 @media (max-width: 430px) {
   .partner-community-head {
-    gap: 16px;
-    padding: 56px 24px 37px 31px;
+    gap: 10px;
+    padding: 22px 18px 18px;
   }
 
   .partner-community-tabs button {
-    font-size: 16px;
+    font-size: 15px;
   }
 
   .partner-community-search {
-    width: 56px;
-    height: 56px;
+    width: 44px;
+    height: 44px;
   }
 
   .partner-community-search svg {
-    width: 30px;
-    height: 30px;
+    width: 24px;
+    height: 24px;
   }
 
   .partner-community-title-row h1 {
@@ -2273,16 +2273,16 @@ body.partner-product-modal-open .partner-bottom-nav {
   }
 
   .partner-community-sort > button {
-    font-size: 18px;
+    font-size: 15px;
   }
 
   .partner-community-categories {
-    gap: 10px;
+    gap: 6px;
   }
 
   .partner-community-categories button {
-    height: 34px;
-    font-size: 16px;
+    height: 30px;
+    font-size: 14px;
   }
 
   .partner-community-post h2 {
