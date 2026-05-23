@@ -93,6 +93,8 @@ async function fetchHospitalProducts(
   selectColumns: string
 ) {
   let baseResult: any = null;
+  let firstErrorResult: any = null;
+  let hasSuccessfulQuery = false;
   const merged = new Map<string, any>();
   const keys = await collectHospitalIdsByName(admin, hospital);
   for (const key of keys) {
@@ -103,15 +105,18 @@ async function fetchHospitalProducts(
       .order('created_at', { ascending: false });
 
     if (result.error) {
-      if (!baseResult) baseResult = result;
+      if (!firstErrorResult) firstErrorResult = result;
       continue;
     }
 
+    hasSuccessfulQuery = true;
     if (!baseResult) baseResult = result;
     for (const product of (result.data ?? []) as any[]) {
       if (product?.id) merged.set(product.id, product);
     }
   }
+
+  if (!hasSuccessfulQuery && firstErrorResult) return firstErrorResult;
 
   return {
     ...(baseResult ?? { error: null }),
@@ -135,6 +140,8 @@ async function fetchHospitalRows(
   } = {}
 ) {
   let baseResult: any = null;
+  let firstErrorResult: any = null;
+  let hasSuccessfulQuery = false;
   const merged = new Map<string, any>();
   const keys = await collectHospitalIdsByName(admin, hospital);
   for (const key of keys) {
@@ -149,15 +156,18 @@ async function fetchHospitalRows(
 
     const result = await query;
     if (result.error) {
-      if (!baseResult) baseResult = result;
+      if (!firstErrorResult) firstErrorResult = result;
       continue;
     }
 
+    hasSuccessfulQuery = true;
     if (!baseResult) baseResult = result;
     for (const row of (result.data ?? []) as any[]) {
       if (row?.id) merged.set(row.id, row);
     }
   }
+
+  if (!hasSuccessfulQuery && firstErrorResult) return firstErrorResult;
 
   return {
     ...(baseResult ?? { error: null }),
