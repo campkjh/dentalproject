@@ -580,7 +580,7 @@ export default function PartnerHomePage() {
     completed: null,
     cancelled: null,
   });
-  const [filterIndicator, setFilterIndicator] = useState({ x: 0, width: 0 });
+  const [filterIndicator, setFilterIndicator] = useState({ x: 16, width: 56 });
   const [pendingAction, setPendingAction] = useState<{ id: string; status: ReservationRow['status'] } | null>(null);
   const [productModal, setProductModal] = useState<{ mode: 'create' | 'edit'; product?: ProductRow } | null>(null);
   const [productForm, setProductForm] = useState<ProductForm>({ ...EMPTY_PRODUCT_FORM });

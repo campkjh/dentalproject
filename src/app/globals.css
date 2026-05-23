@@ -2603,7 +2603,7 @@ body.partner-product-modal-open .partner-bottom-nav {
   margin: 0 -8px 14px;
   border-bottom: 1px solid #edf0f4;
   background: #fff;
-  padding: 0 8px;
+  padding: 0 16px;
   scroll-snap-type: x proximity;
   -webkit-overflow-scrolling: touch;
 }
@@ -2612,6 +2612,7 @@ body.partner-product-modal-open .partner-bottom-nav {
   position: absolute;
   bottom: -1px;
   left: 0;
+  width: 56px;
   height: 2px;
   border-radius: 999px;
   background: #2b313d;
@@ -2630,7 +2631,7 @@ body.partner-product-modal-open .partner-bottom-nav {
   justify-content: center;
   border: 0;
   background: transparent;
-  padding: 0 14px;
+  padding: 0 16px;
   color: #a4abba;
   font-size: 16px;
   font-weight: 500;
