@@ -28,11 +28,47 @@ function hasField(body: Record<string, unknown>, field: string) {
   return Object.prototype.hasOwnProperty.call(body, field);
 }
 
+function isMissingReservationColumn(error: { message?: string; details?: string | null; hint?: string | null } | null, column: string) {
+  if (!error) return false;
+  const text = `${error.message ?? ''} ${error.details ?? ''} ${error.hint ?? ''}`.toLowerCase();
+  return text.includes(`'${column.toLowerCase()}' column`) || text.includes(`reservations.${column.toLowerCase()}`);
+}
+
 function parseDateField(value: unknown) {
   if (typeof value !== 'string' || !value.trim()) return null;
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return null;
   return date.toISOString();
+}
+
+async function updateReservationWithSchemaFallback(
+  admin: Awaited<ReturnType<typeof createAdminClient>>,
+  id: string,
+  patch: Record<string, unknown>
+) {
+  const nextPatch = { ...patch };
+  const skippedColumns: string[] = [];
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const { error } = await admin.from('reservations').update(nextPatch).eq('id', id);
+    if (!error) return { error: null, skippedColumns };
+
+    if ('memo' in nextPatch && isMissingReservationColumn(error, 'memo')) {
+      delete nextPatch.memo;
+      skippedColumns.push('memo');
+      continue;
+    }
+
+    if ('updated_at' in nextPatch && isMissingReservationColumn(error, 'updated_at')) {
+      delete nextPatch.updated_at;
+      skippedColumns.push('updated_at');
+      continue;
+    }
+
+    return { error, skippedColumns };
+  }
+
+  return { error: null, skippedColumns };
 }
 
 async function canManageHospital(admin: Awaited<ReturnType<typeof createAdminClient>>, userId: string, hospitalId: string) {
@@ -271,7 +307,7 @@ export async function PATCH(
 
   patch.updated_at = new Date().toISOString();
 
-  const { error } = await admin.from('reservations').update(patch).eq('id', id);
+  const { error, skippedColumns } = await updateReservationWithSchemaFallback(admin, id, patch);
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
 
   const { data: hospitalRow } = await admin
@@ -349,5 +385,5 @@ export async function PATCH(
     ? await getScheduleHistoryForReservation(admin, id)
     : undefined;
 
-  return NextResponse.json({ ok: true, scheduleHistory });
+  return NextResponse.json({ ok: true, scheduleHistory, skippedColumns });
 }
