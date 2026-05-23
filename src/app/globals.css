@@ -355,12 +355,19 @@ body {
 }
 
 /* ===== Partner center shared animations ===== */
-.partner-page {
-  animation: partnerFadeIn 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+.partner-route-detail-enter {
+  animation: partnerDetailPageIn 0.34s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
-@keyframes partnerFadeIn {
-  from { opacity: 0; transform: translateY(6px); }
-  to   { opacity: 1; transform: translateY(0); }
+
+@keyframes partnerDetailPageIn {
+  from { opacity: 0; transform: translateX(18px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .partner-route-detail-enter {
+    animation: none;
+  }
 }
 
 .partner-card {
@@ -1696,6 +1703,9 @@ textarea.tds-input {
   color: #2b313d;
   font-family: -apple-system, BlinkMacSystemFont, 'Pretendard', 'Segoe UI', sans-serif;
   letter-spacing: 0;
+}
+
+.partner-page:not(.partner-route-detail-enter) {
   transform: none !important;
 }
 

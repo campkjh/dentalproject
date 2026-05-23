@@ -80,6 +80,7 @@ export default function PartnerLayout({ children }: { children: React.ReactNode 
   // 예: /partner/doctors/[id], /partner/community/[id], /partner/reservations/[id]
   const pathDepth = pathname.split('/').filter(Boolean).length;
   const hideNav = pathDepth >= 3;
+  const routeTransitionClass = hideNav ? ' partner-route-detail-enter' : '';
 
   const isActive = (item: (typeof BOTTOM_NAV)[number]) => {
     if (item.href === '/partner') return pathname === '/partner';
@@ -90,7 +91,7 @@ export default function PartnerLayout({ children }: { children: React.ReactNode 
     <div className="partner-shell-bg">
       <div className="partner-phone-shell" style={hideNav ? { overflowX: 'visible' } : undefined}>
         <main className="partner-app-main" style={hideNav ? { paddingBottom: 0 } : undefined}>
-          <div key={pathname} className="partner-page">
+          <div key={pathname} className={`partner-page${routeTransitionClass}`}>
             {children}
           </div>
         </main>
