@@ -1265,7 +1265,6 @@ textarea.tds-input {
   height: 48px;
   align-items: center;
   gap: 8px;
-  border-bottom: 1px solid #f2f3f5;
   background: #fff;
   padding: 0 12px;
 }
@@ -1739,7 +1738,6 @@ body.partner-product-modal-open .partner-bottom-nav {
   left: 0;
   z-index: 70;
   width: 100%;
-  border-bottom: 1px solid rgba(0, 27, 55, 0.06);
   background: #fff;
 }
 
@@ -1891,13 +1889,20 @@ body.partner-product-modal-open .partner-bottom-nav {
   flex-direction: column;
   background: #fff;
   color: #2b313d;
+  padding-top: 82px;
   padding-bottom: calc(82px + env(safe-area-inset-bottom));
 }
 
 .partner-community-head {
   display: flex;
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 70;
   align-items: center;
   gap: 10px;
+  background: #fff;
   padding: 20px 18px 18px;
 }
 
@@ -2281,6 +2286,10 @@ body.partner-product-modal-open .partner-bottom-nav {
 }
 
 @media (max-width: 430px) {
+  .partner-community-screen {
+    padding-top: 84px;
+  }
+
   .partner-community-head {
     gap: 10px;
     padding: 22px 18px 18px;
@@ -4901,7 +4910,6 @@ body.partner-profile-editing .partner-bottom-nav {
   height: 56px;
   align-items: center;
   gap: 8px;
-  border-bottom: 1px solid #f2f3f5;
   padding: 0 16px;
 }
 
