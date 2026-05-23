@@ -2601,13 +2601,14 @@ body.partner-product-modal-open .partner-bottom-nav {
   justify-content: center;
   border: 0;
   background: transparent;
-  padding: 0 2px;
+  padding: 0 1px;
   color: #a4abba;
-  font-size: 13px;
+  font-size: 16px;
   font-weight: 500;
   line-height: 1;
   text-align: center;
   white-space: nowrap;
+  letter-spacing: -0.3px;
   transition: color 180ms ease, transform 180ms ease;
 }
 
