@@ -96,7 +96,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     const userId = authUser.id;
     const [profileRes, hospitalRes] = await Promise.all([
       supabase.from('profiles').select('*').eq('id', userId).maybeSingle(),
-      supabase.from('hospitals').select('id').eq('owner_id', userId).eq('status', 'approved').limit(1).maybeSingle(),
+      supabase.from('hospitals').select('id').eq('owner_id', userId).limit(1).maybeSingle(),
     ]);
 
     let p = profileRes.error ? null : profileRes.data as Record<string, unknown> | null;

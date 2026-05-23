@@ -49,11 +49,9 @@ function firstRelation<T>(value: T | T[] | null | undefined): T | null {
 }
 
 const hospitalSelect = `
-  id, slug, name, category, location, phone, tags, logo_url, cover_images,
-  introduction, holiday_notice, address, address_detail, map_url, rating,
-  review_count, owner_id, status, created_at, updated_at,
-  doctors (id, user_id, hospital_id, name, title, specialty, profile_image, is_owner, is_active, member_status, bio, careers, certifications, created_at),
-  operating_hours (id, hospital_id, day, start_time, end_time, is_closed)
+  *,
+  doctors (*),
+  operating_hours (*)
 `;
 
 async function fetchHospitalProducts(
@@ -106,21 +104,22 @@ export async function GET() {
   } = await sb.auth.getUser();
   if (!user) return NextResponse.json({ hospital: null });
 
-  let { data: hospital } = await sb
+  const admin = await createAdminClient();
+  let { data: hospital } = await admin
     .from('hospitals')
     .select(hospitalSelect)
     .eq('owner_id', user.id)
     .maybeSingle();
 
   if (!hospital) {
-    const { data: doctor } = await sb
+    const { data: doctor } = await admin
       .from('doctors')
       .select('hospital_id')
       .eq('user_id', user.id)
       .maybeSingle();
 
     if (doctor?.hospital_id) {
-      const { data } = await sb
+      const { data } = await admin
         .from('hospitals')
         .select(hospitalSelect)
         .eq('id', doctor.hospital_id)
@@ -132,7 +131,6 @@ export async function GET() {
   if (!hospital) return NextResponse.json({ hospital: null });
 
   // Reviews + recent reservations
-  const admin = await createAdminClient();
   await cancelExpiredPendingReservations(admin, { hospitalId: hospital.id });
   await completePastConfirmedReservations(admin, { hospitalId: hospital.id });
 
