@@ -69,6 +69,24 @@ function hospitalKeys(hospital: any) {
   ].filter(Boolean)));
 }
 
+async function collectHospitalIdsByName(admin: Awaited<ReturnType<typeof createAdminClient>>, hospital: any) {
+  const name = typeof hospital?.name === 'string' ? hospital.name.trim() : '';
+  if (!name) return hospitalKeys(hospital);
+
+  const { data } = await admin
+    .from('hospitals')
+    .select('id, slug')
+    .eq('name', name);
+
+  return Array.from(new Set([
+    ...hospitalKeys(hospital),
+    ...((data ?? []) as Array<{ id?: string | null; slug?: string | null }>).flatMap((row) => [
+      row.id?.trim() ?? '',
+      row.slug?.trim() ?? '',
+    ]),
+  ].filter(Boolean)));
+}
+
 async function fetchHospitalProducts(
   admin: Awaited<ReturnType<typeof createAdminClient>>,
   hospital: any,
@@ -76,7 +94,8 @@ async function fetchHospitalProducts(
 ) {
   let baseResult: any = null;
   const merged = new Map<string, any>();
-  for (const key of hospitalKeys(hospital)) {
+  const keys = await collectHospitalIdsByName(admin, hospital);
+  for (const key of keys) {
     const result = await admin
       .from('products')
       .select(selectColumns)
@@ -117,7 +136,8 @@ async function fetchHospitalRows(
 ) {
   let baseResult: any = null;
   const merged = new Map<string, any>();
-  for (const key of hospitalKeys(hospital)) {
+  const keys = await collectHospitalIdsByName(admin, hospital);
+  for (const key of keys) {
     let query = admin
       .from(table)
       .select(selectColumns)
