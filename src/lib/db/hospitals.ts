@@ -5,7 +5,7 @@ export async function listHospitals() {
   const { data, error } = await sb
     .from('hospitals')
     .select(
-      `id, slug, name, category, location, phone, tags, logo_url, image_url, cover_images, rating, review_count, address,
+      `id, slug, name, category, location, phone, tags, logo_url, cover_images, rating, review_count, address,
        doctors (id, name, title, specialty, is_owner, profile_image),
        operating_hours (day, start_time, end_time, is_closed)`
     )

@@ -23,7 +23,7 @@ export async function GET() {
     sb
       .from('hospitals')
       .select(
-        `id, slug, name, category, location, phone, tags, logo_url, image_url, cover_images,
+        `id, slug, name, category, location, phone, tags, logo_url, cover_images,
          introduction, holiday_notice, address, address_detail, rating, review_count,
          doctors (id, name, title, specialty, profile_image, is_owner),
          operating_hours (day, start_time, end_time, is_closed)`

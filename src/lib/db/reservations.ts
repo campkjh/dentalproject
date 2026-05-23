@@ -10,7 +10,7 @@ export async function listMyReservations(userId: string) {
   const { data, error } = await sb
     .from('reservations')
     .select(
-	      `*, hospital:hospitals (id, slug, name, address, phone, location, logo_url, image_url, cover_images),
+	      `*, hospital:hospitals (id, slug, name, address, phone, location, logo_url, cover_images),
 	          product:products (id, title, image_url),
 	          doctor:doctors (id, name, title, profile_image)`
     )
@@ -29,7 +29,7 @@ export async function getReservation(id: string) {
   const { data, error } = await sb
     .from('reservations')
     .select(
-	      `*, hospital:hospitals (id, slug, name, address, phone, location, logo_url, image_url, cover_images),
+	      `*, hospital:hospitals (id, slug, name, address, phone, location, logo_url, cover_images),
 	          product:products (id, title, image_url),
 	          doctor:doctors (id, name, title, profile_image)`
     )
