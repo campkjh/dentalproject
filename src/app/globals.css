@@ -5468,6 +5468,16 @@ body.partner-profile-editing .partner-bottom-nav {
   width: min(90vw, 340px);
 }
 
+.partner-reservations-screen {
+  min-height: 100dvh;
+  background: #fff;
+  padding-bottom: calc(96px + env(safe-area-inset-bottom));
+}
+
+.partner-reservation-calendar {
+  padding-bottom: 6px;
+}
+
 .partner-schedule-section {
   display: flex;
   flex-direction: column;
@@ -5583,6 +5593,62 @@ body.partner-profile-editing .partner-bottom-nav {
   font-size: 16px;
   font-weight: 500;
   line-height: 1.4;
+}
+
+.partner-reservations-screen .partner-schedule-section {
+  gap: 16px;
+  padding: 24px 24px 32px;
+}
+
+.partner-reservations-screen .partner-schedule-section h2 {
+  font-size: 22px;
+  line-height: 1.2;
+}
+
+.partner-reservations-screen .partner-schedule-list {
+  gap: 10px;
+}
+
+.partner-reservations-screen .partner-schedule-card {
+  gap: 8px;
+  border-radius: 16px;
+  padding: 14px;
+}
+
+.partner-reservations-screen .partner-schedule-row {
+  min-height: 36px;
+  gap: 10px;
+}
+
+.partner-reservations-screen .partner-schedule-row.top > div {
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.partner-reservations-screen .partner-schedule-row.top strong {
+  font-size: 20px;
+  line-height: 1.2;
+}
+
+.partner-reservations-screen .partner-schedule-row.top span {
+  font-size: 16px;
+}
+
+.partner-reservations-screen .partner-schedule-row.top span + span {
+  color: #8a909c;
+  font-size: 14px;
+}
+
+.partner-reservations-screen .partner-schedule-row p,
+.partner-reservations-screen .partner-schedule-row span,
+.partner-reservations-screen .partner-schedule-row button,
+.partner-reservations-screen .partner-schedule-memo {
+  font-size: 16px;
+}
+
+.partner-reservations-screen .partner-schedule-memo {
+  min-height: 88px;
+  padding: 12px;
 }
 
 .partner-assign-dialog {

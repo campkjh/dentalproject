@@ -490,7 +490,7 @@ export default function PartnerReservationsPage() {
   }
 
   return (
-    <div className="partner-mobile-screen has-fixed-title">
+    <div className="partner-mobile-screen has-fixed-title partner-reservations-screen">
       <header className="partner-screen-title with-action">
         <h1>예약관리</h1>
         <nav className="partner-inline-segment" aria-label="예약관리 탭">
@@ -499,10 +499,10 @@ export default function PartnerReservationsPage() {
         </nav>
       </header>
 
-      <section className="partner-calendar-section">
+      <section className="partner-settings-calendar partner-reservation-calendar">
         <button
           type="button"
-          className="partner-month-label"
+          className="partner-settings-month"
           onClick={() => {
             setYear(now.getFullYear());
             setMonth(now.getMonth());
@@ -512,15 +512,15 @@ export default function PartnerReservationsPage() {
           {month + 1}월
         </button>
 
-        <div className="partner-weekdays">
+        <div className="partner-settings-weekdays">
           {WEEKDAYS.map((day, index) => (
-            <span key={day} className={index === 0 || index === 6 ? 'weekend' : undefined}>
+            <span key={day} className={index === 0 || index === 6 ? 'is-weekend' : undefined}>
               {day}
             </span>
           ))}
         </div>
 
-        <div className="partner-calendar-grid">
+        <div className="partner-settings-grid partner-reservation-grid">
           {cells.map(({ date, muted }) => {
             const key = dateKey(date);
             const active = key === selected;
@@ -532,7 +532,7 @@ export default function PartnerReservationsPage() {
                 type="button"
                 className={[
                   active ? 'is-active' : '',
-                  count > 0 ? 'has-event' : '',
+                  count > 0 ? 'has-reservation' : '',
                   muted ? 'is-muted' : '',
                   weekend ? 'is-weekend' : '',
                 ].filter(Boolean).join(' ')}
