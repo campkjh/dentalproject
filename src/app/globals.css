@@ -5423,6 +5423,13 @@ body.partner-profile-editing .partner-bottom-nav {
   padding: 0 16px;
 }
 
+.partner-profile-edit-head.is-padded {
+  height: auto;
+  min-height: 56px;
+  padding-top: 16px;
+  padding-bottom: 16px;
+}
+
 .partner-profile-edit-head button {
   display: flex;
   width: 32px;

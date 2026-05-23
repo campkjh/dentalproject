@@ -262,8 +262,8 @@ export default function PartnerHospitalInfoPage() {
   };
 
   /* 수정 화면 공통 헤더 — 뒤로 버튼 + 타이틀 */
-  const EditHeader = ({ title }: { title: string }) => (
-    <header className="partner-profile-edit-head">
+  const EditHeader = ({ title, padded = false }: { title: string; padded?: boolean }) => (
+    <header className={`partner-profile-edit-head${padded ? ' is-padded' : ''}`}>
       <button type="button" onClick={goOverview} aria-label="뒤로">
         <img src="/partner-template/chevron-left.svg" alt="" />
       </button>
@@ -362,7 +362,7 @@ export default function PartnerHospitalInfoPage() {
   if (mode === 'hours') {
     return (
       <div className="partner-mobile-screen partner-edit-screen with-save" style={{ display: 'flex', flexDirection: 'column' }}>
-        <EditHeader title="운영일 및 시간" />
+        <EditHeader title="운영일 및 시간" padded />
         <section className="partner-edit-content compact" style={{ paddingTop: 20 }}>
           <div className="partner-edit-title small-gap">
             <h1>운영일 및 시간</h1>
