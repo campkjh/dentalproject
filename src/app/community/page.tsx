@@ -54,7 +54,10 @@ function CommunityPageInner() {
   const [sortBy, setSortBy] = useState('최신순');
   const [showSortDropdown, setShowSortDropdown] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Question category sub-tabs — URL ?category= 파라미터로 초기화
   const [activeCategory, setActiveCategory] = useState(() => {
@@ -115,6 +118,11 @@ function CommunityPageInner() {
     setActiveCategory(cat);
   };
 
+  useEffect(() => {
+    if (!searchOpen) return;
+    searchInputRef.current?.focus();
+  }, [searchOpen]);
+
   const activeCategoryIdx = questionCategories.indexOf(activeCategory);
   const visiblePosts = isDoctor
     ? posts
@@ -134,12 +142,27 @@ function CommunityPageInner() {
     effectiveActiveBoard === '질문게시판' && activeCategory !== '전체'
       ? filteredPosts.filter((p) => p.tags?.includes(activeCategory))
       : filteredPosts;
+  const searchTerm = searchQuery.trim().toLowerCase();
+  const searchedPosts = searchTerm
+    ? categoryFilteredPosts.filter((post) => {
+        const haystack = [
+          post.title,
+          post.content,
+          post.authorName,
+          post.anonymousId,
+          post.authorHospital,
+          ...(post.tags ?? []),
+        ].filter(Boolean).join(' ').toLowerCase();
+        return haystack.includes(searchTerm);
+      })
+    : categoryFilteredPosts;
 
-  const sortedPosts = [...categoryFilteredPosts].sort((a, b) => {
+  const sortedPosts = [...searchedPosts].sort((a, b) => {
     if (sortBy === '인기순') return b.viewCount - a.viewCount;
     if (sortBy === '댓글순') return b.commentCount - a.commentCount;
     return 0; // default: 최신순 (already in order)
   });
+  const isSearching = searchTerm.length > 0;
 
   // Popular posts (top 5 by view count from all posts)
   const popularPosts = [...visiblePosts]
@@ -214,15 +237,49 @@ function CommunityPageInner() {
         title="커뮤니티"
         showBack={false}
         rightContent={
-          <Link
-            href="/community/search"
+          <button
+            type="button"
+            onClick={() => setSearchOpen((open) => !open)}
             className="inline-flex h-9 w-9 items-center justify-center rounded-full"
             aria-label="커뮤니티 검색"
+            aria-expanded={searchOpen}
           >
             <Search size={20} strokeWidth={2.2} className="text-gray-900" />
-          </Link>
+          </button>
         }
       />
+
+      <div
+        className={`bg-white px-2.5 overflow-hidden transition-all duration-300 ease-out ${
+          searchOpen ? 'max-h-[64px] pb-3 opacity-100' : 'max-h-0 pb-0 opacity-0'
+        }`}
+        aria-hidden={!searchOpen}
+      >
+        <div className="flex h-11 items-center gap-2 rounded-[14px] bg-[#F2F3F5] px-3 text-[#A4ABBA]">
+          <Search size={18} strokeWidth={2.2} className="flex-shrink-0" />
+          <input
+            ref={searchInputRef}
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder="커뮤니티 글 검색"
+            aria-label="커뮤니티 글 검색"
+            disabled={!searchOpen}
+            className="min-w-0 flex-1 bg-transparent text-[16px] font-medium leading-6 text-[#2B313D] outline-none placeholder:text-[#A4ABBA] focus:outline-none focus:ring-0"
+          />
+          {(searchQuery || searchOpen) && (
+            <button
+              type="button"
+              onClick={() => {
+                setSearchQuery('');
+                setSearchOpen(false);
+              }}
+              className="flex-shrink-0 text-[14px] font-bold text-[#51535C]"
+            >
+              취소
+            </button>
+          )}
+        </div>
+      </div>
 
       {/* Board tabs */}
       {isDoctor && (
@@ -255,7 +312,7 @@ function CommunityPageInner() {
         {!catalogHydrated && posts.length === 0 && <CommunitySkeleton />}
 
         {/* Popular posts - horizontal scroll */}
-        {popularPosts.length > 0 && (
+        {!isSearching && popularPosts.length > 0 && (
           <div className="bg-white px-2.5 py-4 mb-2">
             <h3 className="text-[17px] font-bold text-gray-900 mb-3">
               인기글
@@ -287,7 +344,7 @@ function CommunityPageInner() {
         )}
 
         {/* Live doctor Q&A - question board only */}
-        {effectiveActiveBoard === '질문게시판' && tickerItems.length > 0 && (
+        {!isSearching && effectiveActiveBoard === '질문게시판' && tickerItems.length > 0 && (
           <div className="bg-white px-2.5 py-4 mb-2">
             <div className="flex items-center justify-between mb-1">
               <div className="flex items-center gap-2">
@@ -491,7 +548,9 @@ function CommunityPageInner() {
             </div>
           ) : sortedPosts.length === 0 ? (
             <div className="flex items-center justify-center py-20">
-              <p className="text-sm text-gray-400">게시글이 없습니다.</p>
+              <p className="text-sm text-gray-400">
+                {isSearching ? '검색 결과가 없습니다.' : '게시글이 없습니다.'}
+              </p>
             </div>
           ) : (
             sortedPosts.map((post, index) => (

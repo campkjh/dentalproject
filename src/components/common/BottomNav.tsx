@@ -14,7 +14,6 @@ interface NavItem {
 
 const consumerNav: NavItem[] = [
   { href: '/', label: '홈', icon: '/icons/nav-home.svg' },
-  { href: '/search', label: '검색', icon: '/icons/nav-search.svg' },
   { href: '/reservations', label: '예약내역', icon: '/icons/nav-reservation.svg', badge: 10 },
   { href: '/community', label: '커뮤니티', icon: '/icons/nav-community.svg' },
   { href: '/wishlist', label: '찜', icon: '/icons/nav-wishlist.svg' },
@@ -50,52 +49,44 @@ function BottomNavInner() {
         left: '50%',
         transform: 'translateX(-50%)',
         zIndex: 9999,
-        height: 82,
+        display: 'flex',
+        height: 'calc(82px + env(safe-area-inset-bottom))',
         width: '100%',
         maxWidth: 480,
-        borderTopLeftRadius: 24,
-        borderTopRightRadius: 24,
-        background: 'rgba(255, 255, 255, 0.68)',
-        borderTop: '1px solid rgba(255, 255, 255, 0.76)',
-        boxShadow: '0 -10px 32px rgba(17, 24, 39, 0.10)',
-        backdropFilter: 'blur(18px) saturate(170%)',
-        WebkitBackdropFilter: 'blur(18px) saturate(170%)',
+        alignItems: 'flex-start',
+        justifyContent: 'space-between',
+        borderTop: '1px solid #F2F3F5',
+        background: 'rgba(255, 255, 255, 0.96)',
+        padding: '12px 24px calc(12px + env(safe-area-inset-bottom))',
+        backdropFilter: 'blur(18px)',
+        WebkitBackdropFilter: 'blur(18px)',
       }}
       className="lg:hidden"
     >
-      <div className="flex items-center justify-around h-full">
-        {consumerNav.map((item) => {
-          const isActive = pathname === item.href;
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`flex flex-col items-center gap-1 px-2 py-1 transition-all duration-200 ${
-                isActive ? 'text-[#2B313D]' : 'text-[#A4ABBA]'
-              }`}
-            >
-              <div className="relative">
-                <img
-                  src={item.icon}
-                  alt={item.label}
-                  className="w-[26px] h-[26px]"
-                  style={{
-                    filter: isActive
-                      ? 'brightness(0) saturate(100%) invert(14%) sepia(10%) saturate(1200%) hue-rotate(180deg) brightness(95%) contrast(90%)'
-                      : 'brightness(0) saturate(100%) invert(75%) sepia(5%) saturate(500%) hue-rotate(190deg) brightness(90%) contrast(90%)',
-                  }}
-                />
-                {item.badge && (
-                  <span className="absolute -top-1.5 -right-2.5 bg-[#8037FF] text-white text-[9px] rounded-full min-w-[16px] h-4 flex items-center justify-center px-1 font-medium">
-                    {item.badge}
-                  </span>
-                )}
-              </div>
-              <span style={{ fontSize: 10, fontWeight: isActive ? 600 : 400 }}>{item.label}</span>
-            </Link>
-          );
-        })}
-      </div>
+      {consumerNav.map((item) => {
+        const isActive = pathname === item.href;
+        return (
+          <Link
+            key={item.href}
+            href={item.href}
+            className="flex h-[50px] w-[50px] flex-col items-center justify-center gap-1.5 rounded-[14px] text-[#2B313D] transition-transform active:scale-95"
+            style={{ opacity: isActive ? 1 : 0.4 }}
+            aria-current={isActive ? 'page' : undefined}
+          >
+            <div className="relative h-[30px] w-[30px] flex-shrink-0">
+              <img src={item.icon} alt="" className="h-full w-full" />
+              {item.badge && (
+                <span className="absolute -top-1.5 -right-2.5 bg-[#8037FF] text-white text-[9px] rounded-full min-w-[16px] h-4 flex items-center justify-center px-1 font-medium">
+                  {item.badge}
+                </span>
+              )}
+            </div>
+            <span className="whitespace-nowrap text-center text-[12px] font-bold leading-none">
+              {item.label}
+            </span>
+          </Link>
+        );
+      })}
     </nav>,
     document.body
   );
