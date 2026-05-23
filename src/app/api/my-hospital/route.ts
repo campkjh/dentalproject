@@ -62,7 +62,7 @@ async function fetchHospitalProducts(
     .eq('hospital_id', hospitalId)
     .order('created_at', { ascending: false });
 
-  if (byId.error || (byId.data?.length ?? 0) > 0 || !hospitalSlug || hospitalSlug === hospitalId) {
+  if (byId.error || !hospitalSlug || hospitalSlug === hospitalId) {
     return byId;
   }
 
@@ -72,7 +72,23 @@ async function fetchHospitalProducts(
     .eq('hospital_id', hospitalSlug)
     .order('created_at', { ascending: false });
 
-  return bySlug.error ? byId : bySlug;
+  if (bySlug.error) return byId;
+
+  const merged = new Map<string, any>();
+  for (const product of (byId.data ?? []) as any[]) {
+    if (product?.id) merged.set(product.id, product);
+  }
+  for (const product of (bySlug.data ?? []) as any[]) {
+    if (product?.id) merged.set(product.id, product);
+  }
+
+  return {
+    ...byId,
+    data: Array.from(merged.values()).sort((a, b) => (
+      new Date(b.created_at ?? 0).getTime() - new Date(a.created_at ?? 0).getTime()
+    )),
+    error: null,
+  };
 }
 
 export async function GET() {
