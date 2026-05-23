@@ -100,7 +100,7 @@ type ProductForm = {
   discount: string;
   imageUrl: string;
   detailImageUrl: string;
-  tags: string;
+  tags: string[];
 };
 
 const FILTERS = ['all', 'pending', 'confirmed', 'completed', 'cancelled'] as const;
@@ -150,8 +150,11 @@ const EMPTY_PRODUCT_FORM: ProductForm = {
   discount: '',
   imageUrl: '',
   detailImageUrl: '',
-  tags: '',
+  tags: [],
 };
+
+const PRODUCT_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/avif', 'image/webp'];
+const PRODUCT_IMAGE_MAX_SIZE = 10 * 1024 * 1024;
 
 function onlyDigits(value: string) {
   return value.replace(/[^\d]/g, '');
@@ -362,7 +365,7 @@ function toProductForm(product?: ProductRow): ProductForm {
     discount: typeof product.discount === 'number' ? String(product.discount) : '0',
     imageUrl: product.image_url ?? '',
     detailImageUrl: product.detail_image_url ?? '',
-    tags: product.tags?.join(', ') ?? '',
+    tags: product.tags ?? [],
   };
 }
 
@@ -580,11 +583,15 @@ export default function PartnerHomePage() {
     completed: null,
     cancelled: null,
   });
+  const thumbnailInputRef = useRef<HTMLInputElement>(null);
+  const detailInputRef = useRef<HTMLInputElement>(null);
   const [filterIndicator, setFilterIndicator] = useState({ x: 20, width: 64 });
   const [pendingAction, setPendingAction] = useState<{ id: string; status: ReservationRow['status'] } | null>(null);
   const [productModal, setProductModal] = useState<{ mode: 'create' | 'edit'; product?: ProductRow } | null>(null);
   const [productForm, setProductForm] = useState<ProductForm>({ ...EMPTY_PRODUCT_FORM });
+  const [productTagDraft, setProductTagDraft] = useState('');
   const [productSaving, setProductSaving] = useState(false);
+  const [productImageUploading, setProductImageUploading] = useState<'imageUrl' | 'detailImageUrl' | null>(null);
 
   useEffect(() => {
     if (!productModal) return undefined;
@@ -685,11 +692,13 @@ export default function PartnerHomePage() {
 
   const openProductCreate = () => {
     setProductForm({ ...EMPTY_PRODUCT_FORM });
+    setProductTagDraft('');
     setProductModal({ mode: 'create' });
   };
 
   const openProductEdit = (product: ProductRow) => {
     setProductForm(toProductForm(product));
+    setProductTagDraft('');
     setProductModal({ mode: 'edit', product });
   };
 
@@ -718,6 +727,48 @@ export default function PartnerHomePage() {
       discount,
       price: calculateSalePrice(prev.originalPrice, discount),
     }));
+  };
+
+  const uploadProductImage = async (field: 'imageUrl' | 'detailImageUrl', file?: File | null) => {
+    if (!file) return;
+    if (!PRODUCT_IMAGE_TYPES.includes(file.type)) {
+      showToast('jpg, png, webp, avif 형식만 업로드할 수 있습니다.');
+      return;
+    }
+    if (file.size > PRODUCT_IMAGE_MAX_SIZE) {
+      showToast('10mb 이하 이미지만 업로드할 수 있습니다.');
+      return;
+    }
+
+    setProductImageUploading(field);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('folder', 'product-images');
+      const res = await fetch('/api/upload', { method: 'POST', body: fd });
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok || !payload.url) throw new Error(payload.error || '이미지 업로드에 실패했습니다.');
+      setProductForm((prev) => ({ ...prev, [field]: payload.url }));
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : '이미지 업로드에 실패했습니다.');
+    } finally {
+      setProductImageUploading(null);
+    }
+  };
+
+  const addProductTag = () => {
+    const tag = productTagDraft.trim().replace(/^#/, '');
+    if (!tag) return;
+    setProductForm((prev) => (
+      prev.tags.includes(tag)
+        ? prev
+        : { ...prev, tags: [...prev.tags, tag] }
+    ));
+    setProductTagDraft('');
+  };
+
+  const removeProductTag = (tag: string) => {
+    setProductForm((prev) => ({ ...prev, tags: prev.tags.filter((item) => item !== tag) }));
   };
 
   const submitProductRequest = async () => {
@@ -1028,44 +1079,85 @@ export default function PartnerHomePage() {
             </label>
             <label>
               썸네일 이미지
+              <button
+                type="button"
+                className={`partner-product-upload ${productForm.imageUrl ? 'has-image' : ''}`}
+                onClick={() => thumbnailInputRef.current?.click()}
+                disabled={productImageUploading === 'imageUrl'}
+              >
+                {productForm.imageUrl ? (
+                  <img src={productForm.imageUrl} alt="" />
+                ) : (
+                  <span>{productImageUploading === 'imageUrl' ? '업로드 중...' : '이미지 첨부'}</span>
+                )}
+              </button>
               <input
-                value={productForm.imageUrl}
-                onChange={(e) => setProductForm((prev) => ({ ...prev, imageUrl: e.target.value }))}
-                placeholder="목록과 예약카드에 표시될 이미지 URL"
+                ref={thumbnailInputRef}
+                hidden
+                type="file"
+                accept=".jpg,.jpeg,.png,.webp,.avif,image/jpeg,image/png,image/webp,image/avif"
+                onChange={(event) => {
+                  void uploadProductImage('imageUrl', event.target.files?.[0]);
+                  event.currentTarget.value = '';
+                }}
               />
             </label>
             <label>
               상세페이지 이미지
+              <button
+                type="button"
+                className={`partner-product-upload detail ${productForm.detailImageUrl ? 'has-image' : ''}`}
+                onClick={() => detailInputRef.current?.click()}
+                disabled={productImageUploading === 'detailImageUrl'}
+              >
+                {productForm.detailImageUrl ? (
+                  <img src={productForm.detailImageUrl} alt="" />
+                ) : (
+                  <span>{productImageUploading === 'detailImageUrl' ? '업로드 중...' : '상세 이미지 첨부'}</span>
+                )}
+              </button>
               <input
-                value={productForm.detailImageUrl}
-                onChange={(e) => setProductForm((prev) => ({ ...prev, detailImageUrl: e.target.value }))}
-                placeholder="상품 상세 영역에 표시될 이미지 URL"
+                ref={detailInputRef}
+                hidden
+                type="file"
+                accept=".jpg,.jpeg,.png,.webp,.avif,image/jpeg,image/png,image/webp,image/avif"
+                onChange={(event) => {
+                  void uploadProductImage('detailImageUrl', event.target.files?.[0]);
+                  event.currentTarget.value = '';
+                }}
               />
             </label>
-            {(productForm.imageUrl || productForm.detailImageUrl) && (
-              <div className="partner-product-image-preview-grid">
-                {productForm.imageUrl && (
-                  <figure>
-                    <img src={productForm.imageUrl} alt="" />
-                    <figcaption>썸네일</figcaption>
-                  </figure>
-                )}
-                {productForm.detailImageUrl && (
-                  <figure>
-                    <img src={productForm.detailImageUrl} alt="" />
-                    <figcaption>상세</figcaption>
-                  </figure>
-                )}
-              </div>
-            )}
-            <label>
+            <div className="partner-product-tag-field">
               태그
-              <input
-                value={productForm.tags}
-                onChange={(e) => setProductForm((prev) => ({ ...prev, tags: e.target.value }))}
-                placeholder="태그를 쉼표로 구분"
-              />
-            </label>
+              <div>
+                <input
+                  value={productTagDraft}
+                  onChange={(e) => setProductTagDraft(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      addProductTag();
+                    }
+                  }}
+                  placeholder="태그 입력"
+                />
+                <button type="button" onClick={addProductTag} aria-label="태그 추가">
+                  <Plus size={18} />
+                </button>
+              </div>
+              {productForm.tags.length > 0 && (
+                <ul>
+                  {productForm.tags.map((tag) => (
+                    <li key={tag}>
+                      #{tag}
+                      <button type="button" onClick={() => removeProductTag(tag)} aria-label={`${tag} 태그 삭제`}>
+                        삭제
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
 
             <div className="partner-product-sheet-actions">
               <button type="button" onClick={() => setProductModal(null)}>취소</button>
