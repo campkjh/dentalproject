@@ -2568,27 +2568,28 @@ body.partner-product-modal-open .partner-bottom-nav {
 }
 
 .partner-home-filter {
-  display: grid;
+  display: flex;
   position: relative;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 0;
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
   margin: 0 -8px 14px;
   border-bottom: 1px solid #edf0f4;
   background: #fff;
-  padding: 0;
+  padding: 0 8px;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
 }
 
 .partner-home-filter-indicator {
   position: absolute;
   bottom: -1px;
   left: 0;
-  width: 20%;
   height: 2px;
   border-radius: 999px;
   background: #2b313d;
-  transition: transform 260ms ease;
-  will-change: transform;
+  transition: transform 260ms ease, width 260ms ease;
+  will-change: transform, width;
 }
 
 .partner-home-filter button {
@@ -2596,19 +2597,21 @@ body.partner-product-modal-open .partner-bottom-nav {
   z-index: 1;
   display: flex;
   height: 48px;
-  min-width: 0;
+  min-width: max-content;
+  flex: 0 0 auto;
   align-items: center;
   justify-content: center;
   border: 0;
   background: transparent;
-  padding: 0 1px;
+  padding: 0 14px;
   color: #a4abba;
   font-size: 16px;
   font-weight: 500;
   line-height: 1;
+  letter-spacing: 0;
+  scroll-snap-align: start;
   text-align: center;
   white-space: nowrap;
-  letter-spacing: -0.3px;
   transition: color 180ms ease, transform 180ms ease;
 }
 

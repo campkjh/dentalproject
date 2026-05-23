@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ChevronRight, Plus, Star } from 'lucide-react';
@@ -573,6 +573,14 @@ export default function PartnerHomePage() {
   const [filter, setFilter] = useState<Filter>('all');
   const [homeTab, setHomeTab] = useState<HomeTab>('reservations');
   const [productApprovalTab, setProductApprovalTab] = useState<ProductApprovalTab>('approved');
+  const filterRefs = useRef<Record<Filter, HTMLButtonElement | null>>({
+    all: null,
+    pending: null,
+    confirmed: null,
+    completed: null,
+    cancelled: null,
+  });
+  const [filterIndicator, setFilterIndicator] = useState({ x: 0, width: 0 });
   const [pendingAction, setPendingAction] = useState<{ id: string; status: ReservationRow['status'] } | null>(null);
   const [productModal, setProductModal] = useState<{ mode: 'create' | 'edit'; product?: ProductRow } | null>(null);
   const [productForm, setProductForm] = useState<ProductForm>({ ...EMPTY_PRODUCT_FORM });
@@ -593,6 +601,19 @@ export default function PartnerHomePage() {
       void refreshHospital({ force: true, showLoading: false });
     },
   });
+
+  useLayoutEffect(() => {
+    const updateIndicator = () => {
+      const target = filterRefs.current[filter];
+      if (!target) return;
+      setFilterIndicator({ x: target.offsetLeft, width: target.offsetWidth });
+      target.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+    };
+
+    updateIndicator();
+    window.addEventListener('resize', updateIndicator);
+    return () => window.removeEventListener('resize', updateIndicator);
+  }, [filter, homeTab]);
 
   const counts = useMemo(() => {
     return {
@@ -861,12 +882,18 @@ export default function PartnerHomePage() {
           <div className="partner-home-filter hide-scrollbar" role="tablist" aria-label="예약 상태">
             <span
               className="partner-home-filter-indicator"
-              style={{ transform: `translateX(${FILTERS.indexOf(filter) * 100}%)` }}
+              style={{
+                width: filterIndicator.width,
+                transform: `translateX(${filterIndicator.x}px)`,
+              }}
               aria-hidden="true"
             />
             {FILTERS.map((item) => (
               <button
                 key={item}
+                ref={(node) => {
+                  filterRefs.current[item] = node;
+                }}
                 type="button"
                 role="tab"
                 aria-selected={filter === item}
