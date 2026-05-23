@@ -1,31 +1,50 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Building2, UserRound } from 'lucide-react';
-import { useStore } from '@/store';
-import { useSession } from '@/lib/supabase/SessionProvider';
+import { useRouter } from 'next/navigation';
+import { Building2, Camera, ChevronRight, LogOut } from 'lucide-react';
+import Avatar from '@/components/common/Avatar';
 import { useMyHospitalData } from '@/lib/partner/my-hospital-cache';
-import {
-  PartnerButton,
-  PartnerField,
-  PartnerInput,
-  PartnerListRow,
-  PartnerPanel,
-  PartnerTop,
-} from '@/components/partner/tds';
+import { useSession } from '@/lib/supabase/SessionProvider';
+import { useStore } from '@/store';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
+
+function MenuIcon({ name, size = 22 }: { name: string; size?: number }) {
+  return (
+    <img
+      src={`/icons/mypage/${name}.svg`}
+      alt=""
+      width={size}
+      height={size}
+      style={{ display: 'inline-block' }}
+    />
+  );
+}
+
+type MenuItem = {
+  label: string;
+  href?: string;
+  icon: React.ReactNode;
+  description?: string;
+  onClick?: () => void;
+};
+
 export default function PartnerAccountPage() {
+  const router = useRouter();
   const { authUser, signOut } = useSession();
-  const showToast = useStore((s) => s.showToast);
   const user = useStore((s) => s.user);
   const updateUser = useStore((s) => s.updateUser);
+  const showToast = useStore((s) => s.showToast);
+  const showModal = useStore((s) => s.showModal);
+  const hideModal = useStore((s) => s.hideModal);
   const { data: hospitalData } = useMyHospitalData<any>(authUser?.id);
   const hospital = hospitalData?.hospital ?? null;
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [saving, setSaving] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -40,96 +59,165 @@ export default function PartnerAccountPage() {
     try {
       updateUser({ name, phone });
       showToast('계정 정보가 저장되었습니다.');
+      setProfileOpen(false);
     } finally {
       setSaving(false);
     }
   };
 
+  const handleLogout = () => {
+    showModal('로그아웃', '정말 로그아웃 하시겠습니까?', async () => {
+      await signOut();
+      hideModal();
+      window.location.replace('/');
+    });
+  };
+
+  const profileItems: MenuItem[] = [
+    {
+      label: '프로필 설정',
+      icon: <MenuIcon name="profile" />,
+      description: authUser?.email ?? '-',
+      onClick: () => setProfileOpen((open) => !open),
+    },
+    {
+      label: '알림 설정',
+      href: '/mypage/notifications',
+      icon: <MenuIcon name="notifications" />,
+    },
+  ];
+
+  const hospitalItems: MenuItem[] = [
+    {
+      label: '병원 정보',
+      href: '/partner/hospital-info',
+      icon: <Building2 size={22} />,
+      description: hospital?.name ?? '등록된 병원이 없습니다',
+    },
+    {
+      label: '예약관리',
+      href: '/partner/reservations',
+      icon: <MenuIcon name="reservations" />,
+    },
+    {
+      label: '리뷰관리',
+      href: '/partner/reviews',
+      icon: <MenuIcon name="my-review" />,
+    },
+  ];
+
+  const supportItems: MenuItem[] = [
+    { label: '자주하는 질문', href: '/mypage/faq', icon: <MenuIcon name="faq" /> },
+    { label: '약관 및 정책', href: '/terms', icon: <MenuIcon name="terms" /> },
+    { label: '문의하기', href: '/partner/contact', icon: <MenuIcon name="customer-service" /> },
+    { label: '로그아웃', icon: <LogOut size={22} />, onClick: handleLogout },
+  ];
+
+  const renderMenuItem = (item: MenuItem) => (
+    <button
+      key={item.label}
+      type="button"
+      onClick={() => {
+        if (item.onClick) item.onClick();
+        else if (item.href) router.push(item.href);
+      }}
+      className="partner-account-row"
+    >
+      <div className="partner-account-row-main">
+        <span className="partner-account-row-icon">{item.icon}</span>
+        <span>
+          <strong>{item.label}</strong>
+          {item.description ? <em>{item.description}</em> : null}
+        </span>
+      </div>
+      <ChevronRight size={16} className="partner-account-chevron" />
+    </button>
+  );
+
   if (!authUser) {
     return (
-      <div className="bg-white rounded-xl p-10 text-center">
-        <p className="text-sm text-gray-500 mb-4">로그인이 필요합니다.</p>
-        <Link href="/login" className="inline-block px-5 py-2.5 bg-[#8037FF] text-white text-sm font-bold rounded-xl">
-          로그인
-        </Link>
+      <div className="partner-account-screen">
+        <div className="partner-account-login">
+          <p>로그인이 필요합니다.</p>
+          <Link href="/partner/login">로그인</Link>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-5">
-      <PartnerTop
-        eyebrow="계정"
-        title="계정 정보"
-        description="파트너 계정과 병원 연결 정보를 관리합니다."
-        icon={<UserRound size={28} />}
-      />
-
-      <PartnerPanel className="p-5 space-y-4">
-        <h2>담당자 정보</h2>
-        <PartnerField label="이메일">
-          <p className="partner-input flex items-center text-[rgba(3,18,40,0.7)]">{authUser.email ?? '-'}</p>
-        </PartnerField>
-        <PartnerField label="이름">
-          <PartnerInput
-            value={name}
-            onChange={(e) => setName(e.target.value)}
+    <div className="partner-account-screen page-enter">
+      <section className="partner-account-profile fade-in-up">
+        <div className="partner-account-avatar">
+          <Avatar
+            src={user?.profileImage}
+            gender={user?.gender}
+            seed={authUser.id}
+            role="doctor"
+            size={52}
+            alt={user?.name || '프로필'}
           />
-        </PartnerField>
-        <PartnerField label="휴대폰">
-          <PartnerInput
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-          />
-        </PartnerField>
-        <PartnerButton
-          type="button"
-          onClick={save}
-          disabled={saving}
-          size="xl"
-          className="w-full"
-        >
-          {saving ? '저장 중…' : '담당자 정보 저장'}
-        </PartnerButton>
-      </PartnerPanel>
-
-      <PartnerPanel className="overflow-hidden">
-        <div className="px-5 py-4 border-b border-[rgba(0,27,55,0.06)]">
-          <h2>연결된 병원</h2>
+          <button type="button" aria-label="프로필 사진 변경">
+            <Camera size={12} />
+          </button>
         </div>
-        {hospital ? (
-          <PartnerListRow
-            href="/partner/hospital-info"
-            icon={<Building2 size={16} />}
-            title={hospital.name}
-            description={`상태: ${hospital.status}`}
-          />
-        ) : (
-          <div className="p-5">
-            <p className="text-[13px] text-[rgba(0,19,43,0.58)] mb-3">아직 등록된 병원이 없습니다.</p>
-            <PartnerButton href="/hospital/register" size="m">
-              병원 등록 신청
-            </PartnerButton>
-          </div>
-        )}
-      </PartnerPanel>
+        <div>
+          <h1>{user?.name ?? authUser.email?.split('@')[0] ?? '파트너'}</h1>
+          <p>병원 파트너</p>
+        </div>
+      </section>
 
-      <PartnerPanel className="p-5">
-        <h2 className="mb-3">계정 관리</h2>
-        <PartnerButton
-          type="button"
-          variant="weak"
-          tone="neutral"
-          onClick={async () => {
-            await signOut();
-            // replace로 history 없이 고객 홈으로 이동 (layout 리다이렉트보다 먼저)
-            window.location.replace('/');
-          }}
-          className="w-full"
-        >
-          로그아웃
-        </PartnerButton>
-      </PartnerPanel>
+      <section className="partner-account-summary">
+        <button type="button" onClick={() => router.push('/partner/hospital-info')}>
+          <span>연결 병원</span>
+          <strong>{hospital?.name ?? '미등록'}</strong>
+        </button>
+        <button type="button" onClick={() => router.push('/partner/reservations')}>
+          <span>운영 상태</span>
+          <strong>{hospital?.status ?? '-'}</strong>
+        </button>
+      </section>
+
+      <section className="partner-account-section stagger-children">
+        {profileItems.map(renderMenuItem)}
+        {profileOpen ? (
+          <div className="partner-account-editor">
+            <label>
+              <span>이름</span>
+              <input value={name} onChange={(e) => setName(e.target.value)} />
+            </label>
+            <label>
+              <span>휴대폰</span>
+              <input value={phone} onChange={(e) => setPhone(e.target.value)} />
+            </label>
+            <button type="button" onClick={save} disabled={saving}>
+              {saving ? '저장 중...' : '저장하기'}
+            </button>
+          </div>
+        ) : null}
+      </section>
+
+      <div className="partner-account-divider" />
+
+      <section className="partner-account-section stagger-children">
+        <h2>병원내역</h2>
+        {hospitalItems.map(renderMenuItem)}
+      </section>
+
+      <div className="partner-account-divider" />
+
+      <section className="partner-account-section stagger-children">
+        <h2>고객센터</h2>
+        {supportItems.map(renderMenuItem)}
+      </section>
+
+      <div className="partner-account-register">
+        {!hospital ? (
+          <button type="button" onClick={() => router.push('/hospital/register')}>
+            병원신청하기
+          </button>
+        ) : null}
+      </div>
     </div>
   );
 }

@@ -2521,6 +2521,287 @@ body.partner-product-modal-open .partner-bottom-nav {
   font-size: 0;
 }
 
+.partner-account-screen {
+  min-height: calc(100dvh - 92px);
+  background: #fff;
+  padding: 48px 0 24px;
+}
+
+.partner-account-profile {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 10px 24px;
+}
+
+.partner-account-avatar {
+  position: relative;
+  display: flex;
+  width: 64px;
+  height: 64px;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  overflow: visible;
+  border-radius: 50%;
+  background: #f3f4f6;
+}
+
+.partner-account-avatar > img {
+  width: 52px !important;
+  height: 52px !important;
+}
+
+.partner-account-avatar button {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  display: flex;
+  width: 24px;
+  height: 24px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #e5e7eb;
+  border-radius: 50%;
+  background: #fff;
+  color: #6b7280;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.08);
+}
+
+.partner-account-profile h1 {
+  margin: 0;
+  color: #111827;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.partner-account-profile p {
+  margin: 2px 0 0;
+  color: #6b7280;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.4;
+}
+
+.partner-account-summary {
+  display: flex;
+  overflow: hidden;
+  margin: 0 16px 8px;
+  border: 1px solid #f3f4f6;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.partner-account-summary button {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 0;
+  flex-direction: column;
+  align-items: center;
+  border: 0;
+  background: transparent;
+  padding: 16px 8px;
+  text-align: center;
+}
+
+.partner-account-summary button + button {
+  border-left: 1px solid #f3f4f6;
+}
+
+.partner-account-summary span {
+  color: #6b7280;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.4;
+}
+
+.partner-account-summary strong {
+  display: block;
+  max-width: 100%;
+  margin-top: 4px;
+  overflow: hidden;
+  color: #8037ff;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.partner-account-section {
+  background: #fff;
+}
+
+.partner-account-section h2 {
+  margin: 0;
+  padding: 16px 10px 8px;
+  color: #111827;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.partner-account-row {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  border: 0;
+  background: transparent;
+  padding: 14px 10px;
+  color: inherit;
+  text-align: left;
+  transition: background 180ms ease;
+}
+
+.partner-account-row:active {
+  background: #f9fafb;
+}
+
+.partner-account-row-main {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 12px;
+}
+
+.partner-account-row-icon {
+  display: flex;
+  width: 36px;
+  height: 36px;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  border-radius: 16px;
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.partner-account-row-main span:last-child {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.partner-account-row strong {
+  color: #111827;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.partner-account-row em {
+  max-width: 240px;
+  overflow: hidden;
+  color: #9ca3af;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.partner-account-chevron {
+  flex: 0 0 auto;
+  color: #d1d5db;
+}
+
+.partner-account-editor {
+  margin: 0 10px 8px 58px;
+  border-radius: 14px;
+  background: #f9fafb;
+  padding: 12px;
+}
+
+.partner-account-editor label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 10px;
+  color: #6b7280;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.partner-account-editor input {
+  width: 100%;
+  height: 42px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #fff;
+  padding: 0 12px;
+  color: #111827;
+  font-size: 16px;
+  font-weight: 400;
+  outline: none;
+}
+
+.partner-account-editor button {
+  width: 100%;
+  height: 44px;
+  border: 0;
+  border-radius: 12px;
+  background: #8037ff;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.partner-account-editor button:disabled {
+  opacity: 0.6;
+}
+
+.partner-account-divider {
+  height: 1px;
+  margin: 8px 10px;
+  background: #f3f4f6;
+}
+
+.partner-account-register {
+  padding: 24px 10px;
+}
+
+.partner-account-register button {
+  display: flex;
+  width: 100%;
+  height: 50px;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 12px;
+  background: #8037ff;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.partner-account-login {
+  padding: 80px 20px;
+  text-align: center;
+}
+
+.partner-account-login p {
+  margin: 0 0 16px;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.partner-account-login a {
+  display: inline-flex;
+  height: 44px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: #8037ff;
+  padding: 0 20px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+}
+
 .partner-loading {
   display: flex;
   min-height: calc(100dvh - 92px);
