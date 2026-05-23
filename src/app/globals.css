@@ -2600,20 +2600,20 @@ body.partner-product-modal-open .partner-bottom-nav {
   gap: 0;
   overflow-x: auto;
   overflow-y: hidden;
-  margin: 0 -8px 14px;
+  margin: 0 0 14px;
   border-bottom: 1px solid #edf0f4;
   background: #fff;
-  padding: 0 16px;
+  padding: 0 20px;
   scroll-snap-type: x proximity;
   -webkit-overflow-scrolling: touch;
 }
 
 .partner-home-filter-indicator {
   position: absolute;
-  bottom: -1px;
+  bottom: 0;
   left: 0;
-  width: 56px;
-  height: 2px;
+  width: 64px;
+  height: 3px;
   border-radius: 999px;
   background: #2b313d;
   transition: transform 260ms ease, width 260ms ease;
@@ -2631,7 +2631,7 @@ body.partner-product-modal-open .partner-bottom-nav {
   justify-content: center;
   border: 0;
   background: transparent;
-  padding: 0 16px;
+  padding: 0 18px;
   color: #a4abba;
   font-size: 16px;
   font-weight: 500;
