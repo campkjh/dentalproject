@@ -8,6 +8,46 @@ import { useStore } from '@/store';
 
 const dayLabels = ['일', '월', '화', '수', '목', '금', '토'];
 type ScheduleSettings = { disabledDays: string[]; disabledSlots: Record<string, string[]> };
+type TimeGroup = { label: '오전' | '오후' | '저녁'; slots: string[] };
+type HoursByDow = Record<number, { start?: string; end?: string; closed?: boolean }>;
+
+const timeGroupLabels: TimeGroup['label'][] = ['오전', '오후', '저녁'];
+
+function emptyTimeGroups(): TimeGroup[] {
+  return timeGroupLabels.map((label) => ({ label, slots: [] }));
+}
+
+function formatDateKey(year: number, month: number, day: number) {
+  return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+}
+
+function slotTimestamp(year: number, month: number, day: number, time: string) {
+  const [hour, minute] = time.split(':').map(Number);
+  return new Date(year, month - 1, day, hour, minute || 0, 0, 0).getTime();
+}
+
+function getAvailableTimeGroupsForDay(
+  year: number,
+  month: number,
+  day: number,
+  hoursByDow: HoursByDow,
+  disabledSlotsByDate: Record<string, string[]>,
+  nowMs: number,
+) {
+  const dow = new Date(year, month - 1, day).getDay();
+  const hour = hoursByDow[dow];
+  if (!hour || hour.closed) return emptyTimeGroups();
+
+  const dateStr = formatDateKey(year, month, day);
+  const disabledSlots = new Set(disabledSlotsByDate[dateStr] ?? []);
+  const groups = generateTimeSlotsForDay(hour.start, hour.end);
+  const isSelectable = (time: string) => !disabledSlots.has(time) && slotTimestamp(year, month, day, time) > nowMs;
+
+  return timeGroupLabels.map((label) => ({
+    label,
+    slots: groups[label].filter(isSelectable),
+  }));
+}
 
 function generateTimeSlotsForDay(startTime?: string, endTime?: string) {
   if (!startTime || !endTime) return { '오전': [] as string[], '오후': [] as string[], '저녁': [] as string[] };
@@ -47,7 +87,7 @@ function BookingPage() {
   // Map operating hours by weekday index (0=Sun, 1=Mon...)
   const dayMap: Record<string, number> = { '일': 0, '월': 1, '화': 2, '수': 3, '목': 4, '금': 5, '토': 6 };
   const hoursByDow = useMemo(() => {
-    const map: Record<number, { start?: string; end?: string; closed?: boolean }> = {};
+    const map: HoursByDow = {};
     (hospital?.operatingHours ?? []).forEach((oh) => {
       const idx = dayMap[oh.day];
       if (idx === undefined) return;
@@ -57,7 +97,8 @@ function BookingPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hospital?.operatingHours]);
 
-  const today = new Date();
+  const [nowMs, setNowMs] = useState(() => Date.now());
+  const today = new Date(nowMs);
   const todayMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
   const [currentYear, setCurrentYear] = useState(today.getFullYear());
   const [currentMonth, setCurrentMonth] = useState(today.getMonth() + 1);
@@ -67,7 +108,13 @@ function BookingPage() {
   const [scheduleSettings, setScheduleSettings] = useState<ScheduleSettings>({ disabledDays: [], disabledSlots: {} });
 
   useEffect(() => {
+    const interval = window.setInterval(() => setNowMs(Date.now()), 30000);
+    return () => window.clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
     if (!hospital?.id) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setScheduleSettings({ disabledDays: [], disabledSlots: {} });
       return;
     }
@@ -111,11 +158,19 @@ function BookingPage() {
   const isAvailable = (day: number) => {
     const d = new Date(currentYear, currentMonth - 1, day);
     if (d.getTime() < todayMidnight) return false;
-    const dateStr = `${currentYear}-${String(currentMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    const dateStr = formatDateKey(currentYear, currentMonth, day);
     if (scheduleSettings.disabledDays.includes(dateStr)) return false;
     const dow = d.getDay();
     const hour = hoursByDow[dow];
-    return !!hour && !hour.closed && !!hour.start && !!hour.end;
+    if (!hour || hour.closed || !hour.start || !hour.end) return false;
+    return getAvailableTimeGroupsForDay(
+      currentYear,
+      currentMonth,
+      day,
+      hoursByDow,
+      scheduleSettings.disabledSlots,
+      nowMs,
+    ).some((group) => group.slots.length > 0);
   };
 
   const isToday = (day: number) =>
@@ -125,23 +180,21 @@ function BookingPage() {
 
   // Build time slots for the selected day from hospital operating hours
   const timeGroups = useMemo(() => {
-    if (!selectedDate) return [{ label: '오전', slots: [] }, { label: '오후', slots: [] }, { label: '저녁', slots: [] }];
-    const dow = new Date(currentYear, currentMonth - 1, selectedDate).getDay();
-    const hour = hoursByDow[dow];
-    if (!hour || hour.closed) return [{ label: '오전', slots: [] }, { label: '오후', slots: [] }, { label: '저녁', slots: [] }];
-    const dateStr = `${currentYear}-${String(currentMonth).padStart(2, '0')}-${String(selectedDate).padStart(2, '0')}`;
-    const disabledSlots = new Set(scheduleSettings.disabledSlots[dateStr] ?? []);
-    const groups = generateTimeSlotsForDay(hour.start, hour.end);
-    return [
-      { label: '오전', slots: groups['오전'].filter((time) => !disabledSlots.has(time)) },
-      { label: '오후', slots: groups['오후'].filter((time) => !disabledSlots.has(time)) },
-      { label: '저녁', slots: groups['저녁'].filter((time) => !disabledSlots.has(time)) },
-    ];
-  }, [selectedDate, currentYear, currentMonth, hoursByDow, scheduleSettings.disabledSlots]);
+    if (!selectedDate) return emptyTimeGroups();
+    return getAvailableTimeGroupsForDay(
+      currentYear,
+      currentMonth,
+      selectedDate,
+      hoursByDow,
+      scheduleSettings.disabledSlots,
+      nowMs,
+    );
+  }, [selectedDate, currentYear, currentMonth, hoursByDow, scheduleSettings.disabledSlots, nowMs]);
 
   useEffect(() => {
     if (!selectedDate) return;
     if (!isAvailable(selectedDate)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelectedDate(null);
       setSelectedTime(null);
       return;
@@ -165,7 +218,11 @@ function BookingPage() {
   const handleConfirm = () => {
     setShowConfirm(false);
     if (!selectedDate || !selectedTime) return;
-    const dateStr = `${currentYear}-${String(currentMonth).padStart(2, '0')}-${String(selectedDate).padStart(2, '0')}`;
+    if (slotTimestamp(currentYear, currentMonth, selectedDate, selectedTime) <= Date.now()) {
+      setSelectedTime(null);
+      return;
+    }
+    const dateStr = formatDateKey(currentYear, currentMonth, selectedDate);
     router.push(`/payment?productId=${productId}&date=${dateStr}&time=${encodeURIComponent(selectedTime)}`);
   };
 

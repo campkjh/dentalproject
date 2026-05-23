@@ -35,6 +35,13 @@ function scheduleKeysFromVisitAt(value: unknown) {
   };
 }
 
+function parseVisitAt(value: unknown) {
+  if (typeof value !== 'string' || !value.trim()) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return date;
+}
+
 async function resolveHospitalId(sb: any, hospitalIdOrSlug: string) {
   if (/^[0-9a-f]{8}-/.test(hospitalIdOrSlug)) return hospitalIdOrSlug;
   const { data } = await sb.from('hospitals').select('id').eq('slug', hospitalIdOrSlug).maybeSingle();
@@ -54,6 +61,14 @@ export async function POST(req: NextRequest) {
 
   const productId = body.productId && /^[0-9a-f]{8}-/.test(body.productId) ? body.productId : null;
   const doctorId = body.doctorId && /^[0-9a-f]{8}-/.test(body.doctorId) ? body.doctorId : null;
+  const visitAt = parseVisitAt(body.visitAt);
+  if (!visitAt) {
+    return NextResponse.json({ error: '예약 시간을 선택해주세요.' }, { status: 400 });
+  }
+  if (visitAt.getTime() <= Date.now()) {
+    return NextResponse.json({ error: '이미 지난 예약 시간입니다.' }, { status: 400 });
+  }
+
   const scheduleKeys = scheduleKeysFromVisitAt(body.visitAt);
 
   if (scheduleKeys) {
@@ -80,7 +95,7 @@ export async function POST(req: NextRequest) {
       hospital_id: hospitalId,
       product_id: productId,
       doctor_id: doctorId,
-      visit_at: body.visitAt ?? null,
+      visit_at: visitAt.toISOString(),
       amount: body.amount ?? 0,
       customer_name: body.customerName ?? '',
       customer_phone: body.customerPhone ?? '',

@@ -12,6 +12,17 @@ const agreementTerms = [
   { id: 'refund', label: '(필수) 환불·취소 규정 확인' },
 ];
 
+function getVisitTimestamp(dateParam: string | null, timeParam: string | null) {
+  if (!dateParam || !timeParam) return null;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateParam) || !/^\d{2}:\d{2}$/.test(timeParam)) return null;
+
+  const iso = `${dateParam}T${timeParam}:00+09:00`;
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return null;
+
+  return { date, iso };
+}
+
 export default function PaymentPageWrapper() {
   return (
     <Suspense fallback={<div className="flex items-center justify-center min-h-screen">로딩중...</div>}>
@@ -123,12 +134,21 @@ function PaymentPage() {
       return;
     }
     if (submitting) return;
-    setSubmitting(true);
 
     // Build the actual visit timestamp from URL params (set by booking page)
-    const visitIso = dateParam && timeParam
-      ? `${dateParam}T${timeParam}:00+09:00`
-      : new Date().toISOString();
+    const visit = getVisitTimestamp(dateParam, timeParam);
+    if (!visit) {
+      showToast('예약일시를 다시 선택해주세요.');
+      router.push(`/booking?productId=${encodeURIComponent(product.id)}`);
+      return;
+    }
+    if (visit.date.getTime() <= Date.now()) {
+      showToast('이미 지난 예약 시간입니다. 다시 선택해주세요.');
+      router.push(`/booking?productId=${encodeURIComponent(product.id)}`);
+      return;
+    }
+
+    setSubmitting(true);
     const newReservation = {
       id: `res-${Date.now()}`,
       status: 'pending' as const,
@@ -146,7 +166,7 @@ function PaymentPage() {
       customerPhone: user.phone ?? '',
       paymentMethod,
     };
-    const result = await addReservation(newReservation, { visitAtIso: visitIso });
+    const result = await addReservation(newReservation, { visitAtIso: visit.iso });
     setSubmitting(false);
     if (result?.error) {
       showToast(result.error);
