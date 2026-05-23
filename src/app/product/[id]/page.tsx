@@ -188,7 +188,8 @@ export default function ProductDetailPage() {
 
   const hospital = hospitals.find((h) => h.id === product?.hospitalId);
 
-  const productReviews = reviews.filter((r) => r.productId === product?.id || r.hospitalId === product?.hospitalId);
+  const productReviews = reviews.filter((r) => r.productId === product?.id);
+  const productReviewCount = productReviews.length;
 
   const hospitalProducts = products.filter((p) => p.hospitalId === product?.hospitalId && p.id !== product?.id);
 
@@ -256,7 +257,7 @@ export default function ProductDetailPage() {
         <div className="flex items-center gap-1.5 mt-2">
           <Star size={15} fill="#FBBF24" stroke="#FBBF24" />
           <span style={{ fontSize: 14, fontWeight: 600, color: '#2B313D' }}>{avgRating}</span>
-          <span style={{ fontSize: 13, color: '#A4ABBA' }}>({product.reviewCount})</span>
+          <span style={{ fontSize: 13, color: '#A4ABBA' }}>({productReviewCount})</span>
         </div>
 
         {/* Pricing - bigger, open */}

@@ -39,7 +39,7 @@ export default function ReviewDetailPage() {
     : null;
 
   const relatedReviews = reviews
-    .filter((r) => r.id !== review.id && (r.hospitalId === review.hospitalId || r.productId === review.productId))
+    .filter((r) => r.id !== review.id && r.productId && r.productId === review.productId)
     .slice(0, 4);
 
   return (
