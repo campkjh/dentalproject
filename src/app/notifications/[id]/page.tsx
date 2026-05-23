@@ -18,15 +18,17 @@ export default function NotificationDetailPage() {
   const params = useParams();
   const id = params.id as string;
   const notifications = useStore((s) => s.notifications);
+  const markNotificationRead = useStore((s) => s.markNotificationRead);
 
   const notification = notifications.find((n) => n.id === id);
 
-  // Mark as read on visit (UUID-only — DB)
+  // Keep the unread badge in sync immediately, then persist UUID-backed messages.
   useEffect(() => {
     if (!notification || notification.isRead) return;
+    markNotificationRead(notification.id);
     if (!/^[0-9a-f]{8}-/.test(notification.id)) return;
-    void fetch(`/api/notifications/${notification.id}/read`, { method: 'POST' });
-  }, [notification]);
+    void fetch(`/api/notifications/${notification.id}/read`, { method: 'POST' }).catch(() => undefined);
+  }, [markNotificationRead, notification]);
 
   if (!notification) {
     return (

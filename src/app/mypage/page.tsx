@@ -29,7 +29,9 @@ interface MenuItem {
 
 export default function MyPage() {
   const router = useRouter();
-  const { isLoggedIn, user, logout, showModal, hideModal } = useStore();
+  const { isLoggedIn, user, logout, showModal, hideModal, notifications, meHydrated } = useStore();
+  const unreadMessageCount =
+    isLoggedIn && meHydrated ? notifications.filter((notification) => !notification.isRead).length : 0;
 
   const handleLogout = () => {
     showModal('로그아웃', '정말 로그아웃 하시겠습니까?', () => {
@@ -53,7 +55,12 @@ export default function MyPage() {
   const myMenuItems: MenuItem[] = [
     { label: '프로필 설정', href: '/mypage/profile', icon: <MenuIcon name="profile" /> },
     { label: '예약내역', href: '/reservations', icon: <MenuIcon name="reservations" /> },
-    { label: '쪽지함', href: '/notifications', icon: <MenuIcon name="messages" />, badge: 12 },
+    {
+      label: '쪽지함',
+      href: '/notifications',
+      icon: <MenuIcon name="messages" />,
+      badge: unreadMessageCount || undefined,
+    },
     { label: '쿠폰함', href: '/mypage/coupons', icon: <MenuIcon name="coupons" /> },
     { label: '내 포인트', href: '/mypage/points', icon: <MenuIcon name="points" /> },
     { label: '알림 설정', href: '/mypage/notifications', icon: <MenuIcon name="notifications" /> },

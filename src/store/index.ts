@@ -170,6 +170,7 @@ interface AppState {
 
   // Notifications & point history (hydrated from /api/me)
   notifications: Notification[];
+  markNotificationRead: (id: string) => void;
   pointHistory: PointHistory[];
 
   // Announcements (public)
@@ -500,6 +501,13 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   notifications: mockNotifications,
+  markNotificationRead: (id) => {
+    set({
+      notifications: get().notifications.map((notification) =>
+        notification.id === id ? { ...notification, isRead: true } : notification
+      ),
+    });
+  },
   pointHistory: mockPointHistory,
   announcements: mockAnnouncements,
 

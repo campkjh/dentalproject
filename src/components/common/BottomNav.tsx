@@ -4,17 +4,17 @@ import { Suspense, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useStore } from '@/store';
 
 interface NavItem {
   href: string;
   label: string;
   icon: string;
-  badge?: number;
 }
 
 const consumerNav: NavItem[] = [
   { href: '/', label: '홈', icon: '/icons/nav-home.svg' },
-  { href: '/reservations', label: '예약내역', icon: '/icons/nav-reservation.svg', badge: 10 },
+  { href: '/reservations', label: '예약내역', icon: '/icons/nav-reservation.svg' },
   { href: '/community', label: '커뮤니티', icon: '/icons/nav-community.svg' },
   { href: '/wishlist', label: '찜', icon: '/icons/nav-wishlist.svg' },
   { href: '/mypage', label: '마이홈', icon: '/icons/nav-mypage.svg' },
@@ -32,6 +32,9 @@ export default function BottomNav() {
 
 function BottomNavInner() {
   const pathname = usePathname();
+  const isLoggedIn = useStore((s) => s.isLoggedIn);
+  const meHydrated = useStore((s) => s.meHydrated);
+  const reservationCount = useStore((s) => s.reservations.length);
   const mounted = useSyncExternalStore(
     () => () => {},
     () => true,
@@ -65,6 +68,9 @@ function BottomNavInner() {
     >
       {consumerNav.map((item) => {
         const isActive = pathname === item.href;
+        const badge =
+          item.href === '/reservations' && isLoggedIn && meHydrated ? reservationCount : 0;
+
         return (
           <Link
             key={item.href}
@@ -75,9 +81,9 @@ function BottomNavInner() {
           >
             <div className="relative h-[30px] w-[30px] flex-shrink-0">
               <img src={item.icon} alt="" className="h-full w-full" />
-              {item.badge && (
+              {badge > 0 && (
                 <span className="absolute -top-1.5 -right-2.5 bg-[#8037FF] text-white text-[9px] rounded-full min-w-[16px] h-4 flex items-center justify-center px-1 font-medium">
-                  {item.badge}
+                  {badge > 99 ? '99+' : badge}
                 </span>
               )}
             </div>
