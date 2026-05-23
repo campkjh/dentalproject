@@ -1,7 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { randomUUID } from 'node:crypto';
 import { NextResponse, type NextRequest } from 'next/server';
 import { createAdminClient, createClient } from '@/lib/supabase/server';
-import { isMissingHomeBannersTable, normalizeHomeBanner } from '@/lib/home-banners';
+import { defaultHomeBanners, isMissingHomeBannersTable, normalizeHomeBanner } from '@/lib/home-banners';
+import { readHomeBannersFromBlob, writeHomeBannersToBlob } from '@/lib/home-banner-blob-store';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,9 +23,13 @@ async function requireAdmin() {
   return { user };
 }
 
-function tableMissingResponse() {
+function blobWriteErrorResponse(error: unknown) {
   return NextResponse.json(
-    { error: 'home_banners 테이블이 없습니다. supabase/migrations/0011_home_banners.sql 마이그레이션을 적용해주세요.' },
+    {
+      error:
+        (error as Error)?.message ||
+        '배너 저장소에 저장하지 못했습니다. Vercel Blob 환경 변수를 확인해주세요.',
+    },
     { status: 500 }
   );
 }
@@ -58,6 +64,94 @@ function buildPatch(body: Record<string, any>) {
   return patch;
 }
 
+async function readBlobBannersForAdmin() {
+  const store = await readHomeBannersFromBlob();
+  return store.exists ? store.banners : defaultHomeBanners;
+}
+
+function createBannerFromPatch(patch: Record<string, any>): HomeBannerLike {
+  const now = new Date().toISOString();
+  return {
+    id: randomUUID(),
+    title: patch.title,
+    subtitle: patch.subtitle ?? undefined,
+    imageUrl: patch.image_url,
+    mobileImageUrl: patch.mobile_image_url ?? undefined,
+    targetUrl: patch.target_url ?? undefined,
+    badgeText: patch.badge_text ?? undefined,
+    sortOrder: patch.sort_order ?? 0,
+    isActive: patch.is_active ?? true,
+    startsAt: patch.starts_at ?? undefined,
+    endsAt: patch.ends_at ?? undefined,
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
+type HomeBannerLike = ReturnType<typeof normalizeHomeBanner>;
+
+function applyPatchToBanner(banner: HomeBannerLike, patch: Record<string, any>): HomeBannerLike {
+  return {
+    ...banner,
+    title: Object.hasOwn(patch, 'title') ? patch.title : banner.title,
+    subtitle: Object.hasOwn(patch, 'subtitle') ? patch.subtitle ?? undefined : banner.subtitle,
+    imageUrl: Object.hasOwn(patch, 'image_url') ? patch.image_url : banner.imageUrl,
+    mobileImageUrl: Object.hasOwn(patch, 'mobile_image_url')
+      ? patch.mobile_image_url ?? undefined
+      : banner.mobileImageUrl,
+    targetUrl: Object.hasOwn(patch, 'target_url') ? patch.target_url ?? undefined : banner.targetUrl,
+    badgeText: Object.hasOwn(patch, 'badge_text') ? patch.badge_text ?? undefined : banner.badgeText,
+    sortOrder: Object.hasOwn(patch, 'sort_order') ? patch.sort_order : banner.sortOrder,
+    isActive: Object.hasOwn(patch, 'is_active') ? patch.is_active : banner.isActive,
+    startsAt: Object.hasOwn(patch, 'starts_at') ? patch.starts_at ?? undefined : banner.startsAt,
+    endsAt: Object.hasOwn(patch, 'ends_at') ? patch.ends_at ?? undefined : banner.endsAt,
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+async function blobGET() {
+  const banners = await readBlobBannersForAdmin();
+  return NextResponse.json({ banners, storage: 'blob' });
+}
+
+async function blobPOST(patch: Record<string, any>) {
+  const banners = await readBlobBannersForAdmin();
+  const banner = createBannerFromPatch(patch);
+  const next = [banner, ...banners].sort((a, b) => a.sortOrder - b.sortOrder);
+  try {
+    await writeHomeBannersToBlob(next);
+  } catch (error) {
+    return blobWriteErrorResponse(error);
+  }
+  return NextResponse.json({ banner, storage: 'blob' });
+}
+
+async function blobPATCH(id: string, patch: Record<string, any>) {
+  const banners = await readBlobBannersForAdmin();
+  const current = banners.find((banner) => banner.id === id);
+  if (!current) return NextResponse.json({ error: '배너를 찾지 못했습니다.' }, { status: 404 });
+
+  const banner = applyPatchToBanner(current, patch);
+  const next = banners.map((item) => (item.id === id ? banner : item)).sort((a, b) => a.sortOrder - b.sortOrder);
+  try {
+    await writeHomeBannersToBlob(next);
+  } catch (error) {
+    return blobWriteErrorResponse(error);
+  }
+  return NextResponse.json({ banner, storage: 'blob' });
+}
+
+async function blobDELETE(id: string) {
+  const banners = await readBlobBannersForAdmin();
+  const next = banners.filter((banner) => banner.id !== id);
+  try {
+    await writeHomeBannersToBlob(next);
+  } catch (error) {
+    return blobWriteErrorResponse(error);
+  }
+  return NextResponse.json({ ok: true, storage: 'blob' });
+}
+
 export async function GET() {
   const adminCheck = await requireAdmin();
   if (adminCheck.error) return adminCheck.error;
@@ -70,7 +164,7 @@ export async function GET() {
     .order('created_at', { ascending: false });
 
   if (error) {
-    if (isMissingHomeBannersTable(error)) return tableMissingResponse();
+    if (isMissingHomeBannersTable(error)) return blobGET();
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
 
@@ -90,7 +184,7 @@ export async function POST(req: NextRequest) {
   const { data, error } = await admin.from('home_banners').insert(patch).select(selectColumns).single();
 
   if (error) {
-    if (isMissingHomeBannersTable(error)) return tableMissingResponse();
+    if (isMissingHomeBannersTable(error)) return blobPOST(patch);
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
 
@@ -122,7 +216,7 @@ export async function PATCH(req: NextRequest) {
     .single();
 
   if (error) {
-    if (isMissingHomeBannersTable(error)) return tableMissingResponse();
+    if (isMissingHomeBannersTable(error)) return blobPATCH(id, patch);
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
 
@@ -141,10 +235,9 @@ export async function DELETE(req: NextRequest) {
   const { error } = await admin.from('home_banners').delete().eq('id', id);
 
   if (error) {
-    if (isMissingHomeBannersTable(error)) return tableMissingResponse();
+    if (isMissingHomeBannersTable(error)) return blobDELETE(id);
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
 
   return NextResponse.json({ ok: true });
 }
-

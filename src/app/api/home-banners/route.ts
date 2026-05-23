@@ -6,12 +6,30 @@ import {
   isVisibleHomeBanner,
   normalizeHomeBanner,
 } from '@/lib/home-banners';
+import { readHomeBannersFromBlob } from '@/lib/home-banner-blob-store';
 
 export const dynamic = 'force-dynamic';
 
+function bannersResponse(rows: unknown[] = defaultHomeBanners, useFallback = true) {
+  const banners = rows
+    .map(normalizeHomeBanner)
+    .filter((banner) => isVisibleHomeBanner(banner));
+
+  return NextResponse.json(
+    { banners: banners.length || !useFallback ? banners : defaultHomeBanners },
+    {
+      headers: {
+        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
+      },
+    }
+  );
+}
+
 export async function GET() {
+  const blobStore = await readHomeBannersFromBlob();
+
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-    return NextResponse.json({ banners: defaultHomeBanners });
+    return bannersResponse(blobStore.exists ? blobStore.banners : defaultHomeBanners, !blobStore.exists);
   }
 
   const sb = await createClient();
@@ -24,22 +42,10 @@ export async function GET() {
 
   if (error) {
     if (isMissingHomeBannersTable(error)) {
-      return NextResponse.json({ banners: defaultHomeBanners });
+      return bannersResponse(blobStore.exists ? blobStore.banners : defaultHomeBanners, !blobStore.exists);
     }
-    return NextResponse.json({ error: error.message, banners: defaultHomeBanners }, { status: 200 });
+    return bannersResponse(blobStore.exists ? blobStore.banners : defaultHomeBanners, !blobStore.exists);
   }
 
-  const banners = (data ?? [])
-    .map(normalizeHomeBanner)
-    .filter((banner) => isVisibleHomeBanner(banner));
-
-  return NextResponse.json(
-    { banners: banners.length ? banners : defaultHomeBanners },
-    {
-      headers: {
-        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
-      },
-    }
-  );
+  return bannersResponse(data ?? [], false);
 }
-
