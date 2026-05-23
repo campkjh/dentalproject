@@ -250,17 +250,27 @@ function approvalLabel(product: ProductRow) {
   }
 }
 
+function isActiveProduct(product: ProductRow) {
+  return String(product.status ?? '').trim().toLowerCase() === 'active';
+}
+
+function normalizeApprovalStatus(product: ProductRow) {
+  return String(product.approval_status ?? '').trim().toLowerCase();
+}
+
 function productCardStatus(product: ProductRow) {
-  if (product.approval_status === 'rejected') return { label: '반려', tone: 'danger' as const };
-  if (product.approval_status?.startsWith('pending_')) return { label: '심사중', tone: 'muted' as const };
-  if (product.status === 'active') return { label: '노출중', tone: 'live' as const };
+  const approvalStatus = normalizeApprovalStatus(product);
+  if (isActiveProduct(product)) return { label: '노출중', tone: 'live' as const };
+  if (approvalStatus === 'rejected') return { label: '반려', tone: 'danger' as const };
+  if (approvalStatus.startsWith('pending')) return { label: '심사중', tone: 'muted' as const };
   return { label: '비노출', tone: 'muted' as const };
 }
 
 function productApprovalTabOf(product: ProductRow): ProductApprovalTab {
-  const approvalStatus = product.approval_status;
+  if (isActiveProduct(product)) return 'approved';
+  const approvalStatus = normalizeApprovalStatus(product);
   if (approvalStatus === 'rejected') return 'rejected';
-  if (approvalStatus?.startsWith('pending_')) return 'pending';
+  if (approvalStatus.startsWith('pending')) return 'pending';
   return 'approved';
 }
 
@@ -776,7 +786,9 @@ export default function PartnerHomePage() {
   return (
     <div className="partner-mobile-screen has-fixed-title">
       <header className="partner-screen-title partner-home-title with-action">
-        <h1>홈</h1>
+        <div className="partner-home-title-icon" aria-label="홈">
+          <img src="/partner-template/nav-home.svg" alt="" />
+        </div>
         <nav className="partner-inline-segment" aria-label="홈 탭">
           {HOME_TABS.map((tab) => (
             <button

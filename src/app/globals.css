@@ -1764,6 +1764,22 @@ body.partner-product-modal-open .partner-bottom-nav {
   line-height: 1.4;
 }
 
+.partner-home-title-icon {
+  display: flex;
+  width: 38px;
+  height: 38px;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+.partner-home-title-icon img {
+  display: block;
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+}
+
 .partner-inline-segment {
   display: flex;
   height: 40px;
