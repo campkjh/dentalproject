@@ -2394,31 +2394,55 @@ body.partner-product-modal-open .partner-bottom-nav {
 }
 
 .partner-home-filter {
-  display: flex;
-  gap: 8px;
-  overflow-x: auto;
-  padding: 2px 0 12px 12px;
+  display: grid;
+  position: relative;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0;
+  overflow: hidden;
+  margin: 0 -8px 14px;
+  border-bottom: 1px solid #edf0f4;
+  background: #fff;
+  padding: 0;
+}
+
+.partner-home-filter-indicator {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 20%;
+  height: 2px;
+  border-radius: 999px;
+  background: #2b313d;
+  transition: transform 260ms ease;
+  will-change: transform;
 }
 
 .partner-home-filter button {
+  position: relative;
+  z-index: 1;
   display: flex;
-  flex: 0 0 auto;
+  height: 48px;
+  min-width: 0;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
   border: 0;
-  border-radius: 12px;
   background: transparent;
-  padding: 12px;
+  padding: 0 2px;
   color: #a4abba;
-  font-size: 18px;
+  font-size: 13px;
   font-weight: 500;
-  line-height: 1.4;
+  line-height: 1;
+  text-align: center;
   white-space: nowrap;
+  transition: color 180ms ease, transform 180ms ease;
+}
+
+.partner-home-filter button:active {
+  transform: scale(0.98);
 }
 
 .partner-home-filter button.is-active {
-  background: #2b313d;
-  color: #fff;
+  color: #2b313d;
 }
 
 .partner-product-management {

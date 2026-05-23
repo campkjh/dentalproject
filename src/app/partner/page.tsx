@@ -858,16 +858,22 @@ export default function PartnerHomePage() {
         </section>
       ) : (
         <>
-          <div className="partner-home-filter hide-scrollbar">
+          <div className="partner-home-filter hide-scrollbar" role="tablist" aria-label="예약 상태">
+            <span
+              className="partner-home-filter-indicator"
+              style={{ transform: `translateX(${FILTERS.indexOf(filter) * 100}%)` }}
+              aria-hidden="true"
+            />
             {FILTERS.map((item) => (
               <button
                 key={item}
                 type="button"
+                role="tab"
+                aria-selected={filter === item}
                 onClick={() => setFilter(item)}
                 className={filter === item ? 'is-active' : undefined}
               >
-                <span>{FILTER_LABEL[item]}</span>
-                {counts[item] > 0 && <span>{counts[item]}</span>}
+                {FILTER_LABEL[item]}({counts[item]})
               </button>
             ))}
           </div>
