@@ -1,18 +1,13 @@
 'use client';
 
-import { useState, useRef, useEffect, useLayoutEffect, useCallback, Suspense } from 'react';
+import { useState, useRef, useEffect, useLayoutEffect, Suspense } from 'react';
 import { createClient, hasSupabaseEnv } from '@/lib/supabase/client';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Avatar from '@/components/common/Avatar';
-import { ChevronDown, ChevronRight } from 'lucide-react';
+import { ChevronDown, ChevronRight, Search } from 'lucide-react';
 import {
-  IconSearch,
-  IconPencil,
   IconArrowUp,
-  IconEye,
-  IconChat,
-  IconStethoscope,
 } from '@/components/icons/AppIcons';
 import TopBar from '@/components/common/TopBar';
 import { useStore } from '@/store';
@@ -26,6 +21,28 @@ const boardTypeMap: Record<string, Post['boardType']> = {
   '질문게시판': 'question',
   '자유게시판': 'free',
   '치과게시판': 'dental',
+};
+
+type CommunityPostRow = {
+  id: string;
+  board_type: Post['boardType'];
+  title: string;
+  content: string;
+  author_id: string;
+  view_count?: number | null;
+  like_count?: number | null;
+  comment_count?: number | null;
+  tags?: string[] | null;
+  has_answer?: boolean | null;
+  answer_count?: number | null;
+  is_anonymous?: boolean | null;
+  anonymous_id?: string | null;
+  image_url?: string | null;
+  created_at?: string | null;
+  author?: {
+    name?: string | null;
+    is_doctor?: boolean | null;
+  } | null;
 };
 
 function CommunityPageInner() {
@@ -59,7 +76,7 @@ function CommunityPageInner() {
       .limit(100)
       .then(({ data }) => {
         if (!data) return;
-        const mapped = data.map((p: any) => ({
+        const mapped: Post[] = (data as CommunityPostRow[]).map((p) => ({
           id: p.id,
           boardType: p.board_type,
           title: p.title,
@@ -67,7 +84,7 @@ function CommunityPageInner() {
           authorName: p.author?.name ?? '익명',
           authorTitle: p.author?.is_doctor ? '의사' : undefined,
           authorId: p.author_id,
-          isAnonymous: p.is_anonymous,
+          isAnonymous: p.is_anonymous ?? undefined,
           anonymousId: p.anonymous_id ?? undefined,
           date: p.created_at ? new Date(p.created_at).toLocaleDateString('ko-KR') : '',
           viewCount: p.view_count ?? 0,
@@ -81,11 +98,11 @@ function CommunityPageInner() {
         }));
         setDbPosts(mapped);
         // ★ 상세 페이지에서 store miss 없도록 Zustand store도 동기화
-        useStore.setState((s: any) => ({
+        useStore.setState((s: { posts: Post[] }) => ({
           posts: [
             ...mapped,
             // store에만 있는 임시 포스트(UUID 아닌 것) 유지
-            ...s.posts.filter((p: any) => !/^[0-9a-f]{8}-/.test(p.id)),
+            ...s.posts.filter((p) => !/^[0-9a-f]{8}-/.test(p.id)),
           ],
         }));
       });
@@ -99,7 +116,6 @@ function CommunityPageInner() {
   };
 
   const activeCategoryIdx = questionCategories.indexOf(activeCategory);
-  const visibleBoardTabs = isDoctor ? boardTabs : ['질문게시판'];
   const visiblePosts = isDoctor
     ? posts
     : posts.filter((p) => p.boardType === 'question');
@@ -198,30 +214,36 @@ function CommunityPageInner() {
         title="커뮤니티"
         showBack={false}
         rightContent={
-          <Link href="/community/search">
-            <IconSearch size={22} />
+          <Link
+            href="/community/search"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-full"
+            aria-label="커뮤니티 검색"
+          >
+            <Search size={20} strokeWidth={2.2} className="text-gray-900" />
           </Link>
         }
       />
 
       {/* Board tabs */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="flex">
-          {visibleBoardTabs.map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveBoard(tab)}
-              className={`flex-1 py-3.5 text-[15px] font-semibold border-b-2 transition-colors ${
-                effectiveActiveBoard === tab
-                  ? 'border-[#8037FF] text-[#8037FF]'
-                  : 'border-transparent text-gray-400'
-              }`}
-            >
-              {tab}
-            </button>
-          ))}
+      {isDoctor && (
+        <div className="bg-white border-b border-gray-200">
+          <div className="flex">
+            {boardTabs.map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveBoard(tab)}
+                className={`flex-1 py-3.5 text-[15px] font-semibold border-b-2 transition-colors ${
+                  effectiveActiveBoard === tab
+                    ? 'border-[#8037FF] text-[#8037FF]'
+                    : 'border-transparent text-gray-400'
+                }`}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       <div
         ref={scrollContainerRef}
@@ -299,7 +321,6 @@ function CommunityPageInner() {
               >
                 {tickerItems.map((post, i) => {
                   const cat = pickCategory(post);
-                  const isCurrent = i === tickerIdx % liveQuestions.length;
                   return (
                     <div
                       key={`${post.id}-${i}`}
