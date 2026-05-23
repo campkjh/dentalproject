@@ -26,6 +26,7 @@ type HospitalRow = {
   holiday_notice?: string | null;
   tags?: string[] | null;
   cover_images?: string[] | null;
+  logo_url?: string | null;
   image_url?: string | null;
   operating_hours?: OperatingHour[] | null;
 };
@@ -247,7 +248,7 @@ export default function PartnerHospitalInfoPage() {
     try {
       const url = await uploadFile(file, 'hospital-logos');
       await patchHospitalAPI({ imageUrl: url });
-      patchLocalHospital((prev) => prev ? { ...prev, image_url: url } : prev);
+      patchLocalHospital((prev) => prev ? { ...prev, logo_url: url } : prev);
       showToast('프로필사진을 저장했습니다.');
     } catch (e) {
       showToast(e instanceof Error ? e.message : '저장에 실패했습니다.');
@@ -352,7 +353,7 @@ export default function PartnerHospitalInfoPage() {
   }
 
   const coverImages = (hospital.cover_images ?? []).filter(usableImage) as string[];
-  const logo = usableImage(hospital.image_url);
+  const logo = usableImage(hospital.logo_url) ?? usableImage(hospital.image_url);
   const address = hospital.address ?? hospital.location ?? '';
   const tags = hospital.tags?.filter(Boolean).slice(0, 3) ?? [];
   const hours = hourLines(hospital);
