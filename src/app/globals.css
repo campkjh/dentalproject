@@ -5309,6 +5309,32 @@ body.partner-product-modal-open .partner-bottom-nav {
   height: 120px;
 }
 
+.partner-location-address-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 94px;
+  gap: 8px;
+}
+
+.partner-location-address-row input {
+  background: #fff;
+  color: #2b313d;
+}
+
+.partner-location-address-row input::placeholder {
+  color: #a4abba;
+}
+
+.partner-location-address-row button {
+  height: 48px;
+  border: 0;
+  border-radius: 10px;
+  background: #2b313d;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 .partner-hours-table {
   display: flex;
   flex-direction: column;

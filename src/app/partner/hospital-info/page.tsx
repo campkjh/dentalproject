@@ -32,9 +32,23 @@ type HospitalRow = {
 
 type Mode = 'overview' | 'cover' | 'hours' | 'intro' | 'location';
 type HourDraft = { day: string; start_time: string; end_time: string };
+type DaumPostcodeData = {
+  address?: string;
+  roadAddress?: string;
+};
+
+declare global {
+  interface Window {
+    daum?: {
+      Postcode: new (options: { oncomplete: (data: DaumPostcodeData) => void }) => { open: () => void };
+    };
+  }
+}
 
 const DISPLAY_DAY_ORDER = ['월', '화', '수', '목', '금', '토', '일'];
 const EDIT_DAY_ORDER = ['일', '월', '화', '수', '목', '금', '토'];
+const DAUM_POSTCODE_SCRIPT_ID = 'daum-postcode-script';
+let daumPostcodeLoader: Promise<void> | null = null;
 
 function usableImage(src?: string | null) {
   if (!src) return null;
@@ -65,11 +79,37 @@ function hourLines(hospital: HospitalRow) {
     });
 }
 
+function loadDaumPostcode() {
+  if (typeof window === 'undefined') return Promise.reject(new Error('주소 검색을 사용할 수 없습니다.'));
+  if (window.daum?.Postcode) return Promise.resolve();
+  if (daumPostcodeLoader) return daumPostcodeLoader;
+
+  daumPostcodeLoader = new Promise((resolve, reject) => {
+    const existing = document.getElementById(DAUM_POSTCODE_SCRIPT_ID) as HTMLScriptElement | null;
+    if (existing) {
+      existing.addEventListener('load', () => resolve(), { once: true });
+      existing.addEventListener('error', () => reject(new Error('주소 검색을 불러오지 못했습니다.')), { once: true });
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.id = DAUM_POSTCODE_SCRIPT_ID;
+    script.src = 'https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js';
+    script.async = true;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error('주소 검색을 불러오지 못했습니다.'));
+    document.head.appendChild(script);
+  });
+
+  return daumPostcodeLoader;
+}
+
 export default function PartnerHospitalInfoPage() {
   const { authUser } = useSession();
   const showToast = useStore((s) => s.showToast);
   const coverInputRef = useRef<HTMLInputElement>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
+  const addressDetailInputRef = useRef<HTMLInputElement>(null);
   const {
     data: hospitalData,
     loading,
@@ -112,6 +152,10 @@ export default function PartnerHospitalInfoPage() {
   useEffect(() => {
     document.body.classList.toggle('partner-editing', mode !== 'overview');
     return () => { document.body.classList.remove('partner-editing'); };
+  }, [mode]);
+
+  useEffect(() => {
+    if (mode === 'location') void loadDaumPostcode().catch(() => undefined);
   }, [mode]);
 
   const openMode = (nextMode: Mode) => { window.scrollTo(0, 0); setMode(nextMode); };
@@ -247,6 +291,10 @@ export default function PartnerHospitalInfoPage() {
   };
 
   const saveLocation = async () => {
+    if (!addressDraft.trim()) {
+      showToast('도로명 주소를 검색해 선택해주세요.');
+      return;
+    }
     setSaving(true);
     try {
       await patchHospitalAPI({ address: addressDraft, addressDetail: addressDetailDraft });
@@ -255,6 +303,26 @@ export default function PartnerHospitalInfoPage() {
       goOverview();
     } catch (e) { showToast(e instanceof Error ? e.message : '저장에 실패했습니다.'); }
     finally { setSaving(false); }
+  };
+
+  const openPostcode = async () => {
+    try {
+      await loadDaumPostcode();
+      if (!window.daum?.Postcode) throw new Error('주소 검색을 불러오지 못했습니다.');
+      new window.daum.Postcode({
+        oncomplete: (data) => {
+          const selectedAddress = data.roadAddress || data.address || '';
+          if (!selectedAddress) {
+            showToast('선택한 주소를 확인할 수 없습니다.');
+            return;
+          }
+          setAddressDraft(selectedAddress);
+          window.setTimeout(() => addressDetailInputRef.current?.focus(), 0);
+        },
+      }).open();
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : '주소 검색을 불러오지 못했습니다.');
+    }
   };
 
   const updateHourDraft = (day: string, field: 'start_time' | 'end_time', value: string) => {
@@ -420,22 +488,26 @@ export default function PartnerHospitalInfoPage() {
           )}
           <div>
             <label style={{ fontSize: 13, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 6 }}>주소</label>
-            <input
-              type="text"
-              value={addressDraft}
-              onChange={(e) => setAddressDraft(e.target.value)}
-              placeholder="예) 서울특별시 강남구 테헤란로 123"
-              style={{ width: '100%', border: '1.5px solid #E5E7EB', borderRadius: 10, padding: '12px 14px', fontSize: 14, boxSizing: 'border-box' }}
-            />
+            <div className="partner-location-address-row">
+              <input
+                type="text"
+                value={addressDraft}
+                readOnly
+                placeholder="도로명 주소를 검색해주세요"
+                style={{ width: '100%', border: '1.5px solid #E5E7EB', borderRadius: 10, padding: '12px 14px', fontSize: 16, boxSizing: 'border-box' }}
+              />
+              <button type="button" onClick={openPostcode}>주소 검색</button>
+            </div>
           </div>
           <div>
             <label style={{ fontSize: 13, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 6 }}>상세주소</label>
             <input
+              ref={addressDetailInputRef}
               type="text"
               value={addressDetailDraft}
               onChange={(e) => setAddressDetailDraft(e.target.value)}
               placeholder="예) 3층 301호"
-              style={{ width: '100%', border: '1.5px solid #E5E7EB', borderRadius: 10, padding: '12px 14px', fontSize: 14, boxSizing: 'border-box' }}
+              style={{ width: '100%', border: '1.5px solid #E5E7EB', borderRadius: 10, padding: '12px 14px', fontSize: 16, boxSizing: 'border-box' }}
             />
           </div>
         </section>
