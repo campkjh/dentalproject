@@ -5,7 +5,7 @@ import { createClient, hasSupabaseEnv } from '@/lib/supabase/client';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Avatar from '@/components/common/Avatar';
-import { ChevronDown, CircleHelp, MessageCircle, PenSquare, Search } from 'lucide-react';
+import { ChevronDown, PenSquare, Search } from 'lucide-react';
 import { useStore } from '@/store';
 import { Post } from '@/types';
 
@@ -214,18 +214,18 @@ export default function PartnerCommunityPage() {
 
                 {isQuestionBoard && (
                   <div className="partner-community-question-meta">
-                    {post.hasAnswer ? (
-                      <>
-                        <MessageCircle size={26} />
-                        <strong>{post.answerCount}명 답변</strong>
-                      </>
-                    ) : (
-                      <>
-                        <CircleHelp size={30} fill="#2b313d" color="#2b313d" />
-                        <strong>답변이 필요해요!</strong>
-                      </>
-                    )}
                     <span>{post.date || '2026.04.14'}</span>
+                    {post.hasAnswer ? (
+                      <strong className="is-answered">
+                        <img src="/icons/community-answer.svg" alt="" />
+                        {post.answerCount}명이 답변했어요
+                      </strong>
+                    ) : (
+                      <strong className="needs-answer">
+                        <img src="/icons/community-need-answer.svg" alt="" />
+                        답변이 필요해요!
+                      </strong>
+                    )}
                   </div>
                 )}
               </article>
