@@ -9,10 +9,20 @@ function isMissingProductColumn(error: { message?: string; details?: string | nu
   return text.includes(column.toLowerCase());
 }
 
+function isMissingApprovalColumn(error: { message?: string; details?: string | null; hint?: string | null } | null) {
+  return isMissingProductColumn(error, 'approval_status') || isMissingProductColumn(error, 'pending_changes');
+}
+
 function withoutDetailImageColumn(patch: Record<string, any>) {
   if (!Object.hasOwn(patch, 'detail_image_url')) return patch;
   const { detail_image_url: _detailImageUrl, ...rest } = patch;
   return rest;
+}
+
+function approvalStatusFromLegacyStatus(status?: string | null) {
+  if (status === 'paused') return 'pending_create';
+  if (status === 'removed') return 'rejected';
+  return 'approved';
 }
 
 async function requireAdmin() {
@@ -44,6 +54,7 @@ export async function GET() {
     .limit(500);
   let data: any[] | null = productsRes.data;
   let error = productsRes.error;
+  let approvalColumnsAvailable = !productsRes.error;
 
   if (error) {
     const fallback = await admin
@@ -56,6 +67,7 @@ export async function GET() {
       .limit(500);
     data = fallback.data;
     error = fallback.error;
+    approvalColumnsAvailable = false;
   }
 
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
@@ -70,7 +82,9 @@ export async function GET() {
     rating: Number(p.rating ?? 0),
     reviews: p.review_count ?? 0,
     status: p.status,
-    approvalStatus: p.approval_status ?? 'approved',
+    approvalStatus: approvalColumnsAvailable
+      ? p.approval_status ?? 'approved'
+      : approvalStatusFromLegacyStatus(p.status),
     pendingChanges: p.pending_changes ?? null,
     createdAt: p.created_at ? new Date(p.created_at).toISOString().slice(0, 10) : '',
   }));
@@ -90,18 +104,39 @@ export async function PATCH(req: NextRequest) {
   }
 
   const admin = await createAdminClient();
-  const { data: product, error: findError } = await admin
+  let { data: product, error: findError } = await admin
     .from('products')
     .select('id, status, approval_status, pending_changes')
     .eq('id', id)
     .maybeSingle();
+  let approvalColumnsAvailable = !findError;
+
+  if (findError && isMissingApprovalColumn(findError)) {
+    const fallback = await admin
+      .from('products')
+      .select('id, status')
+      .eq('id', id)
+      .maybeSingle();
+    product = fallback.data as typeof product;
+    findError = fallback.error;
+    approvalColumnsAvailable = false;
+  }
 
   if (findError) return NextResponse.json({ error: findError.message }, { status: 400 });
   if (!product) return NextResponse.json({ error: '상품을 찾을 수 없습니다.' }, { status: 404 });
 
-  const approvalStatus = product.approval_status ?? 'approved';
+  const approvalStatus = approvalColumnsAvailable
+    ? product.approval_status ?? 'approved'
+    : approvalStatusFromLegacyStatus(product.status);
   if (!approvalStatus.startsWith('pending_')) {
     return NextResponse.json({ error: '승인 대기 중인 상품이 아닙니다.' }, { status: 400 });
+  }
+
+  if (!approvalColumnsAvailable) {
+    const patch = action === 'approve' ? { status: 'active' } : { status: 'removed' };
+    const { error } = await admin.from('products').update(patch).eq('id', id);
+    if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+    return NextResponse.json({ ok: true });
   }
 
   if (action === 'reject') {

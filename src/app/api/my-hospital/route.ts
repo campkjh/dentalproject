@@ -7,9 +7,16 @@ import { createClient, createAdminClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
 
+function approvalStatusFromLegacyStatus(status?: string | null) {
+  if (status === 'paused') return 'pending_create';
+  if (status === 'removed') return 'rejected';
+  return 'approved';
+}
+
 function normalizeProductRow(product: any) {
   if (!product) return null;
   const visibleTags = getVisibleProductTags(product.tags);
+  const approvalStatus = product.approval_status ?? approvalStatusFromLegacyStatus(product.status);
   const pendingChanges = product.pending_changes
     ? {
         ...product.pending_changes,
@@ -34,6 +41,7 @@ function normalizeProductRow(product: any) {
     image_url: normalizeProductImageUrl(product.image_url) ?? null,
     detail_image_url: normalizeProductImageUrl(product.detail_image_url) ?? extractProductDetailImageUrl(product.tags) ?? null,
     tags: visibleTags,
+    approval_status: approvalStatus,
     pending_changes: pendingChanges,
   };
 }

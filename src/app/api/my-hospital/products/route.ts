@@ -36,6 +36,12 @@ function isMissingApprovalColumn(error: { message?: string; details?: string | n
   return text.includes('approval_status') || text.includes('pending_changes');
 }
 
+function approvalStatusFromLegacyStatus(status?: string | null): ProductApprovalStatus {
+  if (status === 'paused') return 'pending_create';
+  if (status === 'removed') return 'rejected';
+  return 'approved';
+}
+
 function isMissingProductColumn(error: { message?: string; details?: string | null; hint?: string | null } | null, column: string) {
   const text = `${error?.message ?? ''} ${error?.details ?? ''} ${error?.hint ?? ''}`.toLowerCase();
   return text.includes(column.toLowerCase());
@@ -237,7 +243,7 @@ export async function POST(req: NextRequest) {
     .insert({
       ...productPatch,
       hospital_id: hospital.id,
-      status: 'active',
+      status: 'paused',
     })
     .select('id, title, location, price, original_price, discount, rating, review_count, image_url, detail_image_url, tags, category, sub_category, status, created_at')
     .single();
@@ -248,14 +254,19 @@ export async function POST(req: NextRequest) {
       .insert({
         ...withoutDetailImageColumn(productPatch),
         hospital_id: hospital.id,
-        status: 'active',
+        status: 'paused',
       })
       .select('id, title, location, price, original_price, discount, rating, review_count, image_url, tags, category, sub_category, status, created_at')
       .single();
   }
 
   if (fallback.error) return NextResponse.json({ error: fallback.error.message }, { status: 400 });
-  return NextResponse.json({ ok: true, productId: fallback.data.id, product: fallback.data, approvalRequired: false });
+  return NextResponse.json({
+    ok: true,
+    productId: fallback.data.id,
+    product: { ...fallback.data, approval_status: 'pending_create', pending_changes: null },
+    approvalRequired: true,
+  });
 }
 
 export async function PATCH(req: NextRequest) {
@@ -274,19 +285,19 @@ export async function PATCH(req: NextRequest) {
   if (!owned.approvalColumnsAvailable) {
     let { error: updateError } = await admin
       .from('products')
-      .update(productPatch)
+      .update({ ...productPatch, status: 'paused' })
       .eq('id', owned.product.id);
 
     if (updateError && isMissingProductColumn(updateError, 'detail_image_url')) {
       const retry = await admin
         .from('products')
-        .update(withoutDetailImageColumn(productPatch))
+        .update({ ...withoutDetailImageColumn(productPatch), status: 'paused' })
         .eq('id', owned.product.id);
       updateError = retry.error;
     }
 
     if (updateError) return NextResponse.json({ error: updateError.message }, { status: 400 });
-    return NextResponse.json({ ok: true, approvalRequired: false });
+    return NextResponse.json({ ok: true, approvalRequired: true });
   }
 
   const approvalStatus = owned.product.approval_status ?? 'approved';
@@ -324,13 +335,20 @@ export async function DELETE(req: NextRequest) {
   if ('error' in owned) return owned.error;
 
   if (!owned.approvalColumnsAvailable) {
+    const legacyApprovalStatus = approvalStatusFromLegacyStatus(owned.product.status);
+    if (legacyApprovalStatus !== 'approved') {
+      const { error: deleteError } = await admin.from('products').delete().eq('id', owned.product.id);
+      if (deleteError) return NextResponse.json({ error: deleteError.message }, { status: 400 });
+      return NextResponse.json({ ok: true, removedDraft: true });
+    }
+
     const { error: updateError } = await admin
       .from('products')
-      .update({ status: 'removed' })
+      .update({ status: 'paused' })
       .eq('id', owned.product.id);
 
     if (updateError) return NextResponse.json({ error: updateError.message }, { status: 400 });
-    return NextResponse.json({ ok: true, approvalRequired: false });
+    return NextResponse.json({ ok: true, approvalRequired: true });
   }
 
   if (

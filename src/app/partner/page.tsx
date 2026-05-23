@@ -261,8 +261,19 @@ function normalizeApprovalStatus(product: ProductRow) {
   return String(product.approval_status ?? '').trim().toLowerCase();
 }
 
+function legacyApprovalStatus(product: ProductRow) {
+  const status = String(product.status ?? '').trim().toLowerCase();
+  if (status === 'paused') return 'pending_create';
+  if (status === 'removed') return 'rejected';
+  return 'approved';
+}
+
+function effectiveApprovalStatus(product: ProductRow) {
+  return normalizeApprovalStatus(product) || legacyApprovalStatus(product);
+}
+
 function productCardStatus(product: ProductRow) {
-  const approvalStatus = normalizeApprovalStatus(product);
+  const approvalStatus = effectiveApprovalStatus(product);
   if (isActiveProduct(product)) return { label: '노출중', tone: 'live' as const };
   if (approvalStatus === 'rejected') return { label: '반려', tone: 'danger' as const };
   if (approvalStatus.startsWith('pending')) return { label: '심사중', tone: 'muted' as const };
@@ -271,7 +282,7 @@ function productCardStatus(product: ProductRow) {
 
 function productApprovalTabOf(product: ProductRow): ProductApprovalTab {
   if (isActiveProduct(product)) return 'approved';
-  const approvalStatus = normalizeApprovalStatus(product);
+  const approvalStatus = effectiveApprovalStatus(product);
   if (approvalStatus === 'rejected') return 'rejected';
   if (approvalStatus.startsWith('pending')) return 'pending';
   return 'approved';
@@ -495,8 +506,9 @@ function ProductRequestCard({
   onDelete: (product: ProductRow) => void;
 }) {
   const meta = approvalMeta(product);
-  const pending = product.approval_status?.startsWith('pending_') ?? false;
-  const deleteDisabled = product.approval_status === 'pending_delete';
+  const approvalStatus = effectiveApprovalStatus(product);
+  const pending = approvalStatus.startsWith('pending_');
+  const deleteDisabled = approvalStatus === 'pending_delete';
   const productImage = normalizeProductImageUrl(product.image_url);
   const status = productCardStatus(product);
   const rating = Number(product.rating ?? 0);
@@ -554,7 +566,7 @@ function ProductRequestCard({
           {pending ? '요청수정' : '수정'}
         </button>
         <button type="button" onClick={() => onDelete(product)} disabled={deleteDisabled}>
-          {product.approval_status === 'pending_create' ? '요청취소' : deleteDisabled ? '삭제대기' : '삭제'}
+          {approvalStatus === 'pending_create' ? '요청취소' : deleteDisabled ? '삭제대기' : '삭제'}
         </button>
       </div>
     </article>
