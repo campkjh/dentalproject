@@ -273,19 +273,12 @@ export default function PartnerHospitalInfoPage() {
 
   /* 수정 화면 공통 헤더 — 뒤로 버튼 + 타이틀 */
   const EditHeader = ({ title }: { title: string }) => (
-    <div style={{
-      display: 'flex', alignItems: 'center', height: 56, padding: '0 4px',
-      background: '#fff', borderBottom: '1px solid #F3F4F6',
-      position: 'sticky', top: 0, zIndex: 10, flexShrink: 0,
-    }}>
-      <button type="button" onClick={goOverview} aria-label="뒤로"
-        style={{ width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer' }}>
-        <img src="/partner-template/chevron-left.svg" alt="" style={{ width: 24, height: 24 }} />
+    <header className="partner-profile-edit-head">
+      <button type="button" onClick={goOverview} aria-label="뒤로">
+        <img src="/partner-template/chevron-left.svg" alt="" />
       </button>
-      <span style={{ flex: 1, textAlign: 'center', fontSize: 17, fontWeight: 700, color: '#2B313D', marginRight: 44 }}>
-        {title}
-      </span>
-    </div>
+      <h1>{title}</h1>
+    </header>
   );
 
   if (loading) return <div className="partner-loading">불러오는 중...</div>;

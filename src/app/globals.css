@@ -5046,7 +5046,7 @@ body.partner-profile-editing .partner-bottom-nav {
   position: relative;
   min-height: 100dvh;
   background: #fff;
-  padding-bottom: calc(80px + env(safe-area-inset-bottom));
+  padding-bottom: 64px;
 }
 
 .partner-profile-edit-head {
@@ -5223,23 +5223,22 @@ body.partner-profile-editing .partner-bottom-nav {
   z-index: 75;
   display: flex;
   width: 100%;
-  height: calc(80px + env(safe-area-inset-bottom));
+  height: 64px;
   align-items: center;
   justify-content: center;
   border: 0;
   background: #2b313d;
-  padding-bottom: env(safe-area-inset-bottom);
   color: #fff;
   font-family: inherit;
   font-size: 18px;
   font-weight: 700;
-  line-height: 1;
+  line-height: 1.4;
   cursor: pointer;
 }
 
 .partner-profile-save:disabled {
   cursor: wait;
-  color: rgba(255, 255, 255, 0.56);
+  opacity: 0.72;
 }
 
 .partner-profile-dialog-layer {
