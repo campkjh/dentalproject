@@ -59,12 +59,43 @@ insert into public.home_banners (
   sort_order,
   is_active
 )
-select
-  '미리 여름, 먼저 준비하고 즐기자',
-  '강남언니 단독가 + 최대 49% 할인',
-  '/home-banners/summer-2026.png',
-  '/search',
-  '최대 49%',
-  0,
-  true
+select *
+from (values
+  (
+    '리쥬란 정품인증 안심 시술의 시작',
+    'REJURAN',
+    '/home-banners/rejuran-certified.png',
+    '/search',
+    '제휴',
+    0,
+    true
+  ),
+  (
+    '전문의 시술 이벤트 한 번에 확인하세요',
+    '원하는 시술 이벤트 쉽게 찾아보세요',
+    '/home-banners/specialist-event.png',
+    '/search',
+    '이벤트',
+    1,
+    true
+  ),
+  (
+    '고객들이 선택한 5월 고객평가 우수병원',
+    '상담부터 시술 결과까지, 오직 고객 후기로만',
+    '/home-banners/review-awards.png',
+    '/search',
+    '우수병원',
+    2,
+    true
+  ),
+  (
+    '첫방문 체험가 이벤트만 모았어요',
+    '첫방문 뱃지를 확인하세요',
+    '/home-banners/first-visit.png',
+    '/search',
+    '첫방문',
+    3,
+    true
+  )
+) as seed(title, subtitle, image_url, target_url, badge_text, sort_order, is_active)
 where not exists (select 1 from public.home_banners);

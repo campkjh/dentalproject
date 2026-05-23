@@ -52,7 +52,6 @@ function BannerFrame({ banner }: { banner: HomeBanner }) {
 export default function HomeBannerSlider() {
   const [banners, setBanners] = useState<HomeBanner[]>(defaultHomeBanners);
   const [activeIndex, setActiveIndex] = useState(0);
-  const [paused, setPaused] = useState(false);
   const touchStartX = useRef<number | null>(null);
 
   const visibleBanners = useMemo(
@@ -85,12 +84,12 @@ export default function HomeBannerSlider() {
   }, [activeIndex, visibleBanners.length]);
 
   useEffect(() => {
-    if (paused || visibleBanners.length <= 1) return;
+    if (visibleBanners.length <= 1) return;
     const timer = window.setInterval(() => {
       setActiveIndex((current) => (current + 1) % visibleBanners.length);
-    }, 4200);
+    }, 3400);
     return () => window.clearInterval(timer);
-  }, [paused, visibleBanners.length]);
+  }, [visibleBanners.length]);
 
   if (visibleBanners.length === 0) return null;
 
@@ -103,8 +102,6 @@ export default function HomeBannerSlider() {
     <section
       className="mx-4 mb-6 lg:mx-auto lg:max-w-7xl lg:px-6"
       aria-label="홈 배너"
-      onMouseEnter={() => setPaused(true)}
-      onMouseLeave={() => setPaused(false)}
       onTouchStart={(event) => {
         touchStartX.current = event.touches[0]?.clientX ?? null;
       }}
