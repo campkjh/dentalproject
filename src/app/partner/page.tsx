@@ -119,7 +119,7 @@ const FILTER_LABEL: Record<Filter, string> = {
 };
 
 const HOME_TAB_LABEL: Record<HomeTab, string> = {
-  reservations: '예약',
+  reservations: '예약목록',
   products: '등록상품',
 };
 
