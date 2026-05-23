@@ -54,42 +54,48 @@ const hospitalSelect = `
   operating_hours (*)
 `;
 
+const LEGACY_HOSPITAL_SLUG_BY_NAME: Record<string, string> = {
+  '레브치과의원': 'h1',
+  '아이디치과': 'h2',
+  '화이트드림치과': 'h3',
+  '서울스마일치과': 'h4',
+};
+
+function hospitalKeys(hospital: any) {
+  return Array.from(new Set([
+    typeof hospital?.id === 'string' ? hospital.id.trim() : '',
+    typeof hospital?.slug === 'string' ? hospital.slug.trim() : '',
+    typeof hospital?.name === 'string' ? LEGACY_HOSPITAL_SLUG_BY_NAME[hospital.name.trim()] : '',
+  ].filter(Boolean)));
+}
+
 async function fetchHospitalProducts(
   admin: Awaited<ReturnType<typeof createAdminClient>>,
   hospital: any,
   selectColumns: string
 ) {
-  const hospitalId = typeof hospital?.id === 'string' ? hospital.id.trim() : '';
-  const hospitalSlug = typeof hospital?.slug === 'string' ? hospital.slug.trim() : '';
-
-  const byId = await admin
-    .from('products')
-    .select(selectColumns)
-    .eq('hospital_id', hospitalId)
-    .order('created_at', { ascending: false });
-
-  if (byId.error || !hospitalSlug || hospitalSlug === hospitalId) {
-    return byId;
-  }
-
-  const bySlug = await admin
-    .from('products')
-    .select(selectColumns)
-    .eq('hospital_id', hospitalSlug)
-    .order('created_at', { ascending: false });
-
-  if (bySlug.error) return byId;
-
+  let baseResult: any = null;
   const merged = new Map<string, any>();
-  for (const product of (byId.data ?? []) as any[]) {
-    if (product?.id) merged.set(product.id, product);
-  }
-  for (const product of (bySlug.data ?? []) as any[]) {
-    if (product?.id) merged.set(product.id, product);
+  for (const key of hospitalKeys(hospital)) {
+    const result = await admin
+      .from('products')
+      .select(selectColumns)
+      .eq('hospital_id', key)
+      .order('created_at', { ascending: false });
+
+    if (result.error) {
+      if (!baseResult) baseResult = result;
+      continue;
+    }
+
+    if (!baseResult) baseResult = result;
+    for (const product of (result.data ?? []) as any[]) {
+      if (product?.id) merged.set(product.id, product);
+    }
   }
 
   return {
-    ...byId,
+    ...(baseResult ?? { error: null }),
     data: Array.from(merged.values()).sort((a, b) => (
       new Date(b.created_at ?? 0).getTime() - new Date(a.created_at ?? 0).getTime()
     )),
@@ -109,45 +115,32 @@ async function fetchHospitalRows(
     notNull?: string;
   } = {}
 ) {
-  const hospitalId = typeof hospital?.id === 'string' ? hospital.id.trim() : '';
-  const hospitalSlug = typeof hospital?.slug === 'string' ? hospital.slug.trim() : '';
-
-  let byId = admin
-    .from(table)
-    .select(selectColumns)
-    .eq('hospital_id', hospitalId);
-
-  if (options.notNull) byId = byId.not(options.notNull, 'is', null);
-  if (options.orderBy) byId = byId.order(options.orderBy, { ascending: options.ascending ?? false });
-  if (options.limit) byId = byId.limit(options.limit);
-
-  const byIdResult = await byId;
-  if (byIdResult.error || !hospitalSlug || hospitalSlug === hospitalId) {
-    return byIdResult;
-  }
-
-  let bySlug = admin
-    .from(table)
-    .select(selectColumns)
-    .eq('hospital_id', hospitalSlug);
-
-  if (options.notNull) bySlug = bySlug.not(options.notNull, 'is', null);
-  if (options.orderBy) bySlug = bySlug.order(options.orderBy, { ascending: options.ascending ?? false });
-  if (options.limit) bySlug = bySlug.limit(options.limit);
-
-  const bySlugResult = await bySlug;
-  if (bySlugResult.error) return byIdResult;
-
+  let baseResult: any = null;
   const merged = new Map<string, any>();
-  for (const row of (byIdResult.data ?? []) as any[]) {
-    if (row?.id) merged.set(row.id, row);
-  }
-  for (const row of (bySlugResult.data ?? []) as any[]) {
-    if (row?.id) merged.set(row.id, row);
+  for (const key of hospitalKeys(hospital)) {
+    let query = admin
+      .from(table)
+      .select(selectColumns)
+      .eq('hospital_id', key);
+
+    if (options.notNull) query = query.not(options.notNull, 'is', null);
+    if (options.orderBy) query = query.order(options.orderBy, { ascending: options.ascending ?? false });
+    if (options.limit) query = query.limit(options.limit);
+
+    const result = await query;
+    if (result.error) {
+      if (!baseResult) baseResult = result;
+      continue;
+    }
+
+    if (!baseResult) baseResult = result;
+    for (const row of (result.data ?? []) as any[]) {
+      if (row?.id) merged.set(row.id, row);
+    }
   }
 
   return {
-    ...byIdResult,
+    ...(baseResult ?? { error: null }),
     data: Array.from(merged.values()),
     error: null,
   };
