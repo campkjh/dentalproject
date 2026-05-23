@@ -101,7 +101,7 @@ function LoginInner() {
 
       {/* Logo & Title */}
       <div className="pt-6 pb-8 flex flex-col items-center px-6">
-        <div className="w-20 h-20 bg-[#3182F6] rounded-2xl flex items-center justify-center mb-5 bounce-in">
+        <div className="w-20 h-20 bg-[#8037FF] rounded-2xl flex items-center justify-center mb-5 bounce-in">
           <span className="text-4xl">🦷</span>
         </div>
         <h1 className="text-2xl font-bold text-gray-900 mb-1.5 fade-in-up">키닥터</h1>
@@ -132,7 +132,7 @@ function LoginInner() {
               }}
               className="relative z-10 flex-1 py-2 text-[13px] font-bold"
               style={{
-                color: mode === m ? '#3182F6' : '#9CA3AF',
+                color: mode === m ? '#8037FF' : '#9CA3AF',
                 transition: 'color 320ms ease',
               }}
             >
@@ -197,7 +197,7 @@ function LoginInner() {
           disabled={!canSubmit}
           className="mt-2 w-full py-3.5 rounded-xl font-bold text-[14px] btn-press"
           style={{
-            backgroundColor: canSubmit ? '#3182F6' : '#E5E7EB',
+            backgroundColor: canSubmit ? '#8037FF' : '#E5E7EB',
             color: canSubmit ? '#fff' : '#A4ABBA',
             boxShadow: canSubmit ? '0 6px 16px rgba(49,130,246,0.25)' : 'none',
             transition: 'background-color 200ms ease',
@@ -216,7 +216,7 @@ function LoginInner() {
             onClick={() => setMode('signup')}
             className="text-[12px] text-gray-500 mt-1 mx-auto"
           >
-            아직 회원이 아니신가요? <span className="text-[#3182F6] font-bold">회원가입</span>
+            아직 회원이 아니신가요? <span className="text-[#8037FF] font-bold">회원가입</span>
           </button>
         )}
 

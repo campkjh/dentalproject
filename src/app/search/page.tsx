@@ -361,11 +361,11 @@ function SearchPage() {
             className="flex flex-col items-center gap-1.5 min-w-[52px]"
           >
             <div className={`w-11 h-11 rounded-full flex items-center justify-center transition-all p-2 ${
-              !activeCategory ? 'bg-[#E8F3FF] ring-2 ring-[#3182F6]' : 'bg-gray-50'
+              !activeCategory ? 'bg-[#F4EFFF] ring-2 ring-[#8037FF]' : 'bg-gray-50'
             }`}>
               <span className="text-lg">📋</span>
             </div>
-            <span className={`text-[10px] whitespace-nowrap ${!activeCategory ? 'text-[#3182F6] font-bold' : 'text-gray-500'}`}>
+            <span className={`text-[10px] whitespace-nowrap ${!activeCategory ? 'text-[#8037FF] font-bold' : 'text-gray-500'}`}>
               전체
             </span>
           </button>
@@ -376,11 +376,11 @@ function SearchPage() {
               className="flex flex-col items-center gap-1.5 min-w-[52px]"
             >
               <div className={`w-11 h-11 rounded-full flex items-center justify-center transition-all p-2 ${
-                activeCategory === cat.id ? 'bg-[#E8F3FF] ring-2 ring-[#3182F6]' : 'bg-gray-50'
+                activeCategory === cat.id ? 'bg-[#F4EFFF] ring-2 ring-[#8037FF]' : 'bg-gray-50'
               }`}>
                 <img src={cat.icon} alt={cat.name} className="w-full h-full" />
               </div>
-              <span className={`text-[10px] whitespace-nowrap ${activeCategory === cat.id ? 'text-[#3182F6] font-bold' : 'text-gray-500'}`}>
+              <span className={`text-[10px] whitespace-nowrap ${activeCategory === cat.id ? 'text-[#8037FF] font-bold' : 'text-gray-500'}`}>
                 {cat.name}
               </span>
             </button>
@@ -392,7 +392,7 @@ function SearchPage() {
           <p className="text-sm text-gray-500 mb-3">
             <span className="font-bold text-black">{currentCat?.name || '전체'}</span> · {categoryResults.length}건
             {selectedRegion && (
-              <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 bg-[#E8F3FF] text-[#3182F6] text-xs font-medium rounded-full">
+              <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 bg-[#F4EFFF] text-[#8037FF] text-xs font-medium rounded-full">
                 <MapPin size={10} /> {regionLabel}
               </span>
             )}
@@ -421,9 +421,9 @@ function SearchPage() {
             {/* 현재 위치 */}
             <button
               onClick={handleCurrentLocation}
-              className="flex items-center gap-3 px-4 py-3 border-b border-gray-100 text-[#3182F6] hover:bg-blue-50 transition-colors"
+              className="flex items-center gap-3 px-4 py-3 border-b border-gray-100 text-[#8037FF] hover:bg-purple-50 transition-colors"
             >
-              <div className="w-7 h-7 bg-[#E8F3FF] rounded-full flex items-center justify-center">
+              <div className="w-7 h-7 bg-[#F4EFFF] rounded-full flex items-center justify-center">
                 <Locate size={14} />
               </div>
               <span className="text-[13px] font-medium">{locating ? '위치 찾는 중...' : '현재 위치로 설정'}</span>
@@ -431,10 +431,10 @@ function SearchPage() {
             {/* 전체 지역 초기화 */}
             <button
               onClick={() => { setSelectedRegion(''); setSelectedSubRegion(''); setShowRegionModal(false); }}
-              className={`w-full flex items-center justify-between px-4 py-3 text-[13px] border-b border-gray-100 ${!selectedRegion ? 'text-[#3182F6] font-bold bg-blue-50' : 'text-gray-600'}`}
+              className={`w-full flex items-center justify-between px-4 py-3 text-[13px] border-b border-gray-100 ${!selectedRegion ? 'text-[#8037FF] font-bold bg-purple-50' : 'text-gray-600'}`}
             >
               <span>전체 지역</span>
-              {!selectedRegion && <Check size={14} className="text-[#3182F6]" />}
+              {!selectedRegion && <Check size={14} className="text-[#8037FF]" />}
             </button>
             {/* 좌: 시/도 | 우: 구/시 */}
             <div className="flex flex-1 overflow-hidden">
@@ -449,9 +449,9 @@ function SearchPage() {
                       className="w-full text-left px-3 py-3 text-[13px] transition-colors"
                       style={{
                         backgroundColor: isActive ? '#fff' : 'transparent',
-                        color: isActive ? '#3182F6' : '#4B5563',
+                        color: isActive ? '#8037FF' : '#4B5563',
                         fontWeight: isActive ? 700 : 500,
-                        borderRight: isActive ? '2px solid #3182F6' : '2px solid transparent',
+                        borderRight: isActive ? '2px solid #8037FF' : '2px solid transparent',
                       }}
                     >
                       {prov}
@@ -470,13 +470,13 @@ function SearchPage() {
                       onClick={() => handleSelectSubRegion(district)}
                       className="w-full flex items-center justify-between px-4 py-3 text-[13px] hover:bg-gray-50 transition-colors"
                       style={{
-                        color: isSelected ? '#3182F6' : '#374151',
+                        color: isSelected ? '#8037FF' : '#374151',
                         fontWeight: isSelected ? 600 : 400,
                         backgroundColor: isSelected ? '#F4EFFF' : 'transparent',
                       }}
                     >
                       <span>{district}</span>
-                      {isSelected && <Check size={14} className="text-[#3182F6]" />}
+                      {isSelected && <Check size={14} className="text-[#8037FF]" />}
                     </button>
                   );
                 })}
@@ -491,9 +491,9 @@ function SearchPage() {
             <div className="flex-1 overflow-y-auto">
               {priceRanges.map((price) => (
                 <button key={price} onClick={() => { setSelectedPrice(price); setShowPriceModal(false); }}
-                  className={`w-full flex items-center justify-between px-5 py-3.5 text-sm hover:bg-gray-50 transition-colors ${selectedPrice === price ? 'text-[#3182F6] font-medium bg-blue-50' : 'text-gray-700'}`}>
+                  className={`w-full flex items-center justify-between px-5 py-3.5 text-sm hover:bg-gray-50 transition-colors ${selectedPrice === price ? 'text-[#8037FF] font-medium bg-purple-50' : 'text-gray-700'}`}>
                   <span>{price}</span>
-                  {selectedPrice === price && <Check size={16} className="text-[#3182F6]" />}
+                  {selectedPrice === price && <Check size={16} className="text-[#8037FF]" />}
                 </button>
               ))}
             </div>
@@ -506,9 +506,9 @@ function SearchPage() {
             <div className="flex-1 overflow-y-auto">
               {bookingMethods.map((method) => (
                 <button key={method} onClick={() => { setSelectedBooking(method); setShowBookingModal(false); }}
-                  className={`w-full flex items-center justify-between px-5 py-3.5 text-sm hover:bg-gray-50 transition-colors ${selectedBooking === method ? 'text-[#3182F6] font-medium bg-blue-50' : 'text-gray-700'}`}>
+                  className={`w-full flex items-center justify-between px-5 py-3.5 text-sm hover:bg-gray-50 transition-colors ${selectedBooking === method ? 'text-[#8037FF] font-medium bg-purple-50' : 'text-gray-700'}`}>
                   <span>{method}</span>
-                  {selectedBooking === method && <Check size={16} className="text-[#3182F6]" />}
+                  {selectedBooking === method && <Check size={16} className="text-[#8037FF]" />}
                 </button>
               ))}
             </div>
@@ -521,9 +521,9 @@ function SearchPage() {
             <div className="flex-1 overflow-y-auto">
               {sortOptions.map((opt) => (
                 <button key={opt} onClick={() => { setSelectedSort(opt); setShowSortModal(false); }}
-                  className={`w-full flex items-center justify-between px-5 py-3.5 text-sm hover:bg-gray-50 transition-colors ${selectedSort === opt ? 'text-[#3182F6] font-medium bg-blue-50' : 'text-gray-700'}`}>
+                  className={`w-full flex items-center justify-between px-5 py-3.5 text-sm hover:bg-gray-50 transition-colors ${selectedSort === opt ? 'text-[#8037FF] font-medium bg-purple-50' : 'text-gray-700'}`}>
                   <span>{opt}</span>
-                  {selectedSort === opt && <Check size={16} className="text-[#3182F6]" />}
+                  {selectedSort === opt && <Check size={16} className="text-[#8037FF]" />}
                 </button>
               ))}
             </div>
@@ -594,7 +594,7 @@ function SearchPage() {
             <div className="px-2.5 stagger-children">
               {selectedRegion && (
                 <div className="flex items-center gap-2 mb-3">
-                  <span className="inline-flex items-center gap-1 px-3 py-1 bg-[#E8F3FF] text-[#3182F6] text-xs font-medium rounded-full">
+                  <span className="inline-flex items-center gap-1 px-3 py-1 bg-[#F4EFFF] text-[#8037FF] text-xs font-medium rounded-full">
                     <MapPin size={12} /> {regionLabel}
                   </span>
                 </div>
@@ -643,7 +643,7 @@ function SearchPage() {
                   {popularSearches.map((keyword, index) => (
                     <button key={keyword} onClick={() => handleSearch(keyword)}
                       className="flex items-center gap-3 py-2.5 text-left hover:bg-gray-50 rounded-lg px-2 transition-colors">
-                      <span className={`text-sm font-bold w-5 text-center ${index < 3 ? 'text-[#3182F6]' : 'text-gray-400'}`}>{index + 1}</span>
+                      <span className={`text-sm font-bold w-5 text-center ${index < 3 ? 'text-[#8037FF]' : 'text-gray-400'}`}>{index + 1}</span>
                       <span className="text-sm text-gray-800">{keyword}</span>
                     </button>
                   ))}
@@ -657,13 +657,13 @@ function SearchPage() {
       {/* Shared Region Modal for normal search mode — same split design */}
       {showRegionModal && (
         <FilterModal title="지역 선택" onClose={() => { setShowRegionModal(false); setRegionStep('region'); }}>
-          <button onClick={handleCurrentLocation} className="flex items-center gap-3 px-4 py-3 border-b border-gray-100 text-[#3182F6] hover:bg-blue-50 transition-colors">
-            <div className="w-7 h-7 bg-[#E8F3FF] rounded-full flex items-center justify-center"><Locate size={14} /></div>
+          <button onClick={handleCurrentLocation} className="flex items-center gap-3 px-4 py-3 border-b border-gray-100 text-[#8037FF] hover:bg-purple-50 transition-colors">
+            <div className="w-7 h-7 bg-[#F4EFFF] rounded-full flex items-center justify-center"><Locate size={14} /></div>
             <span className="text-[13px] font-medium">{locating ? '위치 찾는 중...' : '현재 위치로 설정'}</span>
           </button>
           <button onClick={() => { setSelectedRegion(''); setSelectedSubRegion(''); setShowRegionModal(false); }}
-            className={`w-full flex items-center justify-between px-4 py-3 text-[13px] border-b border-gray-100 ${!selectedRegion ? 'text-[#3182F6] font-bold bg-blue-50' : 'text-gray-600'}`}>
-            <span>전체 지역</span>{!selectedRegion && <Check size={14} className="text-[#3182F6]" />}
+            className={`w-full flex items-center justify-between px-4 py-3 text-[13px] border-b border-gray-100 ${!selectedRegion ? 'text-[#8037FF] font-bold bg-purple-50' : 'text-gray-600'}`}>
+            <span>전체 지역</span>{!selectedRegion && <Check size={14} className="text-[#8037FF]" />}
           </button>
           <div className="flex flex-1 overflow-hidden">
             <div className="w-[110px] flex-shrink-0 border-r border-gray-100 overflow-y-auto bg-gray-50">
@@ -672,7 +672,7 @@ function SearchPage() {
                 return (
                   <button key={prov} onClick={() => setActiveProvince(prov)}
                     className="w-full text-left px-3 py-3 text-[13px] transition-colors"
-                    style={{ backgroundColor: isActive ? '#fff' : 'transparent', color: isActive ? '#3182F6' : '#4B5563', fontWeight: isActive ? 700 : 500, borderRight: isActive ? '2px solid #3182F6' : '2px solid transparent' }}>
+                    style={{ backgroundColor: isActive ? '#fff' : 'transparent', color: isActive ? '#8037FF' : '#4B5563', fontWeight: isActive ? 700 : 500, borderRight: isActive ? '2px solid #8037FF' : '2px solid transparent' }}>
                     {prov}
                   </button>
                 );
@@ -685,8 +685,8 @@ function SearchPage() {
                 return (
                   <button key={district} onClick={() => handleSelectSubRegion(district)}
                     className="w-full flex items-center justify-between px-4 py-3 text-[13px] hover:bg-gray-50 transition-colors"
-                    style={{ color: isSelected ? '#3182F6' : '#374151', fontWeight: isSelected ? 600 : 400, backgroundColor: isSelected ? '#F4EFFF' : 'transparent' }}>
-                    <span>{district}</span>{isSelected && <Check size={14} className="text-[#3182F6]" />}
+                    style={{ color: isSelected ? '#8037FF' : '#374151', fontWeight: isSelected ? 600 : 400, backgroundColor: isSelected ? '#F4EFFF' : 'transparent' }}>
+                    <span>{district}</span>{isSelected && <Check size={14} className="text-[#8037FF]" />}
                   </button>
                 );
               })}
@@ -699,8 +699,8 @@ function SearchPage() {
           <div className="flex-1 overflow-y-auto">
             {priceRanges.map((p) => (
               <button key={p} onClick={() => { setSelectedPrice(p); setShowPriceModal(false); }}
-                className={`w-full flex items-center justify-between px-5 py-3.5 text-sm hover:bg-gray-50 ${selectedPrice === p ? 'text-[#3182F6] font-medium bg-blue-50' : 'text-gray-700'}`}>
-                <span>{p}</span>{selectedPrice === p && <Check size={16} className="text-[#3182F6]" />}
+                className={`w-full flex items-center justify-between px-5 py-3.5 text-sm hover:bg-gray-50 ${selectedPrice === p ? 'text-[#8037FF] font-medium bg-purple-50' : 'text-gray-700'}`}>
+                <span>{p}</span>{selectedPrice === p && <Check size={16} className="text-[#8037FF]" />}
               </button>
             ))}
           </div>
@@ -711,8 +711,8 @@ function SearchPage() {
           <div className="flex-1 overflow-y-auto">
             {bookingMethods.map((m) => (
               <button key={m} onClick={() => { setSelectedBooking(m); setShowBookingModal(false); }}
-                className={`w-full flex items-center justify-between px-5 py-3.5 text-sm hover:bg-gray-50 ${selectedBooking === m ? 'text-[#3182F6] font-medium bg-blue-50' : 'text-gray-700'}`}>
-                <span>{m}</span>{selectedBooking === m && <Check size={16} className="text-[#3182F6]" />}
+                className={`w-full flex items-center justify-between px-5 py-3.5 text-sm hover:bg-gray-50 ${selectedBooking === m ? 'text-[#8037FF] font-medium bg-purple-50' : 'text-gray-700'}`}>
+                <span>{m}</span>{selectedBooking === m && <Check size={16} className="text-[#8037FF]" />}
               </button>
             ))}
           </div>
@@ -723,8 +723,8 @@ function SearchPage() {
           <div className="flex-1 overflow-y-auto">
             {sortOptions.map((o) => (
               <button key={o} onClick={() => { setSelectedSort(o); setShowSortModal(false); }}
-                className={`w-full flex items-center justify-between px-5 py-3.5 text-sm hover:bg-gray-50 ${selectedSort === o ? 'text-[#3182F6] font-medium bg-blue-50' : 'text-gray-700'}`}>
-                <span>{o}</span>{selectedSort === o && <Check size={16} className="text-[#3182F6]" />}
+                className={`w-full flex items-center justify-between px-5 py-3.5 text-sm hover:bg-gray-50 ${selectedSort === o ? 'text-[#8037FF] font-medium bg-purple-50' : 'text-gray-700'}`}>
+                <span>{o}</span>{selectedSort === o && <Check size={16} className="text-[#8037FF]" />}
               </button>
             ))}
           </div>

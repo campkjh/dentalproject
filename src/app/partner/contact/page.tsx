@@ -29,7 +29,7 @@ export default function PartnerContactPage() {
     return (
       <div className="bg-white rounded-xl p-10 text-center">
         <p className="text-sm text-gray-500 mb-4">로그인이 필요합니다.</p>
-        <Link href="/login" className="inline-block px-5 py-2.5 bg-[#3182F6] text-white text-sm font-bold rounded-xl">
+        <Link href="/login" className="inline-block px-5 py-2.5 bg-[#8037FF] text-white text-sm font-bold rounded-xl">
           로그인
         </Link>
       </div>
@@ -78,7 +78,7 @@ export default function PartnerContactPage() {
 
         {submitted ? (
           <div className="py-12 text-center">
-            <CheckCircle size={36} className="mx-auto mb-3 text-[#3182F6]" />
+            <CheckCircle size={36} className="mx-auto mb-3 text-[#8037FF]" />
             <p className="text-base font-bold text-gray-900 mb-2">문의가 접수되었습니다</p>
             <p className="text-[12px] text-gray-500">24시간 내에 등록하신 이메일로 답변드리겠습니다.</p>
             <PartnerButton

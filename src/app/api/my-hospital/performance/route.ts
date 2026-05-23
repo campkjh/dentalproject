@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { completePastConfirmedReservations } from '@/lib/db/reservation-status';
+import { createAdminClient, createClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,6 +16,9 @@ export async function GET() {
     .eq('owner_id', user.id)
     .maybeSingle();
   if (!hospital) return NextResponse.json({ summary: null });
+
+  const admin = await createAdminClient();
+  await completePastConfirmedReservations(admin, { hospitalId: hospital.id });
 
   const [reservationsRes, reviewsRes, productsRes, consultRes] = await Promise.all([
     sb.from('reservations').select('id, status, amount, visit_at, created_at').eq('hospital_id', hospital.id),

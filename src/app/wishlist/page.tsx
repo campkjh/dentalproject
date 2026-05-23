@@ -130,7 +130,7 @@ function TabButton({
       </span>
       {count > 0 && (
         <span
-          className={`text-[13px] font-semibold ${active ? 'text-[#3182F6]' : 'text-gray-300'}`}
+          className={`text-[13px] font-semibold ${active ? 'text-[#8037FF]' : 'text-gray-300'}`}
         >
           {count}
         </span>

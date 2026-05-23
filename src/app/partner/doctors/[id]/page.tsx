@@ -1,20 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useStore } from '@/store';
 import { createClient, hasSupabaseEnv } from '@/lib/supabase/client';
-import { ChevronLeft, Camera } from 'lucide-react';
 import { compressImage } from '@/lib/compressImage';
-import {
-  PartnerButton,
-  PartnerField,
-  PartnerInput,
-  PartnerSelect,
-  PartnerTextarea,
-} from '@/components/partner/tds';
 
-const TITLES = ['대표원장', '원장', '부원장', '수석원장', '전문의', '레지던트'];
+const MAX_PROFILE_IMAGE_SIZE = 10 * 1024 * 1024;
+const PROFILE_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/avif'];
 
 export default function DoctorEditPage() {
   const params = useParams();
@@ -22,25 +15,54 @@ export default function DoctorEditPage() {
   const showToast = useStore((s) => s.showToast);
   const id = params.id as string;
   const isNew = id === 'new';
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [form, setForm] = useState({ name: '', title: '원장', specialty: '', bio: '', profile_image: '', is_owner: false });
-  const [hospitalId, setHospitalId] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({
+    name: '',
+    title: '원장',
+    specialty: '',
+    bio: '',
+    profile_image: '',
+    is_owner: false,
+  });
+  const [hospitalName, setHospitalName] = useState('');
+  const [selfDoctorId, setSelfDoctorId] = useState<string | null>(null);
   const [loading, setLoading] = useState(!isNew);
+  const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [showLeaveDialog, setShowLeaveDialog] = useState(false);
+  const [leaving, setLeaving] = useState(false);
 
   useEffect(() => {
-    if (!hasSupabaseEnv()) { setLoading(false); return; }
+    document.body.classList.add('partner-profile-editing');
+    return () => { document.body.classList.remove('partner-profile-editing'); };
+  }, []);
+
+  useEffect(() => {
+    if (!hasSupabaseEnv()) {
+      setLoading(false);
+      return;
+    }
+
     const sb = createClient();
+    (async () => {
+      const { data: { user } } = await sb.auth.getUser();
+      if (user) {
+        const { data: selfDoctor } = await sb
+          .from('doctors')
+          .select('id')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        setSelfDoctorId(selfDoctor?.id ?? null);
+      }
 
-    // Get hospital for current user
-    sb.from('hospitals').select('id').eq('owner_id', (sb as any).auth?._currentUser?.id ?? '').maybeSingle()
-      .then(async ({ data }) => {
-        if (data) setHospitalId(data.id);
-      });
+      if (!isNew) {
+        const { data } = await sb
+          .from('doctors')
+          .select('*, hospital:hospitals(name)')
+          .eq('id', id)
+          .single();
 
-    if (!isNew) {
-      sb.from('doctors').select('*').eq('id', id).single().then(({ data }) => {
         if (data) {
           setForm({
             name: data.name ?? '',
@@ -50,25 +72,35 @@ export default function DoctorEditPage() {
             profile_image: data.profile_image ?? '',
             is_owner: data.is_owner ?? false,
           });
-          setHospitalId(data.hospital_id);
+          const hospital = Array.isArray(data.hospital) ? data.hospital[0] : data.hospital;
+          setHospitalName(hospital?.name ?? '');
         }
-        setLoading(false);
-      });
-    } else {
-      // Get hospital_id from current user
-      sb.auth.getUser().then(({ data: { user } }) => {
-        if (!user) return;
-        sb.from('hospitals').select('id').eq('owner_id', user.id).maybeSingle()
-          .then(({ data }) => { if (data) setHospitalId(data.id); });
-      });
+      } else if (user) {
+        const { data: hospital } = await sb
+          .from('hospitals')
+          .select('name')
+          .eq('owner_id', user.id)
+          .maybeSingle();
+        setHospitalName(hospital?.name ?? '');
+      }
+
       setLoading(false);
-    }
+    })();
   }, [id, isNew]);
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;
+    if (!PROFILE_IMAGE_TYPES.includes(file.type)) {
+      showToast('jpg, png, jpeg, avif 형식만 업로드할 수 있습니다.');
+      return;
+    }
+    if (file.size > MAX_PROFILE_IMAGE_SIZE) {
+      showToast('10mb 이하 이미지만 업로드할 수 있습니다.');
+      return;
+    }
+
     setUploading(true);
     try {
       const compressed = await compressImage(file);
@@ -78,7 +110,7 @@ export default function DoctorEditPage() {
       const res = await fetch('/api/upload', { method: 'POST', body: fd });
       if (!res.ok) throw new Error('업로드 실패');
       const blob = await res.json();
-      setForm((f) => ({ ...f, profile_image: blob.url }));
+      setForm((current) => ({ ...current, profile_image: blob.url }));
     } catch {
       showToast('사진 업로드에 실패했습니다.');
     } finally {
@@ -87,35 +119,31 @@ export default function DoctorEditPage() {
   };
 
   const handleSave = async () => {
-    if (!form.name.trim()) { showToast('이름을 입력해주세요.'); return; }
+    if (!form.name.trim()) {
+      showToast('이름을 입력해주세요.');
+      return;
+    }
+
     setSaving(true);
     try {
       const body = {
-        name: form.name,
-        title: form.title,
-        specialty: form.specialty || null,
-        bio: form.bio || null,
+        name: form.name.trim(),
+        title: form.title.trim() || '원장',
+        specialty: form.specialty.trim() || null,
+        bio: form.bio.trim() || null,
         profileImage: form.profile_image || null,
       };
-      let res: Response;
-      if (isNew) {
-        res = await fetch('/api/my-hospital/doctors', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
-        });
-      } else {
-        res = await fetch(`/api/my-hospital/doctors/${id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
-        });
-      }
+      const res = await fetch(isNew ? '/api/my-hospital/doctors' : `/api/my-hospital/doctors/${id}`, {
+        method: isNew ? 'POST' : 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));
         throw new Error((j as any).error || '저장에 실패했습니다.');
       }
-      showToast(isNew ? '멤버가 추가되었습니다.' : '멤버 정보가 수정되었습니다.');
+      showToast(isNew ? '멤버가 추가되었습니다.' : '프로필이 저장되었습니다.');
       router.back();
     } catch (e: any) {
       showToast(e?.message || '저장에 실패했습니다.');
@@ -124,66 +152,114 @@ export default function DoctorEditPage() {
     }
   };
 
+  const handleLeave = async () => {
+    setLeaving(true);
+    try {
+      const res = await fetch(`/api/my-hospital/doctors/${id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        throw new Error((j as any).error || '탈퇴 처리에 실패했습니다.');
+      }
+      showToast('병원에서 탈퇴했습니다.');
+      if (id === selfDoctorId) {
+        useStore.setState({ isDoctor: false });
+        router.replace('/');
+        return;
+      }
+      router.replace('/partner/doctors');
+    } catch (e: any) {
+      showToast(e?.message || '탈퇴 처리에 실패했습니다.');
+    } finally {
+      setLeaving(false);
+      setShowLeaveDialog(false);
+    }
+  };
+
   return (
-    <div className="partner-mobile-screen partner-doctor-edit" style={{ paddingBottom: 88 }}>
-      <header className="partner-doctor-edit-header">
-        <button
-          onClick={() => router.back()}
-          aria-label="뒤로"
-          className="partner-doctor-edit-back"
-        >
-          <ChevronLeft size={20} strokeWidth={2.1} />
+    <div className="partner-mobile-screen partner-profile-edit-screen">
+      <header className="partner-profile-edit-head">
+        <button type="button" onClick={() => router.back()} aria-label="뒤로">
+          <img src="/partner-template/chevron-left.svg" alt="" />
         </button>
-        <h1>{isNew ? '멤버 추가' : '프로필 설정'}</h1>
+        <h1>{isNew ? '프로필 등록' : '프로필 수정'}</h1>
       </header>
 
       {loading ? (
         <div className="partner-loading small">불러오는 중...</div>
       ) : (
-        <div className="partner-doctor-edit-form">
-          {/* Profile photo */}
-          <div className="partner-doctor-photo-field">
-            <div className="partner-doctor-photo-wrap">
-              <img
-                src={form.profile_image || '/partner-template/doctor-avatar.png'}
-                alt=""
-              />
-              <label>
-                <Camera size={12} color="white" />
-                <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handlePhotoUpload} disabled={uploading} />
-              </label>
-            </div>
-          </div>
-
-          <PartnerField label="이름 *">
-            <PartnerInput value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} placeholder="이름을 입력하세요" />
-          </PartnerField>
-
-          <PartnerField label="직함">
-            <PartnerSelect value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}>
-              {TITLES.map((t) => <option key={t} value={t}>{t}</option>)}
-            </PartnerSelect>
-          </PartnerField>
-
-          <PartnerField label="전문 분야">
-            <PartnerInput
-              value={form.specialty}
-              onChange={(e) => setForm((f) => ({ ...f, specialty: e.target.value }))}
-              placeholder="예) 보존과 전문의, 치과교정과 전문의"
+        <main className="partner-profile-edit-content">
+          <section className="partner-profile-photo-section">
+            <h2>프로필사진</h2>
+            <p>1:1규격의 jpg, png, jpeg, avif 10mb이하 이미지 파일</p>
+            <button
+              type="button"
+              className="partner-profile-photo-button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              aria-label="프로필사진 변경"
+            >
+              <img src={form.profile_image || '/partner-template/doctor-avatar.png'} alt="" />
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".jpg,.jpeg,.png,.avif,image/jpeg,image/png,image/avif"
+              onChange={handlePhotoUpload}
+              hidden
             />
-          </PartnerField>
+          </section>
 
-          <PartnerField label="소개 (선택)">
-            <PartnerTextarea value={form.bio} onChange={(e) => setForm((f) => ({ ...f, bio: e.target.value }))} rows={4} placeholder="간단한 소개를 입력하세요" />
-          </PartnerField>
-        </div>
+          <label className="partner-profile-edit-field">
+            <span>이름</span>
+            <input
+              value={form.name}
+              onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
+              placeholder="이름"
+            />
+          </label>
+
+          <label className="partner-profile-edit-field">
+            <span>전문의 타이틀</span>
+            <input
+              value={form.specialty}
+              onChange={(event) => setForm((current) => ({ ...current, specialty: event.target.value }))}
+              placeholder="치과교정과 전문의"
+            />
+          </label>
+
+          <section className="partner-profile-hospital-field" aria-label="병원설정">
+            <h2>병원설정</h2>
+            <div>
+              <span>{hospitalName || '소속 병원 미등록'}</span>
+              <button type="button" className="change" onClick={() => showToast('병원 변경은 관리자 승인이 필요합니다.')}>변경</button>
+              {!isNew && (
+                <button type="button" className="leave" onClick={() => setShowLeaveDialog(true)}>탈퇴</button>
+              )}
+            </div>
+          </section>
+        </main>
       )}
 
-      <div className="partner-doctor-savebar">
-        <PartnerButton type="button" size="m" disabled={saving || loading} onClick={handleSave} className="w-full">
-          {saving ? '저장 중...' : isNew ? '멤버 추가' : '수정 완료'}
-        </PartnerButton>
-      </div>
+      <button className="partner-profile-save" type="button" onClick={handleSave} disabled={saving || loading || uploading}>
+        {saving ? '저장 중...' : '저장하기'}
+      </button>
+
+      {showLeaveDialog && (
+        <div className="partner-profile-dialog-layer" role="presentation" onClick={() => setShowLeaveDialog(false)}>
+          <div className="partner-profile-dialog" role="dialog" aria-modal="true" aria-labelledby="leave-title" onClick={(event) => event.stopPropagation()}>
+            <h2 id="leave-title">정말로 병원을 탈퇴 하시겠습니까?</h2>
+            <p>탈퇴처리가 되며 목록에서 사라집니다.</p>
+            <div>
+              <button type="button" className="confirm" onClick={handleLeave} disabled={leaving}>
+                네
+              </button>
+              <button type="button" className="cancel" onClick={() => setShowLeaveDialog(false)} disabled={leaving}>
+                아니요
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

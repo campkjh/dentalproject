@@ -61,7 +61,7 @@ const CommentCard = memo(function CommentCard({
           <div className="flex items-center gap-1.5 flex-wrap">
             <span className="text-xs font-bold text-gray-900">{displayName}</span>
             {comment.authorIsDoctor && !comment.isAnonymous && (
-              <span className="px-1.5 py-0.5 bg-[#3182F6] text-white text-[10px] rounded font-medium">
+              <span className="px-1.5 py-0.5 bg-[#8037FF] text-white text-[10px] rounded font-medium">
                 {comment.authorTitle ?? '의사'}
               </span>
             )}
@@ -496,7 +496,7 @@ export default function PostDetailPage() {
                 {post.isAnonymous ? `익명 ${post.anonymousId}` : post.authorName}
               </span>
               {post.boardType === 'dental' && (
-                <span className="px-1.5 py-0.5 bg-[#3182F6] text-white text-[10px] rounded font-medium">치과</span>
+                <span className="px-1.5 py-0.5 bg-[#8037FF] text-white text-[10px] rounded font-medium">치과</span>
               )}
             </div>
             {!post.isAnonymous && (
@@ -542,8 +542,8 @@ export default function PostDetailPage() {
         <div className="px-2.5 py-3 bg-gray-50 border-y border-gray-100">
           {hasAnswer ? (
             <div className="flex items-center gap-2">
-              <MessageCircle size={16} className="text-[#3182F6]" />
-              <span className="text-sm font-medium text-[#3182F6]">{doctorAnswerCount || post.answerCount}명이 답변했어요</span>
+              <MessageCircle size={16} className="text-[#8037FF]" />
+              <span className="text-sm font-medium text-[#8037FF]">{doctorAnswerCount || post.answerCount}명이 답변했어요</span>
             </div>
           ) : (
             <div className="flex items-center gap-2">
@@ -616,7 +616,7 @@ export default function PostDetailPage() {
               onChange={(e) => { if (e.target.value.length <= 5000) setCommentText(e.target.value); }}
               placeholder={replyTo ? '답글을 입력해주세요' : '댓글을 입력해주세요'}
               rows={1}
-              className="w-full px-2.5 py-2.5 bg-gray-100 rounded-xl text-sm resize-none focus:outline-none focus:ring-1 focus:ring-[#3182F6]"
+              className="w-full px-2.5 py-2.5 bg-gray-100 rounded-xl text-sm resize-none focus:outline-none focus:ring-1 focus:ring-[#8037FF]"
               style={{ minHeight: '40px', maxHeight: '100px' }}
             />
             <span className="absolute right-3 bottom-2 text-[10px] text-gray-400">{commentText.length}/5000자</span>
@@ -624,7 +624,7 @@ export default function PostDetailPage() {
           <button
             onClick={handleSubmitComment}
             disabled={!commentText.trim()}
-            className={`px-2.5 py-2.5 rounded-xl text-sm font-medium flex-shrink-0 transition-colors ${commentText.trim() ? 'bg-[#3182F6] text-white' : 'bg-gray-200 text-gray-400'}`}
+            className={`px-2.5 py-2.5 rounded-xl text-sm font-medium flex-shrink-0 transition-colors ${commentText.trim() ? 'bg-[#8037FF] text-white' : 'bg-gray-200 text-gray-400'}`}
           >
             등록
           </button>

@@ -52,7 +52,7 @@ export default function PerformancePage() {
     return (
       <div className="bg-white rounded-xl p-10 text-center">
         <p className="text-sm text-gray-500 mb-4">로그인이 필요합니다.</p>
-        <Link href="/login" className="inline-block px-5 py-2.5 bg-[#3182F6] text-white text-sm font-bold rounded-xl">
+        <Link href="/login" className="inline-block px-5 py-2.5 bg-[#8037FF] text-white text-sm font-bold rounded-xl">
           로그인
         </Link>
       </div>
@@ -112,7 +112,7 @@ export default function PerformancePage() {
                     </div>
                     <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-gradient-to-r from-[#3182F6] to-[#86B7FF] rounded-full transition-all duration-700"
+                        className="h-full bg-gradient-to-r from-[#8037FF] to-[#B18CFF] rounded-full transition-all duration-700"
                         style={{ width: `${(w.revenue / maxRevenue) * 100}%` }}
                       />
                     </div>

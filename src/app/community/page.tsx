@@ -213,7 +213,7 @@ function CommunityPageInner() {
               onClick={() => setActiveBoard(tab)}
               className={`flex-1 py-3.5 text-[15px] font-semibold border-b-2 transition-colors ${
                 effectiveActiveBoard === tab
-                  ? 'border-[#3182F6] text-[#3182F6]'
+                  ? 'border-[#8037FF] text-[#8037FF]'
                   : 'border-transparent text-gray-400'
               }`}
             >
@@ -272,7 +272,7 @@ function CommunityPageInner() {
                 <img src="/icons/community-live-doctor-v2.svg" alt="" width={22} height={22} />
                 <h3 className="text-[17px] font-bold text-gray-900">실시간 의사에게 질문</h3>
               </div>
-              <Link href={`/community/write?board=question`} className="text-[13px] text-[#3182F6] font-semibold">
+              <Link href={`/community/write?board=question`} className="text-[13px] text-[#8037FF] font-semibold">
                 질문하기
               </Link>
             </div>
@@ -342,7 +342,7 @@ function CommunityPageInner() {
                   style={{
                     width: i === tickerIdx % liveQuestions.length ? 14 : 4,
                     backgroundColor:
-                      i === tickerIdx % liveQuestions.length ? '#3182F6' : '#E5E7EB',
+                      i === tickerIdx % liveQuestions.length ? '#8037FF' : '#E5E7EB',
                   }}
                 />
               ))}
@@ -385,7 +385,7 @@ function CommunityPageInner() {
                     }}
                     className={`block w-full px-3 py-2.5 text-sm text-left whitespace-nowrap ${
                       sortBy === option
-                        ? 'text-[#3182F6] bg-[#E8F3FF]'
+                        ? 'text-[#8037FF] bg-[#F4EFFF]'
                         : 'text-gray-600'
                     }`}
                   >
@@ -406,7 +406,7 @@ function CommunityPageInner() {
             >
               <span
                 aria-hidden
-                className="absolute top-0 bottom-0 rounded-full bg-[#3182F6] pointer-events-none"
+                className="absolute top-0 bottom-0 rounded-full bg-[#8037FF] pointer-events-none"
                 style={{
                   left: categoryIndicator.left,
                   width: categoryIndicator.width,
@@ -594,7 +594,7 @@ function CommunityPageInner() {
                         </div>
                         {post.imageUrl && (
                           <div className="w-16 h-16 rounded-lg bg-gray-100 overflow-hidden flex-shrink-0 relative">
-                            <div className="w-full h-full bg-gradient-to-br from-sky-100 to-blue-100 flex items-center justify-center"><span className="text-gray-400 text-xs">IMG</span></div>
+                            <div className="w-full h-full bg-gradient-to-br from-purple-100 to-purple-100 flex items-center justify-center"><span className="text-gray-400 text-xs">IMG</span></div>
                           </div>
                         )}
                       </div>
@@ -765,7 +765,7 @@ function FloatingAskButton({
             border: '1.5px solid #843DFF',
           }}
         >
-          <span style={{ color: '#6C19FF', fontSize: 18, fontWeight: 800, lineHeight: 1 }}>?</span>
+          <span style={{ color: '#6C19FF', fontSize: 18, fontWeight: 700, lineHeight: 1 }}>?</span>
         </div>
 
         <span

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Building2, UserRound } from 'lucide-react';
 import { useStore } from '@/store';
 import { useSession } from '@/lib/supabase/SessionProvider';
+import { useMyHospitalData } from '@/lib/partner/my-hospital-cache';
 import {
   PartnerButton,
   PartnerField,
@@ -20,7 +21,8 @@ export default function PartnerAccountPage() {
   const showToast = useStore((s) => s.showToast);
   const user = useStore((s) => s.user);
   const updateUser = useStore((s) => s.updateUser);
-  const [hospital, setHospital] = useState<any>(null);
+  const { data: hospitalData } = useMyHospitalData<any>(authUser?.id);
+  const hospital = hospitalData?.hospital ?? null;
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [saving, setSaving] = useState(false);
@@ -31,21 +33,6 @@ export default function PartnerAccountPage() {
       setPhone(user.phone ?? '');
     }
   }, [user]);
-
-  useEffect(() => {
-    if (!authUser) return;
-    let cancelled = false;
-    (async () => {
-      const res = await fetch('/api/my-hospital', { cache: 'no-store' });
-      if (!res.ok) return;
-      const { hospital } = await res.json();
-      if (cancelled) return;
-      setHospital(hospital);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [authUser]);
 
   const save = async () => {
     if (saving) return;
@@ -62,7 +49,7 @@ export default function PartnerAccountPage() {
     return (
       <div className="bg-white rounded-xl p-10 text-center">
         <p className="text-sm text-gray-500 mb-4">로그인이 필요합니다.</p>
-        <Link href="/login" className="inline-block px-5 py-2.5 bg-[#3182F6] text-white text-sm font-bold rounded-xl">
+        <Link href="/login" className="inline-block px-5 py-2.5 bg-[#8037FF] text-white text-sm font-bold rounded-xl">
           로그인
         </Link>
       </div>

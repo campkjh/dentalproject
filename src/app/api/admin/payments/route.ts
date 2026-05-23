@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { completePastConfirmedReservations } from '@/lib/db/reservation-status';
+import { createAdminClient, createClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,6 +14,9 @@ export async function GET() {
 
   const { data: profile } = await sb.from('profiles').select('is_admin').eq('id', user.id).maybeSingle();
   if (!profile?.is_admin) return NextResponse.json({ error: '관리자 권한이 필요합니다.' }, { status: 403 });
+
+  const admin = await createAdminClient();
+  await completePastConfirmedReservations(admin);
 
   const { data, error } = await sb
     .from('reservations')

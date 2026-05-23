@@ -56,7 +56,7 @@ export default function SettlementPage() {
     return (
       <div className="bg-white rounded-xl p-10 text-center">
         <p className="text-sm text-gray-500 mb-4">로그인이 필요합니다.</p>
-        <Link href="/login" className="inline-block px-5 py-2.5 bg-[#3182F6] text-white text-sm font-bold rounded-xl">
+        <Link href="/login" className="inline-block px-5 py-2.5 bg-[#8037FF] text-white text-sm font-bold rounded-xl">
           로그인
         </Link>
       </div>
@@ -76,11 +76,11 @@ export default function SettlementPage() {
       <div className="grid md:grid-cols-2 gap-3">
         <div className="bg-white rounded-xl border border-gray-200 p-5">
           <p className="text-[12px] text-gray-500 mb-1">정산 대기 금액</p>
-          <p className="text-[24px] font-extrabold text-[#B45309]">{totalPending.toLocaleString()}원</p>
+          <p className="text-[24px] font-bold text-[#B45309]">{totalPending.toLocaleString()}원</p>
         </div>
         <div className="bg-white rounded-xl border border-gray-200 p-5">
           <p className="text-[12px] text-gray-500 mb-1">누적 정산 완료</p>
-          <p className="text-[24px] font-extrabold text-[#15803D]">{totalPaid.toLocaleString()}원</p>
+          <p className="text-[24px] font-bold text-[#15803D]">{totalPaid.toLocaleString()}원</p>
         </div>
       </div>
 

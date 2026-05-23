@@ -64,25 +64,25 @@ const mockPushNotifications: PushNotification[] = [
 const announcementStatusBadge: Record<AnnouncementStatus, string> = {
   '게시중': 'bg-green-100 text-green-700',
   '종료': 'bg-gray-100 text-gray-500',
-  '예약': 'bg-blue-100 text-blue-700',
+  '예약': 'bg-purple-100 text-purple-700',
 };
 
 const pushStatusBadge: Record<PushStatus, string> = {
   '발송완료': 'bg-green-100 text-green-700',
-  '예약': 'bg-blue-100 text-blue-700',
+  '예약': 'bg-purple-100 text-purple-700',
   '발송실패': 'bg-red-100 text-red-700',
 };
 
 const categoryBadge: Record<AnnouncementCategory, string> = {
-  '서비스': 'bg-blue-100 text-blue-700',
-  '이벤트': 'bg-blue-100 text-blue-700',
+  '서비스': 'bg-purple-100 text-purple-700',
+  '이벤트': 'bg-purple-100 text-purple-700',
   '업데이트': 'bg-orange-100 text-orange-700',
   '안내': 'bg-gray-100 text-gray-600',
 };
 
 const targetBadge: Record<PushTarget, string> = {
-  '전체': 'bg-blue-100 text-blue-700',
-  '일반회원': 'bg-blue-100 text-blue-700',
+  '전체': 'bg-purple-100 text-purple-700',
+  '일반회원': 'bg-purple-100 text-purple-700',
   '의사': 'bg-green-100 text-green-700',
   '특정병원': 'bg-orange-100 text-orange-700',
 };
@@ -166,16 +166,16 @@ export default function AdminNotificationsPage() {
               placeholder="제목으로 검색..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#3182F6]/30 focus:border-[#3182F6] transition-colors"
+              className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#8037FF]/30 focus:border-[#8037FF] transition-colors"
             />
           </div>
           {activeTab === 'announcements' ? (
-            <button className="flex items-center gap-2 px-4 py-2.5 bg-[#3182F6] text-white rounded-lg text-sm font-medium hover:bg-[#1E6FD9] transition-colors shadow-sm">
+            <button className="flex items-center gap-2 px-4 py-2.5 bg-[#8037FF] text-white rounded-lg text-sm font-medium hover:bg-[#6D28D9] transition-colors shadow-sm">
               <Plus size={16} />
               새 공지 작성
             </button>
           ) : (
-            <button className="flex items-center gap-2 px-4 py-2.5 bg-[#3182F6] text-white rounded-lg text-sm font-medium hover:bg-[#1E6FD9] transition-colors shadow-sm">
+            <button className="flex items-center gap-2 px-4 py-2.5 bg-[#8037FF] text-white rounded-lg text-sm font-medium hover:bg-[#6D28D9] transition-colors shadow-sm">
               <Send size={16} />
               새 알림 발송
             </button>
@@ -225,7 +225,7 @@ export default function AdminNotificationsPage() {
                     </td>
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-1">
-                        <button className="p-1.5 hover:bg-blue-50 rounded-lg transition-colors text-blue-600" title="수정">
+                        <button className="p-1.5 hover:bg-purple-50 rounded-lg transition-colors text-purple-600" title="수정">
                           <Edit3 size={15} />
                         </button>
                         {item.status === '게시중' && (
@@ -267,7 +267,7 @@ export default function AdminNotificationsPage() {
                     onClick={() => setAnnouncementPage(page)}
                     className={`min-w-[36px] h-9 rounded-lg text-sm font-medium transition-colors ${
                       announcementPage === page
-                        ? 'bg-[#3182F6] text-white'
+                        ? 'bg-[#8037FF] text-white'
                         : 'text-gray-600 hover:bg-gray-100'
                     }`}
                   >
@@ -323,7 +323,7 @@ export default function AdminNotificationsPage() {
                       <div className="flex items-center gap-2">
                         <div className="w-16 bg-gray-100 rounded-full h-1.5 overflow-hidden">
                           <div
-                            className="h-full bg-[#3182F6] rounded-full"
+                            className="h-full bg-[#8037FF] rounded-full"
                             style={{ width: `${item.readRate}%` }}
                           />
                         </div>
@@ -364,7 +364,7 @@ export default function AdminNotificationsPage() {
                     onClick={() => setPushPage(page)}
                     className={`min-w-[36px] h-9 rounded-lg text-sm font-medium transition-colors ${
                       pushPage === page
-                        ? 'bg-[#3182F6] text-white'
+                        ? 'bg-[#8037FF] text-white'
                         : 'text-gray-600 hover:bg-gray-100'
                     }`}
                   >

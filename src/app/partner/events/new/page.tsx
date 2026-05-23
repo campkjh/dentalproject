@@ -62,7 +62,7 @@ export default function EventNewPage() {
     return (
       <div className="bg-white rounded-xl p-10 text-center">
         <p className="text-sm text-gray-500 mb-4">로그인이 필요합니다.</p>
-        <Link href="/login" className="inline-block px-5 py-2.5 bg-[#3182F6] text-white text-sm font-bold rounded-xl">
+        <Link href="/login" className="inline-block px-5 py-2.5 bg-[#8037FF] text-white text-sm font-bold rounded-xl">
           로그인
         </Link>
       </div>
@@ -87,7 +87,7 @@ export default function EventNewPage() {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="예) 봄맞이 라미네이트 30% 할인"
-              className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:border-[#3182F6]"
+              className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:border-[#8037FF]"
             />
           </Field>
           <Field label="이벤트 소개">
@@ -96,7 +96,7 @@ export default function EventNewPage() {
               onChange={(e) => setDescription(e.target.value)}
               rows={4}
               placeholder="이벤트 내용을 자세히 적어주세요."
-              className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:border-[#3182F6] resize-none"
+              className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:border-[#8037FF] resize-none"
             />
           </Field>
           <Field label="대표 이미지 URL (선택)">
@@ -104,7 +104,7 @@ export default function EventNewPage() {
               value={imageUrl}
               onChange={(e) => setImageUrl(e.target.value)}
               placeholder="https://..."
-              className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:border-[#3182F6]"
+              className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:border-[#8037FF]"
             />
           </Field>
         </div>
@@ -117,7 +117,7 @@ export default function EventNewPage() {
               type="number"
               value={originalPrice}
               onChange={(e) => setOriginalPrice(e.target.value)}
-              className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:border-[#3182F6]"
+              className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:border-[#8037FF]"
             />
           </Field>
           <Field label="할인가 (원) *">
@@ -125,12 +125,12 @@ export default function EventNewPage() {
               type="number"
               value={salePrice}
               onChange={(e) => setSalePrice(e.target.value)}
-              className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:border-[#3182F6]"
+              className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:border-[#8037FF]"
             />
           </Field>
         </div>
         {discountPercent !== null && discountPercent > 0 && (
-          <p className="text-[12px] text-[#3182F6] mt-2 font-bold">할인율: {discountPercent}%</p>
+          <p className="text-[12px] text-[#8037FF] mt-2 font-bold">할인율: {discountPercent}%</p>
         )}
       </Card>
 
@@ -141,7 +141,7 @@ export default function EventNewPage() {
               type="date"
               value={startAt}
               onChange={(e) => setStartAt(e.target.value)}
-              className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:border-[#3182F6]"
+              className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:border-[#8037FF]"
             />
           </Field>
           <Field label="종료일">
@@ -149,7 +149,7 @@ export default function EventNewPage() {
               type="date"
               value={endAt}
               onChange={(e) => setEndAt(e.target.value)}
-              className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:border-[#3182F6]"
+              className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:border-[#8037FF]"
             />
           </Field>
         </div>

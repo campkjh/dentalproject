@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useSession } from '@/lib/supabase/SessionProvider';
+import { useMyHospitalData } from '@/lib/partner/my-hospital-cache';
 import { useStore } from '@/store';
 import { compressImage } from '@/lib/compressImage';
 
@@ -79,8 +80,12 @@ export default function PartnerHospitalInfoPage() {
   const showToast = useStore((s) => s.showToast);
   const coverInputRef = useRef<HTMLInputElement>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
+  const {
+    data: hospitalData,
+    loading,
+    mutate: mutateHospital,
+  } = useMyHospitalData<HospitalRow>(authUser?.id);
   const [hospital, setHospital] = useState<HospitalRow | null>(null);
-  const [loading, setLoading] = useState(true);
   const [mode, setMode] = useState<Mode>('overview');
   const [introDraft, setIntroDraft] = useState('');
   const [holidayDraft, setHolidayDraft] = useState('');
@@ -100,24 +105,19 @@ export default function PartnerHospitalInfoPage() {
     setAddressDetailDraft(row?.address_detail ?? '');
   }, []);
 
-  const reloadHospital = useCallback(async () => {
-    const res = await fetch('/api/my-hospital', { cache: 'no-store' });
-    if (!res.ok) return;
-    const data = await res.json();
-    const next = data.hospital ?? null;
-    setHospital(next);
-    syncDrafts(next);
-  }, [syncDrafts]);
+  const patchLocalHospital = useCallback((updater: (current: HospitalRow | null) => HospitalRow | null) => {
+    setHospital((current) => {
+      const next = updater(current);
+      mutateHospital((cached) => cached ? { ...cached, hospital: next } : cached);
+      return next;
+    });
+  }, [mutateHospital]);
 
   useEffect(() => {
-    if (!authUser) { setLoading(false); return; }
-    let cancelled = false;
-    (async () => {
-      try { await reloadHospital(); }
-      finally { if (!cancelled) setLoading(false); }
-    })();
-    return () => { cancelled = true; };
-  }, [authUser, reloadHospital]);
+    const next = hospitalData?.hospital ?? null;
+    setHospital(next);
+    if (mode === 'overview') syncDrafts(next);
+  }, [hospitalData, mode, syncDrafts]);
 
   useEffect(() => {
     document.body.classList.toggle('partner-editing', mode !== 'overview');
@@ -184,7 +184,7 @@ export default function PartnerHospitalInfoPage() {
       const existing = hospital?.cover_images?.filter(usableImage) ?? [];
       const next = [...existing, url];
       await patchHospitalAPI({ coverImages: next });
-      setHospital((prev) => prev ? { ...prev, cover_images: next } : prev);
+      patchLocalHospital((prev) => prev ? { ...prev, cover_images: next } : prev);
       showToast('대문사진을 저장했습니다.');
     } catch (e) {
       showToast(e instanceof Error ? e.message : '저장에 실패했습니다.');
@@ -198,7 +198,7 @@ export default function PartnerHospitalInfoPage() {
     const next = (hospital?.cover_images ?? []).filter((_, i) => i !== idx);
     try {
       await patchHospitalAPI({ coverImages: next });
-      setHospital((prev) => prev ? { ...prev, cover_images: next } : prev);
+      patchLocalHospital((prev) => prev ? { ...prev, cover_images: next } : prev);
       setCoverIdx(Math.max(0, idx - 1));
       showToast('사진을 삭제했습니다.');
     } catch (e) {
@@ -213,7 +213,7 @@ export default function PartnerHospitalInfoPage() {
     try {
       const url = await uploadFile(file, 'hospital-logos');
       await patchHospitalAPI({ imageUrl: url });
-      setHospital((prev) => prev ? { ...prev, image_url: url } : prev);
+      patchLocalHospital((prev) => prev ? { ...prev, image_url: url } : prev);
       showToast('프로필사진을 저장했습니다.');
     } catch (e) {
       showToast(e instanceof Error ? e.message : '저장에 실패했습니다.');
@@ -226,7 +226,7 @@ export default function PartnerHospitalInfoPage() {
     setSaving(true);
     try {
       await patchHospitalAPI({ introduction: introDraft });
-      setHospital((prev) => prev ? { ...prev, introduction: introDraft } : prev);
+      patchLocalHospital((prev) => prev ? { ...prev, introduction: introDraft } : prev);
       showToast('병원소개를 저장했습니다.');
       goOverview();
     } catch (e) { showToast(e instanceof Error ? e.message : '저장에 실패했습니다.'); }
@@ -249,7 +249,7 @@ export default function PartnerHospitalInfoPage() {
         end_time: r.end_time || null,
         is_closed: !r.start_time && !r.end_time,
       }));
-      setHospital((prev) => prev ? { ...prev, holiday_notice: holidayDraft, operating_hours: hours } : prev);
+      patchLocalHospital((prev) => prev ? { ...prev, holiday_notice: holidayDraft, operating_hours: hours } : prev);
       showToast('운영시간을 저장했습니다.');
       goOverview();
     } catch (e) { showToast(e instanceof Error ? e.message : '저장에 실패했습니다.'); }
@@ -260,7 +260,7 @@ export default function PartnerHospitalInfoPage() {
     setSaving(true);
     try {
       await patchHospitalAPI({ address: addressDraft, addressDetail: addressDetailDraft });
-      setHospital((prev) => prev ? { ...prev, address: addressDraft, address_detail: addressDetailDraft } : prev);
+      patchLocalHospital((prev) => prev ? { ...prev, address: addressDraft, address_detail: addressDetailDraft } : prev);
       showToast('위치 정보를 저장했습니다.');
       goOverview();
     } catch (e) { showToast(e instanceof Error ? e.message : '저장에 실패했습니다.'); }

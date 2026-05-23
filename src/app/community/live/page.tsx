@@ -412,8 +412,8 @@ export default function CommunityLivePage() {
               key={detectedTag}
               className="text-[11px] font-bold px-2 py-0.5 rounded-full"
               style={{
-                backgroundColor: detectedTag === '기타' ? '#F3F4F6' : '#E8F3FF',
-                color: detectedTag === '기타' ? '#6B7280' : '#3182F6',
+                backgroundColor: detectedTag === '기타' ? '#F3F4F6' : '#F4EFFF',
+                color: detectedTag === '기타' ? '#6B7280' : '#8037FF',
                 animation: 'liveFadeIn 0.25s cubic-bezier(0.22, 1, 0.36, 1) both',
               }}
             >
@@ -462,7 +462,7 @@ export default function CommunityLivePage() {
                 width: 34,
                 height: 34,
                 borderRadius: '50%',
-                backgroundColor: input.trim() ? '#3182F6' : 'transparent',
+                backgroundColor: input.trim() ? '#8037FF' : 'transparent',
                 color: input.trim() ? '#fff' : '#C5CAD4',
                 transition: 'all 200ms ease',
               }}
@@ -490,14 +490,14 @@ function QuestionThread({ question, currentUserId }: { question: LiveQuestion; c
             <span className="text-[10px] text-gray-500 font-medium">
               {isMine ? '나' : question.user.name} · {question.time}
             </span>
-            <span className="text-[10px] font-semibold text-[#3182F6] bg-[#E8F3FF] rounded px-1.5 py-0.5 leading-none">
+            <span className="text-[10px] font-semibold text-[#8037FF] bg-[#F4EFFF] rounded px-1.5 py-0.5 leading-none">
               {question.category}
             </span>
           </div>
           <div
             className="rounded-2xl rounded-tr-md px-3.5 py-2.5"
             style={{
-              backgroundColor: isMine ? '#3182F6' : '#2B313D',
+              backgroundColor: isMine ? '#8037FF' : '#2B313D',
               color: '#fff',
             }}
           >
@@ -533,7 +533,7 @@ function QuestionThread({ question, currentUserId }: { question: LiveQuestion; c
                   {r.doctorHospital && (
                     <span className="text-[10px] text-gray-400">· {r.doctorHospital}</span>
                   )}
-                  <span className="text-[11px] text-[#3182F6] font-semibold bg-[#E8F3FF] rounded px-1.5 py-0.5 leading-none">
+                  <span className="text-[11px] text-[#8037FF] font-semibold bg-[#F4EFFF] rounded px-1.5 py-0.5 leading-none">
                     의사 답변
                   </span>
                 </div>
@@ -552,7 +552,7 @@ function QuestionThread({ question, currentUserId }: { question: LiveQuestion; c
           {!expanded && question.replies.length > 1 && (
             <button
               onClick={() => setExpanded(true)}
-              className="ml-10 text-[11px] text-[#3182F6] font-semibold"
+              className="ml-10 text-[11px] text-[#8037FF] font-semibold"
             >
               답변 {question.replies.length - 1}개 더 보기
             </button>

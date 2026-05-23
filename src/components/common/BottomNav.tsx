@@ -86,7 +86,7 @@ function BottomNavInner() {
                   }}
                 />
                 {item.badge && (
-                  <span className="absolute -top-1.5 -right-2.5 bg-[#3182F6] text-white text-[9px] rounded-full min-w-[16px] h-4 flex items-center justify-center px-1 font-medium">
+                  <span className="absolute -top-1.5 -right-2.5 bg-[#8037FF] text-white text-[9px] rounded-full min-w-[16px] h-4 flex items-center justify-center px-1 font-medium">
                     {item.badge}
                   </span>
                 )}

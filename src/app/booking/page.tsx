@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useMemo, Suspense } from 'react';
+import { useEffect, useState, useMemo, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ChevronLeft, ChevronRight, Check } from 'lucide-react';
 import TopBar from '@/components/common/TopBar';
 import { useStore } from '@/store';
 
 const dayLabels = ['일', '월', '화', '수', '목', '금', '토'];
+type ScheduleSettings = { disabledDays: string[]; disabledSlots: Record<string, string[]> };
 
 function generateTimeSlotsForDay(startTime?: string, endTime?: string) {
   if (!startTime || !endTime) return { '오전': [] as string[], '오후': [] as string[], '저녁': [] as string[] };
@@ -63,6 +64,28 @@ function BookingPage() {
   const [selectedDate, setSelectedDate] = useState<number | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [scheduleSettings, setScheduleSettings] = useState<ScheduleSettings>({ disabledDays: [], disabledSlots: {} });
+
+  useEffect(() => {
+    if (!hospital?.id) {
+      setScheduleSettings({ disabledDays: [], disabledSlots: {} });
+      return;
+    }
+    let cancelled = false;
+    fetch(`/api/hospital-schedule?hospitalId=${encodeURIComponent(hospital.id)}`, { cache: 'no-store' })
+      .then((res) => res.ok ? res.json() : null)
+      .then((data) => {
+        if (cancelled || !data) return;
+        setScheduleSettings({
+          disabledDays: Array.isArray(data.disabledDays) ? data.disabledDays : [],
+          disabledSlots: data.disabledSlots ?? {},
+        });
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [hospital?.id]);
 
   const calendarData = useMemo(() => {
     const firstDay = new Date(currentYear, currentMonth - 1, 1).getDay();
@@ -88,6 +111,8 @@ function BookingPage() {
   const isAvailable = (day: number) => {
     const d = new Date(currentYear, currentMonth - 1, day);
     if (d.getTime() < todayMidnight) return false;
+    const dateStr = `${currentYear}-${String(currentMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    if (scheduleSettings.disabledDays.includes(dateStr)) return false;
     const dow = d.getDay();
     const hour = hoursByDow[dow];
     return !!hour && !hour.closed && !!hour.start && !!hour.end;
@@ -104,13 +129,28 @@ function BookingPage() {
     const dow = new Date(currentYear, currentMonth - 1, selectedDate).getDay();
     const hour = hoursByDow[dow];
     if (!hour || hour.closed) return [{ label: '오전', slots: [] }, { label: '오후', slots: [] }, { label: '저녁', slots: [] }];
+    const dateStr = `${currentYear}-${String(currentMonth).padStart(2, '0')}-${String(selectedDate).padStart(2, '0')}`;
+    const disabledSlots = new Set(scheduleSettings.disabledSlots[dateStr] ?? []);
     const groups = generateTimeSlotsForDay(hour.start, hour.end);
     return [
-      { label: '오전', slots: groups['오전'] },
-      { label: '오후', slots: groups['오후'] },
-      { label: '저녁', slots: groups['저녁'] },
+      { label: '오전', slots: groups['오전'].filter((time) => !disabledSlots.has(time)) },
+      { label: '오후', slots: groups['오후'].filter((time) => !disabledSlots.has(time)) },
+      { label: '저녁', slots: groups['저녁'].filter((time) => !disabledSlots.has(time)) },
     ];
-  }, [selectedDate, currentYear, currentMonth, hoursByDow]);
+  }, [selectedDate, currentYear, currentMonth, hoursByDow, scheduleSettings.disabledSlots]);
+
+  useEffect(() => {
+    if (!selectedDate) return;
+    if (!isAvailable(selectedDate)) {
+      setSelectedDate(null);
+      setSelectedTime(null);
+      return;
+    }
+    if (selectedTime && !timeGroups.some((group) => group.slots.includes(selectedTime))) {
+      setSelectedTime(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scheduleSettings, selectedDate, selectedTime, timeGroups]);
 
   const handleDateSelect = (day: number) => {
     if (!isAvailable(day)) return;
@@ -214,7 +254,7 @@ function BookingPage() {
             <div
               key={label}
               className={`text-center text-[11px] font-semibold py-1.5 ${
-                i === 0 ? 'text-[#EF4444]' : i === 6 ? 'text-[#3B82F6]' : 'text-gray-400'
+                i === 0 ? 'text-[#EF4444]' : i === 6 ? 'text-[#8037FF]' : 'text-gray-400'
               }`}
             >
               {label}
@@ -247,13 +287,13 @@ function BookingPage() {
                         height: 38,
                         borderRadius: '50%',
                         fontSize: 14,
-                        backgroundColor: isSelected ? '#3182F6' : 'transparent',
+                        backgroundColor: isSelected ? '#8037FF' : 'transparent',
                         color: isSelected
                           ? '#fff'
                           : !available
                           ? '#D1D5DB'
                           : today_
-                          ? '#3182F6'
+                          ? '#8037FF'
                           : '#2B313D',
                         border: today_ && !isSelected ? '1.5px solid #C4B5FD' : '1.5px solid transparent',
                         boxShadow: isSelected ? '0 4px 12px rgba(49,130,246,0.35)' : 'none',
@@ -264,7 +304,7 @@ function BookingPage() {
                       {day}
                     </span>
                     {available && !isSelected && (
-                      <span className="absolute bottom-1 w-1 h-1 bg-[#3182F6] rounded-full" />
+                      <span className="absolute bottom-1 w-1 h-1 bg-[#8037FF] rounded-full" />
                     )}
                     {!available && (
                       <span
@@ -282,7 +322,7 @@ function BookingPage() {
         {/* Legend */}
         <div className="flex items-center justify-center gap-5 px-2.5 mb-5">
           <div className="flex items-center gap-1.5">
-            <div className="w-1.5 h-1.5 bg-[#3182F6] rounded-full" />
+            <div className="w-1.5 h-1.5 bg-[#8037FF] rounded-full" />
             <span className="text-[11px] text-gray-500 font-medium">예약가능</span>
           </div>
           <div className="flex items-center gap-1.5">
@@ -330,7 +370,7 @@ function BookingPage() {
                           onClick={() => setSelectedTime(time)}
                           className="py-2.5 rounded-xl text-[13px] font-semibold btn-press relative"
                           style={{
-                            backgroundColor: isSelected ? '#3182F6' : '#fff',
+                            backgroundColor: isSelected ? '#8037FF' : '#fff',
                             color: isSelected ? '#fff' : '#2B313D',
                             border: `1.5px solid ${isSelected ? 'transparent' : '#E5E7EB'}`,
                             boxShadow: isSelected ? '0 3px 10px rgba(49,130,246,0.25)' : 'none',
@@ -403,7 +443,7 @@ function BookingPage() {
             disabled={!selectedDate || !selectedTime}
             className="w-full py-3.5 rounded-xl font-bold text-[15px] btn-press transition-colors"
             style={{
-              backgroundColor: selectedDate && selectedTime ? '#3182F6' : '#F3F4F6',
+              backgroundColor: selectedDate && selectedTime ? '#8037FF' : '#F3F4F6',
               color: selectedDate && selectedTime ? '#fff' : '#A4ABBA',
               boxShadow:
                 selectedDate && selectedTime
@@ -421,14 +461,14 @@ function BookingPage() {
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 modal-overlay-enter">
           <div className="bg-white rounded-2xl mx-6 w-full max-w-sm overflow-hidden modal-content-enter">
             <div className="p-6 text-center">
-              <div className="w-14 h-14 bg-[#3182F6] rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="w-14 h-14 bg-[#8037FF] rounded-full flex items-center justify-center mx-auto mb-4">
                 <Check size={26} strokeWidth={3} className="text-white" />
               </div>
               <h3 className="text-lg font-bold mb-2">예약을 확정할까요?</h3>
               <p className="text-sm text-gray-600 mb-1">
                 {currentYear}년 {currentMonth}월 {selectedDate}일 ({selectedDayLabel})
               </p>
-              <p className="text-lg font-bold text-[#3182F6]">{selectedTime}</p>
+              <p className="text-lg font-bold text-[#8037FF]">{selectedTime}</p>
               {product && (
                 <p className="text-[12px] text-gray-500 mt-3 line-clamp-1">
                   {product.title}
@@ -444,7 +484,7 @@ function BookingPage() {
               </button>
               <button
                 onClick={handleConfirm}
-                className="flex-1 py-3.5 text-sm font-bold text-white bg-[#3182F6]"
+                className="flex-1 py-3.5 text-sm font-bold text-white bg-[#8037FF]"
               >
                 결제하기
               </button>

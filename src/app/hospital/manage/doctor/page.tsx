@@ -128,7 +128,7 @@ function DoctorAssignPage() {
           <div className="space-y-2">
             <div className="flex items-center gap-3">
               {appointment.time && (
-                <span className="text-sm font-bold text-[#3182F6]">{appointment.time}</span>
+                <span className="text-sm font-bold text-[#8037FF]">{appointment.time}</span>
               )}
               <span className="font-bold text-sm">{appointment.patientName}</span>
             </div>
@@ -143,7 +143,7 @@ function DoctorAssignPage() {
             )}
             <div className="flex gap-2">
               {appointment.paymentType && (
-                <span className="px-2 py-0.5 bg-blue-50 text-blue-600 text-xs rounded-full font-medium">
+                <span className="px-2 py-0.5 bg-purple-50 text-purple-600 text-xs rounded-full font-medium">
                   {appointment.paymentType}
                 </span>
               )}
@@ -173,16 +173,16 @@ function DoctorAssignPage() {
                 onClick={() => handleSelectDoctor(doctor)}
                 className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-colors text-left ${
                   isSelected
-                    ? 'border-[#3182F6] bg-[#E8F3FF]/30'
+                    ? 'border-[#8037FF] bg-[#F4EFFF]/30'
                     : isUnavailable
                       ? 'border-gray-100 bg-gray-50'
-                      : 'border-gray-200 bg-white hover:border-[#3182F6]/50'
+                      : 'border-gray-200 bg-white hover:border-[#8037FF]/50'
                 }`}
               >
                 <div
                   className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
                     isSelected
-                      ? 'bg-[#3182F6]'
+                      ? 'bg-[#8037FF]'
                       : isUnavailable
                         ? 'bg-gray-100'
                         : 'bg-gray-100'
@@ -215,7 +215,7 @@ function DoctorAssignPage() {
                       {doctor.title}
                     </span>
                     {doctor.isOwner && (
-                      <span className="px-1.5 py-0.5 bg-[#3182F6] text-white text-[10px] rounded font-medium">
+                      <span className="px-1.5 py-0.5 bg-[#8037FF] text-white text-[10px] rounded font-medium">
                         대표
                       </span>
                     )}
@@ -236,7 +236,7 @@ function DoctorAssignPage() {
 
                 {isSelected && (
                   <div className="flex-shrink-0">
-                    <div className="w-5 h-5 bg-[#3182F6] rounded-full flex items-center justify-center">
+                    <div className="w-5 h-5 bg-[#8037FF] rounded-full flex items-center justify-center">
                       <Check size={12} className="text-white" />
                     </div>
                   </div>
@@ -254,7 +254,7 @@ function DoctorAssignPage() {
           disabled={!selectedDoctor}
           className={`w-full py-3.5 rounded-xl text-base font-bold transition-colors ${
             selectedDoctor
-              ? 'bg-[#3182F6] text-white'
+              ? 'bg-[#8037FF] text-white'
               : 'bg-gray-200 text-gray-400 cursor-not-allowed'
           }`}
         >

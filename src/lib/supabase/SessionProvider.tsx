@@ -4,6 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import type { Session, User as SupabaseUser } from '@supabase/supabase-js';
 import { createClient, hasSupabaseEnv } from './client';
 import { useStore } from '@/store';
+import { clearMyHospitalCache } from '@/lib/partner/my-hospital-cache';
 
 type Ctx = {
   session: Session | null;
@@ -77,6 +78,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(() => hasSupabaseEnv());
   const mountedRef = useRef(false);
+  const sessionRef = useRef<Session | null>(null);
   const syncSeqRef = useRef(0);
   const recoveryPromiseRef = useRef<Promise<{ isDoctor: boolean }> | null>(null);
   const storeLogin = useStore((s) => s.login);
@@ -92,7 +94,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     const userId = authUser.id;
     const [profileRes, hospitalRes] = await Promise.all([
       supabase.from('profiles').select('*').eq('id', userId).maybeSingle(),
-      supabase.from('hospitals').select('id').eq('owner_id', userId).limit(1).maybeSingle(),
+      supabase.from('hospitals').select('id').eq('owner_id', userId).eq('status', 'approved').limit(1).maybeSingle(),
     ]);
 
     let p = profileRes.error ? null : profileRes.data as Record<string, unknown> | null;
@@ -153,9 +155,11 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     const { showLoading = true, hydrateUserData = true } = options;
     const syncId = ++syncSeqRef.current;
 
+    sessionRef.current = nextSession;
     setSession(nextSession);
 
     if (!nextSession?.user) {
+      clearMyHospitalCache();
       storeLogout();
       resetMe();
       if (mountedRef.current && syncId === syncSeqRef.current) setLoading(false);
@@ -259,7 +263,8 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       if (!mounted) return;
       if (event === 'INITIAL_SESSION') return;
       window.setTimeout(() => {
-        if (mounted) void syncSession(s, { showLoading: true });
+        const hasExistingSession = Boolean(sessionRef.current?.user);
+        if (mounted) void syncSession(s, { showLoading: !hasExistingSession });
       }, 0);
     });
 
@@ -344,7 +349,9 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       const currentUserId = session?.user.id;
       if (supabase) await supabase.auth.signOut();
       clearCachedHospitalAccess(currentUserId);
+      clearMyHospitalCache(currentUserId);
       setSession(null);
+      sessionRef.current = null;
       storeLogout();
       resetMe();
       setLoading(false);

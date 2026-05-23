@@ -155,7 +155,7 @@ function EditPostPage() {
             onChange={(e) => setTitle(e.target.value)}
             maxLength={100}
             placeholder="제목을 입력해주세요"
-            className="w-full border border-gray-200 rounded-xl px-2.5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#3182F6]"
+            className="w-full border border-gray-200 rounded-xl px-2.5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#8037FF]"
           />
         </div>
 
@@ -167,7 +167,7 @@ function EditPostPage() {
             onChange={(e) => { if (e.target.value.length <= 5000) setContent(e.target.value); }}
             rows={10}
             placeholder="내용을 입력해주세요"
-            className="w-full border border-gray-200 rounded-xl px-2.5 py-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#3182F6]"
+            className="w-full border border-gray-200 rounded-xl px-2.5 py-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#8037FF]"
           />
           <p className="text-xs text-gray-400 text-right">{content.length}/5000자</p>
         </div>
@@ -191,7 +191,7 @@ function EditPostPage() {
               )}
             </div>
           ) : (
-            <label className="flex flex-col items-center justify-center h-28 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-[#3182F6] transition-colors">
+            <label className="flex flex-col items-center justify-center h-28 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-[#8037FF] transition-colors">
               <Camera size={24} className="text-gray-300 mb-1" />
               <span className="text-xs text-gray-400">사진 추가</span>
               <input type="file" accept="image/*" className="hidden" onChange={handleImage} />
@@ -214,7 +214,7 @@ function EditPostPage() {
                     key={tag}
                     onClick={() => toggleTag(tag)}
                     className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                      isSelected ? 'bg-[#3182F6] text-white' : 'bg-gray-100 text-gray-600'
+                      isSelected ? 'bg-[#8037FF] text-white' : 'bg-gray-100 text-gray-600'
                     }`}
                   >
                     {tag}
@@ -233,7 +233,7 @@ function EditPostPage() {
           className={`w-full py-3.5 rounded-xl text-sm font-bold transition-colors ${
             submitting || uploading || !title.trim() || !content.trim()
               ? 'bg-gray-200 text-gray-400'
-              : 'bg-[#3182F6] text-white'
+              : 'bg-[#8037FF] text-white'
           }`}
         >
           {submitting ? '수정 중...' : uploading ? '이미지 업로드 중...' : '수정 완료'}

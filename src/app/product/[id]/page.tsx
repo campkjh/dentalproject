@@ -38,6 +38,97 @@ const faqItems = [
   },
 ];
 
+function hasReviewImages(review: { beforeImage?: string; afterImage?: string }) {
+  return Boolean(review.beforeImage || review.afterImage);
+}
+
+function ReviewImagePair({
+  beforeImage,
+  afterImage,
+  size = 'compact',
+}: {
+  beforeImage?: string;
+  afterImage?: string;
+  size?: 'compact' | 'large';
+}) {
+  const both = Boolean(beforeImage && afterImage);
+  const labelSize = size === 'large' ? 14 : 11;
+  const labelBox = size === 'large' ? { width: 36, height: 28, padding: '4px 14px' } : { width: 28, height: 20, padding: '3px 10px' };
+
+  if (!beforeImage && !afterImage) return null;
+
+  return (
+    <div className="flex" style={{ gap: 0 }}>
+      {beforeImage && (
+        <div
+          className="flex-1 aspect-square relative overflow-hidden"
+          style={{
+            borderTopLeftRadius: 12,
+            borderBottomLeftRadius: 12,
+            borderTopRightRadius: both ? 0 : 12,
+            borderBottomRightRadius: both ? 0 : 12,
+          }}
+        >
+          <img src={beforeImage} alt="시술 전" className="h-full w-full object-cover" />
+          <span
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              fontSize: labelSize,
+              fontWeight: 600,
+              color: '#fff',
+              backgroundColor: '#8037FF',
+              borderTopLeftRadius: 12,
+              borderBottomRightRadius: 12,
+              lineHeight: size === 'large' ? '14px' : '11px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              ...labelBox,
+            }}
+          >
+            전
+          </span>
+        </div>
+      )}
+      {afterImage && (
+        <div
+          className="flex-1 aspect-square relative overflow-hidden"
+          style={{
+            borderTopRightRadius: 12,
+            borderBottomRightRadius: 12,
+            borderTopLeftRadius: both ? 0 : 12,
+            borderBottomLeftRadius: both ? 0 : 12,
+          }}
+        >
+          <img src={afterImage} alt="시술 후" className="h-full w-full object-cover" />
+          <span
+            style={{
+              position: 'absolute',
+              top: 0,
+              right: 0,
+              fontSize: labelSize,
+              fontWeight: 600,
+              color: '#fff',
+              backgroundColor: '#2B313D',
+              borderTopRightRadius: 12,
+              borderBottomLeftRadius: 12,
+              lineHeight: size === 'large' ? '14px' : '11px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              ...labelBox,
+            }}
+          >
+            후
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function ProductDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -114,6 +205,7 @@ export default function ProductDetailPage() {
   const avgRating = productReviews.length > 0
     ? (productReviews.reduce((sum, r) => sum + r.rating, 0) / productReviews.length).toFixed(1)
     : product.rating.toFixed(1);
+  const detailImageUrl = product.detailImageUrl || product.imageUrl;
 
   return (
     <div className="bg-white min-h-screen page-enter" style={{ paddingTop: 48, paddingBottom: 72 }}>
@@ -145,8 +237,12 @@ export default function ProductDetailPage() {
       <div className="lg:max-w-7xl lg:mx-auto lg:grid lg:grid-cols-5 lg:gap-8 lg:py-8 lg:px-6">
       {/* Product Image Area */}
       <div className="relative lg:col-span-2 lg:sticky lg:top-20 lg:self-start">
-        <div className="aspect-[4/3] bg-gradient-to-br from-sky-100 to-blue-100 flex items-center justify-center lg:rounded-2xl">
-          <span className="text-6xl">🦷</span>
+        <div className="aspect-[4/3] bg-gradient-to-br from-purple-100 to-purple-100 flex items-center justify-center overflow-hidden lg:rounded-2xl">
+          {product.imageUrl ? (
+            <img src={product.imageUrl} alt={product.title} className="h-full w-full object-cover" />
+          ) : (
+            <span className="text-6xl">🦷</span>
+          )}
         </div>
       </div>
 
@@ -255,50 +351,41 @@ export default function ProductDetailPage() {
         })()}
         {productReviews.length > 0 && (
           <div className="flex overflow-x-auto hide-scrollbar pb-2" style={{ gap: 6, scrollSnapType: 'x mandatory' }}>
-            {productReviews.map((review) => (
-              <Link
-                key={review.id}
-                href={`/review/${review.id}`}
-                className="flex-shrink-0 flex flex-col card-press"
-                style={{ width: 288, height: 358, borderRadius: 12, backgroundColor: '#F6F6F6', padding: 12, overflow: 'hidden', scrollSnapAlign: 'start' }}
-              >
-                {/* 전/후 이미지 - r값: 전=좌상좌하12, 후=우상우하12 */}
-                <div className="flex" style={{ gap: 0 }}>
-                  <div className="flex-1 aspect-square relative overflow-hidden" style={{ borderTopLeftRadius: 12, borderBottomLeftRadius: 12, borderTopRightRadius: 0, borderBottomRightRadius: 0 }}>
-                    <div className="w-full h-full flex items-center justify-center" style={{ backgroundColor: '#EBEBEB' }}>
-                      <span className="text-2xl">📷</span>
+            {productReviews.map((review) => {
+              const withImages = hasReviewImages(review);
+              return (
+                <Link
+                  key={review.id}
+                  href={`/review/${review.id}`}
+                  className="flex-shrink-0 flex flex-col card-press"
+                  style={{ width: 288, minHeight: withImages ? 358 : 192, borderRadius: 12, backgroundColor: '#F6F6F6', padding: 12, overflow: 'hidden', scrollSnapAlign: 'start' }}
+                >
+                  {withImages && (
+                    <ReviewImagePair beforeImage={review.beforeImage} afterImage={review.afterImage} />
+                  )}
+                  {/* 시술비용 + 시술시기 태그 */}
+                  <div className="flex gap-1" style={{ marginTop: withImages ? 8 : 0 }}>
+                    <span style={{ fontSize: 10, fontWeight: 600, color: '#2B313D', backgroundColor: 'rgba(200,206,218,0.2)', borderRadius: 6, padding: '2px 6px' }}>{review.totalCost.toLocaleString()}원</span>
+                    <span style={{ fontSize: 10, fontWeight: 600, color: '#2B313D', backgroundColor: 'rgba(200,206,218,0.2)', borderRadius: 6, padding: '2px 6px' }}>{review.treatmentDate}</span>
+                  </div>
+                  {/* 시술명 */}
+                  <p style={{ fontSize: 13, fontWeight: 600, color: '#2B313D', marginTop: 6 }} className="truncate">{review.treatmentName}</p>
+                  {/* 날짜 */}
+                  <p style={{ fontSize: 11, color: '#A4ABBA', marginTop: 2 }}>{review.date}</p>
+                  {/* 별점 */}
+                  <div className="flex items-center gap-1" style={{ marginTop: 4 }}>
+                    <div className="flex">
+                      {[...Array(5)].map((_, i) => (
+                        <Star key={i} width={14} height={14} fill={i < review.rating ? '#FBBF24' : '#E5E7EB'} stroke={i < review.rating ? '#FBBF24' : '#E5E7EB'} />
+                      ))}
                     </div>
-                    <span style={{ position: 'absolute', top: 0, left: 0, fontSize: 11, fontWeight: 600, color: '#fff', backgroundColor: '#8037FF', borderTopLeftRadius: 12, borderBottomRightRadius: 12, padding: '3px 10px', lineHeight: '11px', width: 28, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>전</span>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: '#2B313D' }}>{review.rating.toFixed(1)}</span>
                   </div>
-                  <div className="flex-1 aspect-square relative overflow-hidden" style={{ borderTopRightRadius: 12, borderBottomRightRadius: 12, borderTopLeftRadius: 0, borderBottomLeftRadius: 0 }}>
-                    <div className="w-full h-full flex items-center justify-center" style={{ backgroundColor: '#EBEBEB' }}>
-                      <span className="text-2xl">📷</span>
-                    </div>
-                    <span style={{ position: 'absolute', top: 0, right: 0, fontSize: 11, fontWeight: 600, color: '#fff', backgroundColor: '#2B313D', borderTopRightRadius: 12, borderBottomLeftRadius: 12, padding: '3px 10px', lineHeight: '11px', width: 28, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>후</span>
-                  </div>
-                </div>
-                {/* 시술비용 + 시술시기 태그 */}
-                <div className="flex gap-1" style={{ marginTop: 8 }}>
-                  <span style={{ fontSize: 10, fontWeight: 600, color: '#2B313D', backgroundColor: 'rgba(200,206,218,0.2)', borderRadius: 6, padding: '2px 6px' }}>{review.totalCost.toLocaleString()}원</span>
-                  <span style={{ fontSize: 10, fontWeight: 600, color: '#2B313D', backgroundColor: 'rgba(200,206,218,0.2)', borderRadius: 6, padding: '2px 6px' }}>{review.treatmentDate}</span>
-                </div>
-                {/* 시술명 */}
-                <p style={{ fontSize: 13, fontWeight: 600, color: '#2B313D', marginTop: 6 }} className="truncate">{review.treatmentName}</p>
-                {/* 날짜 */}
-                <p style={{ fontSize: 11, color: '#A4ABBA', marginTop: 2 }}>{review.date}</p>
-                {/* 별점 */}
-                <div className="flex items-center gap-1" style={{ marginTop: 4 }}>
-                  <div className="flex">
-                    {[...Array(5)].map((_, i) => (
-                      <Star key={i} width={14} height={14} fill={i < review.rating ? '#FBBF24' : '#E5E7EB'} stroke={i < review.rating ? '#FBBF24' : '#E5E7EB'} />
-                    ))}
-                  </div>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: '#2B313D' }}>{review.rating.toFixed(1)}</span>
-                </div>
-                {/* 후기 */}
-                <p style={{ fontSize: 12, color: '#51535C', lineHeight: '17px', marginTop: 6, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical' as const }}>{review.content}</p>
-              </Link>
-            ))}
+                  {/* 후기 */}
+                  <p style={{ fontSize: 12, color: '#51535C', lineHeight: '17px', marginTop: 6, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: withImages ? 3 : 5, WebkitBoxOrient: 'vertical' as const }}>{review.content}</p>
+                </Link>
+              );
+            })}
           </div>
         )}
       </div>
@@ -347,11 +434,15 @@ export default function ProductDetailPage() {
       >
       {activeTab === '상품설명' && (
         <div className="bg-white">
-          <div className="aspect-[4/3] bg-gradient-to-br from-blue-50 to-blue-50 flex items-center justify-center">
-            <div className="text-center">
-              <span className="text-5xl block mb-2">🦷</span>
-              <p style={{ fontSize: 13, color: '#A4ABBA' }}>상품 상세 이미지</p>
-            </div>
+          <div className="aspect-[4/3] bg-gradient-to-br from-purple-50 to-purple-50 flex items-center justify-center overflow-hidden">
+            {detailImageUrl ? (
+              <img src={detailImageUrl} alt={`${product.title} 상세 이미지`} className="h-full w-full object-cover" />
+            ) : (
+              <div className="text-center">
+                <span className="text-5xl block mb-2">🦷</span>
+                <p style={{ fontSize: 13, color: '#A4ABBA' }}>상품 상세 이미지</p>
+              </div>
+            )}
           </div>
           <div className="px-2.5 py-5">
             <h3 style={{ fontSize: 20, fontWeight: 600, color: '#2B313D', marginBottom: 8 }}>{product.title}</h3>
@@ -440,7 +531,7 @@ export default function ProductDetailPage() {
                       backgroundColor: isToday ? '#F0EBFF' : 'transparent',
                     }}
                   >
-                    <span style={{ fontSize: 12, fontWeight: 500, color: isToday ? '#3182F6' : '#2B313D', width: 28 }}>{oh.day}</span>
+                    <span style={{ fontSize: 12, fontWeight: 500, color: isToday ? '#8037FF' : '#2B313D', width: 28 }}>{oh.day}</span>
                     {isClosed ? (
                       <span style={{ fontSize: 12, fontWeight: 500, color: '#51535C', backgroundColor: '#F2F3F5', borderRadius: 8, padding: '4px 10px' }}>휴진</span>
                     ) : (
@@ -466,7 +557,7 @@ export default function ProductDetailPage() {
                 className="flex items-center gap-3 py-3 hover:opacity-80 transition-opacity"
                 style={{ borderBottom: idx < hospital.doctors.length - 1 ? '1px solid #F2F3F5' : 'none' }}
               >
-                <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0 flex items-center justify-center" style={{ backgroundColor: '#F4EFFF', color: '#3182F6', fontWeight: 700, fontSize: 14 }}>
+                <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0 flex items-center justify-center" style={{ backgroundColor: '#F4EFFF', color: '#8037FF', fontWeight: 700, fontSize: 14 }}>
                   {doctor.profileImage ? (
                     /* eslint-disable-next-line @next/next/no-img-element */
                     <img src={doctor.profileImage} alt={doctor.name} className="w-full h-full object-cover" />
@@ -502,7 +593,7 @@ export default function ProductDetailPage() {
                     className="w-full flex items-center gap-3 py-3 text-left"
                     style={{ borderBottom: idx < hospitalProducts.length - 1 ? '1px solid #F2F3F5' : 'none' }}
                   >
-                    <div className="w-16 h-16 bg-gradient-to-br from-blue-50 to-blue-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <div className="w-16 h-16 bg-gradient-to-br from-purple-50 to-purple-50 rounded-lg flex items-center justify-center flex-shrink-0">
                       <span className="text-2xl">🦷</span>
                     </div>
                     <div className="flex-1 min-w-0">
@@ -528,7 +619,9 @@ export default function ProductDetailPage() {
         <div className="bg-white">
           {productReviews.length > 0 ? (
             <div>
-              {productReviews.map((review, idx) => (
+              {productReviews.map((review, idx) => {
+                const withImages = hasReviewImages(review);
+                return (
                 <div key={review.id} className="px-2.5 py-5" style={{ borderBottom: idx < productReviews.length - 1 ? '8px solid #F2F3F5' : 'none' }}>
 
                   {/* 닉네임 + 메뉴 */}
@@ -550,21 +643,11 @@ export default function ProductDetailPage() {
                     <span style={{ fontSize: 20, fontWeight: 600, color: '#2B313D' }}>{review.rating.toFixed(1)}</span>
                   </div>
 
-                  {/* 전/후 이미지 - 전:좌상좌하12 후:우상우하12 */}
-                  <div className="flex" style={{ marginTop: 14, gap: 0 }}>
-                    <div className="flex-1 aspect-square relative overflow-hidden" style={{ borderTopLeftRadius: 12, borderBottomLeftRadius: 12, borderTopRightRadius: 0, borderBottomRightRadius: 0 }}>
-                      <div className="w-full h-full flex items-center justify-center" style={{ backgroundColor: '#F2F3F5' }}>
-                        <span className="text-3xl">📷</span>
-                      </div>
-                      <span style={{ position: 'absolute', top: 0, left: 0, fontSize: 14, fontWeight: 600, color: '#fff', backgroundColor: '#8037FF', borderTopLeftRadius: 12, borderBottomRightRadius: 12, padding: '4px 14px', width: 36, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>전</span>
+                  {withImages && (
+                    <div style={{ marginTop: 14 }}>
+                      <ReviewImagePair beforeImage={review.beforeImage} afterImage={review.afterImage} size="large" />
                     </div>
-                    <div className="flex-1 aspect-square relative overflow-hidden" style={{ borderTopRightRadius: 12, borderBottomRightRadius: 12, borderTopLeftRadius: 0, borderBottomLeftRadius: 0 }}>
-                      <div className="w-full h-full flex items-center justify-center" style={{ backgroundColor: '#F2F3F5' }}>
-                        <span className="text-3xl">📷</span>
-                      </div>
-                      <span style={{ position: 'absolute', top: 0, right: 0, fontSize: 14, fontWeight: 600, color: '#fff', backgroundColor: '#2B313D', borderTopRightRadius: 12, borderBottomLeftRadius: 12, padding: '4px 14px', width: 36, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>후</span>
-                    </div>
-                  </div>
+                  )}
 
                   {/* 시술명 */}
                   <p style={{ fontSize: 18, fontWeight: 600, color: '#2B313D', marginTop: 14 }}>{review.treatmentName}</p>
@@ -585,7 +668,8 @@ export default function ProductDetailPage() {
                   <ReviewContent content={review.content} />
 
                 </div>
-              ))}
+                );
+              })}
             </div>
           ) : (
             <div className="py-10 text-center" style={{ fontSize: 14, color: '#A4ABBA' }}>아직 작성된 리뷰가 없습니다.</div>

@@ -10,7 +10,7 @@ const typeBadgeMap: Record<string, { label: string; className: string }> = {
   event: { label: '이벤트', className: 'bg-pink-100 text-pink-600' },
   important: { label: '중요 알림', className: 'bg-yellow-100 text-yellow-700' },
   recommendation: { label: '맞춤 콘텐츠', className: 'bg-green-100 text-green-600' },
-  info: { label: '안내', className: 'bg-blue-100 text-blue-600' },
+  info: { label: '안내', className: 'bg-purple-100 text-purple-600' },
   update: { label: '업데이트', className: 'bg-red-100 text-red-600' },
 };
 
@@ -63,7 +63,7 @@ export default function NotificationDetailPage() {
         {notification.link && (
           <Link
             href={notification.link}
-            className="inline-block mt-6 px-4 py-2.5 bg-[#3182F6] text-white text-sm font-bold rounded-xl btn-press"
+            className="inline-block mt-6 px-4 py-2.5 bg-[#8037FF] text-white text-sm font-bold rounded-xl btn-press"
           >
             자세히 보기
           </Link>

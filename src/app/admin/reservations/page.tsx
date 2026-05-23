@@ -44,13 +44,13 @@ const statusTabs: { key: ReservationStatus | 'all'; label: string }[] = [
 
 const statusConfig: Record<ReservationStatus, { label: string; className: string }> = {
   pending: { label: '확인중', className: 'bg-yellow-100 text-yellow-700' },
-  confirmed: { label: '확정', className: 'bg-blue-100 text-blue-700' },
+  confirmed: { label: '확정', className: 'bg-purple-100 text-purple-700' },
   completed: { label: '완료', className: 'bg-green-100 text-green-700' },
   cancelled: { label: '취소', className: 'bg-red-100 text-red-700' },
 };
 
 const paymentConfig: Record<string, { label: string; className: string }> = {
-  app: { label: '앱결제', className: 'bg-blue-100 text-[#3182F6]' },
+  app: { label: '앱결제', className: 'bg-purple-100 text-[#8037FF]' },
   onsite: { label: '현장결제', className: 'bg-gray-100 text-gray-600' },
 };
 
@@ -147,7 +147,7 @@ export default function AdminReservationsPage() {
   const statsRow = [
     { label: '전체', value: apiReservations.length.toLocaleString('ko-KR'), color: 'text-gray-900' },
     { label: '확인중', value: statusCounts.pending.toLocaleString('ko-KR'), color: 'text-yellow-600' },
-    { label: '확정', value: statusCounts.confirmed.toLocaleString('ko-KR'), color: 'text-blue-600' },
+    { label: '확정', value: statusCounts.confirmed.toLocaleString('ko-KR'), color: 'text-purple-600' },
     { label: '완료', value: statusCounts.completed.toLocaleString('ko-KR'), color: 'text-green-600' },
     { label: '취소', value: statusCounts.cancelled.toLocaleString('ko-KR'), color: 'text-red-500' },
   ];
@@ -165,7 +165,7 @@ export default function AdminReservationsPage() {
 
   function SortIcon({ col }: { col: SortKey }) {
     if (sortKey !== col) return <ChevronsUpDown size={14} className="text-gray-300" />;
-    return sortDir === 'asc' ? <ChevronUp size={14} className="text-[#3182F6]" /> : <ChevronDown size={14} className="text-[#3182F6]" />;
+    return sortDir === 'asc' ? <ChevronUp size={14} className="text-[#8037FF]" /> : <ChevronDown size={14} className="text-[#8037FF]" />;
   }
 
   return (
@@ -216,7 +216,7 @@ export default function AdminReservationsPage() {
               placeholder="예약번호, 고객명, 상품명, 병원명 검색..."
               value={search}
               onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-              className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#3182F6] focus:ring-1 focus:ring-[#3182F6]/30"
+              className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#8037FF] focus:ring-1 focus:ring-[#8037FF]/30"
             />
           </div>
 
@@ -227,14 +227,14 @@ export default function AdminReservationsPage() {
               type="date"
               value={startDate}
               onChange={(e) => { setStartDate(e.target.value); setPage(1); }}
-              className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#3182F6] bg-white"
+              className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#8037FF] bg-white"
             />
             <span className="text-gray-400 text-sm">~</span>
             <input
               type="date"
               value={endDate}
               onChange={(e) => { setEndDate(e.target.value); setPage(1); }}
-              className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#3182F6] bg-white"
+              className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#8037FF] bg-white"
             />
           </div>
         </div>
@@ -279,7 +279,7 @@ export default function AdminReservationsPage() {
                 const pm = paymentConfig[res.paymentMethod];
                 return (
                   <tr key={res.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-4 py-3 text-sm text-[#3182F6] font-medium">{res.id}</td>
+                    <td className="px-4 py-3 text-sm text-[#8037FF] font-medium">{res.id}</td>
                     <td className="px-4 py-3 text-sm text-gray-900">{res.customer}</td>
                     <td className="px-4 py-3 text-sm text-gray-600 max-w-[220px] truncate">{res.product}</td>
                     <td className="px-4 py-3 text-sm text-gray-600">{res.hospital}</td>
@@ -298,14 +298,14 @@ export default function AdminReservationsPage() {
                     <td className="px-4 py-3 text-sm text-gray-600">{res.doctor}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1">
-                        <button className="p-1.5 text-gray-400 hover:text-[#3182F6] hover:bg-blue-50 rounded-lg transition-colors" title="상세">
+                        <button className="p-1.5 text-gray-400 hover:text-[#8037FF] hover:bg-purple-50 rounded-lg transition-colors" title="상세">
                           <Eye size={15} />
                         </button>
                         {res.status === 'pending' && (
                           <>
                             <button
                               onClick={() => setModal({ type: 'confirm', reservation: res })}
-                              className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                              className="p-1.5 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
                               title="예약 확정"
                             >
                               <CheckCircle2 size={15} />
@@ -361,7 +361,7 @@ export default function AdminReservationsPage() {
                 key={n}
                 onClick={() => setPage(n)}
                 className={`w-9 h-9 rounded-lg text-sm font-medium transition-colors ${
-                  n === page ? 'bg-[#3182F6] text-white' : 'text-gray-600 hover:bg-gray-100'
+                  n === page ? 'bg-[#8037FF] text-white' : 'text-gray-600 hover:bg-gray-100'
                 }`}
               >
                 {n}
@@ -384,8 +384,8 @@ export default function AdminReservationsPage() {
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
             <div className="flex items-center gap-3 mb-4">
               {modal.type === 'confirm' ? (
-                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                  <CheckCircle2 size={20} className="text-blue-600" />
+                <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                  <CheckCircle2 size={20} className="text-purple-600" />
                 </div>
               ) : (
                 <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
@@ -433,7 +433,7 @@ export default function AdminReservationsPage() {
                 onClick={() => setModal(null)}
                 className={`px-4 py-2 rounded-lg text-sm font-medium text-white ${
                   modal.type === 'confirm'
-                    ? 'bg-blue-600 hover:bg-blue-700'
+                    ? 'bg-purple-600 hover:bg-purple-700'
                     : 'bg-red-500 hover:bg-red-600'
                 }`}
               >

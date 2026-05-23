@@ -1,10 +1,10 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ChevronRight, ToggleLeft, ToggleRight, Clock } from 'lucide-react';
-import { createClient, hasSupabaseEnv } from '@/lib/supabase/client';
+import { ChevronRight } from 'lucide-react';
+import { useMyHospitalData } from '@/lib/partner/my-hospital-cache';
 import { useSession } from '@/lib/supabase/SessionProvider';
 import { useReservationRealtimeRefresh } from '@/lib/realtime/reservations';
 import { useStore } from '@/store';
@@ -30,6 +30,11 @@ type DoctorRow = {
   id: string;
   name: string;
   title?: string | null;
+};
+
+type HospitalData = {
+  id: string;
+  doctors?: DoctorRow[] | null;
 };
 
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
@@ -109,134 +114,267 @@ function ReservationScheduleCard({
   );
 }
 
-const DAYS = ['월', '화', '수', '목', '금', '토', '일'] as const;
-type DaySchedule = { day: string; is_closed: boolean; start_time: string; end_time: string };
+const SETTING_TIME_SLOTS = ['10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00'] as const;
 
-function ScheduleSettingsView({ hospitalId }: { hospitalId: string | null }) {
+type ScheduleSettings = {
+  disabledDays: string[];
+  disabledSlots: Record<string, string[]>;
+};
+
+type ScheduleAction =
+  | { kind: 'day'; date: string; disabled: boolean }
+  | { kind: 'time'; date: string; time: string; disabled: boolean };
+
+function sameDateKey(left: Date, right: Date) {
+  return dateKey(left) === dateKey(right);
+}
+
+function dateFromKey(value: string) {
+  const [year, month, day] = value.split('-').map(Number);
+  return new Date(year, month - 1, day);
+}
+
+function timeHourLabel(time: string) {
+  return `${Number(time.slice(0, 2))}시`;
+}
+
+function applyScheduleAction(settings: ScheduleSettings, action: ScheduleAction): ScheduleSettings {
+  if (action.kind === 'day') {
+    const days = new Set(settings.disabledDays);
+    if (action.disabled) days.add(action.date);
+    else days.delete(action.date);
+    return { ...settings, disabledDays: Array.from(days).sort() };
+  }
+
+  const slots = new Set(settings.disabledSlots[action.date] ?? []);
+  if (action.disabled) slots.add(action.time);
+  else slots.delete(action.time);
+  const disabledSlots = { ...settings.disabledSlots };
+  if (slots.size > 0) disabledSlots[action.date] = Array.from(slots).sort();
+  else delete disabledSlots[action.date];
+  return { ...settings, disabledSlots };
+}
+
+function ScheduleSettingsView({
+  hospitalId,
+  reservations,
+  onShowReservations,
+}: {
+  hospitalId: string | null;
+  reservations: ReservationRow[];
+  onShowReservations: () => void;
+}) {
   const showToast = useStore((s) => s.showToast);
-  const [schedule, setSchedule] = useState<DaySchedule[]>(
-    DAYS.map((d) => ({ day: d, is_closed: d === '일', start_time: '09:00', end_time: '18:00' }))
-  );
-  const [saving, setSaving] = useState(false);
-  const [loaded, setLoaded] = useState(false);
+  const today = new Date();
+  const [year, setYear] = useState(today.getFullYear());
+  const [month, setMonth] = useState(today.getMonth());
+  const [selected, setSelected] = useState(dateKey(today));
+  const [settings, setSettings] = useState<ScheduleSettings>({ disabledDays: [], disabledSlots: {} });
+  const [loadingSettings, setLoadingSettings] = useState(true);
+  const [pendingAction, setPendingAction] = useState<ScheduleAction | null>(null);
+  const [savingAction, setSavingAction] = useState(false);
 
   useEffect(() => {
-    if (!hospitalId || !hasSupabaseEnv()) return;
-    const sb = createClient();
-    sb.from('operating_hours')
-      .select('day, is_closed, start_time, end_time')
-      .eq('hospital_id', hospitalId)
-      .then(({ data }) => {
-        if (!data || data.length === 0) return;
-        setSchedule(DAYS.map((d) => {
-          const row = data.find((r: any) => r.day === d);
-          return row
-            ? { day: d, is_closed: row.is_closed ?? false, start_time: row.start_time ?? '09:00', end_time: row.end_time ?? '18:00' }
-            : { day: d, is_closed: false, start_time: '09:00', end_time: '18:00' };
-        }));
-        setLoaded(true);
+    if (!hospitalId) {
+      setLoadingSettings(false);
+      return;
+    }
+
+    let cancelled = false;
+    setLoadingSettings(true);
+    fetch('/api/my-hospital/schedule-settings', { cache: 'no-store' })
+      .then(async (res) => {
+        const payload = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(payload.error || '예약설정을 불러오지 못했습니다.');
+        return payload as ScheduleSettings;
+      })
+      .then((payload) => {
+        if (cancelled) return;
+        setSettings({
+          disabledDays: Array.isArray(payload.disabledDays) ? payload.disabledDays : [],
+          disabledSlots: payload.disabledSlots ?? {},
+        });
+      })
+      .catch((error) => {
+        if (!cancelled) showToast(error instanceof Error ? error.message : '예약설정을 불러오지 못했습니다.');
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingSettings(false);
       });
-  }, [hospitalId]);
+    return () => {
+      cancelled = true;
+    };
+  }, [hospitalId, showToast]);
 
-  const toggle = (day: string) =>
-    setSchedule((prev) => prev.map((r) => r.day === day ? { ...r, is_closed: !r.is_closed } : r));
+  const cells = useMemo(() => getMonthCells(year, month), [year, month]);
+  const selectedDate = dateFromKey(selected);
+  const selectedIsToday = sameDateKey(selectedDate, today);
+  const selectedTitle = `${selectedIsToday ? '오늘 ' : ''}${selectedDate.getMonth() + 1}월${selectedDate.getDate()}일`;
+  const disabledDaySet = useMemo(() => new Set(settings.disabledDays), [settings.disabledDays]);
+  const selectedSlotSet = useMemo(() => new Set(settings.disabledSlots[selected] ?? []), [settings.disabledSlots, selected]);
+  const selectedDayDisabled = disabledDaySet.has(selected);
 
-  const setTime = (day: string, field: 'start_time' | 'end_time', val: string) =>
-    setSchedule((prev) => prev.map((r) => r.day === day ? { ...r, [field]: val } : r));
+  const reservationDates = useMemo(() => {
+    const keys = new Set<string>();
+    reservations.forEach((row) => {
+      if (!row.visit_at || row.status === 'cancelled' || row.status === 'completed') return;
+      keys.add(dateKey(new Date(row.visit_at)));
+    });
+    return keys;
+  }, [reservations]);
 
-  const save = async () => {
-    if (!hospitalId || !hasSupabaseEnv()) { showToast('병원 정보를 불러올 수 없습니다.'); return; }
-    setSaving(true);
+  const saveScheduleAction = async (action: ScheduleAction) => {
+    if (!hospitalId || savingAction) return;
+    const previous = settings;
+    setSavingAction(true);
+    setSettings((current) => applyScheduleAction(current, action));
     try {
-      const sb = createClient();
-      const rows = schedule.map((r) => ({
-        hospital_id: hospitalId,
-        day: r.day,
-        is_closed: r.is_closed,
-        start_time: r.is_closed ? null : r.start_time,
-        end_time: r.is_closed ? null : r.end_time,
-      }));
-      const { error } = await sb.from('operating_hours').upsert(rows, { onConflict: 'hospital_id,day' });
-      if (error) throw error;
-      showToast('진료 스케줄을 저장했습니다.');
-    } catch (e: any) {
-      showToast(e?.message || '저장에 실패했습니다.');
+      const res = await fetch('/api/my-hospital/schedule-settings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          date: action.date,
+          time: action.kind === 'time' ? action.time : undefined,
+          disabled: action.disabled,
+          allDay: action.kind === 'day',
+        }),
+      });
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(payload.error || '저장에 실패했습니다.');
+      setSettings({
+        disabledDays: Array.isArray(payload.disabledDays) ? payload.disabledDays : [],
+        disabledSlots: payload.disabledSlots ?? {},
+      });
+      const target = action.kind === 'day' ? '진료일' : '진료시간';
+      showToast(`${target}이 ${action.disabled ? '비활성화' : '활성화'} 되었습니다.`);
+    } catch (error) {
+      setSettings(previous);
+      showToast(error instanceof Error ? error.message : '저장에 실패했습니다.');
     } finally {
-      setSaving(false);
+      setSavingAction(false);
     }
   };
 
+  const confirmAction = () => {
+    if (!pendingAction) return;
+    const action = pendingAction;
+    setPendingAction(null);
+    void saveScheduleAction(action);
+  };
+
   return (
-    <div className="partner-mobile-screen has-fixed-title">
+    <div className="partner-mobile-screen has-fixed-title partner-reservation-settings">
       <header className="partner-screen-title with-action">
         <h1>예약관리</h1>
         <nav className="partner-inline-segment" aria-label="예약관리 탭">
-          <a href="/partner/reservations">병원예약</a>
-          <a className="is-active">예약설정</a>
+          <button type="button" onClick={onShowReservations}>병원예약</button>
+          <button type="button" className="is-active">예약설정</button>
         </nav>
       </header>
 
-      <div style={{ padding: '16px 16px 100px' }}>
-        <p className="text-xs text-gray-400 mb-4">요일별 진료일과 운영시간을 설정하세요.</p>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {schedule.map((row) => (
-            <div key={row.day} style={{
-              background: row.is_closed ? '#F9FAFB' : '#fff',
-              border: '1px solid #E5E7EB',
-              borderRadius: 14,
-              padding: '14px 16px',
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: row.is_closed ? 0 : 12 }}>
-                <span style={{ fontWeight: 600, fontSize: 15, color: row.is_closed ? '#9CA3AF' : '#111827' }}>
-                  {row.day}요일
-                </span>
-                <button
-                  type="button"
-                  onClick={() => toggle(row.day)}
-                  style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: row.is_closed ? '#9CA3AF' : '#3182F6', fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer' }}
-                >
-                  {row.is_closed
-                    ? <><ToggleLeft size={22} /><span>휴진</span></>
-                    : <><ToggleRight size={22} /><span>진료</span></>
-                  }
-                </button>
-              </div>
-
-              {!row.is_closed && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <Clock size={14} color="#6B7280" />
-                  <input
-                    type="time"
-                    value={row.start_time}
-                    onChange={(e) => setTime(row.day, 'start_time', e.target.value)}
-                    style={{ fontSize: 14, border: '1px solid #E5E7EB', borderRadius: 8, padding: '6px 10px', flex: 1 }}
-                  />
-                  <span style={{ color: '#9CA3AF', fontSize: 13 }}>~</span>
-                  <input
-                    type="time"
-                    value={row.end_time}
-                    onChange={(e) => setTime(row.day, 'end_time', e.target.value)}
-                    style={{ fontSize: 14, border: '1px solid #E5E7EB', borderRadius: 8, padding: '6px 10px', flex: 1 }}
-                  />
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Save button */}
-      <div style={{ position: 'fixed', bottom: 72, left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: 480, padding: '0 16px' }}>
+      <section className="partner-settings-calendar">
         <button
           type="button"
-          onClick={save}
-          disabled={saving}
-          style={{ width: '100%', height: 52, borderRadius: 14, backgroundColor: saving ? '#C4B5FD' : '#8037FF', color: '#fff', fontSize: 16, fontWeight: 700, border: 'none', cursor: 'pointer' }}
+          className="partner-settings-month"
+          onClick={() => {
+            setYear(today.getFullYear());
+            setMonth(today.getMonth());
+            setSelected(dateKey(today));
+          }}
         >
-          {saving ? '저장 중...' : '스케줄 저장'}
+          {month + 1}월
         </button>
-      </div>
+
+        <div className="partner-settings-weekdays">
+          {WEEKDAYS.map((day, index) => (
+            <span key={day} className={index === 0 || index === 6 ? 'is-weekend' : undefined}>
+              {day}
+            </span>
+          ))}
+        </div>
+
+        <div className="partner-settings-grid">
+          {cells.map(({ date, muted }) => {
+            const key = dateKey(date);
+            const isActive = key === selected;
+            const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+            const isDisabledDay = disabledDaySet.has(key);
+            const hasReservation = reservationDates.has(key);
+            return (
+              <button
+                key={key}
+                type="button"
+                className={[
+                  isActive ? 'is-active' : '',
+                  muted ? 'is-muted' : '',
+                  isWeekend ? 'is-weekend' : '',
+                  isDisabledDay ? 'is-disabled-day' : '',
+                  hasReservation ? 'has-reservation' : '',
+                ].filter(Boolean).join(' ')}
+                onClick={() => {
+                  setSelected(key);
+                  setYear(date.getFullYear());
+                  setMonth(date.getMonth());
+                }}
+              >
+                <span>{date.getDate()}</span>
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+      <section className="partner-settings-time">
+        <h2>{selectedTitle}</h2>
+        <button
+          type="button"
+          className={selectedDayDisabled ? 'is-restore' : undefined}
+          onClick={() => setPendingAction({ kind: 'day', date: selected, disabled: !selectedDayDisabled })}
+          disabled={loadingSettings || savingAction}
+        >
+          {selectedDayDisabled ? '진료일 활성화' : '진료일 비활성화'}
+        </button>
+
+        <div className="partner-settings-slots" aria-label={`${selectedTitle} 예약 시간 설정`}>
+          {SETTING_TIME_SLOTS.map((time) => {
+            const disabled = selectedDayDisabled || selectedSlotSet.has(time);
+            return (
+              <button
+                key={time}
+                type="button"
+                className={disabled ? 'is-disabled' : undefined}
+                disabled={loadingSettings || savingAction || selectedDayDisabled}
+                onClick={() => setPendingAction({ kind: 'time', date: selected, time, disabled: !selectedSlotSet.has(time) })}
+              >
+                {time}
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+      {pendingAction && (
+        <div className="partner-figma-dialog-backdrop" role="presentation">
+          <div className="partner-figma-alert partner-schedule-alert" role="dialog" aria-modal="true">
+            <div className="partner-figma-alert-copy">
+              <h2>
+                {pendingAction.kind === 'day'
+                  ? pendingAction.disabled ? '정말로 비활성화 하시겠습니까?' : '정말로 활성화 하시겠습니까?'
+                  : `${timeHourLabel(pendingAction.time)} 진료를 ${pendingAction.disabled ? '비활성화' : '활성화'} 하시겠습니까?`}
+              </h2>
+              <p>
+                {pendingAction.kind === 'day'
+                  ? pendingAction.disabled ? '해당일의 모든시간의 스케줄이 비활성화 됩니다.' : '해당일의 스케줄을 다시 예약 가능 상태로 변경합니다.'
+                  : pendingAction.disabled ? '해당 시간에 환자가 있는지 확인해주세요.' : '해당 시간의 예약 접수를 다시 활성화합니다.'}
+              </p>
+            </div>
+            <div className="partner-figma-alert-actions">
+              <button type="button" onClick={confirmAction} disabled={savingAction}>네</button>
+              <button type="button" onClick={() => setPendingAction(null)} disabled={savingAction}>아니요</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -250,53 +388,25 @@ export default function PartnerReservationsPage() {
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth());
   const [selected, setSelected] = useState(dateKey(now));
-  const [items, setItems] = useState<ReservationRow[]>([]);
-  const [doctors, setDoctors] = useState<DoctorRow[]>([]);
   const [assignTarget, setAssignTarget] = useState<ReservationRow | null>(null);
   const [assignDoctorId, setAssignDoctorId] = useState('');
   const [assigning, setAssigning] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [hospitalId, setHospitalId] = useState<string | null>(null);
-  const mountedRef = useRef(false);
-
-  useEffect(() => {
-    mountedRef.current = true;
-    return () => {
-      mountedRef.current = false;
-    };
-  }, []);
-
-  const loadHospitalReservations = useCallback(async ({ showLoading = false }: { showLoading?: boolean } = {}) => {
-    if (!authUser) {
-      setHospitalId(null);
-      setItems([]);
-      setDoctors([]);
-      setLoading(false);
-      return;
-    }
-
-    if (showLoading) setLoading(true);
-    try {
-      const res = await fetch('/api/my-hospital', { cache: 'no-store' });
-      if (!res.ok) return;
-      const data = await res.json();
-      if (!mountedRef.current) return;
-      setHospitalId(data.hospital?.id ?? null);
-      setItems(data.reservations ?? []);
-      setDoctors(data.hospital?.doctors ?? []);
-    } finally {
-      if (mountedRef.current && showLoading) setLoading(false);
-    }
-  }, [authUser]);
-
-  useEffect(() => {
-    void loadHospitalReservations({ showLoading: true });
-  }, [loadHospitalReservations]);
+  const {
+    data: hospitalData,
+    loading,
+    refresh: refreshHospital,
+    mutate: mutateHospital,
+  } = useMyHospitalData<HospitalData, ReservationRow>(authUser?.id);
+  const hospitalId = hospitalData?.hospital?.id ?? null;
+  const items = hospitalData?.reservations ?? [];
+  const doctors = hospitalData?.hospital?.doctors ?? [];
 
   useReservationRealtimeRefresh({
     enabled: Boolean(authUser && hospitalId),
     hospitalId,
-    onChange: () => loadHospitalReservations({ showLoading: false }),
+    onChange: () => {
+      void refreshHospital({ force: true, showLoading: false });
+    },
   });
 
   const cells = useMemo(() => getMonthCells(year, month), [year, month]);
@@ -340,11 +450,17 @@ export default function PartnerReservationsPage() {
         return;
       }
       const doctor = doctors.find((item) => item.id === doctorId);
-      setItems((prev) => prev.map((row) => (
-        row.id === assignTarget.id
-          ? { ...row, doctor_id: doctorId, doctor: doctor ? { name: doctor.name } : null }
-          : row
-      )));
+      mutateHospital((current) => current
+        ? {
+          ...current,
+          reservations: current.reservations.map((row) => (
+            row.id === assignTarget.id
+              ? { ...row, doctor_id: doctorId, doctor: doctor ? { name: doctor.name } : null }
+              : row
+          )),
+        }
+        : current
+      );
       setAssignTarget(null);
       showToast('담당의를 저장했습니다.');
     } catch {
@@ -363,7 +479,15 @@ export default function PartnerReservationsPage() {
     );
   }
 
-  if (activeTab === 'settings') return <ScheduleSettingsView hospitalId={hospitalId} />;
+  if (activeTab === 'settings') {
+    return (
+      <ScheduleSettingsView
+        hospitalId={hospitalId}
+        reservations={items}
+        onShowReservations={() => setActiveTab('reservations')}
+      />
+    );
+  }
 
   return (
     <div className="partner-mobile-screen has-fixed-title">

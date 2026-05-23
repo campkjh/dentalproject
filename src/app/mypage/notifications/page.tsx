@@ -137,7 +137,7 @@ function Switch({ on, onToggle }: { on: boolean; onToggle: () => void }) {
       aria-pressed={on}
       className="relative flex-shrink-0 w-[46px] h-[26px] rounded-full btn-press"
       style={{
-        backgroundColor: on ? '#3182F6' : '#E5E7EB',
+        backgroundColor: on ? '#8037FF' : '#E5E7EB',
         transition: 'background-color 220ms ease',
       }}
     >

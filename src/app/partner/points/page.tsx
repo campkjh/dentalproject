@@ -29,7 +29,7 @@ const PRESET = [50000, 100000, 300000, 500000, 1000000, 3000000];
 const TYPE_META: Record<Tx['type'], { label: string; color: string; tone: 'success' | 'danger' | 'info' }> = {
   charge: { label: '충전', color: '#15803D', tone: 'success' },
   spend: { label: '사용', color: '#E5484D', tone: 'danger' },
-  refund: { label: '환불', color: '#1E6FD9', tone: 'info' },
+  refund: { label: '환불', color: '#6D28D9', tone: 'info' },
 };
 
 export default function PartnerPointsPage() {
@@ -102,7 +102,7 @@ export default function PartnerPointsPage() {
     return (
       <div className="bg-white rounded-xl p-10 text-center">
         <p className="text-sm text-gray-500 mb-4">로그인이 필요합니다.</p>
-        <Link href="/login" className="inline-block px-5 py-2.5 bg-[#3182F6] text-white text-sm font-bold rounded-xl">
+        <Link href="/login" className="inline-block px-5 py-2.5 bg-[#8037FF] text-white text-sm font-bold rounded-xl">
           로그인
         </Link>
       </div>
@@ -122,12 +122,12 @@ export default function PartnerPointsPage() {
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-[13px] leading-[19.5px] text-[rgba(0,19,43,0.58)]">현재 사용 가능 포인트</p>
-            <p className="mt-2 text-[36px] font-extrabold leading-none text-[#191F28]">
+            <p className="mt-2 text-[36px] font-bold leading-none text-[#191F28]">
               {loading ? '—' : balance.toLocaleString()}
               <span className="ml-1 text-[18px] font-bold text-[rgba(0,19,43,0.58)]">P</span>
             </p>
           </div>
-          <div className="flex h-[60px] w-[60px] items-center justify-center rounded-[18px] bg-[#E8F3FF] text-[#3182F6]">
+          <div className="flex h-[60px] w-[60px] items-center justify-center rounded-[18px] bg-[#F4EFFF] text-[#8037FF]">
             <Coins size={28} />
           </div>
         </div>
@@ -154,9 +154,9 @@ export default function PartnerPointsPage() {
                 onClick={() => setAmount(String(preset))}
                 className="rounded-full border px-3 py-2 text-[13px] font-semibold"
                 style={{
-                  backgroundColor: selected ? '#E8F3FF' : '#F9FAFB',
-                  borderColor: selected ? '#3182F6' : 'rgba(0,27,55,0.1)',
-                  color: selected ? '#1E6FD9' : 'rgba(3,18,40,0.7)',
+                  backgroundColor: selected ? '#F4EFFF' : '#F9FAFB',
+                  borderColor: selected ? '#8037FF' : 'rgba(0,27,55,0.1)',
+                  color: selected ? '#6D28D9' : 'rgba(3,18,40,0.7)',
                 }}
               >
                 {preset.toLocaleString()}원

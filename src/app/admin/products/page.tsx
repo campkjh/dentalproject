@@ -11,6 +11,8 @@ import {
   Eye,
   Ban,
   Trash2,
+  Check,
+  X,
   ChevronLeft,
   ChevronRight,
   Download,
@@ -20,6 +22,7 @@ import {
 // ---------- Types ----------
 type DbProductStatus = 'active' | 'paused' | 'removed' | 'pending';
 type ProductStatus = 'active' | 'inactive' | 'pending';
+type ProductApprovalStatus = 'approved' | 'pending_create' | 'pending_update' | 'pending_delete' | 'rejected';
 
 interface Product {
   id: string;
@@ -31,6 +34,8 @@ interface Product {
   rating: number;
   reviews: number;
   status: DbProductStatus;
+  approvalStatus: ProductApprovalStatus;
+  pendingChanges?: Record<string, unknown> | null;
   createdAt: string;
 }
 
@@ -42,6 +47,21 @@ const statusConfig: Record<ProductStatus, { label: string; className: string }> 
   inactive: { label: '비활성', className: 'bg-gray-100 text-gray-600' },
   pending: { label: '검수대기', className: 'bg-yellow-100 text-yellow-700' },
 };
+
+const approvalConfig: Record<ProductApprovalStatus, { label: string; className: string }> = {
+  approved: { label: '승인완료', className: 'bg-green-100 text-green-700' },
+  pending_create: { label: '추가요청', className: 'bg-yellow-100 text-yellow-700' },
+  pending_update: { label: '수정요청', className: 'bg-purple-100 text-purple-700' },
+  pending_delete: { label: '삭제요청', className: 'bg-red-100 text-red-700' },
+  rejected: { label: '반려', className: 'bg-gray-100 text-gray-600' },
+};
+
+function getProductStatusChip(product: Product) {
+  if (product.approvalStatus && product.approvalStatus !== 'approved') {
+    return approvalConfig[product.approvalStatus];
+  }
+  return product.status === 'active' ? statusConfig.active : statusConfig.inactive;
+}
 
 function formatPrice(n: number) {
   return n.toLocaleString('ko-KR') + '원';
@@ -60,6 +80,19 @@ export default function AdminProductsPage() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showBulkAction, setShowBulkAction] = useState<'deactivate' | 'delete' | null>(null);
+  const [busyProductId, setBusyProductId] = useState<string | null>(null);
+
+  const loadProducts = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/admin/products', { cache: 'no-store' });
+      if (!res.ok) return;
+      const data = await res.json();
+      setProducts(data.products ?? []);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -111,7 +144,7 @@ export default function AdminProductsPage() {
   const totalCount = products.length;
   const activeCount = products.filter((p) => p.status === 'active').length;
   const inactiveCount = products.filter((p) => p.status === 'paused' || p.status === 'removed').length;
-  const pendingCount = products.filter((p) => p.status === 'pending').length;
+  const pendingCount = products.filter((p) => p.approvalStatus?.startsWith('pending_')).length;
 
   // ---- Handlers ----
   function handleSort(key: SortKey) {
@@ -148,11 +181,30 @@ export default function AdminProductsPage() {
     }
   }
 
+  async function handleApproval(product: Product, action: 'approve' | 'reject') {
+    setBusyProductId(product.id);
+    try {
+      const res = await fetch('/api/admin/products', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: product.id, action }),
+      });
+      if (!res.ok) {
+        const payload = await res.json().catch(() => ({}));
+        window.alert(payload.error || '상품 요청 처리에 실패했습니다.');
+        return;
+      }
+      await loadProducts();
+    } finally {
+      setBusyProductId(null);
+    }
+  }
+
   const allPageSelected = pageData.length > 0 && pageData.every((p) => selected.has(p.id));
 
   function SortIcon({ col }: { col: SortKey }) {
     if (sortKey !== col) return <ChevronsUpDown size={14} className="text-gray-300" />;
-    return sortDir === 'asc' ? <ChevronUp size={14} className="text-[#3182F6]" /> : <ChevronDown size={14} className="text-[#3182F6]" />;
+    return sortDir === 'asc' ? <ChevronUp size={14} className="text-[#8037FF]" /> : <ChevronDown size={14} className="text-[#8037FF]" />;
   }
 
   return (
@@ -160,7 +212,7 @@ export default function AdminProductsPage() {
       {/* ---------- Header ---------- */}
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-gray-900">상품 관리</h2>
-        <button className="flex items-center gap-2 px-4 py-2.5 bg-[#3182F6] text-white rounded-lg text-sm font-medium hover:bg-[#1E6FD9] transition-colors">
+        <button className="flex items-center gap-2 px-4 py-2.5 bg-[#8037FF] text-white rounded-lg text-sm font-medium hover:bg-[#6D28D9] transition-colors">
           <Plus size={16} /> 상품 등록
         </button>
       </div>
@@ -191,7 +243,7 @@ export default function AdminProductsPage() {
               placeholder="상품명 또는 병원명 검색..."
               value={search}
               onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-              className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#3182F6] focus:ring-1 focus:ring-[#3182F6]/30"
+              className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#8037FF] focus:ring-1 focus:ring-[#8037FF]/30"
             />
           </div>
 
@@ -201,7 +253,7 @@ export default function AdminProductsPage() {
             <select
               value={categoryFilter}
               onChange={(e) => { setCategoryFilter(e.target.value); setPage(1); }}
-              className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#3182F6] bg-white"
+              className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#8037FF] bg-white"
             >
               {categories.map((c) => (
                 <option key={c} value={c}>{c}</option>
@@ -213,8 +265,8 @@ export default function AdminProductsPage() {
 
       {/* ---------- Bulk Actions ---------- */}
       {selected.size > 0 && (
-        <div className="flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-xl px-4 py-3">
-          <span className="text-sm text-[#3182F6] font-medium">{selected.size}개 선택됨</span>
+        <div className="flex items-center gap-3 bg-purple-50 border border-purple-200 rounded-xl px-4 py-3">
+          <span className="text-sm text-[#8037FF] font-medium">{selected.size}개 선택됨</span>
           <button
             onClick={() => setShowBulkAction('deactivate')}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-sm text-gray-700 hover:bg-gray-50"
@@ -241,7 +293,7 @@ export default function AdminProductsPage() {
                     type="checkbox"
                     checked={allPageSelected}
                     onChange={toggleAll}
-                    className="rounded border-gray-300 text-[#3182F6] focus:ring-[#3182F6]"
+                    className="rounded border-gray-300 text-[#8037FF] focus:ring-[#8037FF]"
                   />
                 </th>
                 {(
@@ -277,9 +329,8 @@ export default function AdminProductsPage() {
                   product.originalPrice > 0
                     ? Math.max(0, Math.round((1 - product.discountPrice / product.originalPrice) * 100))
                     : 0;
-                const normalizedStatus: ProductStatus =
-                  product.status === 'active' ? 'active' : product.status === 'pending' ? 'pending' : 'inactive';
-                const st = statusConfig[normalizedStatus];
+                const isPendingApproval = product.approvalStatus?.startsWith('pending_');
+                const st = getProductStatusChip(product);
                 return (
                   <tr key={product.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-4 py-3">
@@ -287,14 +338,14 @@ export default function AdminProductsPage() {
                         type="checkbox"
                         checked={selected.has(product.id)}
                         onChange={() => toggleSelect(product.id)}
-                        className="rounded border-gray-300 text-[#3182F6] focus:ring-[#3182F6]"
+                        className="rounded border-gray-300 text-[#8037FF] focus:ring-[#8037FF]"
                       />
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-500">{product.id}</td>
                     <td className="px-4 py-3 text-sm font-medium text-gray-900">{product.name}</td>
                     <td className="px-4 py-3 text-sm text-gray-600">{product.hospital}</td>
                     <td className="px-4 py-3">
-                      <span className="inline-block px-1.5 py-0.5 bg-blue-50 text-[#3182F6] text-xs font-medium rounded">
+                      <span className="inline-block px-1.5 py-0.5 bg-purple-50 text-[#8037FF] text-xs font-medium rounded">
                         {product.category}
                       </span>
                     </td>
@@ -320,7 +371,29 @@ export default function AdminProductsPage() {
                     <td className="px-4 py-3 text-sm text-gray-500">{product.createdAt}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1">
-                        <button className="p-1.5 text-gray-400 hover:text-[#3182F6] hover:bg-blue-50 rounded-lg transition-colors" title="상세">
+                        {isPendingApproval && (
+                          <>
+                            <button
+                              type="button"
+                              disabled={busyProductId === product.id}
+                              onClick={() => handleApproval(product, 'approve')}
+                              className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg transition-colors disabled:opacity-40"
+                              title="승인"
+                            >
+                              <Check size={15} />
+                            </button>
+                            <button
+                              type="button"
+                              disabled={busyProductId === product.id}
+                              onClick={() => handleApproval(product, 'reject')}
+                              className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-40"
+                              title="반려"
+                            >
+                              <X size={15} />
+                            </button>
+                          </>
+                        )}
+                        <button className="p-1.5 text-gray-400 hover:text-[#8037FF] hover:bg-purple-50 rounded-lg transition-colors" title="상세">
                           <Eye size={15} />
                         </button>
                         <button className="p-1.5 text-gray-400 hover:text-yellow-600 hover:bg-yellow-50 rounded-lg transition-colors" title="비활성화">
@@ -364,7 +437,7 @@ export default function AdminProductsPage() {
                 key={n}
                 onClick={() => setPage(n)}
                 className={`w-9 h-9 rounded-lg text-sm font-medium transition-colors ${
-                  n === page ? 'bg-[#3182F6] text-white' : 'text-gray-600 hover:bg-gray-100'
+                  n === page ? 'bg-[#8037FF] text-white' : 'text-gray-600 hover:bg-gray-100'
                 }`}
               >
                 {n}

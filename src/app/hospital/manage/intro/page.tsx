@@ -89,7 +89,7 @@ export default function IntroEditPage() {
             className={`w-full h-48 p-4 bg-gray-50 rounded-xl text-sm leading-relaxed border resize-none focus:outline-none focus:ring-1 ${
               isOverLimit
                 ? 'border-red-300 focus:ring-red-400 focus:border-red-400'
-                : 'border-gray-200 focus:ring-[#3182F6] focus:border-[#3182F6]'
+                : 'border-gray-200 focus:ring-[#8037FF] focus:border-[#8037FF]'
             }`}
           />
         </div>
@@ -109,7 +109,7 @@ export default function IntroEditPage() {
           className={`w-full py-3.5 rounded-xl text-base font-bold transition-colors ${
             isOverLimit || saving || loading
               ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-              : 'bg-[#3182F6] text-white'
+              : 'bg-[#8037FF] text-white'
           }`}
         >
           {saving ? '저장 중…' : '저장하기'}

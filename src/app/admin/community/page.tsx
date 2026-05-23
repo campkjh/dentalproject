@@ -75,9 +75,9 @@ const mockReports: Report[] = [
 const boardTabs: Board[] = ['전체', '질문게시판', '자유게시판', '치과게시판'];
 
 const boardColors: Record<string, string> = {
-  질문게시판: 'bg-blue-100 text-blue-700',
+  질문게시판: 'bg-purple-100 text-purple-700',
   자유게시판: 'bg-green-100 text-green-700',
-  치과게시판: 'bg-blue-100 text-blue-700',
+  치과게시판: 'bg-purple-100 text-purple-700',
 };
 
 export default function AdminCommunityPage() {
@@ -167,14 +167,14 @@ export default function AdminCommunityPage() {
       <div className="grid grid-cols-4 gap-4">
         <div className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
           <div className="flex items-center gap-2 mb-1">
-            <FileText size={16} className="text-[#3182F6]" />
+            <FileText size={16} className="text-[#8037FF]" />
             <span className="text-sm text-gray-500">전체 게시글</span>
           </div>
           <p className="text-2xl font-bold text-gray-900">{totalPosts.toLocaleString()}</p>
         </div>
         <div className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
           <div className="flex items-center gap-2 mb-1">
-            <MessageSquare size={16} className="text-blue-500" />
+            <MessageSquare size={16} className="text-purple-500" />
             <span className="text-sm text-gray-500">오늘 신규</span>
           </div>
           <p className="text-2xl font-bold text-gray-900">{todayNew}</p>
@@ -208,7 +208,7 @@ export default function AdminCommunityPage() {
                 }}
                 className={`px-4 py-2 text-sm rounded-md transition-colors ${
                   activeBoard === tab
-                    ? 'bg-[#3182F6] text-white shadow-sm'
+                    ? 'bg-[#8037FF] text-white shadow-sm'
                     : 'text-gray-500 hover:text-gray-700'
                 }`}
               >
@@ -226,15 +226,15 @@ export default function AdminCommunityPage() {
                 setSearchQuery(e.target.value);
                 setCurrentPage(1);
               }}
-              className="pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#3182F6]/20 focus:border-[#3182F6] w-72"
+              className="pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#8037FF]/20 focus:border-[#8037FF] w-72"
             />
           </div>
         </div>
 
         {/* Bulk Actions */}
         {selectedPosts.length > 0 && (
-          <div className="flex items-center gap-3 mb-4 p-3 bg-blue-50 rounded-lg">
-            <span className="text-sm text-[#3182F6] font-medium">
+          <div className="flex items-center gap-3 mb-4 p-3 bg-purple-50 rounded-lg">
+            <span className="text-sm text-[#8037FF] font-medium">
               {selectedPosts.length}개 선택됨
             </span>
             <button
@@ -253,9 +253,9 @@ export default function AdminCommunityPage() {
             <thead>
               <tr className="bg-gray-50 text-left">
                 <th className="px-4 py-3 w-10">
-                  <button onClick={toggleSelectAll} className="text-gray-400 hover:text-[#3182F6]">
+                  <button onClick={toggleSelectAll} className="text-gray-400 hover:text-[#8037FF]">
                     {selectedPosts.length === paginatedPosts.length && paginatedPosts.length > 0 ? (
-                      <CheckSquare size={18} className="text-[#3182F6]" />
+                      <CheckSquare size={18} className="text-[#8037FF]" />
                     ) : (
                       <Square size={18} />
                     )}
@@ -288,10 +288,10 @@ export default function AdminCommunityPage() {
                   <td className="px-4 py-3">
                     <button
                       onClick={() => toggleSelectPost(post.id)}
-                      className="text-gray-400 hover:text-[#3182F6]"
+                      className="text-gray-400 hover:text-[#8037FF]"
                     >
                       {selectedPosts.includes(post.id) ? (
-                        <CheckSquare size={18} className="text-[#3182F6]" />
+                        <CheckSquare size={18} className="text-[#8037FF]" />
                       ) : (
                         <Square size={18} />
                       )}
@@ -334,7 +334,7 @@ export default function AdminCommunityPage() {
                     <div className="flex items-center justify-center gap-1">
                       <button
                         title="보기"
-                        className="p-1.5 text-gray-400 hover:text-[#3182F6] hover:bg-blue-50 rounded-md transition-colors"
+                        className="p-1.5 text-gray-400 hover:text-[#8037FF] hover:bg-purple-50 rounded-md transition-colors"
                       >
                         <Eye size={15} />
                       </button>
@@ -384,7 +384,7 @@ export default function AdminCommunityPage() {
                 onClick={() => setCurrentPage(page)}
                 className={`w-8 h-8 rounded-lg text-sm transition-colors ${
                   currentPage === page
-                    ? 'bg-[#3182F6] text-white'
+                    ? 'bg-[#8037FF] text-white'
                     : 'text-gray-500 hover:bg-gray-100'
                 }`}
               >
@@ -429,7 +429,7 @@ export default function AdminCommunityPage() {
             <tbody className="divide-y divide-gray-100">
               {reports.map((report) => (
                 <tr key={report.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-5 py-3 text-sm text-[#3182F6] font-medium">#{report.postId}</td>
+                  <td className="px-5 py-3 text-sm text-[#8037FF] font-medium">#{report.postId}</td>
                   <td className="px-5 py-3 text-sm text-gray-900 max-w-[240px] truncate">
                     {report.postTitle}
                   </td>
@@ -453,7 +453,7 @@ export default function AdminCommunityPage() {
                     {report.status === '대기' ? (
                       <button
                         onClick={() => handleProcessReport(report.id)}
-                        className="px-3 py-1.5 bg-[#3182F6] text-white text-xs rounded-lg hover:bg-[#1E6FD9] transition-colors"
+                        className="px-3 py-1.5 bg-[#8037FF] text-white text-xs rounded-lg hover:bg-[#6D28D9] transition-colors"
                       >
                         처리하기
                       </button>
@@ -474,7 +474,7 @@ export default function AdminCommunityPage() {
             <button className="p-2 rounded-lg hover:bg-gray-100 disabled:opacity-40 transition-colors" disabled>
               <ChevronLeft size={16} />
             </button>
-            <button className="w-8 h-8 rounded-lg text-sm bg-[#3182F6] text-white">1</button>
+            <button className="w-8 h-8 rounded-lg text-sm bg-[#8037FF] text-white">1</button>
             <button className="p-2 rounded-lg hover:bg-gray-100 disabled:opacity-40 transition-colors" disabled>
               <ChevronRight size={16} />
             </button>

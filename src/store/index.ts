@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { User, Reservation, Product, Post, Comment, Review, Hospital, Notification, PointHistory } from '@/types';
+import { normalizeProductImageUrl } from '@/lib/images';
 import {
   products as mockProducts,
   hospitals as mockHospitals,
@@ -49,7 +50,7 @@ function reservationFromRow(r: any): Reservation {
     date: r.reservation_at ? new Date(r.reservation_at).toLocaleDateString('ko-KR') : '',
     productId: r.product?.id ?? r.product_id ?? undefined,
     productTitle: r.product?.title ?? '',
-    productImage: r.product?.image_url ?? '',
+    productImage: normalizeProductImageUrl(r.product?.image_url) ?? '',
     hospitalName: r.hospital?.name ?? '',
     hospitalId: r.hospital?.slug ?? r.hospital?.id ?? r.hospital_id,
     location: r.hospital?.location ?? '',
@@ -63,6 +64,12 @@ function reservationFromRow(r: any): Reservation {
     assignedDoctor: r.doctor?.name ?? undefined,
     paymentMethod: r.payment_method ?? undefined,
     paymentType: r.payment_type ?? undefined,
+    scheduleHistory: (r.schedule_history ?? []).map((item: any) => ({
+      id: item.id,
+      title: item.title ?? '예약일시 변경',
+      content: item.content ?? '',
+      createdAt: item.created_at ?? item.createdAt ?? '',
+    })),
   };
 }
 

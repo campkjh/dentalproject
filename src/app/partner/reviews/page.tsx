@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useSession } from '@/lib/supabase/SessionProvider';
+import { useMyHospitalData } from '@/lib/partner/my-hospital-cache';
 import { useStore } from '@/store';
 import { createClient, hasSupabaseEnv } from '@/lib/supabase/client';
-import { EyeOff, Eye, Plus, Image, FileText, Star } from 'lucide-react';
+import { EyeOff, Eye, Plus, Image as ImageIcon, FileText, Star } from 'lucide-react';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type ReviewRow = {
@@ -23,46 +24,49 @@ type ReviewRow = {
 };
 
 type ReviewTab = 'image' | 'text';
+type HospitalSummary = { id?: string | null; created_at?: string | null };
 
 const MAX_INITIAL_IMAGE = 10;
 const MAX_INITIAL_TEXT = 20;
 
+function reviewImageUrl(value?: string | null) {
+  const trimmed = value?.trim();
+  if (!trimmed) return null;
+  if (
+    trimmed.startsWith('http://') ||
+    trimmed.startsWith('https://') ||
+    trimmed.startsWith('/') ||
+    trimmed.startsWith('data:image/')
+  ) {
+    return trimmed;
+  }
+  return null;
+}
+
 export default function PartnerReviewsPage() {
   const { authUser } = useSession();
   const showToast = useStore((s) => s.showToast);
-  const [items, setItems] = useState<ReviewRow[]>([]);
-  const [doctorCount, setDoctorCount] = useState(0);
-  const [hospitalId, setHospitalId] = useState<string | null>(null);
-  const [hospitalCreatedAt, setHospitalCreatedAt] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const {
+    data: hospitalData,
+    loading,
+    refresh: refreshHospital,
+  } = useMyHospitalData<HospitalSummary, unknown, ReviewRow>(authUser?.id);
+  const items = hospitalData?.reviews ?? [];
+  const hospitalId = hospitalData?.hospital?.id ?? null;
+  const hospitalCreatedAt = hospitalData?.hospital?.created_at ?? null;
   const [tab, setTab] = useState<ReviewTab>('image');
   const [hiddenIds, setHiddenIds] = useState<Set<string>>(new Set());
   const [showAddModal, setShowAddModal] = useState(false);
   const [addForm, setAddForm] = useState({ type: 'image' as 'image' | 'text', content: '', rating: 5, treatmentName: '', beforeImage: '', afterImage: '' });
   const [saving, setSaving] = useState(false);
 
-  const reload = async () => {
-    if (!authUser) { setLoading(false); return; }
-    const res = await fetch('/api/my-hospital', { cache: 'no-store' });
-    if (!res.ok) { setLoading(false); return; }
-    const { hospital, reviews } = await res.json();
-    setHospitalId(hospital?.id ?? null);
-    setHospitalCreatedAt(hospital?.created_at ?? null);
-    setDoctorCount(hospital?.doctors?.length ?? 0);
-    setItems(reviews ?? []);
-  };
-
-  useEffect(() => {
-    reload().finally(() => setLoading(false));
-  }, [authUser]);
-
   const avgRating = useMemo(() => {
     if (!items.length) return 0;
     return items.reduce((s, r) => s + Number(r.rating), 0) / items.length;
   }, [items]);
 
-  const imageReviews = items.filter((r) => r.before_image || r.after_image);
-  const textReviews = items.filter((r) => !r.before_image && !r.after_image);
+  const imageReviews = items.filter((r) => reviewImageUrl(r.before_image) || reviewImageUrl(r.after_image));
+  const textReviews = items.filter((r) => !reviewImageUrl(r.before_image) && !reviewImageUrl(r.after_image));
   const displayList = (tab === 'image' ? imageReviews : textReviews).filter((r) => !hiddenIds.has(r.id));
 
   // Check if hospital can add initial reviews (within 1 month of registration)
@@ -124,14 +128,14 @@ export default function PartnerReviewsPage() {
         content: addForm.content,
         treatment_name: addForm.treatmentName || null,
         total_cost: 0,
-        before_image: addForm.beforeImage || null,
-        after_image: addForm.afterImage || null,
+        before_image: addForm.type === 'image' ? addForm.beforeImage.trim() || null : null,
+        after_image: addForm.type === 'image' ? addForm.afterImage.trim() || null : null,
       });
       if (error) throw error;
       showToast('초기 리뷰가 등록되었습니다.');
       setShowAddModal(false);
       setAddForm({ type: 'image', content: '', rating: 5, treatmentName: '', beforeImage: '', afterImage: '' });
-      await reload();
+      await refreshHospital({ force: true, showLoading: false });
     } catch (e: any) {
       showToast(e?.message || '등록에 실패했습니다.');
     } finally {
@@ -142,7 +146,7 @@ export default function PartnerReviewsPage() {
   if (!authUser) return (
     <div className="bg-white rounded-xl p-10 text-center">
       <p className="text-sm text-gray-500 mb-4">로그인이 필요합니다.</p>
-      <Link href="/partner/login" className="inline-block px-5 py-2.5 bg-[#3182F6] text-white text-sm font-bold rounded-xl">로그인</Link>
+      <Link href="/partner/login" className="inline-block px-5 py-2.5 bg-[#8037FF] text-white text-sm font-bold rounded-xl">로그인</Link>
     </div>
   );
 
@@ -152,8 +156,8 @@ export default function PartnerReviewsPage() {
         <h1>병원관리</h1>
         <nav className="partner-inline-segment" aria-label="병원관리 탭">
           <Link href="/partner/hospital-info">병원</Link>
-          <Link href="/partner/doctors">{`멤버(${doctorCount})`}</Link>
-          <Link href="/partner/reviews" className="is-active">{`리뷰(${items.length})`}</Link>
+          <Link href="/partner/doctors">멤버</Link>
+          <Link href="/partner/reviews" className="is-active">리뷰</Link>
         </nav>
       </header>
 
@@ -168,7 +172,7 @@ export default function PartnerReviewsPage() {
         {/* Review type tabs */}
         <div style={{ display: 'flex', borderBottom: '1px solid #F3F4F6', marginBottom: 16 }}>
           {([
-            { key: 'image', label: '이미지 리뷰', icon: <Image size={14} />, count: imageReviews.length },
+            { key: 'image', label: '이미지 리뷰', icon: <ImageIcon size={14} />, count: imageReviews.length },
             { key: 'text', label: '텍스트 리뷰', icon: <FileText size={14} />, count: textReviews.length },
           ] as const).map((t) => (
             <button
@@ -231,10 +235,10 @@ export default function PartnerReviewsPage() {
                     {r.total_cost > 0 && <span> · {r.total_cost.toLocaleString()}원</span>}
                   </div>
                 )}
-                {(r.before_image || r.after_image) && (
+                {(reviewImageUrl(r.before_image) || reviewImageUrl(r.after_image)) && (
                   <div className="partner-review-images">
-                    {r.before_image && <img src={r.before_image} alt="Before" />}
-                    {r.after_image && <img src={r.after_image} alt="After" />}
+                    {reviewImageUrl(r.before_image) && <img src={reviewImageUrl(r.before_image) ?? ''} alt="Before" />}
+                    {reviewImageUrl(r.after_image) && <img src={reviewImageUrl(r.after_image) ?? ''} alt="After" />}
                   </div>
                 )}
                 <p>{r.content}</p>
@@ -268,7 +272,14 @@ export default function PartnerReviewsPage() {
             {/* 리뷰 타입 */}
             <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
               {([{ v: 'image', label: '이미지 리뷰' }, { v: 'text', label: '텍스트 리뷰' }] as const).map((t) => (
-                <button key={t.v} type="button" onClick={() => setAddForm((f) => ({ ...f, type: t.v }))}
+                <button
+                  key={t.v}
+                  type="button"
+                  onClick={() => setAddForm((f) => ({
+                    ...f,
+                    type: t.v,
+                    ...(t.v === 'text' ? { beforeImage: '', afterImage: '' } : {}),
+                  }))}
                   style={{ flex: 1, padding: '10px', borderRadius: 10, border: `1.5px solid ${addForm.type === t.v ? '#8037FF' : '#E5E7EB'}`, background: addForm.type === t.v ? '#F3EEFF' : 'white', color: addForm.type === t.v ? '#8037FF' : '#6B7280', fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>
                   {t.label}
                 </button>

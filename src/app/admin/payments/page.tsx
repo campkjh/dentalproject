@@ -75,8 +75,8 @@ const dailyRevenueData = Array.from({ length: 30 }, (_, i) => {
 // --- Payment Method Donut Data ---
 const paymentMethodData = [
   { name: '카카오페이', value: 35, color: '#F59E0B' },
-  { name: '토스', value: 25, color: '#3B82F6' },
-  { name: '카드', value: 20, color: '#3182F6' },
+  { name: '토스', value: 25, color: '#8037FF' },
+  { name: '카드', value: 20, color: '#8037FF' },
   { name: '계좌이체', value: 12, color: '#10B981' },
   { name: '네이버페이', value: 8, color: '#EC4899' },
 ];
@@ -131,7 +131,7 @@ const statusColors: Record<PaymentStatus, string> = {
 
 const methodColors: Record<PaymentMethod, string> = {
   카카오페이: 'bg-yellow-100 text-yellow-800',
-  토스: 'bg-blue-100 text-blue-800',
+  토스: 'bg-purple-100 text-purple-800',
   카드: 'bg-gray-100 text-gray-800',
   계좌이체: 'bg-emerald-100 text-emerald-800',
   네이버페이: 'bg-green-100 text-green-800',
@@ -179,11 +179,11 @@ function MiniSparkline({
 function getHeatmapColor(value: number, max: number): string {
   if (max === 0) return 'bg-gray-100';
   const ratio = value / max;
-  if (ratio > 0.8) return 'bg-[#3182F6]';
-  if (ratio > 0.6) return 'bg-[#86B7FF]';
+  if (ratio > 0.8) return 'bg-[#8037FF]';
+  if (ratio > 0.6) return 'bg-[#B18CFF]';
   if (ratio > 0.4) return 'bg-[#C4B5FD]';
   if (ratio > 0.2) return 'bg-[#DDD6FE]';
-  if (ratio > 0.05) return 'bg-[#E8F3FF]';
+  if (ratio > 0.05) return 'bg-[#F4EFFF]';
   return 'bg-gray-100';
 }
 
@@ -200,7 +200,7 @@ function RevenueTooltip({ active, payload, label }: { active?: boolean; payload?
     return (
       <div className="bg-white border border-gray-200 rounded-lg shadow-lg px-3 py-2">
         <p className="text-xs text-gray-500">{label}</p>
-        <p className="text-sm font-semibold text-[#3182F6]">
+        <p className="text-sm font-semibold text-[#8037FF]">
           {payload[0].value.toFixed(1)}M
         </p>
       </div>
@@ -215,7 +215,7 @@ function HospitalTooltip({ active, payload }: { active?: boolean; payload?: { pa
     return (
       <div className="bg-white border border-gray-200 rounded-lg shadow-lg px-3 py-2">
         <p className="text-xs font-medium text-gray-900">{payload[0].payload.name}</p>
-        <p className="text-sm font-semibold text-[#3182F6]">
+        <p className="text-sm font-semibold text-[#8037FF]">
           {formatCurrency(payload[0].payload.revenue * 10000)}
         </p>
       </div>
@@ -285,7 +285,7 @@ export default function AdminPaymentsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-gray-900">매출/결제 관리</h2>
-        <button className="flex items-center gap-2 px-4 py-2 bg-[#3182F6] text-white text-sm rounded-lg hover:bg-[#1E6FD9] transition-colors">
+        <button className="flex items-center gap-2 px-4 py-2 bg-[#8037FF] text-white text-sm rounded-lg hover:bg-[#6D28D9] transition-colors">
           <Download size={16} />
           엑셀 다운로드
         </button>
@@ -298,7 +298,7 @@ export default function AdminPaymentsPage() {
           <div className="flex items-center justify-between">
             <div>
               <div className="flex items-center gap-2 mb-1">
-                <CreditCard size={16} className="text-[#3182F6]" />
+                <CreditCard size={16} className="text-[#8037FF]" />
                 <span className="text-sm text-gray-500">총 매출</span>
               </div>
               <p className="text-2xl font-bold text-gray-900">{formatCurrency(totalRevenue)}</p>
@@ -307,7 +307,7 @@ export default function AdminPaymentsPage() {
               </p>
             </div>
             <div className="w-20 h-10">
-              <MiniSparkline data={sparklineTotal} color="#3182F6" height={40} />
+              <MiniSparkline data={sparklineTotal} color="#8037FF" height={40} />
             </div>
           </div>
         </div>
@@ -376,14 +376,14 @@ export default function AdminPaymentsPage() {
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#3182F6]/20 focus:border-[#3182F6]"
+              className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#8037FF]/20 focus:border-[#8037FF]"
             />
             <span className="text-gray-400">~</span>
             <input
               type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#3182F6]/20 focus:border-[#3182F6]"
+              className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#8037FF]/20 focus:border-[#8037FF]"
             />
           </div>
           <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
@@ -393,7 +393,7 @@ export default function AdminPaymentsPage() {
                 onClick={() => setPeriod(p)}
                 className={`px-4 py-2 text-sm rounded-md transition-colors ${
                   period === p
-                    ? 'bg-[#3182F6] text-white shadow-sm'
+                    ? 'bg-[#8037FF] text-white shadow-sm'
                     : 'text-gray-500 hover:text-gray-700'
                 }`}
               >
@@ -412,8 +412,8 @@ export default function AdminPaymentsPage() {
             <AreaChart data={dailyRevenueData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
               <defs>
                 <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#3182F6" stopOpacity={0.4} />
-                  <stop offset="100%" stopColor="#3182F6" stopOpacity={0.02} />
+                  <stop offset="0%" stopColor="#8037FF" stopOpacity={0.4} />
+                  <stop offset="100%" stopColor="#8037FF" stopOpacity={0.02} />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" />
@@ -434,10 +434,10 @@ export default function AdminPaymentsPage() {
               <Area
                 type="monotone"
                 dataKey="revenue"
-                stroke="#3182F6"
+                stroke="#8037FF"
                 strokeWidth={2.5}
                 fill="url(#revenueGradient)"
-                activeDot={{ r: 5, fill: '#3182F6', stroke: '#fff', strokeWidth: 2 }}
+                activeDot={{ r: 5, fill: '#8037FF', stroke: '#fff', strokeWidth: 2 }}
               />
             </AreaChart>
           </ResponsiveContainer>}
@@ -499,7 +499,7 @@ export default function AdminPaymentsPage() {
         {/* Hospital Revenue Horizontal Bar Chart */}
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
           <div className="flex items-center gap-2 mb-4">
-            <Building2 size={18} className="text-[#3182F6]" />
+            <Building2 size={18} className="text-[#8037FF]" />
             <h3 className="font-semibold text-gray-900">병원별 매출 TOP 10</h3>
           </div>
           <div className="h-[300px]">
@@ -534,7 +534,7 @@ export default function AdminPaymentsPage() {
                   {hospitalBarData.map((_, index) => (
                     <Cell
                       key={`bar-cell-${index}`}
-                      fill={index < 3 ? '#3182F6' : index < 6 ? '#86B7FF' : '#C4B5FD'}
+                      fill={index < 3 ? '#8037FF' : index < 6 ? '#B18CFF' : '#C4B5FD'}
                     />
                   ))}
                 </Bar>
@@ -587,7 +587,7 @@ export default function AdminPaymentsPage() {
             <div className="flex items-center justify-end gap-2 mt-3">
               <span className="text-[10px] text-gray-400">적음</span>
               <div className="flex gap-0.5">
-                {['bg-gray-100', 'bg-[#E8F3FF]', 'bg-[#DDD6FE]', 'bg-[#C4B5FD]', 'bg-[#86B7FF]', 'bg-[#3182F6]'].map(
+                {['bg-gray-100', 'bg-[#F4EFFF]', 'bg-[#DDD6FE]', 'bg-[#C4B5FD]', 'bg-[#B18CFF]', 'bg-[#8037FF]'].map(
                   (cls, i) => (
                     <div key={i} className={`w-5 h-3 rounded-sm ${cls}`} />
                   )
@@ -613,7 +613,7 @@ export default function AdminPaymentsPage() {
                 setSearchQuery(e.target.value);
                 setCurrentPage(1);
               }}
-              className="pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#3182F6]/20 focus:border-[#3182F6] w-80"
+              className="pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#8037FF]/20 focus:border-[#8037FF] w-80"
             />
           </div>
         </div>
@@ -636,7 +636,7 @@ export default function AdminPaymentsPage() {
             <tbody className="divide-y divide-gray-100">
               {paginatedPayments.map((payment) => (
                 <tr key={payment.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-4 py-3 text-sm text-[#3182F6] font-medium font-mono">
+                  <td className="px-4 py-3 text-sm text-[#8037FF] font-medium font-mono">
                     {payment.id}
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-900">{payment.customer}</td>
@@ -673,7 +673,7 @@ export default function AdminPaymentsPage() {
                     <div className="flex items-center justify-center gap-1">
                       <button
                         title="상세"
-                        className="p-1.5 text-gray-400 hover:text-[#3182F6] hover:bg-blue-50 rounded-md transition-colors"
+                        className="p-1.5 text-gray-400 hover:text-[#8037FF] hover:bg-purple-50 rounded-md transition-colors"
                       >
                         <Eye size={15} />
                       </button>
@@ -720,7 +720,7 @@ export default function AdminPaymentsPage() {
                 onClick={() => setCurrentPage(page)}
                 className={`w-8 h-8 rounded-lg text-sm transition-colors ${
                   currentPage === page
-                    ? 'bg-[#3182F6] text-white'
+                    ? 'bg-[#8037FF] text-white'
                     : 'text-gray-500 hover:bg-gray-100'
                 }`}
               >

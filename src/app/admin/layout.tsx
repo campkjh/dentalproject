@@ -48,7 +48,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       >
         {/* Logo */}
         <div className="flex items-center justify-between h-16 px-4 border-b border-white/10">
-          {!collapsed && <span className="text-lg font-bold text-[#86B7FF]">키닥터 Admin</span>}
+          {!collapsed && <span className="text-lg font-bold text-[#B18CFF]">키닥터 Admin</span>}
           <button onClick={() => setCollapsed(!collapsed)} className="p-1 hover:bg-white/10 rounded">
             {collapsed ? <Menu size={20} /> : <ChevronLeft size={20} />}
           </button>
@@ -65,7 +65,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 href={item.href}
                 className={`flex items-center gap-3 px-4 py-3 mx-2 rounded-lg transition-colors ${
                   isActive
-                    ? 'bg-[#3182F6] text-white'
+                    ? 'bg-[#8037FF] text-white'
                     : 'text-gray-400 hover:bg-white/5 hover:text-white'
                 }`}
               >
@@ -105,7 +105,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               </span>
             </button>
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-[#3182F6] rounded-full flex items-center justify-center text-white text-sm font-bold">
+              <div className="w-8 h-8 bg-[#8037FF] rounded-full flex items-center justify-center text-white text-sm font-bold">
                 A
               </div>
               {!collapsed && <span className="text-sm text-gray-700">관리자</span>}
