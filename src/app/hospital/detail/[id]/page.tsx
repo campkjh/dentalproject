@@ -11,6 +11,7 @@ import {
   User,
   ChevronRight,
 } from 'lucide-react';
+import Avatar from '@/components/common/Avatar';
 import TopBar from '@/components/common/TopBar';
 import ProductCard from '@/components/common/ProductCard';
 import { useStore } from '@/store';
@@ -303,12 +304,14 @@ export default function HospitalDetailPage() {
                   href={`/doctor/${doctor.id}`}
                   className="flex items-start gap-3 p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
                 >
-                  {/* Avatar with initials */}
-                  <div className="w-14 h-14 bg-gradient-to-br from-[#8037FF] to-purple-400 rounded-full flex items-center justify-center flex-shrink-0">
-                    <span className="text-white font-bold text-sm">
-                      {doctor.name.slice(-2)}
-                    </span>
-                  </div>
+                  <Avatar
+                    src={doctor.profileImage}
+                    role="doctor"
+                    seed={doctor.name}
+                    size={56}
+                    alt={doctor.name}
+                    className="flex-shrink-0"
+                  />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 mb-1">
                       <span className="text-sm font-bold">{doctor.name}</span>

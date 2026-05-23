@@ -9,6 +9,7 @@ import {
   Award,
   Building2,
 } from 'lucide-react';
+import Avatar from '@/components/common/Avatar';
 import TopBar from '@/components/common/TopBar';
 import ProductCard from '@/components/common/ProductCard';
 import { useStore } from '@/store';
@@ -52,12 +53,14 @@ export default function DoctorDetailPage() {
         {/* Doctor Profile Header */}
         <div className="px-2.5 py-6">
           <div className="flex flex-col items-center text-center mb-6">
-            {/* Large Avatar */}
-            <div className="w-24 h-24 bg-gradient-to-br from-[#8037FF] to-purple-400 rounded-full flex items-center justify-center mb-4">
-              <span className="text-white font-bold text-2xl">
-                {doctor.name.slice(-2)}
-              </span>
-            </div>
+            <Avatar
+              src={doctor.profileImage}
+              role="doctor"
+              seed={doctor.name}
+              size={96}
+              alt={doctor.name}
+              className="mb-4"
+            />
 
             {/* Name and Title */}
             <div className="flex items-center gap-2 mb-1">

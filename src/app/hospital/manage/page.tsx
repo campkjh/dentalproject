@@ -9,15 +9,16 @@ import {
   MapPin,
   Phone,
   Star,
-  User,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import Avatar from '@/components/common/Avatar';
 import TabBar from '@/components/common/TabBar';
 import EmptyState from '@/components/common/EmptyState';
 import LoginRequired from '@/components/common/LoginRequired';
 import { useStore } from '@/store';
 import { useSession } from '@/lib/supabase/SessionProvider';
+import { resolveHospitalImageUrl } from '@/lib/images';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type HospitalRow = {
@@ -30,6 +31,8 @@ type HospitalRow = {
   address: string | null;
   address_detail: string | null;
   holiday_notice: string | null;
+  logo_url?: string | null;
+  image_url?: string | null;
   cover_images: string[];
   rating: number;
   review_count: number;
@@ -48,7 +51,7 @@ type ReviewRow = {
   before_image: string | null;
   after_image: string | null;
   created_at: string;
-  author: { name: string } | null;
+  author: { name: string; profile_image?: string | null } | null;
 };
 
 export default function HospitalManagePage() {
@@ -185,6 +188,7 @@ function HospitalTab({ hospital }: { hospital: HospitalRow }) {
   const orderedHours = [...(hospital.operating_hours ?? [])].sort(
     (a, b) => dayOrder.indexOf(a.day) - dayOrder.indexOf(b.day)
   );
+  const hospitalImage = resolveHospitalImageUrl(hospital);
 
   return (
     <div className="space-y-3 py-3">
@@ -211,8 +215,8 @@ function HospitalTab({ hospital }: { hospital: HospitalRow }) {
       {/* Hospital Profile */}
       <div className="bg-white px-2.5 py-4 space-y-3">
         <div className="flex items-center gap-3">
-          <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
-            <User size={24} className="text-gray-400" />
+          <div className="w-14 h-14 rounded-full bg-gray-100 overflow-hidden flex-shrink-0">
+            <img src={hospitalImage} alt="" className="w-full h-full object-cover" />
           </div>
           <div className="flex-1">
             <span className="inline-block px-2 py-0.5 bg-[#F4EFFF] text-[#8037FF] text-xs rounded-full font-medium mb-1">
@@ -331,14 +335,14 @@ function MemberTab({
         <div className="divide-y divide-gray-50">
           {doctors.map((doctor) => (
             <div key={doctor.id} className="px-2.5 py-3 flex items-center gap-3">
-              <div className="w-11 h-11 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
-                {doctor.profile_image ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={doctor.profile_image} alt="" className="w-full h-full object-cover" />
-                ) : (
-                  <User size={20} className="text-gray-400" />
-                )}
-              </div>
+              <Avatar
+                src={doctor.profile_image}
+                role="doctor"
+                seed={doctor.name}
+                size={44}
+                alt=""
+                className="flex-shrink-0"
+              />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <span className="font-bold text-sm">{doctor.name}</span>
@@ -379,9 +383,13 @@ function MemberTab({
             {pendingRequests.map((request) => (
               <div key={request.id} className="px-2.5 py-3">
                 <div className="flex items-center gap-3">
-                  <div className="w-11 h-11 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
-                    <User size={20} className="text-gray-400" />
-                  </div>
+                  <Avatar
+                    role="doctor"
+                    seed={request.name}
+                    size={44}
+                    alt=""
+                    className="flex-shrink-0"
+                  />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <span className="font-bold text-sm">{request.name}</span>
@@ -453,9 +461,13 @@ function ReviewTab({ reviews, reviewCount }: { reviews: ReviewRow[]; reviewCount
           <div key={review.id} className="bg-white px-2.5 py-4">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
-                  <User size={14} className="text-gray-400" />
-                </div>
+                <Avatar
+                  src={review.author?.profile_image ?? undefined}
+                  seed={review.author?.name ?? review.id}
+                  size={32}
+                  alt=""
+                  className="flex-shrink-0"
+                />
                 <span className="text-sm font-medium">{review.author?.name ?? '익명'}</span>
               </div>
               <span className="text-xs text-gray-400">

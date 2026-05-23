@@ -4,30 +4,8 @@ import { useRef, useCallback, useState } from 'react';
 import Link from 'next/link';
 import { Star, Heart, BadgeCheck, Crown } from 'lucide-react';
 import { Product } from '@/types';
+import { resolveProductImageUrl } from '@/lib/images';
 import { useStore } from '@/store';
-
-const BLOB_BASE = 'https://4ipmgcqyzk6ysqa7.public.blob.vercel-storage.com';
-const productImages = [
-  `${BLOB_BASE}/banner_img_1750993128.jpg`,
-  `${BLOB_BASE}/banner_img_1751346038.jpg`,
-  `${BLOB_BASE}/banner_img_1751610140.jpg`,
-  `${BLOB_BASE}/banner_img_1763710790.jpg`,
-  `${BLOB_BASE}/banner_img_1767675084.jpg`,
-  `${BLOB_BASE}/banner_img_1768360956.jpg`,
-  `${BLOB_BASE}/banner_img_1768795367.jpg`,
-  `${BLOB_BASE}/banner_img_1770274828.jpg`,
-  `${BLOB_BASE}/banner_img_1772072706.jpg`,
-  `${BLOB_BASE}/banner_img_1772505033.jpg`,
-  `${BLOB_BASE}/banner_img_1773290485.jpg`,
-  `${BLOB_BASE}/banner_img_1773384556.jpg`,
-  `${BLOB_BASE}/banner_img_1775110063.jpg`,
-];
-
-function getProductImage(id: string) {
-  let hash = 0;
-  for (let i = 0; i < id.length; i++) hash = ((hash << 5) - hash) + id.charCodeAt(i);
-  return productImages[Math.abs(hash) % productImages.length];
-}
 
 export default function ProductCard({ product }: { product: Product }) {
   const { wishlist, toggleWishlist } = useStore();
@@ -35,6 +13,7 @@ export default function ProductCard({ product }: { product: Product }) {
   const [showHeart, setShowHeart] = useState(false);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const didLongPress = useRef(false);
+  const productImage = resolveProductImageUrl(product.imageUrl, product.id);
 
   const handleTouchStart = useCallback(() => {
     didLongPress.current = false;
@@ -74,7 +53,7 @@ export default function ProductCard({ product }: { product: Product }) {
       {/* 1:1 Image */}
       <div className="relative aspect-square rounded-xl overflow-hidden bg-gray-100 mb-2">
         <img
-          src={getProductImage(product.id)}
+          src={productImage}
           alt={product.title}
           className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
         />

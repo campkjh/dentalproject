@@ -11,6 +11,7 @@ import { useSession } from '@/lib/supabase/SessionProvider';
 import { useReservationRealtimeRefresh } from '@/lib/realtime/reservations';
 import { useStore } from '@/store';
 import { Reservation } from '@/types';
+import { resolveProductImageUrl } from '@/lib/images';
 
 const statusIconSrc: Record<Reservation['status'], string> = {
   pending: '/icons/status-pending.svg',
@@ -283,6 +284,10 @@ export default function ReservationsPage() {
                   const style = statusStyle[reservation.status];
                   const isPending = reservation.status === 'pending';
                   const isCompleted = reservation.status === 'completed';
+                  const productImage = resolveProductImageUrl(
+                    reservation.productImage,
+                    reservation.productId ?? reservation.id
+                  );
 
                   return (
                     <Link
@@ -310,11 +315,7 @@ export default function ReservationsPage() {
                         {/* Product info */}
                         <div className="flex gap-2.5 mt-2">
                           <div className="w-[64px] h-[64px] rounded-xl bg-gray-100 overflow-hidden flex items-center justify-center flex-shrink-0">
-                            {reservation.productImage ? (
-                              <img src={reservation.productImage} alt="" className="w-full h-full object-cover" />
-                            ) : (
-                              <span className="text-2xl">🦷</span>
-                            )}
+                            <img src={productImage} alt="" className="w-full h-full object-cover" />
                           </div>
                           <div className="flex-1 min-w-0 flex flex-col justify-center">
                             <p className="text-[14px] font-bold text-gray-900 line-clamp-1 leading-tight">

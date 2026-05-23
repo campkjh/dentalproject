@@ -7,6 +7,7 @@ import { useMyHospitalData } from '@/lib/partner/my-hospital-cache';
 import { useStore } from '@/store';
 import { createClient, hasSupabaseEnv } from '@/lib/supabase/client';
 import { EyeOff, Eye, Plus, Star } from 'lucide-react';
+import Avatar from '@/components/common/Avatar';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type ReviewRow = {
@@ -19,8 +20,8 @@ type ReviewRow = {
   before_image: string | null;
   after_image: string | null;
   created_at: string;
-  author?: { name?: string } | null;
-  doctor?: { name?: string } | null;
+  author?: { name?: string; profile_image?: string } | null;
+  doctor?: { name?: string; profile_image?: string } | null;
 };
 
 type ReviewTab = 'image' | 'text';
@@ -202,7 +203,9 @@ export default function PartnerReviewsPage() {
               <li key={r.id} className="partner-review-card" style={{ opacity: hiddenIds.has(r.id) ? 0.4 : 1 }}>
                 <div className="partner-review-card-head">
                   <div className="partner-review-author">
-                    <div>{r.author?.name?.[0] ?? '?'}</div>
+                    <div>
+                      <Avatar src={r.author?.profile_image} seed={r.author?.name ?? r.id} size={36} alt="" />
+                    </div>
                     <div>
                       <strong>{r.author?.name ?? '익명'}</strong>
                       <p>{new Date(r.created_at).toLocaleDateString('ko-KR')}{r.doctor?.name ? ` · ${r.doctor.name} 원장` : ''}</p>

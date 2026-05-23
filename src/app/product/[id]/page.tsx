@@ -12,12 +12,12 @@ import {
   MapPin,
   Clock,
   ChevronLeft,
-  User,
   MoreHorizontal,
 } from 'lucide-react';
-import TabBar from '@/components/common/TabBar';
 import FixedBar from '@/components/common/FixedBar';
+import Avatar from '@/components/common/Avatar';
 import { useStore } from '@/store';
+import { resolveHospitalImageUrl, resolveProductImageUrl } from '@/lib/images';
 
 const faqItems = [
   {
@@ -206,7 +206,9 @@ export default function ProductDetailPage() {
   const avgRating = productReviews.length > 0
     ? (productReviews.reduce((sum, r) => sum + r.rating, 0) / productReviews.length).toFixed(1)
     : product.rating.toFixed(1);
-  const detailImageUrl = product.detailImageUrl || product.imageUrl;
+  const productImageUrl = resolveProductImageUrl(product.imageUrl, product.id);
+  const detailImageUrl = resolveProductImageUrl(product.detailImageUrl || product.imageUrl, product.id);
+  const hospitalImageUrl = hospital ? resolveHospitalImageUrl(hospital) : undefined;
 
   return (
     <div className="bg-white min-h-screen page-enter" style={{ paddingTop: 48, paddingBottom: 72 }}>
@@ -239,11 +241,7 @@ export default function ProductDetailPage() {
       {/* Product Image Area */}
       <div className="relative lg:col-span-2 lg:sticky lg:top-20 lg:self-start">
         <div className="aspect-[4/3] bg-gradient-to-br from-purple-100 to-purple-100 flex items-center justify-center overflow-hidden lg:rounded-2xl">
-          {product.imageUrl ? (
-            <img src={product.imageUrl} alt={product.title} className="h-full w-full object-cover" />
-          ) : (
-            <span className="text-6xl">🦷</span>
-          )}
+          <img src={productImageUrl} alt={product.title} className="h-full w-full object-cover" />
         </div>
       </div>
 
@@ -436,14 +434,7 @@ export default function ProductDetailPage() {
       {activeTab === '상품설명' && (
         <div className="bg-white">
           <div className="aspect-[4/3] bg-gradient-to-br from-purple-50 to-purple-50 flex items-center justify-center overflow-hidden">
-            {detailImageUrl ? (
-              <img src={detailImageUrl} alt={`${product.title} 상세 이미지`} className="h-full w-full object-cover" />
-            ) : (
-              <div className="text-center">
-                <span className="text-5xl block mb-2">🦷</span>
-                <p style={{ fontSize: 13, color: '#A4ABBA' }}>상품 상세 이미지</p>
-              </div>
-            )}
+            <img src={detailImageUrl} alt={`${product.title} 상세 이미지`} className="h-full w-full object-cover" />
           </div>
           <div className="px-2.5 py-5">
             <h3 style={{ fontSize: 20, fontWeight: 600, color: '#2B313D', marginBottom: 8 }}>{product.title}</h3>
@@ -461,11 +452,7 @@ export default function ProductDetailPage() {
           <div className="bg-white px-2.5 py-5">
             <Link href={`/hospital/detail/${hospital.id}`} className="flex items-start gap-3 hover:opacity-80 transition-opacity">
               <div className="w-14 h-14 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden" style={{ backgroundColor: '#F2F3F5' }}>
-                {hospital.logoUrl ? (
-                  <img src={hospital.logoUrl} alt={hospital.name} className="w-full h-full object-cover" />
-                ) : (
-                  <span className="text-xl">🏥</span>
-                )}
+                <img src={hospitalImageUrl} alt={hospital.name} className="w-full h-full object-cover" />
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 3, flex: 1, minWidth: 0 }}>
                 <h3 style={{ fontSize: 16, fontWeight: 600, color: '#2B313D' }}>{hospital.name}</h3>
@@ -558,14 +545,14 @@ export default function ProductDetailPage() {
                 className="flex items-center gap-3 py-3 hover:opacity-80 transition-opacity"
                 style={{ borderBottom: idx < hospital.doctors.length - 1 ? '1px solid #F2F3F5' : 'none' }}
               >
-                <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0 flex items-center justify-center" style={{ backgroundColor: '#F4EFFF', color: '#8037FF', fontWeight: 700, fontSize: 14 }}>
-                  {doctor.profileImage ? (
-                    /* eslint-disable-next-line @next/next/no-img-element */
-                    <img src={doctor.profileImage} alt={doctor.name} className="w-full h-full object-cover" />
-                  ) : (
-                    doctor.name.slice(-2)
-                  )}
-                </div>
+                <Avatar
+                  src={doctor.profileImage}
+                  role="doctor"
+                  seed={doctor.name}
+                  size={48}
+                  alt={doctor.name}
+                  className="flex-shrink-0"
+                />
                 <div>
                   <div className="flex items-center gap-1.5">
                     <span style={{ fontSize: 15, fontWeight: 600, color: '#2B313D' }}>{doctor.name}</span>
@@ -594,8 +581,12 @@ export default function ProductDetailPage() {
                     className="w-full flex items-center gap-3 py-3 text-left"
                     style={{ borderBottom: idx < hospitalProducts.length - 1 ? '1px solid #F2F3F5' : 'none' }}
                   >
-                    <div className="w-16 h-16 bg-gradient-to-br from-purple-50 to-purple-50 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <span className="text-2xl">🦷</span>
+                    <div className="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center flex-shrink-0">
+                      <img
+                        src={resolveProductImageUrl(hp.imageUrl, hp.id)}
+                        alt=""
+                        className="w-full h-full object-cover"
+                      />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p style={{ fontSize: 14, fontWeight: 500, color: '#2B313D' }} className="truncate">{hp.title}</p>

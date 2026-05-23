@@ -7,6 +7,7 @@ import { useState } from 'react';
 import TopBar from '@/components/common/TopBar';
 import Avatar from '@/components/common/Avatar';
 import { useStore } from '@/store';
+import { resolveHospitalImageUrl, resolveProductImageUrl } from '@/lib/images';
 
 export default function ReviewDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -32,6 +33,8 @@ export default function ReviewDetailPage() {
 
   const product = products.find((p) => p.id === review.productId);
   const hospital = hospitals.find((h) => h.id === review.hospitalId);
+  const productImage = product ? resolveProductImageUrl(product.imageUrl, product.id) : undefined;
+  const hospitalImage = hospital ? resolveHospitalImageUrl(hospital) : undefined;
 
   // Real DB images first, hide if author uploaded none
   const imgs = review.beforeImage || review.afterImage
@@ -165,8 +168,8 @@ export default function ReviewDetailPage() {
             href={`/product/${product.id}`}
             className="flex items-center gap-3 px-2.5 py-3 card-press"
           >
-            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-100 to-purple-100 flex items-center justify-center flex-shrink-0">
-              <span className="text-2xl">🦷</span>
+            <div className="w-14 h-14 rounded-xl bg-gray-100 overflow-hidden flex items-center justify-center flex-shrink-0">
+              <img src={productImage} alt="" className="w-full h-full object-cover" />
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-[11px] text-gray-500 leading-tight">{product.hospitalName}</p>
@@ -190,11 +193,16 @@ export default function ReviewDetailPage() {
             href={`/hospital/detail/${hospital.id}`}
             className="flex items-center justify-between px-2.5 py-4 card-press"
           >
-            <div className="min-w-0 flex-1">
-              <p className="text-[11px] text-gray-500">방문 병원</p>
-              <p className="text-[14px] font-semibold text-gray-900 line-clamp-1 mt-0.5">
-                {hospital.name}
-              </p>
+            <div className="flex items-center gap-3 min-w-0 flex-1">
+              <div className="w-10 h-10 rounded-full bg-gray-100 overflow-hidden flex-shrink-0">
+                <img src={hospitalImage} alt="" className="w-full h-full object-cover" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[11px] text-gray-500">방문 병원</p>
+                <p className="text-[14px] font-semibold text-gray-900 line-clamp-1 mt-0.5">
+                  {hospital.name}
+                </p>
+              </div>
             </div>
             <ChevronRight size={18} className="text-gray-300 flex-shrink-0" />
           </Link>
@@ -211,6 +219,11 @@ export default function ReviewDetailPage() {
           <div className="flex gap-2 overflow-x-auto hide-scrollbar px-2.5 pb-1">
             {relatedReviews.map((r) => {
               const hasImg = r.beforeImage || r.afterImage;
+              const relatedProduct = products.find((p) => p.id === r.productId);
+              const fallbackImage = resolveProductImageUrl(
+                relatedProduct?.imageUrl,
+                relatedProduct?.id ?? r.productId ?? r.id
+              );
               return (
                 <Link
                   key={r.id}
@@ -231,8 +244,8 @@ export default function ReviewDetailPage() {
                       )}
                     </div>
                   ) : (
-                    <div className="aspect-[2/1] rounded-lg bg-gradient-to-br from-purple-50 to-purple-50 flex items-center justify-center">
-                      <span className="text-2xl">🦷</span>
+                    <div className="aspect-[2/1] rounded-lg bg-gray-100 overflow-hidden">
+                      <img src={fallbackImage} alt="" className="w-full h-full object-cover" />
                     </div>
                   )}
                   <p className="text-[13px] font-semibold text-gray-900 mt-2 line-clamp-1">

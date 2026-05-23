@@ -2,10 +2,11 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Search, Bell, User, Heart, ChevronDown } from 'lucide-react';
+import { Search, Bell, Heart, ChevronDown } from 'lucide-react';
 import { useStore } from '@/store';
 import { useSession } from '@/lib/supabase/SessionProvider';
 import { useState } from 'react';
+import Avatar from '@/components/common/Avatar';
 
 const navItems = [
   { href: '/', label: '홈' },
@@ -72,9 +73,13 @@ export default function DesktopHeader() {
                     onClick={() => setShowUserMenu(!showUserMenu)}
                     className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded-full transition-colors"
                   >
-                    <div className="w-8 h-8 bg-[#8037FF] rounded-full flex items-center justify-center text-white text-sm font-bold">
-                      {user?.name?.charAt(0) ?? 'U'}
-                    </div>
+                    <Avatar
+                      src={user?.profileImage}
+                      gender={user?.gender}
+                      seed={user?.name ?? user?.id}
+                      size={32}
+                      alt=""
+                    />
                     <ChevronDown size={14} className="text-gray-400" />
                   </button>
                   {showUserMenu && (

@@ -109,9 +109,9 @@ export async function GET(
     .select(`
       id, user_id, hospital_id, product_id, doctor_id, status, visit_at, reservation_at,
       cancel_at, cancel_reason, amount, customer_name, customer_phone, payment_type, payment_method,
-      hospital:hospitals (id, name, address, location, owner_id),
-      product:products (id, title, image_url, price),
-      doctor:doctors (id, name, title),
+	      hospital:hospitals (id, slug, name, address, location, owner_id, logo_url, image_url, cover_images),
+	      product:products (id, title, image_url, price),
+	      doctor:doctors (id, name, title, profile_image),
       user:profiles!reservations_user_id_fkey (name, phone)
     `)
     .eq('id', id)

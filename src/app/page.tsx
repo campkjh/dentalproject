@@ -8,6 +8,7 @@ import { createPortal } from 'react-dom';
 import { Search, Send, ChevronLeft, ChevronRight, Star, MapPin, X, ArrowUp } from 'lucide-react';
 import ProductCard from '@/components/common/ProductCard';
 import { useStore } from '@/store';
+import { resolveHospitalImageUrl } from '@/lib/images';
 import { siteConfig } from '@/lib/site-config';
 
 const searchPlaceholders = [
@@ -541,6 +542,8 @@ export default function HomePage() {
                 return trendingHospitals.map((hp, hpIdx) => {
                 const hpReviews = reviews.filter(r => r.hospitalId === hp.id);
                 const topReview = hpReviews[0];
+                const coverSrc = hp.coverImages?.[0] || hospitalCovers[hpIdx % hospitalCovers.length];
+                const logoSrc = resolveHospitalImageUrl(hp);
                 return (
                   <Link
                     key={hp.id}
@@ -550,10 +553,10 @@ export default function HomePage() {
                   >
                     {/* 커버 이미지 */}
                     <div className="relative overflow-hidden" style={{ borderRadius: 16, aspectRatio: '64/26' }}>
-                      <img src={hospitalCovers[hpIdx % hospitalCovers.length]} alt={hp.name} className="w-full h-full object-cover" />
+                      <img src={coverSrc} alt={hp.name} className="w-full h-full object-cover" />
                       {/* 로고 */}
-                      <div className="absolute top-3 left-3 w-8 h-8 bg-white/90 rounded-full flex items-center justify-center" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.1)' }}>
-                        <span className="text-xs">🦷</span>
+                      <div className="absolute top-3 left-3 w-8 h-8 bg-white/90 rounded-full overflow-hidden flex items-center justify-center" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.1)' }}>
+                        <img src={logoSrc} alt="" className="w-full h-full object-cover" />
                       </div>
                     </div>
                     {/* 정보 */}

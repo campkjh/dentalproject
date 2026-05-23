@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { MessageSquare } from 'lucide-react';
+import Avatar from '@/components/common/Avatar';
 import { useSession } from '@/lib/supabase/SessionProvider';
 import { PartnerEmpty, PartnerListRow, PartnerPanel, PartnerSearchField, PartnerTop } from '@/components/partner/tds';
 
@@ -94,7 +95,7 @@ export default function PartnerConsultsPage() {
             <PartnerListRow
               key={r.id}
               href={`/partner/chat?roomId=${r.id}`}
-              icon={<span className="text-[13px] font-bold">{r.user?.name?.[0] ?? '?'}</span>}
+              icon={<Avatar src={r.user?.profile_image} seed={r.user?.name ?? r.id} size={30} alt="" />}
               title={r.user?.name ?? '익명'}
               description={r.last_message ?? '(메시지 없음)'}
               meta={relTime(r.last_at ?? r.created_at)}

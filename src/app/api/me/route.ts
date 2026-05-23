@@ -26,9 +26,9 @@ export async function GET() {
       sb
         .from('reservations')
         .select(
-          `*, hospital:hospitals (id, slug, name, address, phone, location),
-              product:products (id, title, image_url),
-              doctor:doctors (id, name, title)`
+	          `*, hospital:hospitals (id, slug, name, address, phone, location, logo_url, image_url, cover_images),
+	              product:products (id, title, image_url),
+	              doctor:doctors (id, name, title, profile_image)`
         )
         .eq('user_id', user.id)
         .order('reservation_at', { ascending: false }),

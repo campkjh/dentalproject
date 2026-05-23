@@ -3,6 +3,7 @@ export interface Product {
   title: string;
   hospitalName: string;
   hospitalId: string;
+  hospitalImage?: string;
   location: string;
   price: number;
   originalPrice?: number;
@@ -93,6 +94,7 @@ export interface Reservation {
   productImage: string;
   hospitalName: string;
   hospitalId: string;
+  hospitalImage?: string;
   location: string;
   visitDate: string;
   reservationDate: string;
@@ -102,6 +104,8 @@ export interface Reservation {
   customerPhone: string;
   cancelReason?: string;
   assignedDoctor?: string;
+  assignedDoctorImage?: string;
+  assignedDoctorTitle?: string;
   paymentMethod?: string;
   paymentType?: string;
   scheduleHistory?: ScheduleHistoryItem[];

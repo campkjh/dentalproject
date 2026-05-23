@@ -5,6 +5,7 @@ import { Bell, MapPin, Package } from 'lucide-react';
 import EmptyState from '@/components/common/EmptyState';
 import { useStore } from '@/store';
 import { Reservation } from '@/types';
+import { resolveProductImageUrl } from '@/lib/images';
 
 type ProductApprovalTab = 'approved' | 'pending' | 'rejected';
 
@@ -190,7 +191,12 @@ export default function HospitalHomePage() {
           <EmptyState icon="calendar" message="예약내역이 존재하지 않아요" />
         ) : (
           <div className="flex flex-col gap-3">
-            {filtered.map((reservation) => (
+            {filtered.map((reservation) => {
+              const productImage = resolveProductImageUrl(
+                reservation.productImage,
+                reservation.productId ?? reservation.id
+              );
+              return (
               <div
                 key={reservation.id}
                 className="bg-white rounded-2xl p-4 shadow-sm"
@@ -212,7 +218,7 @@ export default function HospitalHomePage() {
                 {/* Product info */}
                 <div className="flex gap-3">
                   <div className="w-20 h-20 rounded-xl bg-gray-100 overflow-hidden flex-shrink-0 relative">
-                    <div className="w-full h-full bg-gradient-to-br from-purple-100 to-purple-100 flex items-center justify-center"><span className="text-2xl">🦷</span></div>
+                    <img src={productImage} alt="" className="w-full h-full object-cover" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-bold text-gray-900 line-clamp-2">
@@ -266,7 +272,8 @@ export default function HospitalHomePage() {
                   </div>
                 )}
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

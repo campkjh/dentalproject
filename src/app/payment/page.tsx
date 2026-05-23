@@ -4,6 +4,7 @@ import { useState, Suspense, useEffect, useRef, useSyncExternalStore } from 'rea
 import { createPortal } from 'react-dom';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ChevronDown, ChevronUp, ChevronLeft, Check, X } from 'lucide-react';
+import { resolveHospitalImageUrl } from '@/lib/images';
 import { useStore } from '@/store';
 
 const agreementTerms = [
@@ -38,7 +39,7 @@ function PaymentPage() {
   const dateParam = searchParams.get('date'); // YYYY-MM-DD
   const timeParam = searchParams.get('time'); // HH:mm
   const paymentParam = searchParams.get('payment'); // 'app' | null
-  const { user, showToast, addReservation, products } = useStore();
+  const { user, showToast, addReservation, products, hospitals } = useStore();
   const coupons = user?.coupons ?? [];
   const [submitting, setSubmitting] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<'후불결제' | '앱결제'>(paymentParam === 'app' ? '앱결제' : '후불결제');
@@ -76,6 +77,7 @@ function PaymentPage() {
     );
   }
   const hospital = product.hospitalName;
+  const hospitalRow = hospitals.find((h) => h.id === product.hospitalId);
 
   const availableCoupons = coupons.filter((c) => c.status === 'available');
   const selectedCoupon = availableCoupons.find((c) => c.id === selectedCouponId);
@@ -158,6 +160,7 @@ function PaymentPage() {
       productImage: product.imageUrl,
       hospitalName: product.hospitalName,
       hospitalId: product.hospitalId,
+      hospitalImage: resolveHospitalImageUrl(hospitalRow),
       location: product.location,
       visitDate: selectedVisitLabel,
       reservationDate: selectedVisitLabel,

@@ -7,6 +7,7 @@ import EmptyState from '@/components/common/EmptyState';
 import LoginRequired from '@/components/common/LoginRequired';
 import { IconMapPin, IconCalendarMini } from '@/components/icons/AppIcons';
 import { Reservation } from '@/types';
+import { resolveProductImageUrl } from '@/lib/images';
 
 const statusIconSrc: Record<Reservation['status'], string> = {
   pending: '/icons/status-pending.svg',
@@ -197,6 +198,10 @@ export default function PaymentsPage() {
           <div className="flex flex-col gap-3 stagger-children">
             {filtered.map((payment) => {
               const style = statusStyle[payment.status];
+              const productImage = resolveProductImageUrl(
+                payment.productImage,
+                payment.productId ?? payment.id
+              );
               return (
                 <div
                   key={payment.id}
@@ -221,8 +226,8 @@ export default function PaymentsPage() {
 
                   {/* Product info */}
                   <div className="flex gap-2.5 mt-2">
-                    <div className="w-[64px] h-[64px] rounded-xl bg-gradient-to-br from-purple-100 to-purple-100 flex items-center justify-center flex-shrink-0">
-                      <span className="text-2xl">🦷</span>
+                    <div className="w-[64px] h-[64px] rounded-xl bg-gray-100 overflow-hidden flex items-center justify-center flex-shrink-0">
+                      <img src={productImage} alt="" className="w-full h-full object-cover" />
                     </div>
                     <div className="flex-1 min-w-0 flex flex-col justify-center">
                       <p className="text-[14px] font-bold text-gray-900 line-clamp-1 leading-tight">

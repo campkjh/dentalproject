@@ -2,7 +2,8 @@
 
 import { useState, Suspense, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Check, Phone, User } from 'lucide-react';
+import { Check, Phone } from 'lucide-react';
+import Avatar from '@/components/common/Avatar';
 import TopBar from '@/components/common/TopBar';
 import { useStore } from '@/store';
 
@@ -13,6 +14,7 @@ interface DoctorOption {
   specialty: string;
   isOwner: boolean;
   available: boolean;
+  profileImage?: string | null;
 }
 
 export default function DoctorAssignPageWrapper() {
@@ -55,13 +57,14 @@ function DoctorAssignPage() {
           return;
         }
         setDoctorOptions(
-          (hospital.doctors ?? []).map((d: { id: string; name: string; title?: string; specialty?: string; is_owner?: boolean }) => ({
+          (hospital.doctors ?? []).map((d: { id: string; name: string; title?: string; specialty?: string; is_owner?: boolean; profile_image?: string | null }) => ({
             id: d.id,
             name: d.name,
             title: d.title ?? '원장',
             specialty: d.specialty ?? '',
             isOwner: d.is_owner ?? false,
             available: true,
+            profileImage: d.profile_image ?? null,
           }))
         );
         if (aptId) {
@@ -179,22 +182,19 @@ function DoctorAssignPage() {
                       : 'border-gray-200 bg-white hover:border-[#8037FF]/50'
                 }`}
               >
-                <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
-                    isSelected
-                      ? 'bg-[#8037FF]'
-                      : isUnavailable
-                        ? 'bg-gray-100'
-                        : 'bg-gray-100'
-                  }`}
-                >
-                  {isSelected ? (
-                    <Check size={18} className="text-white" />
-                  ) : (
-                    <User
-                      size={18}
-                      className={isUnavailable ? 'text-gray-300' : 'text-gray-400'}
-                    />
+                <div className="relative w-10 h-10 flex-shrink-0">
+                  <Avatar
+                    src={doctor.profileImage ?? undefined}
+                    role="doctor"
+                    seed={doctor.name}
+                    size={40}
+                    alt=""
+                    className={isUnavailable ? 'opacity-40' : ''}
+                  />
+                  {isSelected && (
+                    <span className="absolute inset-0 rounded-full bg-[#8037FF]/85 flex items-center justify-center">
+                      <Check size={18} className="text-white" />
+                    </span>
                   )}
                 </div>
 

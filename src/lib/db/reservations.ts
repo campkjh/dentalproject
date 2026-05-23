@@ -10,9 +10,9 @@ export async function listMyReservations(userId: string) {
   const { data, error } = await sb
     .from('reservations')
     .select(
-      `*, hospital:hospitals (id, name, address, phone, location),
-          product:products (id, title, image_url),
-          doctor:doctors (id, name, title)`
+	      `*, hospital:hospitals (id, slug, name, address, phone, location, logo_url, image_url, cover_images),
+	          product:products (id, title, image_url),
+	          doctor:doctors (id, name, title, profile_image)`
     )
     .eq('user_id', userId)
     .order('visit_at', { ascending: false });
@@ -29,9 +29,9 @@ export async function getReservation(id: string) {
   const { data, error } = await sb
     .from('reservations')
     .select(
-      `*, hospital:hospitals (id, name, address, phone, location),
-          product:products (id, title, image_url),
-          doctor:doctors (id, name, title)`
+	      `*, hospital:hospitals (id, slug, name, address, phone, location, logo_url, image_url, cover_images),
+	          product:products (id, title, image_url),
+	          doctor:doctors (id, name, title, profile_image)`
     )
     .eq('id', id)
     .maybeSingle();

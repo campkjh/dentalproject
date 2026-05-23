@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Camera, Star, X, Sparkles, ChevronLeft, Check, Stethoscope } from 'lucide-react';
 import { useStore } from '@/store';
 import Avatar from '@/components/common/Avatar';
+import { resolveProductImageUrl } from '@/lib/images';
 
 export default function ReviewWritePageWrapper() {
   return (
@@ -45,6 +46,7 @@ function ReviewWritePage() {
   const product = products.find((p) => p.id === (productId || reservation?.productId)) ?? products[0];
   const hospital = hospitals.find((h) => h.id === product.hospitalId);
   const doctors = hospital?.doctors ?? [];
+  const productImage = resolveProductImageUrl(product.imageUrl, product.id);
 
   // Auto-filled from reservation
   const paidReservation = reservations.find(
@@ -170,8 +172,8 @@ ${hasAspectFeedback && aspects.kindness >= 4 ? '원장님과 스태프분들의 
       <div className="flex-1 overflow-y-auto overflow-x-hidden pb-4 w-full">
         {/* Product header */}
         <div className="px-2.5 py-3 flex items-center gap-3 border-b border-gray-100">
-          <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-100 to-purple-100 flex items-center justify-center flex-shrink-0">
-            <span className="text-2xl">🦷</span>
+          <div className="w-14 h-14 rounded-xl bg-gray-100 overflow-hidden flex items-center justify-center flex-shrink-0">
+            <img src={productImage} alt="" className="w-full h-full object-cover" />
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-[11px] text-gray-500 leading-tight">{product.hospitalName}</p>

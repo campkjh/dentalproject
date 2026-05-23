@@ -13,10 +13,12 @@ import {
   Copy,
   CheckCircle2,
 } from 'lucide-react';
+import Avatar from '@/components/common/Avatar';
 import { useSession } from '@/lib/supabase/SessionProvider';
 import { useReservationRealtimeRefresh } from '@/lib/realtime/reservations';
 import { useStore } from '@/store';
 import { Reservation } from '@/types';
+import { resolveHospitalImageUrl, resolveProductImageUrl } from '@/lib/images';
 
 const statusIconSrc: Record<Reservation['status'], string> = {
   pending: '/icons/status-pending.svg',
@@ -68,6 +70,11 @@ export default function ReservationDetailPage() {
   const hospital = hospitals.find((h) => h.id === reservation.hospitalId);
   const style = statusStyle[reservation.status];
   const latestScheduleHistory = reservation.scheduleHistory?.[0];
+  const productImage = resolveProductImageUrl(
+    reservation.productImage,
+    reservation.productId ?? reservation.id
+  );
+  const hospitalImage = reservation.hospitalImage || resolveHospitalImageUrl(hospital);
 
   const basePrice = reservation.amount;
   const vat = Math.round(basePrice * 0.1);
@@ -125,11 +132,7 @@ export default function ReservationDetailPage() {
       <div className="mx-2.5 py-3 border-y border-gray-100 fade-in-up">
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-xl bg-gray-100 overflow-hidden flex items-center justify-center flex-shrink-0">
-            {reservation.productImage ? (
-              <img src={reservation.productImage} alt="" className="w-full h-full object-cover" />
-            ) : (
-              <span className="text-xl">🦷</span>
-            )}
+            <img src={productImage} alt="" className="w-full h-full object-cover" />
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-[11px] text-gray-500 leading-tight">{reservation.hospitalName}</p>
@@ -181,8 +184,8 @@ export default function ReservationDetailPage() {
               }
             >
               <div className="flex gap-3 mb-3">
-                <div className="w-10 h-10 rounded-full bg-gray-100 flex-shrink-0 flex items-center justify-center text-gray-500 text-sm font-bold">
-                  {reservation.hospitalName.charAt(0)}
+                <div className="w-10 h-10 rounded-full bg-gray-100 flex-shrink-0 overflow-hidden">
+                  <img src={hospitalImage} alt="" className="w-full h-full object-cover" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-[14px] font-bold text-gray-900 line-clamp-1">
@@ -234,12 +237,24 @@ export default function ReservationDetailPage() {
           <>
             <Section title="집도의">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-[#F4EFFF] text-[#8037FF] flex-shrink-0 flex items-center justify-center text-sm font-bold">
-                  {reservation.assignedDoctor.charAt(0)}
+                <Avatar
+                  src={reservation.assignedDoctorImage}
+                  role="doctor"
+                  seed={reservation.assignedDoctor}
+                  size={40}
+                  alt=""
+                  className="flex-shrink-0"
+                />
+                <div className="min-w-0">
+                  <p className="text-[14px] font-semibold text-gray-900">
+                    {reservation.assignedDoctor}
+                  </p>
+                  {reservation.assignedDoctorTitle && (
+                    <p className="text-[11px] text-gray-500 mt-0.5">
+                      {reservation.assignedDoctorTitle}
+                    </p>
+                  )}
                 </div>
-                <p className="text-[14px] font-semibold text-gray-900">
-                  {reservation.assignedDoctor}
-                </p>
               </div>
             </Section>
             <Divider />

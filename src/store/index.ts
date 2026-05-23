@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { User, Reservation, Product, Post, Comment, Review, Hospital, Notification, PointHistory } from '@/types';
-import { normalizeProductImageUrl } from '@/lib/images';
+import { resolveHospitalImageUrl, resolveProductImageUrl } from '@/lib/images';
 import {
   products as mockProducts,
   hospitals as mockHospitals,
@@ -50,9 +50,10 @@ function reservationFromRow(r: any): Reservation {
     date: r.reservation_at ? new Date(r.reservation_at).toLocaleDateString('ko-KR') : '',
     productId: r.product?.id ?? r.product_id ?? undefined,
     productTitle: r.product?.title ?? '',
-    productImage: normalizeProductImageUrl(r.product?.image_url) ?? '',
+    productImage: resolveProductImageUrl(r.product?.image_url, r.product?.id ?? r.product_id),
     hospitalName: r.hospital?.name ?? '',
     hospitalId: r.hospital?.slug ?? r.hospital?.id ?? r.hospital_id,
+    hospitalImage: resolveHospitalImageUrl(r.hospital),
     location: r.hospital?.location ?? '',
     visitDate: r.visit_at ? new Date(r.visit_at).toLocaleString('ko-KR') : '',
     reservationDate: r.reservation_at ? new Date(r.reservation_at).toLocaleString('ko-KR') : '',
@@ -62,6 +63,8 @@ function reservationFromRow(r: any): Reservation {
     customerPhone: r.customer_phone ?? '',
     cancelReason: r.cancel_reason ?? undefined,
     assignedDoctor: r.doctor?.name ?? undefined,
+    assignedDoctorImage: r.doctor?.profile_image ?? undefined,
+    assignedDoctorTitle: r.doctor?.title ?? undefined,
     paymentMethod: r.payment_method ?? undefined,
     paymentType: r.payment_type ?? undefined,
     scheduleHistory: (r.schedule_history ?? []).map((item: any) => ({

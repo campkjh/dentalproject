@@ -1,5 +1,11 @@
 import type { Hospital, Product, Doctor, Review, OperatingHour } from '@/types';
-import { extractProductDetailImageUrl, getVisibleProductTags, normalizeProductImageUrl } from '@/lib/images';
+import {
+  extractProductDetailImageUrl,
+  getVisibleProductTags,
+  normalizeProductImageUrl,
+  resolveHospitalImageUrl,
+  resolveProductImageUrl,
+} from '@/lib/images';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -29,8 +35,10 @@ export function normalizeHospital(row: any): Hospital {
     location: row.location ?? '',
     phone: row.phone ?? '',
     tags: row.tags ?? [],
-    logoUrl: row.logo_url ?? undefined,
-    coverImages: row.cover_images ?? [],
+    logoUrl: resolveHospitalImageUrl(row),
+    coverImages: ((row.cover_images ?? []) as Array<string | null | undefined>)
+      .map(normalizeProductImageUrl)
+      .filter((url): url is string => Boolean(url)),
     introduction: row.introduction ?? undefined,
     operatingHours: (row.operating_hours ?? [])
       .filter((o: any) => ['일', '월', '화', '수', '목', '금', '토'].includes(o.day))
@@ -75,7 +83,7 @@ export function normalizeProduct(row: any): Product {
     rating: Number(row.rating ?? 0),
     reviewCount: row.review_count ?? 0,
     likeCount: row.like_count ?? 0,
-    imageUrl: normalizeProductImageUrl(row.image_url) ?? '',
+    imageUrl: resolveProductImageUrl(row.image_url, row.id),
     detailImageUrl: normalizeProductImageUrl(row.detail_image_url) ?? extractProductDetailImageUrl(row.tags),
     tags: getVisibleProductTags(row.tags),
     category: row.category ?? '',

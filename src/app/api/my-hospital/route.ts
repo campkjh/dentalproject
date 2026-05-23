@@ -157,10 +157,10 @@ async function attachReservationRelations(
 
   const [usersRes, doctorsRes, linkedProductsRes] = await Promise.all([
     userIds.length
-      ? admin.from('profiles').select('id, name, phone').in('id', userIds)
+      ? admin.from('profiles').select('id, name, phone, profile_image').in('id', userIds)
       : Promise.resolve({ data: [] }),
     doctorIds.length
-      ? admin.from('doctors').select('id, name, title').in('id', doctorIds)
+      ? admin.from('doctors').select('id, name, title, profile_image').in('id', doctorIds)
       : Promise.resolve({ data: [] }),
     productIds.length
       ? admin.from('products').select('id, title, image_url, price').in('id', productIds)
@@ -287,8 +287,8 @@ export async function GET() {
       hospital,
         `id, rating, content, treatment_name, treatment_date, total_cost,
          before_image, after_image, created_at, hidden,
-         author:profiles!reviews_author_id_fkey (name),
-         doctor:doctors (name)`,
+	         author:profiles!reviews_author_id_fkey (name, profile_image),
+	         doctor:doctors (name, profile_image)`,
       { orderBy: 'created_at', ascending: false, limit: 50 }
     ),
     fetchHospitalRows(

@@ -5,9 +5,9 @@ import {
   ChevronLeft,
   ChevronRight,
   Phone,
-  User,
   MessageSquare,
 } from 'lucide-react';
+import Avatar from '@/components/common/Avatar';
 import TabBar from '@/components/common/TabBar';
 import { useReservationRealtimeRefresh } from '@/lib/realtime/reservations';
 import { useStore } from '@/store';
@@ -39,6 +39,7 @@ interface AppointmentData {
   paymentType: string;
   bookingType: string;
   assignedDoctor: string;
+  assignedDoctorImage?: string | null;
   memo: string;
   date: number;
   status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
@@ -69,6 +70,7 @@ function reservationToAppointment(r: any): AppointmentData {
     paymentType: r.payment_type ?? '현장결제',
     bookingType: '앱예약',
     assignedDoctor: r.doctor?.name ?? '미지정',
+    assignedDoctorImage: r.doctor?.profile_image ?? null,
     memo: '',
     date: visitDate ? visitDate.getDate() : 0,
     status: (r.status as AppointmentData['status']) ?? 'pending',
@@ -385,9 +387,13 @@ export default function AppointmentsPage() {
                   {/* Assigned doctor */}
                   <div className="flex items-center justify-between bg-gray-50 rounded-lg p-3">
                     <div className="flex items-center gap-2">
-                      <div className="w-7 h-7 rounded-full bg-gray-200 flex items-center justify-center">
-                        <User size={14} className="text-gray-400" />
-                      </div>
+                      <Avatar
+                        src={apt.assignedDoctorImage ?? undefined}
+                        role="doctor"
+                        seed={apt.assignedDoctor}
+                        size={28}
+                        alt=""
+                      />
                       <span className="text-sm font-medium">
                         {apt.assignedDoctor} 원장
                       </span>

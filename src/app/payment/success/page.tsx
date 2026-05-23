@@ -3,6 +3,7 @@
 import { Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { CreditCard } from 'lucide-react';
+import { resolveProductImageUrl } from '@/lib/images';
 import { useStore } from '@/store';
 
 export default function PaymentSuccessPageWrapper() {
@@ -19,9 +20,18 @@ function PaymentSuccessPage() {
   const productId = searchParams.get('productId');
   const reservationId = searchParams.get('reservationId');
   const products = useStore((s) => s.products);
+  const reservations = useStore((s) => s.reservations);
   const product = products.find((p) => p.id === productId);
+  const reservation = reservations.find((item) => item.id === reservationId);
+  const title = product?.title ?? reservation?.productTitle;
+  const hospitalName = product?.hospitalName ?? reservation?.hospitalName;
+  const location = product?.location ?? reservation?.location;
+  const imageUrl = resolveProductImageUrl(
+    product?.imageUrl ?? reservation?.productImage,
+    product?.id ?? reservation?.productId ?? reservationId
+  );
 
-  if (!product || !reservationId) {
+  if (!title || !reservationId) {
     return (
       <div className="min-h-screen bg-white flex flex-col items-center justify-center px-6 text-center">
         <h1 className="text-lg font-bold text-gray-900">예약 정보를 확인할 수 없습니다.</h1>
@@ -55,15 +65,15 @@ function PaymentSuccessPage() {
         {/* Product Info Card */}
         <div className="w-full bg-gray-50 rounded-xl p-4 fade-in-up-delay-1">
           <div className="flex gap-3">
-            <div className="w-16 h-16 bg-gradient-to-br from-purple-100 to-purple-100 rounded-xl flex items-center justify-center flex-shrink-0">
-              <span className="text-2xl">🦷</span>
+            <div className="w-16 h-16 bg-gray-100 rounded-xl overflow-hidden flex items-center justify-center flex-shrink-0">
+              <img src={imageUrl} alt="" className="w-full h-full object-cover" />
             </div>
             <div className="flex-1 min-w-0">
               <h3 className="text-sm font-bold text-gray-900 line-clamp-2">
-                {product.title}
+                {title}
               </h3>
-              <p className="text-xs text-gray-500 mt-1">{product.hospitalName}</p>
-              <p className="text-xs text-gray-400 mt-0.5 truncate">{product.location}</p>
+              <p className="text-xs text-gray-500 mt-1">{hospitalName}</p>
+              <p className="text-xs text-gray-400 mt-0.5 truncate">{location}</p>
             </div>
           </div>
         </div>
