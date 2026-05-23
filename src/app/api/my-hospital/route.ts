@@ -48,6 +48,14 @@ function firstRelation<T>(value: T | T[] | null | undefined): T | null {
   return value ?? null;
 }
 
+const hospitalSelect = `
+  id, slug, name, category, location, phone, tags, logo_url, cover_images,
+  introduction, holiday_notice, address, address_detail, map_url, rating,
+  review_count, owner_id, status, created_at, updated_at,
+  doctors (id, user_id, hospital_id, name, title, specialty, profile_image, is_owner, is_active, member_status, bio, careers, certifications, created_at),
+  operating_hours (id, hospital_id, day, start_time, end_time, is_closed)
+`;
+
 async function fetchHospitalProducts(
   admin: Awaited<ReturnType<typeof createAdminClient>>,
   hospital: any,
@@ -100,11 +108,7 @@ export async function GET() {
 
   let { data: hospital } = await sb
     .from('hospitals')
-    .select(
-      `*,
-       doctors (*),
-       operating_hours (*)`
-    )
+    .select(hospitalSelect)
     .eq('owner_id', user.id)
     .maybeSingle();
 
@@ -118,11 +122,7 @@ export async function GET() {
     if (doctor?.hospital_id) {
       const { data } = await sb
         .from('hospitals')
-        .select(
-          `*,
-           doctors (*),
-           operating_hours (*)`
-        )
+        .select(hospitalSelect)
         .eq('id', doctor.hospital_id)
         .maybeSingle();
       hospital = data;
@@ -143,16 +143,24 @@ export async function GET() {
     fetchHospitalProducts(admin, hospital, productColumns),
     sb
       .from('reviews')
-      .select('*, author:profiles!reviews_author_id_fkey (name)')
+      .select(
+        `id, rating, content, treatment_name, treatment_date, total_cost,
+         before_image, after_image, created_at, hidden,
+         author:profiles!reviews_author_id_fkey (name),
+         doctor:doctors (name)`
+      )
       .eq('hospital_id', hospital.id)
       .order('created_at', { ascending: false })
       .limit(50),
     sb
       .from('reservations')
       .select(
-        `*, user:profiles!reservations_user_id_fkey (name, phone),
-            product:products (id, title, image_url, price),
-            doctor:doctors (id, name, title)`
+        `id, user_id, hospital_id, product_id, doctor_id, status, visit_at, reservation_at,
+         cancel_at, cancel_reason, amount, customer_name, customer_phone, payment_type,
+         payment_method, memo, created_at, updated_at,
+         user:profiles!reservations_user_id_fkey (name, phone),
+         product:products (id, title, image_url, price),
+         doctor:doctors (id, name, title)`
       )
       .eq('hospital_id', hospital.id)
       .order('reservation_at', { ascending: false })
@@ -161,7 +169,8 @@ export async function GET() {
       .from('reservations')
       .select('product_id')
       .eq('hospital_id', hospital.id)
-      .not('product_id', 'is', null),
+      .not('product_id', 'is', null)
+      .limit(1000),
   ]);
 
   let products: any[] = (productsRes.data ?? []).map(normalizeProductRow).filter(Boolean);
@@ -217,6 +226,7 @@ export async function GET() {
         .select('id, title, content, link, created_at')
         .in('link', reservationLinks)
         .order('created_at', { ascending: false })
+        .limit(300)
     : { data: [] };
   const reservationsWithHistory = attachScheduleHistory(reservationRows, scheduleNotifications ?? []);
 

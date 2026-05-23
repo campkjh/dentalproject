@@ -20,6 +20,7 @@ type Listener = () => void;
 let cache: CacheState = null;
 let inFlight: Promise<MyHospitalData> | null = null;
 const listeners = new Set<Listener>();
+const MY_HOSPITAL_CACHE_TTL_MS = 45_000;
 
 function notify() {
   listeners.forEach((listener) => listener());
@@ -28,6 +29,10 @@ function notify() {
 function readForOwner(ownerId?: string | null) {
   if (!ownerId || cache?.ownerId !== ownerId) return null;
   return cache;
+}
+
+function isFresh(data: MyHospitalData | null) {
+  return Boolean(data && Date.now() - data.fetchedAt < MY_HOSPITAL_CACHE_TTL_MS);
 }
 
 export function clearMyHospitalCache(ownerId?: string | null) {
@@ -64,6 +69,11 @@ export async function fetchMyHospitalData<
   ownerId: string,
   options: { force?: boolean } = {}
 ) {
+  const cached = readForOwner(ownerId) as MyHospitalData<THospital, TReservation, TReview> | null;
+  if (cached && isFresh(cached as MyHospitalData) && !options.force) {
+    return cached;
+  }
+
   if (inFlight && !options.force) {
     return inFlight as Promise<MyHospitalData<THospital, TReservation, TReview>>;
   }
@@ -149,16 +159,25 @@ export function useMyHospitalData<
   }, [enabled, ownerId]);
 
   useEffect(() => {
-    if (!enabled || !ownerId) {
-      setData(null);
-      setLoading(false);
-      setRefreshing(false);
-      return;
-    }
-    const cached = readForOwner(ownerId);
-    setData(cached as MyHospitalData<THospital, TReservation, TReview> | null);
-    setLoading(!cached);
-    if (revalidateOnMount) void refresh({ force: false, showLoading: !cached });
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (cancelled) return;
+      if (!enabled || !ownerId) {
+        setData(null);
+        setLoading(false);
+        setRefreshing(false);
+        return;
+      }
+      const cached = readForOwner(ownerId);
+      setData(cached as MyHospitalData<THospital, TReservation, TReview> | null);
+      setLoading(!cached);
+      if (revalidateOnMount && (!cached || !isFresh(cached))) {
+        void refresh({ force: false, showLoading: !cached });
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [enabled, ownerId, refresh, revalidateOnMount]);
 
   const mutate = useCallback((

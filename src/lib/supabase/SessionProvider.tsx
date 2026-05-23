@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import type { Session, User as SupabaseUser } from '@supabase/supabase-js';
+import { usePathname } from 'next/navigation';
 import { createClient, hasSupabaseEnv } from './client';
 import { useStore } from '@/store';
 import { clearMyHospitalCache } from '@/lib/partner/my-hospital-cache';
@@ -75,6 +76,7 @@ function shouldClearSession(error: unknown) {
 }
 
 export function SessionProvider({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(() => hasSupabaseEnv());
   const mountedRef = useRef(false);
@@ -185,7 +187,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     return { isDoctor: hasHospitalAccess };
   }, [hydrateMe, hydrateProfile, resetMe, storeLogout]);
 
-  const recoverSession = useCallback(async (options: { showLoading?: boolean } = {}) => {
+  const recoverSession = useCallback(async (options: { showLoading?: boolean; hydrateUserData?: boolean } = {}) => {
     if (recoveryPromiseRef.current) return recoveryPromiseRef.current;
     if (!supabase) {
       setLoading(false);
@@ -206,7 +208,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       if (verifiedUser?.data.user) {
         return syncSession(
           { ...data.session, user: verifiedUser.data.user },
-          options
+          { showLoading: options.showLoading, hydrateUserData: options.hydrateUserData }
         );
       }
 
@@ -219,7 +221,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         return syncSession(null, options);
       }
 
-      return syncSession(data.session, options);
+      return syncSession(data.session, { showLoading: options.showLoading, hydrateUserData: options.hydrateUserData });
     })();
 
     recoveryPromiseRef.current = recoveryPromise;
@@ -235,10 +237,11 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     }
   }, [supabase, syncSession]);
 
-  // Load real catalog data once, regardless of auth state
+  // Load customer catalog only where it is actually used.
   useEffect(() => {
+    if (pathname?.startsWith('/partner') || pathname?.startsWith('/admin')) return;
     hydrateCatalog();
-  }, [hydrateCatalog]);
+  }, [hydrateCatalog, pathname]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -256,7 +259,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     let mounted = true;
 
     const initialRecoverTimer = window.setTimeout(() => {
-      if (mounted) void recoverSession({ showLoading: true });
+      if (mounted) void recoverSession({ showLoading: true, hydrateUserData: true });
     }, 0);
 
     const { data: sub } = supabase.auth.onAuthStateChange((event, s) => {
@@ -270,7 +273,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
     const recheckSession = () => {
       if (!mounted) return;
-      void recoverSession({ showLoading: false });
+      void recoverSession({ showLoading: false, hydrateUserData: false });
     };
 
     const recheckVisibleSession = () => {
