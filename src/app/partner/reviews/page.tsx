@@ -6,7 +6,7 @@ import { useSession } from '@/lib/supabase/SessionProvider';
 import { useMyHospitalData } from '@/lib/partner/my-hospital-cache';
 import { useStore } from '@/store';
 import { createClient, hasSupabaseEnv } from '@/lib/supabase/client';
-import { EyeOff, Eye, Plus, Image as ImageIcon, FileText, Star } from 'lucide-react';
+import { EyeOff, Eye, Plus, Star } from 'lucide-react';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type ReviewRow = {
@@ -177,8 +177,8 @@ export default function PartnerReviewsPage() {
             aria-hidden="true"
           />
           {([
-            { key: 'image', label: '이미지 리뷰', icon: <ImageIcon size={14} />, count: imageReviews.length },
-            { key: 'text', label: '텍스트 리뷰', icon: <FileText size={14} />, count: textReviews.length },
+            { key: 'image', label: '이미지 리뷰', count: imageReviews.length },
+            { key: 'text', label: '텍스트 리뷰', count: textReviews.length },
           ] as const).map((t) => (
             <button
               key={t.key}
@@ -188,7 +188,7 @@ export default function PartnerReviewsPage() {
               onClick={() => setTab(t.key)}
               className={tab === t.key ? 'is-active' : undefined}
             >
-              {t.icon}{t.label} ({t.count})
+              {t.label} ({t.count})
             </button>
           ))}
         </div>
