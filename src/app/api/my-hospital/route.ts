@@ -48,6 +48,13 @@ function firstRelation<T>(value: T | T[] | null | undefined): T | null {
   return value ?? null;
 }
 
+function productHospitalIds(hospital: any) {
+  return Array.from(new Set([
+    hospital?.id,
+    hospital?.slug,
+  ].filter((value): value is string => typeof value === 'string' && value.trim().length > 0)));
+}
+
 export async function GET() {
   const sb = await createClient();
   const {
@@ -91,6 +98,7 @@ export async function GET() {
   // Reviews + recent reservations
   const admin = await createAdminClient();
   await completePastConfirmedReservations(admin, { hospitalId: hospital.id });
+  const hospitalProductIds = productHospitalIds(hospital);
 
   const productsQuery = admin
     .from('products')
@@ -98,7 +106,7 @@ export async function GET() {
       `id, title, location, price, original_price, discount, rating, review_count, image_url, tags,
        detail_image_url, category, sub_category, status, approval_status, pending_changes, created_at`
     )
-    .eq('hospital_id', hospital.id)
+    .in('hospital_id', hospitalProductIds)
     .order('created_at', { ascending: false });
 
   const [productsRes, reviewsRes, reservationsRes, productReservationsRes] = await Promise.all([
@@ -134,7 +142,7 @@ export async function GET() {
           ? 'id, title, location, price, original_price, discount, rating, review_count, image_url, tags, category, sub_category, status, approval_status, pending_changes, created_at'
           : 'id, title, location, price, original_price, discount, rating, review_count, image_url, tags, category, sub_category, status, created_at'
       )
-      .eq('hospital_id', hospital.id)
+      .in('hospital_id', hospitalProductIds)
       .order('created_at', { ascending: false });
     products = (fallback.data ?? []).map(normalizeProductRow).filter(Boolean);
   }
