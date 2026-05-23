@@ -107,7 +107,7 @@ export default function PartnerCommunityPage() {
           aria-label="커뮤니티 검색"
           onClick={() => router.push('/community/search')}
         >
-          <Search size={34} strokeWidth={2.2} />
+          <Search size={20} strokeWidth={2.2} />
         </button>
       </header>
 
