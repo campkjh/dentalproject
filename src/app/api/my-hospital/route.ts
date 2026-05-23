@@ -97,6 +97,62 @@ async function fetchHospitalProducts(
   };
 }
 
+async function fetchHospitalRows(
+  admin: Awaited<ReturnType<typeof createAdminClient>>,
+  table: string,
+  hospital: any,
+  selectColumns: string,
+  options: {
+    orderBy?: string;
+    ascending?: boolean;
+    limit?: number;
+    notNull?: string;
+  } = {}
+) {
+  const hospitalId = typeof hospital?.id === 'string' ? hospital.id.trim() : '';
+  const hospitalSlug = typeof hospital?.slug === 'string' ? hospital.slug.trim() : '';
+
+  let byId = admin
+    .from(table)
+    .select(selectColumns)
+    .eq('hospital_id', hospitalId);
+
+  if (options.notNull) byId = byId.not(options.notNull, 'is', null);
+  if (options.orderBy) byId = byId.order(options.orderBy, { ascending: options.ascending ?? false });
+  if (options.limit) byId = byId.limit(options.limit);
+
+  const byIdResult = await byId;
+  if (byIdResult.error || !hospitalSlug || hospitalSlug === hospitalId) {
+    return byIdResult;
+  }
+
+  let bySlug = admin
+    .from(table)
+    .select(selectColumns)
+    .eq('hospital_id', hospitalSlug);
+
+  if (options.notNull) bySlug = bySlug.not(options.notNull, 'is', null);
+  if (options.orderBy) bySlug = bySlug.order(options.orderBy, { ascending: options.ascending ?? false });
+  if (options.limit) bySlug = bySlug.limit(options.limit);
+
+  const bySlugResult = await bySlug;
+  if (bySlugResult.error) return byIdResult;
+
+  const merged = new Map<string, any>();
+  for (const row of (byIdResult.data ?? []) as any[]) {
+    if (row?.id) merged.set(row.id, row);
+  }
+  for (const row of (bySlugResult.data ?? []) as any[]) {
+    if (row?.id) merged.set(row.id, row);
+  }
+
+  return {
+    ...byIdResult,
+    data: Array.from(merged.values()),
+    error: null,
+  };
+}
+
 export async function GET() {
   const sb = await createClient();
   const {
@@ -139,36 +195,35 @@ export async function GET() {
 
   const [productsRes, reviewsRes, reservationsRes, productReservationsRes] = await Promise.all([
     fetchHospitalProducts(admin, hospital, productColumns),
-    sb
-      .from('reviews')
-      .select(
+    fetchHospitalRows(
+      admin,
+      'reviews',
+      hospital,
         `id, rating, content, treatment_name, treatment_date, total_cost,
          before_image, after_image, created_at, hidden,
          author:profiles!reviews_author_id_fkey (name),
-         doctor:doctors (name)`
-      )
-      .eq('hospital_id', hospital.id)
-      .order('created_at', { ascending: false })
-      .limit(50),
-    sb
-      .from('reservations')
-      .select(
+         doctor:doctors (name)`,
+      { orderBy: 'created_at', ascending: false, limit: 50 }
+    ),
+    fetchHospitalRows(
+      admin,
+      'reservations',
+      hospital,
         `id, user_id, hospital_id, product_id, doctor_id, status, visit_at, reservation_at,
          cancel_at, cancel_reason, amount, customer_name, customer_phone, payment_type,
          payment_method, memo, created_at, updated_at,
          user:profiles!reservations_user_id_fkey (name, phone),
          product:products (id, title, image_url, price),
-         doctor:doctors (id, name, title)`
-      )
-      .eq('hospital_id', hospital.id)
-      .order('reservation_at', { ascending: false })
-      .limit(100),
-    admin
-      .from('reservations')
-      .select('product_id')
-      .eq('hospital_id', hospital.id)
-      .not('product_id', 'is', null)
-      .limit(1000),
+         doctor:doctors (id, name, title)`,
+      { orderBy: 'reservation_at', ascending: false, limit: 100 }
+    ),
+    fetchHospitalRows(
+      admin,
+      'reservations',
+      hospital,
+      'id, product_id',
+      { notNull: 'product_id', limit: 1000 }
+    ),
   ]);
 
   let products: any[] = (productsRes.data ?? []).map(normalizeProductRow).filter(Boolean);
