@@ -2043,24 +2043,21 @@ body.partner-product-modal-open .partner-bottom-nav {
   position: relative;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0;
-  margin-bottom: 10px;
-  overflow: hidden;
-  border: 1px solid #edf0f4;
-  border-radius: 16px;
-  background: #f2f3f5;
-  padding: 4px;
+  margin: 0 -8px 14px;
+  border-bottom: 1px solid #edf0f4;
+  background: #fff;
+  padding: 0;
 }
 
 .partner-product-summary-indicator {
   position: absolute;
-  top: 4px;
-  bottom: 4px;
-  left: 4px;
-  width: calc((100% - 8px) / 3);
-  border-radius: 12px;
-  background: #fff;
-  box-shadow: 0 6px 18px rgba(31, 41, 55, 0.08);
-  transition: transform 360ms cubic-bezier(0.22, 1, 0.36, 1);
+  bottom: -1px;
+  left: 0;
+  width: 33.3333%;
+  height: 2px;
+  border-radius: 999px;
+  background: #2b313d;
+  transition: transform 260ms ease;
   will-change: transform;
 }
 
@@ -2068,42 +2065,27 @@ body.partner-product-modal-open .partner-bottom-nav {
   position: relative;
   z-index: 1;
   display: flex;
+  height: 48px;
   min-width: 0;
-  flex-direction: column;
-  gap: 2px;
   align-items: center;
   justify-content: center;
   border: 0;
-  border-radius: 12px;
   background: transparent;
-  padding: 9px 8px;
-  color: #8a909c;
-  font-size: 11px;
-  font-weight: 700;
-  line-height: 1.25;
+  padding: 0 4px;
+  color: #a4abba;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1;
   text-align: center;
-  transition:
-    color 260ms cubic-bezier(0.22, 1, 0.36, 1),
-    transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
+  white-space: nowrap;
+  transition: color 180ms ease, transform 180ms ease;
 }
 
 .partner-product-summary button:active {
-  transform: scale(0.97);
+  transform: scale(0.98);
 }
 
 .partner-product-summary button.is-active {
-  color: #51535c;
-}
-
-.partner-product-summary strong {
-  color: inherit;
-  font-size: 17px;
-  font-weight: 700;
-  line-height: 1;
-  transition: color 260ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.partner-product-summary button.is-active strong {
   color: #2b313d;
 }
 
@@ -4435,16 +4417,17 @@ body.partner-profile-editing .partner-bottom-nav {
 
 .partner-profile-edit-head {
   display: flex;
-  height: 98px;
+  height: 56px;
   align-items: center;
-  gap: 18px;
-  padding: 24px 32px 0;
+  gap: 8px;
+  border-bottom: 1px solid #f2f3f5;
+  padding: 0 16px;
 }
 
 .partner-profile-edit-head button {
   display: flex;
-  width: 44px;
-  height: 44px;
+  width: 32px;
+  height: 32px;
   flex: 0 0 auto;
   align-items: center;
   justify-content: center;
@@ -4455,32 +4438,31 @@ body.partner-profile-editing .partner-bottom-nav {
 }
 
 .partner-profile-edit-head button img {
-  width: 22px;
-  height: 22px;
+  width: 18px;
+  height: 18px;
   object-fit: contain;
   opacity: 0.76;
-  transform: scaleX(1.18);
 }
 
 .partner-profile-edit-head h1 {
   margin: 0;
   color: #2b313d;
-  font-size: 24px;
-  font-weight: 700;
+  font-size: 17px;
+  font-weight: 600;
   line-height: 1.35;
 }
 
 .partner-profile-edit-content {
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  padding: 78px 32px 28px;
+  gap: 14px;
+  padding: 18px 20px 28px;
 }
 
 .partner-profile-photo-section {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
 .partner-profile-photo-section h2,
@@ -4488,7 +4470,7 @@ body.partner-profile-editing .partner-bottom-nav {
 .partner-profile-edit-field > span {
   margin: 0;
   color: #2b313d;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 600;
   line-height: 1.35;
 }
@@ -4496,15 +4478,15 @@ body.partner-profile-editing .partner-bottom-nav {
 .partner-profile-photo-section p {
   margin: 0;
   color: #a4abba;
-  font-size: 15px;
+  font-size: 13px;
   font-weight: 500;
   line-height: 1.35;
 }
 
 .partner-profile-photo-button {
   display: flex;
-  width: 76px;
-  height: 76px;
+  width: 64px;
+  height: 64px;
   align-items: center;
   justify-content: center;
   overflow: hidden;
@@ -4529,7 +4511,7 @@ body.partner-profile-editing .partner-bottom-nav {
 .partner-profile-edit-field {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 7px;
 }
 
 .partner-profile-edit-field input,
@@ -4543,14 +4525,14 @@ body.partner-profile-editing .partner-bottom-nav {
   background: #fff;
   color: #2b313d;
   font-family: inherit;
-  font-size: 17px;
+  font-size: 15px;
   font-weight: 500;
   line-height: 1.2;
   outline: none;
 }
 
 .partner-profile-edit-field input {
-  padding: 0 16px;
+  padding: 0 14px;
 }
 
 .partner-profile-edit-field input::placeholder {
@@ -4564,7 +4546,7 @@ body.partner-profile-editing .partner-bottom-nav {
 .partner-profile-hospital-field {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 7px;
 }
 
 .partner-profile-hospital-field > div {
@@ -5199,13 +5181,13 @@ body.partner-profile-editing .partner-bottom-nav {
 
 @media (max-width: 390px) {
   .partner-profile-edit-head {
-    padding-right: 26px;
-    padding-left: 26px;
+    padding-right: 14px;
+    padding-left: 14px;
   }
 
   .partner-profile-edit-content {
-    padding-right: 32px;
-    padding-left: 32px;
+    padding-right: 16px;
+    padding-left: 16px;
   }
 
   .partner-profile-dialog-layer {

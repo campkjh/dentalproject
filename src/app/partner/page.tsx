@@ -257,6 +257,13 @@ function productCardStatus(product: ProductRow) {
   return { label: '비노출', tone: 'muted' as const };
 }
 
+function productApprovalTabOf(product: ProductRow): ProductApprovalTab {
+  const approvalStatus = product.approval_status;
+  if (approvalStatus === 'rejected') return 'rejected';
+  if (approvalStatus?.startsWith('pending_')) return 'pending';
+  return 'approved';
+}
+
 function approvalMeta(product: ProductRow): ProductApprovalMeta {
   switch (product.approval_status) {
     case 'pending_create':
@@ -599,16 +606,14 @@ export default function PartnerHomePage() {
 
   const products = useMemo(() => hospital?.products ?? [], [hospital?.products]);
   const productApprovalCounts = useMemo(() => ({
-    approved: products.filter((product) => (product.approval_status ?? 'approved') === 'approved').length,
-    pending: products.filter((product) => product.approval_status?.startsWith('pending_')).length,
-    rejected: products.filter((product) => product.approval_status === 'rejected').length,
+    approved: products.filter((product) => productApprovalTabOf(product) === 'approved').length,
+    pending: products.filter((product) => productApprovalTabOf(product) === 'pending').length,
+    rejected: products.filter((product) => productApprovalTabOf(product) === 'rejected').length,
   }), [products]);
-  const visibleProducts = useMemo(() => products.filter((product) => {
-    const approvalStatus = product.approval_status ?? 'approved';
-    if (productApprovalTab === 'pending') return approvalStatus.startsWith('pending_');
-    if (productApprovalTab === 'rejected') return approvalStatus === 'rejected';
-    return approvalStatus === 'approved';
-  }), [productApprovalTab, products]);
+  const visibleProducts = useMemo(
+    () => products.filter((product) => productApprovalTabOf(product) === productApprovalTab),
+    [productApprovalTab, products]
+  );
 
   const updateStatus = async (id: string, status: ReservationRow['status']) => {
     const previous = hospitalData;
@@ -811,8 +816,7 @@ export default function PartnerHomePage() {
                 className={productApprovalTab === tab ? 'is-active' : undefined}
                 onClick={() => setProductApprovalTab(tab)}
               >
-                <strong>{productApprovalCounts[tab]}</strong>
-                {PRODUCT_APPROVAL_TAB_LABEL[tab]}
+                {PRODUCT_APPROVAL_TAB_LABEL[tab]}({productApprovalCounts[tab]})
               </button>
             ))}
           </div>
