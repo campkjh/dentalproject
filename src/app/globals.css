@@ -2060,6 +2060,13 @@ body.partner-product-modal-open .partner-bottom-nav {
   outline: none;
 }
 
+.partner-community-search-panel input:focus {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+  outline: none;
+}
+
 .partner-community-search-panel input::placeholder {
   color: #a4abba;
 }
