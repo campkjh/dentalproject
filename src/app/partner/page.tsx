@@ -803,6 +803,26 @@ export default function PartnerHomePage() {
       } else {
         showToast(productModal.mode === 'create' ? '상품 추가 승인 요청을 보냈습니다.' : '상품 수정 승인 요청을 보냈습니다.');
       }
+      const nextTab: ProductApprovalTab = payload.approvalRequired === false ? 'approved' : 'pending';
+      setProductApprovalTab(nextTab);
+      if (productModal.mode === 'create' && payload.product) {
+        mutateHospital((current) => current?.hospital
+          ? {
+              ...current,
+              hospital: {
+                ...current.hospital,
+                products: [
+                  {
+                    ...payload.product,
+                    reservation_count: 0,
+                  },
+                  ...(current.hospital.products ?? []),
+                ],
+              },
+            }
+          : current
+        );
+      }
       setProductModal(null);
       await refreshHospital({ force: true, showLoading: false });
     } catch {

@@ -108,9 +108,10 @@ async function getOwnedHospital() {
   const { data: { user } } = await sb.auth.getUser();
   if (!user) return { error: NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 }) };
 
-  const { data: hospital } = await sb
+  const admin = await createAdminClient();
+  const { data: hospital } = await admin
     .from('hospitals')
-    .select('id')
+    .select('id, slug')
     .eq('owner_id', user.id)
     .maybeSingle();
 
@@ -176,7 +177,7 @@ export async function POST(req: NextRequest) {
       approval_status: 'pending_create',
       pending_changes: null,
     })
-    .select('id')
+    .select('id, title, location, price, original_price, discount, rating, review_count, image_url, detail_image_url, tags, category, sub_category, status, approval_status, pending_changes, created_at')
     .single();
 
   if (insertError && isMissingProductColumn(insertError, 'detail_image_url')) {
@@ -189,13 +190,13 @@ export async function POST(req: NextRequest) {
         approval_status: 'pending_create',
         pending_changes: null,
       })
-      .select('id')
+      .select('id, title, location, price, original_price, discount, rating, review_count, image_url, detail_image_url, tags, category, sub_category, status, approval_status, pending_changes, created_at')
       .single();
     data = retry.data;
     insertError = retry.error;
   }
 
-  if (!insertError) return NextResponse.json({ ok: true, productId: data?.id, approvalRequired: true });
+  if (!insertError) return NextResponse.json({ ok: true, productId: data?.id, product: data, approvalRequired: true });
   if (!isMissingApprovalColumn(insertError)) {
     return NextResponse.json({ error: insertError.message }, { status: 400 });
   }
@@ -207,7 +208,7 @@ export async function POST(req: NextRequest) {
       hospital_id: hospital.id,
       status: 'active',
     })
-    .select('id')
+    .select('id, title, location, price, original_price, discount, rating, review_count, image_url, detail_image_url, tags, category, sub_category, status, created_at')
     .single();
 
   if (fallback.error && isMissingProductColumn(fallback.error, 'detail_image_url')) {
@@ -218,12 +219,12 @@ export async function POST(req: NextRequest) {
         hospital_id: hospital.id,
         status: 'active',
       })
-      .select('id')
+      .select('id, title, location, price, original_price, discount, rating, review_count, image_url, tags, category, sub_category, status, created_at')
       .single();
   }
 
   if (fallback.error) return NextResponse.json({ error: fallback.error.message }, { status: 400 });
-  return NextResponse.json({ ok: true, productId: fallback.data.id, approvalRequired: false });
+  return NextResponse.json({ ok: true, productId: fallback.data.id, product: fallback.data, approvalRequired: false });
 }
 
 export async function PATCH(req: NextRequest) {
