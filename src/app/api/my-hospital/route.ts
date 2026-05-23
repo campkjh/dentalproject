@@ -38,16 +38,6 @@ function normalizeProductRow(product: any) {
   };
 }
 
-function isMissingProductColumn(error: { message?: string; details?: string | null; hint?: string | null } | null, column: string) {
-  const text = `${error?.message ?? ''} ${error?.details ?? ''} ${error?.hint ?? ''}`.toLowerCase();
-  return text.includes(column.toLowerCase());
-}
-
-function firstRelation<T>(value: T | T[] | null | undefined): T | null {
-  if (Array.isArray(value)) return value[0] ?? null;
-  return value ?? null;
-}
-
 const hospitalSelect = `
   *,
   doctors (*),
@@ -125,6 +115,74 @@ async function fetchHospitalProducts(
     )),
     error: null,
   };
+}
+
+async function fetchHospitalProductsWithFallback(
+  admin: Awaited<ReturnType<typeof createAdminClient>>,
+  hospital: any
+) {
+  const selectors = [
+    `id, title, location, price, original_price, discount, rating, review_count, image_url, tags,
+       detail_image_url, category, sub_category, status, approval_status, pending_changes, created_at`,
+    'id, title, location, price, original_price, discount, rating, review_count, image_url, tags, category, sub_category, status, approval_status, pending_changes, created_at',
+    'id, title, location, price, original_price, discount, rating, review_count, image_url, tags, detail_image_url, category, sub_category, status, created_at',
+    'id, title, location, price, original_price, discount, rating, review_count, image_url, tags, category, sub_category, status, created_at',
+  ];
+
+  let lastResult: any = { data: [], error: null };
+  for (const selector of selectors) {
+    const result = await fetchHospitalProducts(admin, hospital, selector);
+    lastResult = result;
+    if (!result.error) return result;
+  }
+  return lastResult;
+}
+
+async function attachReservationRelations(
+  admin: Awaited<ReturnType<typeof createAdminClient>>,
+  reservations: any[],
+  products: any[]
+) {
+  const userIds = Array.from(new Set(reservations.map((row) => row.user_id).filter(Boolean)));
+  const doctorIds = Array.from(new Set(reservations.map((row) => row.doctor_id).filter(Boolean)));
+  const productIds = Array.from(new Set(reservations.map((row) => row.product_id).filter(Boolean)));
+
+  const [usersRes, doctorsRes, linkedProductsRes] = await Promise.all([
+    userIds.length
+      ? admin.from('profiles').select('id, name, phone').in('id', userIds)
+      : Promise.resolve({ data: [] }),
+    doctorIds.length
+      ? admin.from('doctors').select('id, name, title').in('id', doctorIds)
+      : Promise.resolve({ data: [] }),
+    productIds.length
+      ? admin.from('products').select('id, title, image_url, price').in('id', productIds)
+      : Promise.resolve({ data: [] }),
+  ]);
+
+  const userById = new Map(((usersRes.data ?? []) as any[]).map((row) => [row.id, row]));
+  const doctorById = new Map(((doctorsRes.data ?? []) as any[]).map((row) => [row.id, row]));
+  const productById = new Map([
+    ...products.map((product) => [product.id, product] as const),
+    ...((linkedProductsRes.data ?? []) as any[]).map((product) => [product.id, product] as const),
+  ]);
+  const fallbackProduct = products.find((product) => product.image_url) ?? products[0] ?? null;
+
+  return reservations.map((reservation) => {
+    const linkedProduct = productById.get(reservation.product_id) ?? fallbackProduct;
+    return {
+      ...reservation,
+      user: userById.get(reservation.user_id) ?? null,
+      doctor: doctorById.get(reservation.doctor_id) ?? null,
+      product: linkedProduct
+        ? {
+            id: linkedProduct.id,
+            title: linkedProduct.title,
+            image_url: normalizeProductImageUrl(linkedProduct.image_url) ?? null,
+            price: linkedProduct.price ?? null,
+          }
+        : null,
+    };
+  });
 }
 
 async function fetchHospitalRows(
@@ -213,11 +271,8 @@ export async function GET() {
   await cancelExpiredPendingReservations(admin, { hospitalId: hospital.id });
   await completePastConfirmedReservations(admin, { hospitalId: hospital.id });
 
-  const productColumns = `id, title, location, price, original_price, discount, rating, review_count, image_url, tags,
-       detail_image_url, category, sub_category, status, approval_status, pending_changes, created_at`;
-
-  const [productsRes, reviewsRes, reservationsRes, productReservationsRes] = await Promise.all([
-    fetchHospitalProducts(admin, hospital, productColumns),
+  const [productsRes, reviewsRes, reservationsRes] = await Promise.all([
+    fetchHospitalProductsWithFallback(admin, hospital),
     fetchHospitalRows(
       admin,
       'reviews',
@@ -234,35 +289,28 @@ export async function GET() {
       hospital,
         `id, user_id, hospital_id, product_id, doctor_id, status, visit_at, reservation_at,
          cancel_at, cancel_reason, amount, customer_name, customer_phone, payment_type,
-         payment_method, memo, created_at, updated_at,
-         user:profiles!reservations_user_id_fkey (name, phone),
-         product:products (id, title, image_url, price),
-         doctor:doctors (id, name, title)`,
+         payment_method, memo, created_at, updated_at`,
       { orderBy: 'reservation_at', ascending: false, limit: 100 }
-    ),
-    fetchHospitalRows(
-      admin,
-      'reservations',
-      hospital,
-      'id, product_id',
-      { notNull: 'product_id', limit: 1000 }
     ),
   ]);
 
   let products: any[] = (productsRes.data ?? []).map(normalizeProductRow).filter(Boolean);
-  if (productsRes.error) {
-    const fallback = await fetchHospitalProducts(
+  if (reservationsRes.error) {
+    const fallbackReservations = await fetchHospitalRows(
       admin,
+      'reservations',
       hospital,
-      isMissingProductColumn(productsRes.error, 'detail_image_url')
-        ? 'id, title, location, price, original_price, discount, rating, review_count, image_url, tags, category, sub_category, status, approval_status, pending_changes, created_at'
-        : 'id, title, location, price, original_price, discount, rating, review_count, image_url, tags, category, sub_category, status, created_at'
+      `id, user_id, hospital_id, product_id, doctor_id, status, visit_at, reservation_at,
+       cancel_at, cancel_reason, amount, customer_name, customer_phone, payment_type,
+       payment_method, created_at`,
+      { orderBy: 'reservation_at', ascending: false, limit: 100 }
     );
-    products = (fallback.data ?? []).map(normalizeProductRow).filter(Boolean);
+    reservationsRes.data = fallbackReservations.data;
+    reservationsRes.error = fallbackReservations.error;
   }
 
   const reservationCountByProduct = new Map<string, number>();
-  for (const row of productReservationsRes.data ?? []) {
+  for (const row of reservationsRes.data ?? []) {
     if (!row.product_id) continue;
     reservationCountByProduct.set(row.product_id, (reservationCountByProduct.get(row.product_id) ?? 0) + 1);
   }
@@ -271,26 +319,7 @@ export async function GET() {
     reservation_count: reservationCountByProduct.get(product.id) ?? 0,
   }));
 
-  const productById = new Map(products.map((product) => [product.id, product]));
-  const fallbackProduct = products.find((product) => product.image_url) ?? products[0] ?? null;
-  const reservationRows = (reservationsRes.data ?? []).map((reservation: any) => {
-    const relationProduct = normalizeProductRow(firstRelation(reservation.product));
-    const linkedProduct = relationProduct
-      ?? productById.get(reservation.product_id)
-      ?? fallbackProduct;
-
-    return {
-      ...reservation,
-      product: linkedProduct
-        ? {
-            id: linkedProduct.id,
-            title: linkedProduct.title,
-            image_url: normalizeProductImageUrl(linkedProduct.image_url) ?? null,
-            price: linkedProduct.price ?? null,
-          }
-        : null,
-    };
-  });
+  const reservationRows = await attachReservationRelations(admin, reservationsRes.data ?? [], products);
 
   const reservationLinks = reservationRows.flatMap((reservation: any) => [
     `/reservations/${reservation.id}`,
