@@ -48,11 +48,31 @@ function firstRelation<T>(value: T | T[] | null | undefined): T | null {
   return value ?? null;
 }
 
-function productHospitalIds(hospital: any) {
-  return Array.from(new Set([
-    hospital?.id,
-    hospital?.slug,
-  ].filter((value): value is string => typeof value === 'string' && value.trim().length > 0)));
+async function fetchHospitalProducts(
+  admin: Awaited<ReturnType<typeof createAdminClient>>,
+  hospital: any,
+  selectColumns: string
+) {
+  const hospitalId = typeof hospital?.id === 'string' ? hospital.id.trim() : '';
+  const hospitalSlug = typeof hospital?.slug === 'string' ? hospital.slug.trim() : '';
+
+  const byId = await admin
+    .from('products')
+    .select(selectColumns)
+    .eq('hospital_id', hospitalId)
+    .order('created_at', { ascending: false });
+
+  if (byId.error || (byId.data?.length ?? 0) > 0 || !hospitalSlug || hospitalSlug === hospitalId) {
+    return byId;
+  }
+
+  const bySlug = await admin
+    .from('products')
+    .select(selectColumns)
+    .eq('hospital_id', hospitalSlug)
+    .order('created_at', { ascending: false });
+
+  return bySlug.error ? byId : bySlug;
 }
 
 export async function GET() {
@@ -98,19 +118,12 @@ export async function GET() {
   // Reviews + recent reservations
   const admin = await createAdminClient();
   await completePastConfirmedReservations(admin, { hospitalId: hospital.id });
-  const hospitalProductIds = productHospitalIds(hospital);
 
-  const productsQuery = admin
-    .from('products')
-    .select(
-      `id, title, location, price, original_price, discount, rating, review_count, image_url, tags,
-       detail_image_url, category, sub_category, status, approval_status, pending_changes, created_at`
-    )
-    .in('hospital_id', hospitalProductIds)
-    .order('created_at', { ascending: false });
+  const productColumns = `id, title, location, price, original_price, discount, rating, review_count, image_url, tags,
+       detail_image_url, category, sub_category, status, approval_status, pending_changes, created_at`;
 
   const [productsRes, reviewsRes, reservationsRes, productReservationsRes] = await Promise.all([
-    productsQuery,
+    fetchHospitalProducts(admin, hospital, productColumns),
     sb
       .from('reviews')
       .select('*, author:profiles!reviews_author_id_fkey (name)')
@@ -135,15 +148,13 @@ export async function GET() {
 
   let products: any[] = (productsRes.data ?? []).map(normalizeProductRow).filter(Boolean);
   if (productsRes.error) {
-    const fallback = await admin
-      .from('products')
-      .select(
-        isMissingProductColumn(productsRes.error, 'detail_image_url')
-          ? 'id, title, location, price, original_price, discount, rating, review_count, image_url, tags, category, sub_category, status, approval_status, pending_changes, created_at'
-          : 'id, title, location, price, original_price, discount, rating, review_count, image_url, tags, category, sub_category, status, created_at'
-      )
-      .in('hospital_id', hospitalProductIds)
-      .order('created_at', { ascending: false });
+    const fallback = await fetchHospitalProducts(
+      admin,
+      hospital,
+      isMissingProductColumn(productsRes.error, 'detail_image_url')
+        ? 'id, title, location, price, original_price, discount, rating, review_count, image_url, tags, category, sub_category, status, approval_status, pending_changes, created_at'
+        : 'id, title, location, price, original_price, discount, rating, review_count, image_url, tags, category, sub_category, status, created_at'
+    );
     products = (fallback.data ?? []).map(normalizeProductRow).filter(Boolean);
   }
 
