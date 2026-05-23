@@ -6597,7 +6597,9 @@ body.partner-profile-editing .partner-bottom-nav {
 }
 
 .partner-schedule-memo {
+  width: 100%;
   min-height: 80px;
+  border: 0;
   white-space: pre-line;
   border-radius: 12px;
   background: #f9f9f9;
@@ -6606,6 +6608,7 @@ body.partner-profile-editing .partner-bottom-nav {
   font-size: 16px;
   font-weight: 500;
   line-height: 1.4;
+  text-align: left;
 }
 
 .partner-reservations-screen .partner-schedule-section {
@@ -6667,6 +6670,32 @@ body.partner-profile-editing .partner-bottom-nav {
 .partner-assign-dialog {
   gap: 8px;
   padding-bottom: 12px;
+}
+
+.partner-memo-dialog {
+  gap: 10px;
+  padding-bottom: 12px;
+}
+
+.partner-memo-dialog textarea {
+  width: calc(100% - 24px);
+  min-height: 160px;
+  margin: 0 12px;
+  resize: none;
+  border: 1px solid #edf0f4;
+  border-radius: 14px;
+  background: #f9f9f9;
+  padding: 14px;
+  color: #2b313d;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.45;
+  outline: none;
+}
+
+.partner-memo-dialog textarea::placeholder {
+  color: #a4abba;
 }
 
 .partner-assign-field {

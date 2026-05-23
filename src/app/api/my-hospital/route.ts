@@ -150,7 +150,8 @@ export async function GET() {
       .from('reservations')
       .select(
         `*, user:profiles!reservations_user_id_fkey (name, phone),
-            product:products (id, title, image_url, price)`
+            product:products (id, title, image_url, price),
+            doctor:doctors (id, name, title)`
       )
       .eq('hospital_id', hospital.id)
       .order('reservation_at', { ascending: false })

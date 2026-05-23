@@ -208,6 +208,16 @@ export async function PATCH(
     patch.doctor_id = doctorId;
   }
 
+  if (hasField(body, 'memo')) {
+    if (!isHospitalManager) {
+      return NextResponse.json({ error: '메모 수정 권한이 없습니다.' }, { status: 403 });
+    }
+
+    patch.memo = typeof body.memo === 'string' && body.memo.trim()
+      ? body.memo.trim()
+      : null;
+  }
+
   if (hasField(body, 'reservationAt')) {
     if (!isHospitalManager) {
       return NextResponse.json({ error: '예약일시 변경 권한이 없습니다.' }, { status: 403 });

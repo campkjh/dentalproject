@@ -73,10 +73,12 @@ function ReservationScheduleCard({
   row,
   onAssignRequest,
   onDetailRequest,
+  onMemoRequest,
 }: {
   row: ReservationRow;
   onAssignRequest: (row: ReservationRow) => void;
   onDetailRequest: (id: string) => void;
+  onMemoRequest: (row: ReservationRow) => void;
 }) {
   const name = row.user?.name ?? row.customer_name ?? '환자';
   const phone = row.user?.phone ?? row.customer_phone ?? '';
@@ -107,9 +109,9 @@ function ReservationScheduleCard({
         </p>
         <button type="button" onClick={() => onAssignRequest(row)}>{assigned ? '변경' : '지정'}</button>
       </div>
-      <div className="partner-schedule-memo">
+      <button type="button" className="partner-schedule-memo" onClick={() => onMemoRequest(row)}>
         {row.memo || '메모 없음'}
-      </div>
+      </button>
     </article>
   );
 }
@@ -136,6 +138,17 @@ function dateFromKey(value: string) {
 
 function timeHourLabel(time: string) {
   return `${Number(time.slice(0, 2))}시`;
+}
+
+function memoTimestamp() {
+  const d = new Date();
+  return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
+function appendReservationMemo(current: string | null | undefined, line: string) {
+  const trimmed = current?.trim();
+  const nextLine = `[${memoTimestamp()}] ${line}`;
+  return trimmed ? `${trimmed}\n${nextLine}` : nextLine;
 }
 
 function applyScheduleAction(settings: ScheduleSettings, action: ScheduleAction): ScheduleSettings {
@@ -391,6 +404,9 @@ export default function PartnerReservationsPage() {
   const [assignTarget, setAssignTarget] = useState<ReservationRow | null>(null);
   const [assignDoctorId, setAssignDoctorId] = useState('');
   const [assigning, setAssigning] = useState(false);
+  const [memoTarget, setMemoTarget] = useState<ReservationRow | null>(null);
+  const [memoDraft, setMemoDraft] = useState('');
+  const [memoSaving, setMemoSaving] = useState(false);
   const {
     data: hospitalData,
     loading,
@@ -434,28 +450,43 @@ export default function PartnerReservationsPage() {
     setAssignDoctorId(row.doctor_id ?? '');
   };
 
+  const openMemo = (row: ReservationRow) => {
+    setMemoTarget(row);
+    setMemoDraft(row.memo ?? '');
+  };
+
   const saveAssign = async () => {
     if (!assignTarget) return;
     setAssigning(true);
     try {
       const doctorId = assignDoctorId || null;
+      const previousDoctorName = assignTarget.doctor?.name ?? null;
+      const nextDoctor = doctors.find((item) => item.id === doctorId) ?? null;
+      const nextDoctorName = nextDoctor?.name ?? null;
+      const memoLine = previousDoctorName && nextDoctorName && previousDoctorName !== nextDoctorName
+        ? `${previousDoctorName} 원장에서 ${nextDoctorName} 원장으로 담당 변경`
+        : !previousDoctorName && nextDoctorName
+          ? `${nextDoctorName} 원장 담당 지정`
+          : previousDoctorName && !nextDoctorName
+            ? `${previousDoctorName} 원장 담당 해제`
+            : null;
+      const nextMemo = memoLine ? appendReservationMemo(assignTarget.memo, memoLine) : assignTarget.memo ?? '';
       const res = await fetch(`/api/reservations/${assignTarget.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ doctorId }),
+        body: JSON.stringify({ doctorId, ...(memoLine ? { memo: nextMemo } : {}) }),
       });
       if (!res.ok) {
         const payload = await res.json().catch(() => ({}));
         showToast(payload.error || '담당의 저장에 실패했습니다.');
         return;
       }
-      const doctor = doctors.find((item) => item.id === doctorId);
       mutateHospital((current) => current
         ? {
           ...current,
           reservations: current.reservations.map((row) => (
             row.id === assignTarget.id
-              ? { ...row, doctor_id: doctorId, doctor: doctor ? { name: doctor.name } : null }
+              ? { ...row, doctor_id: doctorId, doctor: nextDoctor ? { name: nextDoctor.name } : null, memo: nextMemo }
               : row
           )),
         }
@@ -467,6 +498,39 @@ export default function PartnerReservationsPage() {
       showToast('네트워크 오류가 발생했습니다.');
     } finally {
       setAssigning(false);
+    }
+  };
+
+  const saveMemo = async () => {
+    if (!memoTarget || memoSaving) return;
+    setMemoSaving(true);
+    try {
+      const nextMemo = memoDraft.trim();
+      const res = await fetch(`/api/reservations/${memoTarget.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ memo: nextMemo }),
+      });
+      if (!res.ok) {
+        const payload = await res.json().catch(() => ({}));
+        showToast(payload.error || '메모 저장에 실패했습니다.');
+        return;
+      }
+      mutateHospital((current) => current
+        ? {
+          ...current,
+          reservations: current.reservations.map((row) => (
+            row.id === memoTarget.id ? { ...row, memo: nextMemo } : row
+          )),
+        }
+        : current
+      );
+      setMemoTarget(null);
+      showToast('메모를 저장했습니다.');
+    } catch {
+      showToast('네트워크 오류가 발생했습니다.');
+    } finally {
+      setMemoSaving(false);
     }
   };
 
@@ -565,11 +629,38 @@ export default function PartnerReservationsPage() {
         ) : (
           <div className="partner-schedule-list">
             {dayItems.map((row) => (
-              <ReservationScheduleCard key={row.id} row={row} onAssignRequest={openAssign} onDetailRequest={(id) => router.push(`/partner/reservations/${id}`)} />
+              <ReservationScheduleCard
+                key={row.id}
+                row={row}
+                onAssignRequest={openAssign}
+                onMemoRequest={openMemo}
+                onDetailRequest={(id) => router.push(`/partner/reservations/${id}`)}
+              />
             ))}
           </div>
         )}
       </section>
+
+      {memoTarget && (
+        <div className="partner-figma-dialog-backdrop" role="presentation">
+          <div className="partner-figma-alert partner-memo-dialog" role="dialog" aria-modal="true">
+            <div className="partner-figma-alert-copy">
+              <h2>메모 수정</h2>
+              <p>{memoTarget.user?.name ?? memoTarget.customer_name ?? '환자'} 예약 메모를 수정합니다.</p>
+            </div>
+            <textarea
+              value={memoDraft}
+              onChange={(event) => setMemoDraft(event.target.value)}
+              placeholder="메모를 입력해주세요"
+              autoFocus
+            />
+            <div className="partner-figma-alert-actions">
+              <button type="button" onClick={saveMemo} disabled={memoSaving}>저장</button>
+              <button type="button" onClick={() => setMemoTarget(null)} disabled={memoSaving}>취소</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {assignTarget && (
         <div className="partner-figma-dialog-backdrop" role="presentation">

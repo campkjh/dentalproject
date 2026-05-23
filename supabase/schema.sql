@@ -215,6 +215,7 @@ create table if not exists public.reservations (
   customer_phone     text not null,
   payment_type       text,
   payment_method     text,
+  memo               text,
   created_at         timestamptz not null default now(),
   updated_at         timestamptz not null default now()
 );
