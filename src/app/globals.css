@@ -2613,7 +2613,7 @@ body.partner-product-modal-open .partner-bottom-nav {
   bottom: 0;
   left: 0;
   width: 64px;
-  height: 3px;
+  height: 2px;
   border-radius: 999px;
   background: #2b313d;
   transition: transform 260ms ease, width 260ms ease;
