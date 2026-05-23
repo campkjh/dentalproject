@@ -2043,11 +2043,18 @@ body.partner-product-modal-open .partner-bottom-nav {
   opacity: 0;
   padding: 0 12px;
   transform: translateY(-8px);
+  box-shadow: none;
   transition:
     max-height 260ms cubic-bezier(0.22, 1, 0.36, 1),
     opacity 180ms ease,
     padding 260ms cubic-bezier(0.22, 1, 0.36, 1),
     transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.partner-community-search-panel:focus-within {
+  background: #f2f3f5;
+  box-shadow: none;
+  outline: none;
 }
 
 .partner-community-screen.is-search-open .partner-community-search-panel {
@@ -2068,13 +2075,16 @@ body.partner-product-modal-open .partner-bottom-nav {
   font-weight: 500;
   line-height: 24px;
   outline: none;
+  appearance: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.partner-community-search-panel input:focus {
-  border-color: transparent;
-  background: transparent;
-  box-shadow: none;
-  outline: none;
+.partner-community-search-panel input:focus,
+.partner-community-search-panel input:focus-visible {
+  border-color: transparent !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  outline: none !important;
 }
 
 .partner-community-search-panel input::placeholder {
