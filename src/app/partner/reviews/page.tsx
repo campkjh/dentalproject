@@ -152,15 +152,6 @@ export default function PartnerReviewsPage() {
 
   return (
     <div className="partner-mobile-screen has-fixed-title">
-      <header className="partner-screen-title with-action">
-        <h1>병원관리</h1>
-        <nav className="partner-inline-segment" aria-label="병원관리 탭">
-          <Link href="/partner/hospital-info">병원</Link>
-          <Link href="/partner/doctors">멤버</Link>
-          <Link href="/partner/reviews" className="is-active">리뷰</Link>
-        </nav>
-      </header>
-
       <section className="partner-review-content">
         {/* Score */}
         <div className="partner-review-score">

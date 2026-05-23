@@ -54,16 +54,6 @@ function buildHourDrafts(hospital: HospitalRow | null): HourDraft[] {
   });
 }
 
-function SegmentNav() {
-  return (
-    <nav className="partner-inline-segment" aria-label="병원관리 탭">
-      <Link href="/partner/hospital-info" className="is-active">병원</Link>
-      <Link href="/partner/doctors">멤버</Link>
-      <Link href="/partner/reviews">리뷰</Link>
-    </nav>
-  );
-}
-
 function hourLines(hospital: HospitalRow) {
   const rows = hospital.operating_hours ?? [];
   return DISPLAY_DAY_ORDER
@@ -487,11 +477,6 @@ export default function PartnerHospitalInfoPage() {
         onChange={(e) => { const f = e.currentTarget.files?.[0]; e.currentTarget.value = ''; if (f) void handleCoverUpload(f); }} />
       <input ref={logoInputRef} type="file" accept="image/*" className="partner-hidden-file"
         onChange={(e) => { const f = e.currentTarget.files?.[0]; e.currentTarget.value = ''; if (f) void handleLogoUpload(f); }} />
-
-      <header className="partner-screen-title with-action">
-        <h1>병원관리</h1>
-        <SegmentNav />
-      </header>
 
       {/* 대문사진 슬라이더 */}
       <section className="partner-hospital-cover" style={{ position: 'relative', overflow: 'hidden' }}>

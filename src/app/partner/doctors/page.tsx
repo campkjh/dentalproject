@@ -182,15 +182,6 @@ export default function PartnerDoctorsPage() {
 
   return (
     <div className="partner-mobile-screen has-fixed-title">
-      <header className="partner-screen-title with-action">
-        <h1>병원관리</h1>
-        <nav className="partner-inline-segment" aria-label="병원관리 탭">
-          <Link href="/partner/hospital-info">병원</Link>
-          <Link href="/partner/doctors" className="is-active">멤버</Link>
-          <Link href="/partner/reviews">리뷰</Link>
-        </nav>
-      </header>
-
       {loading ? (
         <div className="partner-loading small">불러오는 중...</div>
       ) : (

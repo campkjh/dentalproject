@@ -14,6 +14,12 @@ const BOTTOM_NAV = [
   { label: '마이홈', href: '/partner/account', asset: 'my', match: ['/partner/account'] },
 ] as const;
 
+const MANAGEMENT_TABS = [
+  { label: '병원', href: '/partner/hospital-info' },
+  { label: '멤버', href: '/partner/doctors' },
+  { label: '리뷰', href: '/partner/reviews' },
+] as const;
+
 function PartnerNavIcon({ asset }: { asset: (typeof BOTTOM_NAV)[number]['asset'] }) {
   if (asset === 'home') return <img src="/partner-template/nav-home.svg" alt="" />;
   if (asset === 'hospital') return <img src="/partner-template/nav-hospital.svg" alt="" />;
@@ -81,6 +87,7 @@ export default function PartnerLayout({ children }: { children: React.ReactNode 
   const pathDepth = pathname.split('/').filter(Boolean).length;
   const hideNav = pathDepth >= 3;
   const routeTransitionClass = hideNav ? ' partner-route-detail-enter' : '';
+  const showManagementHeader = !hideNav && MANAGEMENT_TABS.some((tab) => pathname === tab.href);
 
   const isActive = (item: (typeof BOTTOM_NAV)[number]) => {
     if (item.href === '/partner') return pathname === '/partner';
@@ -90,6 +97,23 @@ export default function PartnerLayout({ children }: { children: React.ReactNode 
   return (
     <div className="partner-shell-bg">
       <div className="partner-phone-shell" style={hideNav ? { overflowX: 'visible' } : undefined}>
+        {showManagementHeader && (
+          <header className="partner-screen-title partner-management-title with-action">
+            <h1>병원관리</h1>
+            <nav className="partner-inline-segment" aria-label="병원관리 탭">
+              {MANAGEMENT_TABS.map((tab) => (
+                <Link
+                  key={tab.href}
+                  href={tab.href}
+                  className={pathname === tab.href ? 'is-active' : undefined}
+                  aria-current={pathname === tab.href ? 'page' : undefined}
+                >
+                  {tab.label}
+                </Link>
+              ))}
+            </nav>
+          </header>
+        )}
         <main className="partner-app-main" style={hideNav ? { paddingBottom: 0 } : undefined}>
           <div key={pathname} className={`partner-page${routeTransitionClass}`}>
             {children}

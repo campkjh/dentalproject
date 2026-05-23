@@ -1751,6 +1751,17 @@ body.partner-product-modal-open .partner-bottom-nav {
   background: #fff;
 }
 
+.partner-management-title {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 70;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(18px);
+}
+
 .partner-screen-title.with-action {
   justify-content: space-between;
 }
