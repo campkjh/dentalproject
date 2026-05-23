@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from 'next/server';
 import { attachScheduleHistory } from '@/lib/db/reservation-history';
-import { completePastConfirmedReservations } from '@/lib/db/reservation-status';
+import { cancelExpiredPendingReservations, completePastConfirmedReservations } from '@/lib/db/reservation-status';
 import { normalizeProductImageUrl } from '@/lib/images';
 import { createAdminClient, createClient } from '@/lib/supabase/server';
 
@@ -15,6 +15,7 @@ export async function GET() {
   if (!user) return NextResponse.json({ user: null });
 
   const admin = await createAdminClient();
+  await cancelExpiredPendingReservations(admin, { userId: user.id });
   await completePastConfirmedReservations(admin, { userId: user.id });
 
   const [profile, wishlist, recentlyViewed, reservations, coupons, notifications, pointHistory, interestedCats, recentSearches] =

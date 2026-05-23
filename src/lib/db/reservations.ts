@@ -1,8 +1,9 @@
-import { completePastConfirmedReservations } from '@/lib/db/reservation-status';
+import { cancelExpiredPendingReservations, completePastConfirmedReservations } from '@/lib/db/reservation-status';
 import { createAdminClient, createClient } from '@/lib/supabase/server';
 
 export async function listMyReservations(userId: string) {
   const admin = await createAdminClient();
+  await cancelExpiredPendingReservations(admin, { userId });
   await completePastConfirmedReservations(admin, { userId });
 
   const sb = await createClient();
@@ -21,6 +22,7 @@ export async function listMyReservations(userId: string) {
 
 export async function getReservation(id: string) {
   const admin = await createAdminClient();
+  await cancelExpiredPendingReservations(admin, { reservationId: id });
   await completePastConfirmedReservations(admin, { reservationId: id });
 
   const sb = await createClient();

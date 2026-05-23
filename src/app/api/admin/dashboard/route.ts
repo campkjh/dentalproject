@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from 'next/server';
-import { completePastConfirmedReservations } from '@/lib/db/reservation-status';
+import { cancelExpiredPendingReservations, completePastConfirmedReservations } from '@/lib/db/reservation-status';
 import { createAdminClient, createClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
@@ -14,6 +14,7 @@ export async function GET() {
   if (!profile?.is_admin) return NextResponse.json({ error: '관리자 권한이 필요합니다.' }, { status: 403 });
 
   const admin = await createAdminClient();
+  await cancelExpiredPendingReservations(admin);
   await completePastConfirmedReservations(admin);
 
   const [usersRes, hospitalsRes, reservationsRes, productsRes, reviewsRes] = await Promise.all([

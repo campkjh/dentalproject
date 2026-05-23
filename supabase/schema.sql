@@ -223,6 +223,9 @@ create table if not exists public.reservations (
 create index if not exists idx_reservations_user on public.reservations(user_id);
 create index if not exists idx_reservations_hospital on public.reservations(hospital_id);
 create index if not exists idx_reservations_status on public.reservations(status);
+create index if not exists idx_reservations_pending_created
+  on public.reservations(created_at)
+  where status = 'pending';
 
 do $$
 begin

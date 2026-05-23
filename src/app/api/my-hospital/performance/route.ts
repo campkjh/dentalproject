@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from 'next/server';
-import { completePastConfirmedReservations } from '@/lib/db/reservation-status';
+import { cancelExpiredPendingReservations, completePastConfirmedReservations } from '@/lib/db/reservation-status';
 import { createAdminClient, createClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
@@ -18,6 +18,7 @@ export async function GET() {
   if (!hospital) return NextResponse.json({ summary: null });
 
   const admin = await createAdminClient();
+  await cancelExpiredPendingReservations(admin, { hospitalId: hospital.id });
   await completePastConfirmedReservations(admin, { hospitalId: hospital.id });
 
   const [reservationsRes, reviewsRes, productsRes, consultRes] = await Promise.all([

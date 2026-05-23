@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse, type NextRequest } from 'next/server';
 import { attachScheduleHistory } from '@/lib/db/reservation-history';
-import { completePastConfirmedReservations } from '@/lib/db/reservation-status';
+import { cancelExpiredPendingReservations, completePastConfirmedReservations } from '@/lib/db/reservation-status';
 import { extractProductDetailImageUrl, getVisibleProductTags, normalizeProductImageUrl } from '@/lib/images';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 
@@ -133,6 +133,7 @@ export async function GET() {
 
   // Reviews + recent reservations
   const admin = await createAdminClient();
+  await cancelExpiredPendingReservations(admin, { hospitalId: hospital.id });
   await completePastConfirmedReservations(admin, { hospitalId: hospital.id });
 
   const productColumns = `id, title, location, price, original_price, discount, rating, review_count, image_url, tags,

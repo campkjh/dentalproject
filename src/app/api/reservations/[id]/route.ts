@@ -4,7 +4,7 @@ import {
   formatScheduleDate,
   getScheduleHistoryForReservation,
 } from '@/lib/db/reservation-history';
-import { completePastConfirmedReservations } from '@/lib/db/reservation-status';
+import { cancelExpiredPendingReservations, completePastConfirmedReservations } from '@/lib/db/reservation-status';
 import { normalizeProductImageUrl } from '@/lib/images';
 import { broadcastReservationChange } from '@/lib/realtime/server';
 import { createAdminClient, createClient } from '@/lib/supabase/server';
@@ -12,6 +12,13 @@ import { createAdminClient, createClient } from '@/lib/supabase/server';
 export const dynamic = 'force-dynamic';
 
 const VALID_STATUSES = new Set(['pending', 'confirmed', 'completed', 'cancelled']);
+
+type ReservationProduct = {
+  id: string;
+  title: string | null;
+  image_url: string | null;
+  price: number | null;
+};
 
 function isUuid(value: unknown): value is string {
   return typeof value === 'string' && /^[0-9a-f]{8}-/i.test(value);
@@ -60,6 +67,7 @@ export async function GET(
   if (!user) return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 });
 
   const admin = await createAdminClient();
+  await cancelExpiredPendingReservations(admin, { reservationId: id });
   const { data: reservation, error } = await admin
     .from('reservations')
     .select(`
@@ -91,9 +99,10 @@ export async function GET(
   const normalizedReservation = completed.length > 0
     ? { ...reservation, status: 'completed' }
     : reservation;
-  let product = Array.isArray((normalizedReservation as any).product)
-    ? (normalizedReservation as any).product[0] ?? null
-    : (normalizedReservation as any).product ?? null;
+  const productSource = (normalizedReservation as { product?: ReservationProduct | ReservationProduct[] | null }).product;
+  let product = Array.isArray(productSource)
+    ? productSource[0] ?? null
+    : productSource ?? null;
   if (!product) {
     const { data: fallbackProduct } = await admin
       .from('products')
@@ -134,6 +143,7 @@ export async function PATCH(
   if (!user) return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 });
 
   const admin = await createAdminClient();
+  await cancelExpiredPendingReservations(admin, { reservationId: id });
   const { data: reservation, error: reservationError } = await admin
     .from('reservations')
     .select('id, user_id, hospital_id, status, reservation_at, visit_at')
@@ -161,6 +171,10 @@ export async function PATCH(
   if (nextStatus) {
     if (!VALID_STATUSES.has(nextStatus)) {
       return NextResponse.json({ error: '지원하지 않는 예약 상태입니다.' }, { status: 400 });
+    }
+
+    if (reservation.status === 'cancelled' && nextStatus !== 'cancelled') {
+      return NextResponse.json({ error: '취소된 예약은 다시 변경할 수 없습니다.' }, { status: 400 });
     }
 
     if (!isHospitalManager && nextStatus !== 'cancelled') {
