@@ -720,14 +720,14 @@ function CommunityPageInner() {
 
 function FlowingBubbles({ questions }: { questions: Post[] }) {
   // Each question becomes a bubble with a deterministic pseudo-random
-  // variant and Y offset so the stream looks naturally scattered instead
-  // of a clean carousel row.
+  // variant and a small Y offset. Lanes are stacked vertically (top/bottom)
+  // so collisions between lanes are limited — only minor cross-lane overlap
+  // from the tails.
   type Spec = { id: string; title: string; variant: 'blue' | 'gray'; yOffset: number };
   const specs: Spec[] = questions.map((q, i) => {
-    const seed = (i * 9301 + 49297) & 0xffff;
-    const variant: 'blue' | 'gray' = (seed & 1) === 0 ? 'gray' : 'blue';
-    // -22 to +22 px Y variance
-    const yOffset = -22 + ((i * 37 + 11) % 45);
+    const variant: 'blue' | 'gray' = i % 2 === 0 ? 'gray' : 'blue';
+    // -6 to +6 px subtle Y variance, keeps lanes mostly clear
+    const yOffset = -6 + ((i * 41 + 13) % 13);
     return { id: q.id, title: q.title, variant, yOffset };
   });
   const laneA = specs.filter((_, i) => i % 2 === 0);
@@ -735,19 +735,25 @@ function FlowingBubbles({ questions }: { questions: Post[] }) {
   const safeA = laneA.length > 0 ? laneA : specs;
   const safeB = laneB.length > 0 ? laneB : specs;
 
+  const LANE_A_TOP = 30;
+  const LANE_B_TOP = 96;
+
   return (
     <div
       className="relative overflow-hidden"
       style={{
-        height: 132,
+        height: 138,
         maskImage:
           'linear-gradient(to right, transparent 0, #000 36px, #000 calc(100% - 36px), transparent 100%)',
         WebkitMaskImage:
           'linear-gradient(to right, transparent 0, #000 36px, #000 calc(100% - 36px), transparent 100%)',
       }}
     >
-      {/* Lane A — vertically-centered, faster */}
-      <div className="absolute left-0 right-0" style={{ top: '50%', transform: 'translateY(-50%)' }}>
+      {/* Lane A — upper row */}
+      <div
+        className="absolute left-0 right-0"
+        style={{ top: LANE_A_TOP, transform: 'translateY(-50%)' }}
+      >
         <div
           className="bubbles-flow-lane flex items-center gap-5 whitespace-nowrap will-change-transform"
           style={{ ['--bubble-flow-duration' as string]: '46s' }}
@@ -763,8 +769,11 @@ function FlowingBubbles({ questions }: { questions: Post[] }) {
           ))}
         </div>
       </div>
-      {/* Lane B — vertically-centered, slower, opposite Y bias for overlap */}
-      <div className="absolute left-0 right-0" style={{ top: '50%', transform: 'translateY(-50%)' }}>
+      {/* Lane B — lower row */}
+      <div
+        className="absolute left-0 right-0"
+        style={{ top: LANE_B_TOP, transform: 'translateY(-50%)' }}
+      >
         <div
           className="bubbles-flow-lane flex items-center gap-7 whitespace-nowrap will-change-transform"
           style={{ ['--bubble-flow-duration' as string]: '64s', animationDelay: '-26s' }}
