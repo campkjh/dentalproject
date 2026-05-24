@@ -854,7 +854,7 @@ function PopularPostsCarousel({
     <div
       ref={containerRef}
       onScroll={handleScroll}
-      className="flex gap-3 overflow-x-auto hide-scrollbar snap-x snap-mandatory pl-[24px] pr-[48px] pt-2 pb-12 lg:grid lg:grid-cols-3 lg:gap-4 lg:overflow-x-visible lg:snap-none lg:p-0"
+      className="flex gap-3 overflow-x-auto hide-scrollbar snap-x snap-mandatory scroll-pl-[24px] pl-[24px] pr-[48px] pt-2 pb-12 lg:grid lg:grid-cols-3 lg:gap-4 lg:overflow-x-visible lg:snap-none lg:p-0"
     >
       {posts.map((post, idx) => (
         <div
