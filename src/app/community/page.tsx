@@ -283,37 +283,10 @@ function CommunityPageInner() {
     };
   }, [popularPostIds]);
 
-  // Recent questions for live Q&A chat bubble feed
+  // Recent questions for live Q&A horizontal-flow chat bubbles
   const liveQuestions = basePosts
     .filter((p) => p.boardType === 'question')
     .slice(0, 12);
-  const BUBBLE_SLOT_HEIGHT = 56; // bubble (44) + gap (12)
-  const BUBBLE_VISIBLE_SLOTS = 3;
-  const BUBBLE_DWELL_MS = 2600;
-  const [bubbleIdx, setBubbleIdx] = useState(0);
-  const [bubbleAnim, setBubbleAnim] = useState(true);
-  const bubbleItems = liveQuestions.length > 0
-    ? [...liveQuestions, ...liveQuestions.slice(0, BUBBLE_VISIBLE_SLOTS)]
-    : [];
-
-  useEffect(() => {
-    if (effectiveActiveBoard !== '질문게시판' || liveQuestions.length === 0) return;
-    const id = setInterval(() => {
-      setBubbleAnim(true);
-      setBubbleIdx((i) => i + 1);
-    }, BUBBLE_DWELL_MS);
-    return () => clearInterval(id);
-  }, [effectiveActiveBoard, liveQuestions.length]);
-
-  const handleBubbleTransitionEnd = () => {
-    if (bubbleIdx >= liveQuestions.length) {
-      setBubbleAnim(false);
-      setBubbleIdx(0);
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => setBubbleAnim(true));
-      });
-    }
-  };
 
   const handleScroll = () => {
     if (scrollContainerRef.current) {
@@ -438,29 +411,18 @@ function CommunityPageInner() {
         {/* Skeleton */}
         {!catalogHydrated && posts.length === 0 && <CommunitySkeleton />}
 
-        {/* Popular posts - horizontal scroll */}
+        {/* Popular posts - scale-on-swipe carousel */}
         {!isSearching && popularPosts.length > 0 && (
-          <div className="bg-white px-2.5 py-4 mb-2">
-            <h3 className="text-[17px] font-bold text-gray-900 mb-3">
+          <div className="bg-white px-2.5 pt-4 pb-6 mb-2">
+            <h3 className="text-[17px] font-bold text-gray-900 mb-3 px-1">
               유저게시판 인기글
             </h3>
-            <div className="flex gap-3 overflow-x-auto hide-scrollbar pb-1 lg:grid lg:grid-cols-3 lg:gap-4 lg:overflow-x-visible">
-              {popularPosts.map((post) => {
-                const answerer = popularAnswerers[post.id];
-                return (
-                  <PopularPostCard
-                    key={post.id}
-                    post={post}
-                    answerer={answerer}
-                  />
-                );
-              })}
-            </div>
+            <PopularPostsCarousel posts={popularPosts} answerers={popularAnswerers} />
           </div>
         )}
 
-        {/* Live doctor Q&A - chat bubble feed */}
-        {!isSearching && effectiveActiveBoard === '질문게시판' && bubbleItems.length > 0 && (
+        {/* Live doctor Q&A - bubbles flowing right→left */}
+        {!isSearching && effectiveActiveBoard === '질문게시판' && liveQuestions.length > 0 && (
           <Link
             href={`/community/live`}
             className="block bg-white px-2.5 py-4 mb-2"
@@ -476,52 +438,7 @@ function CommunityPageInner() {
               <ChevronRight size={20} className="text-gray-400" />
             </div>
 
-            <div
-              className="relative overflow-hidden"
-              style={{
-                height: BUBBLE_SLOT_HEIGHT * BUBBLE_VISIBLE_SLOTS,
-                maskImage:
-                  'linear-gradient(to bottom, transparent 0, #000 28px, #000 calc(100% - 28px), transparent 100%)',
-                WebkitMaskImage:
-                  'linear-gradient(to bottom, transparent 0, #000 28px, #000 calc(100% - 28px), transparent 100%)',
-              }}
-            >
-              <div
-                onTransitionEnd={handleBubbleTransitionEnd}
-                style={{
-                  transform: `translateY(-${bubbleIdx * BUBBLE_SLOT_HEIGHT}px)`,
-                  transition: bubbleAnim
-                    ? 'transform 620ms cubic-bezier(0.22, 1, 0.36, 1)'
-                    : 'none',
-                }}
-              >
-                {bubbleItems.map((post, i) => {
-                  const isRight = i % 2 === 1;
-                  return (
-                    <div
-                      key={`${post.id}-${i}`}
-                      style={{
-                        height: BUBBLE_SLOT_HEIGHT,
-                        paddingTop: 6,
-                        paddingBottom: 6,
-                        boxSizing: 'border-box',
-                      }}
-                      className={`flex ${isRight ? 'justify-end' : 'justify-start'}`}
-                    >
-                      <span
-                        className={`inline-flex h-[44px] items-center px-4 text-[14px] font-semibold leading-none max-w-[78%] truncate ${
-                          isRight
-                            ? 'bg-[#1E85FF] text-white rounded-[22px] rounded-br-[6px]'
-                            : 'bg-[#F1F2F4] text-[#2B313D] rounded-[22px] rounded-bl-[6px]'
-                        }`}
-                      >
-                        {post.title}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
+            <FlowingBubbles questions={liveQuestions} />
           </Link>
         )}
 
@@ -800,7 +717,131 @@ function CommunityPageInner() {
   );
 }
 
+/* ===================== Flowing Chat Bubbles (right → left) ===================== */
+
+function FlowingBubbles({ questions }: { questions: Post[] }) {
+  // Split into two lanes; each lane animates infinitely. The lanes have
+  // different speeds + offsets so bubbles visually overlap as they pass.
+  const lane1 = questions.filter((_, i) => i % 2 === 0);
+  const lane2 = questions.filter((_, i) => i % 2 === 1);
+  // Need at least one bubble in each lane for the doubled-loop trick
+  const safeLane1 = lane1.length > 0 ? lane1 : questions;
+  const safeLane2 = lane2.length > 0 ? lane2 : questions;
+
+  return (
+    <div
+      className="relative overflow-hidden"
+      style={{
+        height: 96,
+        maskImage:
+          'linear-gradient(to right, transparent 0, #000 40px, #000 calc(100% - 40px), transparent 100%)',
+        WebkitMaskImage:
+          'linear-gradient(to right, transparent 0, #000 40px, #000 calc(100% - 40px), transparent 100%)',
+      }}
+    >
+      {/* Lane 1 — gray bubbles, top */}
+      <div
+        className="bubbles-flow-lane absolute top-1 left-0 flex items-center gap-3 whitespace-nowrap will-change-transform"
+        style={{ ['--bubble-flow-duration' as string]: '42s' }}
+      >
+        {[...safeLane1, ...safeLane1].map((post, i) => (
+          <BubbleChip key={`l1-${post.id}-${i}`} title={post.title} variant="gray" />
+        ))}
+      </div>
+      {/* Lane 2 — blue bubbles, bottom, slightly different speed for overlap */}
+      <div
+        className="bubbles-flow-lane absolute bottom-1 left-0 flex items-center gap-4 whitespace-nowrap will-change-transform"
+        style={{ ['--bubble-flow-duration' as string]: '54s', animationDelay: '-18s' }}
+      >
+        {[...safeLane2, ...safeLane2].map((post, i) => (
+          <BubbleChip key={`l2-${post.id}-${i}`} title={post.title} variant="blue" />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function BubbleChip({ title, variant }: { title: string; variant: 'gray' | 'blue' }) {
+  const isBlue = variant === 'blue';
+  return (
+    <span
+      className={`inline-flex h-[42px] items-center px-4 text-[14px] font-semibold leading-none flex-shrink-0 ${
+        isBlue
+          ? 'bg-[#1E85FF] text-white rounded-[22px] rounded-br-[6px]'
+          : 'bg-[#F1F2F4] text-[#2B313D] rounded-[22px] rounded-bl-[6px]'
+      }`}
+    >
+      <span className="truncate max-w-[260px]">{title}</span>
+    </span>
+  );
+}
+
 /* ===================== Popular Post Card ===================== */
+
+function PopularPostsCarousel({
+  posts,
+  answerers,
+}: {
+  posts: Post[];
+  answerers: Record<string, PopularAnswerer>;
+}) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const rafRef = useRef<number | null>(null);
+
+  const updateScales = () => {
+    const container = containerRef.current;
+    if (!container) return;
+    const center = container.scrollLeft + container.clientWidth / 2;
+    const children = container.children;
+    for (let i = 0; i < children.length; i++) {
+      const el = children[i] as HTMLElement;
+      const cardCenter = el.offsetLeft + el.offsetWidth / 2;
+      const dist = Math.abs(center - cardCenter);
+      const ref = el.offsetWidth + 12; // approx with gap
+      const t = Math.min(1, dist / ref);
+      // Center = 1.2 (+0.2 from baseline), edge = 0.8 (-0.2 from baseline)
+      const scale = 1.2 - t * 0.4;
+      el.style.transform = `scale(${scale})`;
+    }
+  };
+
+  const handleScroll = () => {
+    if (rafRef.current != null) return;
+    rafRef.current = requestAnimationFrame(() => {
+      rafRef.current = null;
+      updateScales();
+    });
+  };
+
+  useLayoutEffect(() => {
+    updateScales();
+    const onResize = () => updateScales();
+    window.addEventListener('resize', onResize);
+    return () => {
+      window.removeEventListener('resize', onResize);
+      if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [posts.length]);
+
+  return (
+    <div
+      ref={containerRef}
+      onScroll={handleScroll}
+      className="flex gap-3 overflow-x-auto hide-scrollbar snap-x snap-mandatory px-[calc((100%-220px)/2)] lg:grid lg:grid-cols-3 lg:gap-4 lg:overflow-x-visible lg:snap-none lg:px-0"
+    >
+      {posts.map((post, idx) => (
+        <div
+          key={post.id}
+          className="snap-center origin-center flex-shrink-0 will-change-transform lg:will-change-auto"
+          style={{ transform: `scale(${idx === 0 ? 1.2 : 0.8})` }}
+        >
+          <PopularPostCard post={post} answerer={answerers[post.id]} />
+        </div>
+      ))}
+    </div>
+  );
+}
 
 function PopularPostCard({
   post,
@@ -814,7 +855,7 @@ function PopularPostCard({
   return (
     <Link
       href={`/community/${post.id}`}
-      className="flex-shrink-0 w-[284px] rounded-[20px] border border-[#F1F2F5] bg-white p-4 shadow-[0_10px_28px_rgba(30,41,59,0.06)] transition-transform active:scale-[0.98]"
+      className="block w-[220px] rounded-[20px] border border-[#F1F2F5] bg-white p-4 shadow-[0_14px_32px_rgba(30,41,59,0.10)] transition-transform active:scale-[0.98]"
     >
       <div className="mb-3 flex items-start gap-3">
         <Avatar

@@ -364,6 +364,18 @@ body {
   to   { opacity: 1; transform: translateX(0); }
 }
 
+/* ===== Community live Q&A: bubbles flowing right→left ===== */
+@keyframes bubblesFlowLeft {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+.bubbles-flow-lane {
+  animation: bubblesFlowLeft var(--bubble-flow-duration, 38s) linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .bubbles-flow-lane { animation: none; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .partner-route-detail-enter {
     animation: none;
