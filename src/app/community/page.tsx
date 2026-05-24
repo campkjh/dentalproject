@@ -72,7 +72,7 @@ function getPostCreatedTime(post: Post) {
 
 function CommunityPageInner() {
   const searchParams = useSearchParams();
-  const { isDoctor, posts: storePosts, catalogHydrated } = useStore();
+  const { isDoctor, posts: storePosts, catalogHydrated, user, isLoggedIn } = useStore();
   const [dbPosts, setDbPosts] = useState<typeof storePosts | null>(null);
   const posts = dbPosts ?? storePosts;
   const [activeBoard, setActiveBoard] = useState('질문게시판');
@@ -82,6 +82,7 @@ function CommunityPageInner() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [popularAnswerers, setPopularAnswerers] = useState<Record<string, PopularAnswerer>>({});
+  const [myPostsMode, setMyPostsMode] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -151,9 +152,12 @@ function CommunityPageInner() {
   }, [searchOpen]);
 
   const activeCategoryIdx = questionCategories.indexOf(activeCategory);
-  const visiblePosts = isDoctor
+  const basePosts = isDoctor
     ? posts
     : posts.filter((p) => p.boardType === 'question');
+  const visiblePosts = myPostsMode && user?.id
+    ? basePosts.filter((p) => p.authorId === user.id)
+    : basePosts;
   const effectiveActiveBoard = isDoctor ? activeBoard : '질문게시판';
 
   useLayoutEffect(() => {
@@ -279,49 +283,37 @@ function CommunityPageInner() {
     };
   }, [popularPostIds]);
 
-  // Recent questions for live Q&A ticker (stop-and-go)
-  const liveQuestions = visiblePosts
+  // Recent questions for live Q&A chat bubble feed
+  const liveQuestions = basePosts
     .filter((p) => p.boardType === 'question')
-    .slice(0, 8);
-  const ITEM_HEIGHT = 92; // px per card incl. gap
-  const DWELL_MS = 2400; // pause on each card
-  const [tickerIdx, setTickerIdx] = useState(0);
-  const [tickerAnim, setTickerAnim] = useState(true);
-  const tickerItems = liveQuestions.length > 0
-    ? [...liveQuestions, liveQuestions[0]] // append first to allow seamless wrap
+    .slice(0, 12);
+  const BUBBLE_SLOT_HEIGHT = 56; // bubble (44) + gap (12)
+  const BUBBLE_VISIBLE_SLOTS = 3;
+  const BUBBLE_DWELL_MS = 2600;
+  const [bubbleIdx, setBubbleIdx] = useState(0);
+  const [bubbleAnim, setBubbleAnim] = useState(true);
+  const bubbleItems = liveQuestions.length > 0
+    ? [...liveQuestions, ...liveQuestions.slice(0, BUBBLE_VISIBLE_SLOTS)]
     : [];
 
   useEffect(() => {
     if (effectiveActiveBoard !== '질문게시판' || liveQuestions.length === 0) return;
     const id = setInterval(() => {
-      setTickerAnim(true);
-      setTickerIdx((i) => i + 1);
-    }, DWELL_MS);
+      setBubbleAnim(true);
+      setBubbleIdx((i) => i + 1);
+    }, BUBBLE_DWELL_MS);
     return () => clearInterval(id);
   }, [effectiveActiveBoard, liveQuestions.length]);
 
-  const handleTickerTransitionEnd = () => {
-    if (tickerIdx >= liveQuestions.length) {
-      setTickerAnim(false);
-      setTickerIdx(0);
+  const handleBubbleTransitionEnd = () => {
+    if (bubbleIdx >= liveQuestions.length) {
+      setBubbleAnim(false);
+      setBubbleIdx(0);
       requestAnimationFrame(() => {
-        requestAnimationFrame(() => setTickerAnim(true));
+        requestAnimationFrame(() => setBubbleAnim(true));
       });
     }
   };
-
-  const categoryEmoji: Record<string, string> = {
-    '임플란트': '🦷',
-    '치아교정': '💠',
-    '사랑니': '🪥',
-    '라미네이트': '✨',
-    '치아미백': '🤍',
-    '스케일링': '🫧',
-    '충치치료': '🩹',
-    '턱관절': '💊',
-  };
-  const pickCategory = (post: Post) =>
-    post.tags?.find((t) => categoryEmoji[t]) || post.tags?.[0] || '치과 상담';
 
   const handleScroll = () => {
     if (scrollContainerRef.current) {
@@ -344,8 +336,33 @@ function CommunityPageInner() {
   return (
     <div className="h-[100dvh] flex flex-col bg-white lg:h-auto lg:min-h-screen">
       <TopBar
-        title="커뮤니티"
         showBack={false}
+        titleNode={
+          <div className="flex items-baseline gap-3">
+            <button
+              type="button"
+              onClick={() => setMyPostsMode(false)}
+              className={`text-[22px] font-extrabold leading-none transition-colors ${
+                myPostsMode ? 'text-gray-300' : 'text-gray-900'
+              }`}
+            >
+              커뮤니티
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                if (!isLoggedIn) return;
+                setMyPostsMode(true);
+              }}
+              className={`text-[17px] font-bold leading-none transition-colors ${
+                myPostsMode ? 'text-gray-900' : 'text-gray-300'
+              }`}
+              aria-pressed={myPostsMode}
+            >
+              내글
+            </button>
+          </div>
+        }
         rightContent={
           <button
             type="button"
@@ -425,145 +442,87 @@ function CommunityPageInner() {
         {!isSearching && popularPosts.length > 0 && (
           <div className="bg-white px-2.5 py-4 mb-2">
             <h3 className="text-[17px] font-bold text-gray-900 mb-3">
-              인기글
+              유저게시판 인기글
             </h3>
             <div className="flex gap-3 overflow-x-auto hide-scrollbar pb-1 lg:grid lg:grid-cols-3 lg:gap-4 lg:overflow-x-visible">
               {popularPosts.map((post) => {
                 const answerer = popularAnswerers[post.id];
-                const answerCount = answerer?.answerCount ?? post.answerCount ?? 1;
                 return (
-                  <Link
+                  <PopularPostCard
                     key={post.id}
-                    href={`/community/${post.id}`}
-                    className="flex-shrink-0 w-[252px] rounded-[20px] border border-[#F3F5F8] bg-white p-4 shadow-[0_14px_32px_rgba(30,41,59,0.08)] transition-transform active:scale-[0.98]"
-                  >
-                    <div className="mb-3 flex items-start gap-3">
-                      <Avatar
-                        src={answerer?.profileImage}
-                        role="doctor"
-                        seed={answerer?.id || post.id}
-                        size={54}
-                        className="flex-shrink-0 bg-[#F2F7FF]"
-                      />
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-[16px] font-bold leading-6 text-[#2B313D]">
-                          {answerer?.name ?? '전문의 답변'}
-                        </p>
-                        <span className="mt-2 inline-flex h-8 items-center rounded-[8px] bg-[#1E85FF] px-3 text-[15px] font-bold leading-none text-white">
-                          답변 보기
-                        </span>
-                      </div>
-                    </div>
-                    <div className="mb-3 flex items-center gap-2 text-[13px] leading-5 text-[#A1A7B3]">
-                      <span>
-                        <strong className="font-bold text-[#51535C]">{answerCount}</strong> 답변 수
-                      </span>
-                      <span className="h-4 w-px bg-[#E5E7EB]" />
-                      <span>
-                        <strong className="font-bold text-[#51535C]">{post.viewCount.toLocaleString('ko-KR')}</strong> 조회
-                      </span>
-                    </div>
-                    <p className="text-[15px] font-semibold leading-6 text-[#51535C] line-clamp-2">
-                      {post.title}
-                    </p>
-                  </Link>
+                    post={post}
+                    answerer={answerer}
+                  />
                 );
               })}
             </div>
           </div>
         )}
 
-        {/* Live doctor Q&A - question board only */}
-        {!isSearching && effectiveActiveBoard === '질문게시판' && tickerItems.length > 0 && (
-          <div className="bg-white px-2.5 py-4 mb-2">
-            <div className="flex items-center justify-between mb-1">
+        {/* Live doctor Q&A - chat bubble feed */}
+        {!isSearching && effectiveActiveBoard === '질문게시판' && bubbleItems.length > 0 && (
+          <Link
+            href={`/community/live`}
+            className="block bg-white px-2.5 py-4 mb-2"
+          >
+            <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <img src="/icons/community-live-doctor-v2.svg" alt="" width={22} height={22} />
                 <h3 className="text-[17px] font-bold text-gray-900">실시간 의사에게 질문</h3>
+                <span className="inline-flex h-[20px] items-center rounded-[5px] bg-[#FF3B30] px-1.5 text-[11px] font-extrabold leading-none text-white tracking-wider">
+                  LIVE
+                </span>
               </div>
-              <Link href={`/community/write?board=question`} className="text-[13px] text-[#8037FF] font-semibold">
-                질문하기
-              </Link>
-            </div>
-            <div className="flex items-center gap-1.5 mb-3">
-              <span className="relative flex h-1.5 w-1.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-red-500"></span>
-              </span>
-              <p className="text-xs text-gray-500">방금 올라온 질문 · 방금 전</p>
+              <ChevronRight size={20} className="text-gray-400" />
             </div>
 
             <div
               className="relative overflow-hidden"
-              style={{ height: ITEM_HEIGHT }}
+              style={{
+                height: BUBBLE_SLOT_HEIGHT * BUBBLE_VISIBLE_SLOTS,
+                maskImage:
+                  'linear-gradient(to bottom, transparent 0, #000 28px, #000 calc(100% - 28px), transparent 100%)',
+                WebkitMaskImage:
+                  'linear-gradient(to bottom, transparent 0, #000 28px, #000 calc(100% - 28px), transparent 100%)',
+              }}
             >
               <div
-                onTransitionEnd={handleTickerTransitionEnd}
+                onTransitionEnd={handleBubbleTransitionEnd}
                 style={{
-                  transform: `translateY(-${tickerIdx * ITEM_HEIGHT}px)`,
-                  transition: tickerAnim
+                  transform: `translateY(-${bubbleIdx * BUBBLE_SLOT_HEIGHT}px)`,
+                  transition: bubbleAnim
                     ? 'transform 620ms cubic-bezier(0.22, 1, 0.36, 1)'
                     : 'none',
                 }}
               >
-                {tickerItems.map((post, i) => {
-                  const cat = pickCategory(post);
+                {bubbleItems.map((post, i) => {
+                  const isRight = i % 2 === 1;
                   return (
                     <div
                       key={`${post.id}-${i}`}
-                      style={{ height: ITEM_HEIGHT, padding: '6px 4px', boxSizing: 'border-box' }}
+                      style={{
+                        height: BUBBLE_SLOT_HEIGHT,
+                        paddingTop: 6,
+                        paddingBottom: 6,
+                        boxSizing: 'border-box',
+                      }}
+                      className={`flex ${isRight ? 'justify-end' : 'justify-start'}`}
                     >
-                      <Link
-                        href={`/community/${post.id}`}
-                        className="flex items-center gap-3 bg-white h-full w-full px-3 border border-gray-100"
-                        style={{
-                          borderRadius: 12,
-                        }}
+                      <span
+                        className={`inline-flex h-[44px] items-center px-4 text-[14px] font-semibold leading-none max-w-[78%] truncate ${
+                          isRight
+                            ? 'bg-[#1E85FF] text-white rounded-[22px] rounded-br-[6px]'
+                            : 'bg-[#F1F2F4] text-[#2B313D] rounded-[22px] rounded-bl-[6px]'
+                        }`}
                       >
-                        <Avatar role={post.authorTitle ? 'doctor' : 'user'} seed={post.authorId || post.id} size={40} className="flex-shrink-0" />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold text-gray-900 truncate">
-                            {post.title}
-                          </p>
-                          <div className="flex items-center gap-1.5 mt-0.5">
-                            <span className="text-[11px] text-gray-600 bg-gray-100 rounded px-1.5 py-0.5 flex-shrink-0 font-medium">
-                              {cat}
-                            </span>
-                            <p className="text-xs text-gray-500 truncate">
-                              {post.content}
-                            </p>
-                          </div>
-                        </div>
-                      </Link>
+                        {post.title}
+                      </span>
                     </div>
                   );
                 })}
               </div>
             </div>
-
-            {/* Progress dots */}
-            <div className="flex justify-center gap-1 mt-2.5">
-              {liveQuestions.map((_, i) => (
-                <span
-                  key={i}
-                  className="h-1 rounded-full transition-all duration-500"
-                  style={{
-                    width: i === tickerIdx % liveQuestions.length ? 14 : 4,
-                    backgroundColor:
-                      i === tickerIdx % liveQuestions.length ? '#8037FF' : '#E5E7EB',
-                  }}
-                />
-              ))}
-            </div>
-
-            <Link
-              href={`/community/live`}
-              className="mt-3 flex items-center justify-between w-full px-3 py-3 rounded-xl border border-gray-200 text-gray-700"
-            >
-              <span className="text-sm font-medium">질문 전체 보기</span>
-              <ChevronRight size={16} className="text-gray-400" />
-            </Link>
-          </div>
+          </Link>
         )}
 
         {/* Board header + sort */}
@@ -608,42 +567,45 @@ function CommunityPageInner() {
         {/* Question category sub-tabs */}
         {effectiveActiveBoard === '질문게시판' && (
           <div className="bg-white px-2.5 pb-2 pt-0.5">
-            <div
-              ref={categoryTabsRef}
-              className="relative flex gap-2 overflow-x-auto hide-scrollbar"
-            >
-              <span
-                aria-hidden
-                className="absolute top-0 bottom-0 rounded-[8px] bg-[#51535C] pointer-events-none"
-                style={{
-                  left: categoryIndicator.left,
-                  width: categoryIndicator.width,
-                  transition:
-                    'left 420ms cubic-bezier(0.22, 1, 0.36, 1), width 420ms cubic-bezier(0.22, 1, 0.36, 1)',
-                }}
-              />
-              {questionCategories.map((cat, i) => {
-                const isActive = activeCategory === cat;
-                return (
-                  <button
-                    key={cat}
-                    ref={(el) => {
-                      categoryBtnRefs.current[i] = el;
-                    }}
-                    onClick={() => changeCategory(cat)}
-                    className={`pill-tab relative z-10 rounded-[8px] px-3.5 py-2 text-[16px] font-medium whitespace-nowrap ${
-                      isActive ? 'text-white' : 'text-gray-500'
-                    }`}
-                    style={{
-                      transition: 'color 420ms cubic-bezier(0.22, 1, 0.36, 1)',
-                      border: `1px solid ${isActive ? 'transparent' : '#E5E7EB'}`,
-                      background: 'transparent',
-                    }}
-                  >
-                    {cat}
-                  </button>
-                );
-              })}
+            <div className="flex items-center gap-2">
+              <div
+                ref={categoryTabsRef}
+                className="relative flex min-w-0 flex-1 gap-2 overflow-x-auto hide-scrollbar"
+              >
+                <span
+                  aria-hidden
+                  className="absolute top-0 bottom-0 rounded-[8px] bg-[#51535C] pointer-events-none"
+                  style={{
+                    left: categoryIndicator.left,
+                    width: categoryIndicator.width,
+                    transition:
+                      'left 420ms cubic-bezier(0.22, 1, 0.36, 1), width 420ms cubic-bezier(0.22, 1, 0.36, 1)',
+                  }}
+                />
+                {questionCategories.map((cat, i) => {
+                  const isActive = activeCategory === cat;
+                  return (
+                    <button
+                      key={cat}
+                      ref={(el) => {
+                        categoryBtnRefs.current[i] = el;
+                      }}
+                      onClick={() => changeCategory(cat)}
+                      className={`pill-tab relative z-10 rounded-[8px] px-3.5 py-2 text-[16px] font-medium whitespace-nowrap ${
+                        isActive ? 'text-white' : 'text-gray-500'
+                      }`}
+                      style={{
+                        transition: 'color 420ms cubic-bezier(0.22, 1, 0.36, 1)',
+                        border: `1px solid ${isActive ? 'transparent' : '#E5E7EB'}`,
+                        background: 'transparent',
+                      }}
+                    >
+                      {cat}
+                    </button>
+                  );
+                })}
+              </div>
+              <InlineAskButton href={`/community/write?board=question`} />
             </div>
           </div>
         )}
@@ -817,8 +779,11 @@ function CommunityPageInner() {
         </div>
       </div>
 
-      {/* Floating write button — circle→pill expand + train border animation */}
-      <FloatingAskButton label={writeButtonLabel} href={`/community/write?board=${boardType}`} scrollContainer={scrollContainerRef} />
+      {/* Floating write button — circle→pill expand + train border animation
+          Hidden on question board since the inline LIVE ask button covers it */}
+      {effectiveActiveBoard !== '질문게시판' && (
+        <FloatingAskButton label={writeButtonLabel} href={`/community/write?board=${boardType}`} scrollContainer={scrollContainerRef} />
+      )}
 
       {/* Scroll to top */}
       {showScrollTop && (
@@ -832,6 +797,101 @@ function CommunityPageInner() {
       )}
 
     </div>
+  );
+}
+
+/* ===================== Popular Post Card ===================== */
+
+function PopularPostCard({
+  post,
+  answerer,
+}: {
+  post: Post;
+  answerer?: PopularAnswerer;
+}) {
+  const [following, setFollowing] = useState(false);
+
+  return (
+    <Link
+      href={`/community/${post.id}`}
+      className="flex-shrink-0 w-[284px] rounded-[20px] border border-[#F1F2F5] bg-white p-4 shadow-[0_10px_28px_rgba(30,41,59,0.06)] transition-transform active:scale-[0.98]"
+    >
+      <div className="mb-3 flex items-start gap-3">
+        <Avatar
+          src={answerer?.profileImage}
+          role="doctor"
+          seed={answerer?.id || post.id}
+          size={48}
+          className="flex-shrink-0 bg-[#F2F7FF]"
+        />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <p className="truncate text-[16px] font-bold leading-5 text-[#2B313D]">
+              {answerer?.name ?? '전문의'}
+            </p>
+            <button
+              type="button"
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                setFollowing((value) => !value);
+              }}
+              className={`flex-shrink-0 inline-flex h-7 items-center rounded-[8px] px-2.5 text-[12px] font-bold leading-none transition-colors ${
+                following
+                  ? 'bg-[#EEF1FF] text-[#3852FF]'
+                  : 'bg-[#2B313D] text-white'
+              }`}
+            >
+              {following ? '팔로잉' : '팔로우'}
+            </button>
+          </div>
+          <p className="mt-1 truncate text-[13px] leading-4 text-[#A1A7B3]">
+            {answerer?.hospitalName ?? answerer?.specialty ?? '치과 전문의'}
+          </p>
+        </div>
+      </div>
+      <p className="text-[16px] font-bold leading-6 text-[#2B313D] line-clamp-1">
+        {post.title}
+      </p>
+      <p className="mt-1 text-[13px] leading-[18px] text-[#7A828F] line-clamp-2 min-h-[36px]">
+        {post.content}
+      </p>
+      <div className="mt-3 flex items-center gap-3 text-[12px] leading-none text-[#A1A7B3]">
+        <span>
+          조회수 <strong className="font-semibold text-[#A1A7B3]">{post.viewCount.toLocaleString('ko-KR')}</strong>
+        </span>
+        <span className="inline-flex items-center gap-1">
+          <img src="/icons/community-comments.svg" alt="" width={14} height={14} className="opacity-60" />
+          댓글 {post.commentCount.toLocaleString('ko-KR')}
+        </span>
+      </div>
+    </Link>
+  );
+}
+
+/* ===================== Inline Ask Button (LIVE) ===================== */
+
+function InlineAskButton({ href }: { href: string }) {
+  return (
+    <Link
+      href={href}
+      className="relative flex-shrink-0 inline-flex h-[38px] items-center gap-1.5 rounded-[14px] bg-[#E8F2FF] pl-3 pr-2 transition-transform active:scale-95"
+      aria-label="질문하기"
+    >
+      <span className="absolute -top-1.5 left-2 inline-flex h-[16px] items-center rounded-[4px] bg-[#1E85FF] px-1 text-[9px] font-extrabold leading-none text-white tracking-wider">
+        LIVE
+      </span>
+      <span className="text-[14px] font-extrabold leading-none text-[#1E85FF]">질문하기</span>
+      <span
+        className="ml-0.5 inline-flex h-7 w-7 items-center justify-center rounded-full bg-white text-[#1E85FF]"
+        aria-hidden
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="11" cy="11" r="7" />
+          <line x1="20" y1="20" x2="16.5" y2="16.5" />
+        </svg>
+      </span>
+    </Link>
   );
 }
 

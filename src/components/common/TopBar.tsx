@@ -5,12 +5,13 @@ import { ChevronLeft } from 'lucide-react';
 
 interface TopBarProps {
   title?: string;
+  titleNode?: React.ReactNode;
   showBack?: boolean;
   rightContent?: React.ReactNode;
   transparent?: boolean;
 }
 
-export default function TopBar({ title, showBack = true, rightContent, transparent = false }: TopBarProps) {
+export default function TopBar({ title, titleNode, showBack = true, rightContent, transparent = false }: TopBarProps) {
   const router = useRouter();
 
   return (
@@ -26,7 +27,9 @@ export default function TopBar({ title, showBack = true, rightContent, transpare
             <ChevronLeft size={24} />
           </button>
         )}
-        {title && <h1 className="text-lg font-bold fade-in-up">{title}</h1>}
+        {titleNode
+          ? titleNode
+          : title && <h1 className="text-lg font-bold fade-in-up">{title}</h1>}
       </div>
       {rightContent && <div className="flex items-center gap-2">{rightContent}</div>}
     </div>
