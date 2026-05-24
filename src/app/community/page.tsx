@@ -416,7 +416,7 @@ function CommunityPageInner() {
             card shadow renders fully even though the visible gap to the next section is small. */}
         {!isSearching && popularPosts.length > 0 && (
           <div className="bg-white pt-4 pb-0 mb-0">
-            <h3 className="text-[17px] font-bold text-gray-900 mb-3 px-3">
+            <h3 className="text-[17px] font-bold text-gray-900 mb-3 px-5">
               유저게시판 인기글
             </h3>
             <PopularPostsCarousel posts={popularPosts} answerers={popularAnswerers} />
@@ -713,72 +713,53 @@ function CommunityPageInner() {
 /* ===================== Flowing Chat Bubbles (right → left) ===================== */
 
 function FlowingBubbles({ questions }: { questions: Post[] }) {
-  // Each question becomes a bubble with a deterministic pseudo-random
-  // variant and a small Y offset. Lanes are stacked vertically (top/bottom)
-  // so collisions between lanes are limited — only minor cross-lane overlap
-  // from the tails.
-  type Spec = { id: string; title: string; variant: 'blue' | 'gray'; yOffset: number };
-  const specs: Spec[] = questions.map((q, i) => {
-    const variant: 'blue' | 'gray' = i % 2 === 0 ? 'gray' : 'blue';
-    // -6 to +6 px subtle Y variance, keeps lanes mostly clear
-    const yOffset = -6 + ((i * 41 + 13) % 13);
-    return { id: q.id, title: q.title, variant, yOffset };
-  });
-  const laneA = specs.filter((_, i) => i % 2 === 0);
-  const laneB = specs.filter((_, i) => i % 2 === 1);
-  const safeA = laneA.length > 0 ? laneA : specs;
-  const safeB = laneB.length > 0 ? laneB : specs;
-
-  const LANE_A_TOP = 30;
-  const LANE_B_TOP = 96;
+  // Two horizontal lanes that drift very slowly so it reads as a chat
+  // snapshot rather than a carousel. Top lane = blue (sent), bottom = gray
+  // (received), echoing iMessage convention from the mockup.
+  const blueLane = questions.filter((_, i) => i % 2 === 0);
+  const grayLane = questions.filter((_, i) => i % 2 === 1);
+  const safeBlue = blueLane.length > 0 ? blueLane : questions;
+  const safeGray = grayLane.length > 0 ? grayLane : questions;
 
   return (
     <div
       className="relative overflow-hidden"
       style={{
-        height: 138,
+        height: 130,
         maskImage:
-          'linear-gradient(to right, transparent 0, #000 36px, #000 calc(100% - 36px), transparent 100%)',
+          'linear-gradient(to right, transparent 0, #000 32px, #000 calc(100% - 32px), transparent 100%)',
         WebkitMaskImage:
-          'linear-gradient(to right, transparent 0, #000 36px, #000 calc(100% - 36px), transparent 100%)',
+          'linear-gradient(to right, transparent 0, #000 32px, #000 calc(100% - 32px), transparent 100%)',
       }}
     >
-      {/* Lane A — upper row */}
+      {/* Top lane — blue, slow drift */}
       <div
         className="absolute left-0 right-0"
-        style={{ top: LANE_A_TOP, transform: 'translateY(-50%)' }}
+        style={{ top: 32, transform: 'translateY(-50%)' }}
       >
         <div
-          className="bubbles-flow-lane flex items-center gap-5 whitespace-nowrap will-change-transform"
-          style={{ ['--bubble-flow-duration' as string]: '46s' }}
+          className="bubbles-flow-lane flex items-center gap-12 whitespace-nowrap will-change-transform"
+          style={{ ['--bubble-flow-duration' as string]: '92s' }}
         >
-          {[...safeA, ...safeA].map((b, i) => (
-            <div
-              key={`A-${b.id}-${i}`}
-              className="flex-shrink-0"
-              style={{ transform: `translateY(${b.yOffset}px)` }}
-            >
-              <ChatBubble text={b.title} variant={b.variant} />
+          {[...safeBlue, ...safeBlue].map((b, i) => (
+            <div key={`B-${b.id}-${i}`} className="flex-shrink-0">
+              <ChatBubble text={b.title} variant="blue" />
             </div>
           ))}
         </div>
       </div>
-      {/* Lane B — lower row */}
+      {/* Bottom lane — gray, even slower drift, offset start */}
       <div
         className="absolute left-0 right-0"
-        style={{ top: LANE_B_TOP, transform: 'translateY(-50%)' }}
+        style={{ top: 92, transform: 'translateY(-50%)' }}
       >
         <div
-          className="bubbles-flow-lane flex items-center gap-7 whitespace-nowrap will-change-transform"
-          style={{ ['--bubble-flow-duration' as string]: '64s', animationDelay: '-26s' }}
+          className="bubbles-flow-lane flex items-center gap-14 whitespace-nowrap will-change-transform"
+          style={{ ['--bubble-flow-duration' as string]: '116s', animationDelay: '-48s' }}
         >
-          {[...safeB, ...safeB].map((b, i) => (
-            <div
-              key={`B-${b.id}-${i}`}
-              className="flex-shrink-0"
-              style={{ transform: `translateY(${-b.yOffset}px)` }}
-            >
-              <ChatBubble text={b.title} variant={b.variant} />
+          {[...safeGray, ...safeGray].map((b, i) => (
+            <div key={`G-${b.id}-${i}`} className="flex-shrink-0">
+              <ChatBubble text={b.title} variant="gray" />
             </div>
           ))}
         </div>
@@ -872,7 +853,7 @@ function PopularPostsCarousel({
     <div
       ref={containerRef}
       onScroll={handleScroll}
-      className="flex gap-3 overflow-x-auto hide-scrollbar snap-x snap-mandatory pl-[12px] pr-12 pt-2 pb-12 lg:grid lg:grid-cols-3 lg:gap-4 lg:overflow-x-visible lg:snap-none lg:p-0"
+      className="flex gap-3 overflow-x-auto hide-scrollbar snap-x snap-mandatory pl-5 pr-12 pt-2 pb-12 lg:grid lg:grid-cols-3 lg:gap-4 lg:overflow-x-visible lg:snap-none lg:p-0"
     >
       {posts.map((post, idx) => (
         <div
