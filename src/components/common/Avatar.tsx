@@ -1,4 +1,5 @@
 import { pickCustomerProfileAvatarBySeed } from '@/lib/customer-profile-avatars';
+import { resolveDoctorImageUrl } from '@/lib/images';
 
 interface AvatarProps {
   src?: string;
@@ -10,8 +11,6 @@ interface AvatarProps {
   className?: string;
 }
 
-const DOCTOR = '/icons/profile-default-doctor.svg';
-
 export default function Avatar({
   src,
   gender,
@@ -22,10 +21,8 @@ export default function Avatar({
   className = '',
 }: AvatarProps) {
   let resolved = src && src.trim() !== '' ? src : undefined;
-  if (!resolved) {
-    if (role === 'doctor') resolved = DOCTOR;
-    else resolved = pickCustomerProfileAvatarBySeed(seed || gender || alt);
-  }
+  if (role === 'doctor') resolved = resolveDoctorImageUrl(resolved);
+  if (!resolved) resolved = pickCustomerProfileAvatarBySeed(seed || gender || alt);
   return (
     <img
       src={resolved}

@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useStore } from '@/store';
 import { useSession } from '@/lib/supabase/SessionProvider';
 import { createClient, hasSupabaseEnv } from '@/lib/supabase/client';
+import { resolveDoctorImageUrl } from '@/lib/images';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type MemberStatus = 'pending' | 'active' | 'rejected' | 'left';
@@ -196,7 +197,7 @@ export default function PartnerDoctorsPage() {
               return (
                 <article key={doctor.id} className="partner-member-row">
                   <div className="partner-member-avatar">
-                    <img src={doctor.profile_image || '/partner-template/doctor-avatar.png'} alt={doctor.name} />
+                    <img src={resolveDoctorImageUrl(doctor.profile_image)} alt={doctor.name} />
                   </div>
                   <div className="partner-member-summary">
                     <h2>
@@ -247,7 +248,7 @@ export default function PartnerDoctorsPage() {
                 {pendingRequests.map((doctor) => (
                   <article key={doctor.id} className="partner-member-row request">
                     <div className="partner-member-avatar">
-                      <img src={doctor.profile_image || '/partner-template/doctor-avatar.png'} alt={doctor.name} />
+                      <img src={resolveDoctorImageUrl(doctor.profile_image)} alt={doctor.name} />
                     </div>
                     <div className="partner-member-summary">
                       <h2>

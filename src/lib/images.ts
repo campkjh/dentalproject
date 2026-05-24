@@ -9,7 +9,11 @@ const LEGACY_PRODUCT_IMAGE_MAP: Record<string, string> = {
 
 const DETAIL_IMAGE_TAG_PREFIX = '__detail_image_url:';
 const DEFAULT_HOSPITAL_IMAGE = '/partner-template/nav-hospital.svg';
-const DEFAULT_DOCTOR_IMAGE = '/icons/profile-default-doctor.svg';
+export const DEFAULT_DOCTOR_IMAGE = '/profile-avatars/doctor.png';
+const LEGACY_DOCTOR_IMAGE_MAP: Record<string, string> = {
+  '/icons/profile-default-doctor.svg': DEFAULT_DOCTOR_IMAGE,
+  '/partner-template/doctor-avatar.png': DEFAULT_DOCTOR_IMAGE,
+};
 const FALLBACK_PRODUCT_IMAGES = [
   '/partner-template/reservation-1.png',
   '/partner-template/reservation-2a.png',
@@ -72,7 +76,9 @@ export function resolveHospitalImageUrl(
 }
 
 export function resolveDoctorImageUrl(value?: string | null) {
-  return normalizeProductImageUrl(value) ?? DEFAULT_DOCTOR_IMAGE;
+  const normalized = normalizeProductImageUrl(value);
+  if (!normalized) return DEFAULT_DOCTOR_IMAGE;
+  return LEGACY_DOCTOR_IMAGE_MAP[normalized.toLowerCase()] ?? normalized;
 }
 
 export function getVisibleProductTags(tags?: string[] | null) {

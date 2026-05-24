@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useStore } from '@/store';
 import { createClient, hasSupabaseEnv } from '@/lib/supabase/client';
 import { compressImage } from '@/lib/compressImage';
+import { resolveDoctorImageUrl } from '@/lib/images';
 
 const MAX_PROFILE_IMAGE_SIZE = 10 * 1024 * 1024;
 const PROFILE_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/avif'];
@@ -198,7 +199,7 @@ export default function DoctorEditPage() {
               disabled={uploading}
               aria-label="프로필사진 변경"
             >
-              <img src={form.profile_image || '/partner-template/doctor-avatar.png'} alt="" />
+              <img src={resolveDoctorImageUrl(form.profile_image)} alt="" />
             </button>
             <input
               ref={fileInputRef}
