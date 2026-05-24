@@ -146,6 +146,7 @@ export interface Post {
   isAnonymous?: boolean;
   anonymousId?: string;
   date: string;
+  createdAt?: string;
   viewCount: number;
   likeCount: number;
   commentCount: number;

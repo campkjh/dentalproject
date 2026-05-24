@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, useLayoutEffect, Suspense } from 'react';
+import { useState, useRef, useEffect, useLayoutEffect, Suspense, useMemo } from 'react';
 import { createClient, hasSupabaseEnv } from '@/lib/supabase/client';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -45,6 +45,31 @@ type CommunityPostRow = {
   } | null;
 };
 
+type PopularAnswerer = {
+  id: string;
+  name: string;
+  profileImage?: string;
+  title?: string;
+  specialty?: string;
+  hospitalName?: string;
+  answerCount: number;
+};
+
+function getWeekStart(date = new Date()) {
+  const next = new Date(date);
+  const day = next.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  next.setDate(next.getDate() + diff);
+  next.setHours(0, 0, 0, 0);
+  return next.getTime();
+}
+
+function getPostCreatedTime(post: Post) {
+  const value = post.createdAt ?? post.date;
+  const time = value ? new Date(value).getTime() : 0;
+  return Number.isFinite(time) ? time : 0;
+}
+
 function CommunityPageInner() {
   const searchParams = useSearchParams();
   const { isDoctor, posts: storePosts, catalogHydrated } = useStore();
@@ -56,6 +81,7 @@ function CommunityPageInner() {
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [popularAnswerers, setPopularAnswerers] = useState<Record<string, PopularAnswerer>>({});
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -90,6 +116,7 @@ function CommunityPageInner() {
           isAnonymous: p.is_anonymous ?? undefined,
           anonymousId: p.anonymous_id ?? undefined,
           date: p.created_at ? new Date(p.created_at).toLocaleDateString('ko-KR') : '',
+          createdAt: p.created_at ?? undefined,
           viewCount: p.view_count ?? 0,
           likeCount: p.like_count ?? 0,
           commentCount: p.comment_count ?? 0,
@@ -164,10 +191,93 @@ function CommunityPageInner() {
   });
   const isSearching = searchTerm.length > 0;
 
-  // Popular posts (top 5 by view count from all posts)
-  const popularPosts = [...visiblePosts]
-    .sort((a, b) => b.viewCount - a.viewCount)
-    .slice(0, 5);
+  const popularPosts = useMemo(() => {
+    const answeredPosts = visiblePosts.filter((post) => (
+      post.boardType === 'question' && (post.hasAnswer || (post.answerCount ?? 0) > 0)
+    ));
+    const weekStart = getWeekStart();
+    const weeklyPosts = answeredPosts.filter((post) => getPostCreatedTime(post) >= weekStart);
+    const source = weeklyPosts.length > 0 ? weeklyPosts : answeredPosts;
+    return [...source]
+      .sort((a, b) => {
+        const viewDelta = b.viewCount - a.viewCount;
+        if (viewDelta !== 0) return viewDelta;
+        return getPostCreatedTime(b) - getPostCreatedTime(a);
+      })
+      .slice(0, 5);
+  }, [visiblePosts]);
+  const popularPostIds = popularPosts.map((post) => post.id).join(',');
+
+  useEffect(() => {
+    if (!hasSupabaseEnv() || !popularPostIds) {
+      setPopularAnswerers({});
+      return;
+    }
+
+    let cancelled = false;
+    const sb = createClient();
+    const postIds = popularPostIds.split(',');
+
+    async function loadPopularAnswerers() {
+      const { data: rows } = await sb
+        .from('comments')
+        .select('id, post_id, author_id, created_at, author:profiles!comments_author_id_fkey(id, name, is_doctor, profile_image)')
+        .in('post_id', postIds)
+        .order('created_at', { ascending: true });
+      if (cancelled) return;
+
+      const doctorRows = ((rows ?? []) as any[]).filter((row) => {
+        const author = Array.isArray(row.author) ? row.author[0] : row.author;
+        return author?.is_doctor;
+      });
+      if (doctorRows.length === 0) {
+        setPopularAnswerers({});
+        return;
+      }
+
+      const doctorUserIds = [...new Set(doctorRows.map((row) => row.author_id).filter(Boolean))];
+      const { data: doctors } = doctorUserIds.length > 0
+        ? await sb
+            .from('doctors')
+            .select('user_id, title, specialty, profile_image, hospitals(name)')
+            .in('user_id', doctorUserIds)
+        : { data: [] };
+      if (cancelled) return;
+
+      const doctorMap = new Map<string, any>();
+      for (const doctor of doctors ?? []) {
+        doctorMap.set((doctor as any).user_id, doctor);
+      }
+
+      const answerCounts = new Map<string, number>();
+      for (const row of doctorRows) {
+        answerCounts.set(row.post_id, (answerCounts.get(row.post_id) ?? 0) + 1);
+      }
+
+      const next: Record<string, PopularAnswerer> = {};
+      for (const row of doctorRows) {
+        if (next[row.post_id]) continue;
+        const author = Array.isArray(row.author) ? row.author[0] : row.author;
+        const doctor = doctorMap.get(row.author_id);
+        const hospital = Array.isArray(doctor?.hospitals) ? doctor.hospitals[0] : doctor?.hospitals;
+        next[row.post_id] = {
+          id: row.author_id,
+          name: author?.name ?? '전문의',
+          profileImage: doctor?.profile_image ?? author?.profile_image ?? undefined,
+          title: doctor?.title ?? undefined,
+          specialty: doctor?.specialty ?? undefined,
+          hospitalName: hospital?.name ?? undefined,
+          answerCount: answerCounts.get(row.post_id) ?? 1,
+        };
+      }
+      setPopularAnswerers(next);
+    }
+
+    loadPopularAnswerers();
+    return () => {
+      cancelled = true;
+    };
+  }, [popularPostIds]);
 
   // Recent questions for live Q&A ticker (stop-and-go)
   const liveQuestions = visiblePosts
@@ -317,28 +427,48 @@ function CommunityPageInner() {
             <h3 className="text-[17px] font-bold text-gray-900 mb-3">
               인기글
             </h3>
-            <div className="flex gap-3 overflow-x-auto hide-scrollbar lg:grid lg:grid-cols-3 lg:gap-4 lg:overflow-x-visible">
-              {popularPosts.map((post) => (
-                <Link
-                  key={post.id}
-                  href={`/community/${post.id}`}
-                  className="flex-shrink-0 w-52 bg-gray-50 rounded-xl p-3.5"
-                >
-                  <p className="text-sm font-semibold text-gray-900 line-clamp-2 mb-2">
-                    {post.title}
-                  </p>
-                  <div className="flex items-center gap-3 text-xs text-gray-400">
-                    <span className="flex items-center gap-0.5">
-                      <img src="/icons/community-views.svg" alt="" width={14} height={14} />
-                      {post.viewCount}
-                    </span>
-                    <span className="flex items-center gap-0.5">
-                      <img src="/icons/community-comments.svg" alt="" width={14} height={14} />
-                      {post.commentCount}
-                    </span>
-                  </div>
-                </Link>
-              ))}
+            <div className="flex gap-3 overflow-x-auto hide-scrollbar pb-1 lg:grid lg:grid-cols-3 lg:gap-4 lg:overflow-x-visible">
+              {popularPosts.map((post) => {
+                const answerer = popularAnswerers[post.id];
+                const answerCount = answerer?.answerCount ?? post.answerCount ?? 1;
+                return (
+                  <Link
+                    key={post.id}
+                    href={`/community/${post.id}`}
+                    className="flex-shrink-0 w-[252px] rounded-[20px] border border-[#F3F5F8] bg-white p-4 shadow-[0_14px_32px_rgba(30,41,59,0.08)] transition-transform active:scale-[0.98]"
+                  >
+                    <div className="mb-3 flex items-start gap-3">
+                      <Avatar
+                        src={answerer?.profileImage}
+                        role="doctor"
+                        seed={answerer?.id || post.id}
+                        size={54}
+                        className="flex-shrink-0 bg-[#F2F7FF]"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-[16px] font-bold leading-6 text-[#2B313D]">
+                          {answerer?.name ?? '전문의 답변'}
+                        </p>
+                        <span className="mt-2 inline-flex h-8 items-center rounded-[8px] bg-[#1E85FF] px-3 text-[15px] font-bold leading-none text-white">
+                          답변 보기
+                        </span>
+                      </div>
+                    </div>
+                    <div className="mb-3 flex items-center gap-2 text-[13px] leading-5 text-[#A1A7B3]">
+                      <span>
+                        <strong className="font-bold text-[#51535C]">{answerCount}</strong> 답변 수
+                      </span>
+                      <span className="h-4 w-px bg-[#E5E7EB]" />
+                      <span>
+                        <strong className="font-bold text-[#51535C]">{post.viewCount.toLocaleString('ko-KR')}</strong> 조회
+                      </span>
+                    </div>
+                    <p className="text-[15px] font-semibold leading-6 text-[#51535C] line-clamp-2">
+                      {post.title}
+                    </p>
+                  </Link>
+                );
+              })}
             </div>
           </div>
         )}
@@ -484,7 +614,7 @@ function CommunityPageInner() {
             >
               <span
                 aria-hidden
-                className="absolute top-0 bottom-0 rounded-full bg-[#8037FF] pointer-events-none"
+                className="absolute top-0 bottom-0 rounded-[8px] bg-[#51535C] pointer-events-none"
                 style={{
                   left: categoryIndicator.left,
                   width: categoryIndicator.width,
@@ -501,7 +631,7 @@ function CommunityPageInner() {
                       categoryBtnRefs.current[i] = el;
                     }}
                     onClick={() => changeCategory(cat)}
-                    className={`pill-tab relative z-10 px-3 py-1.5 rounded-full text-[13px] font-semibold whitespace-nowrap ${
+                    className={`pill-tab relative z-10 rounded-[8px] px-3.5 py-2 text-[16px] font-medium whitespace-nowrap ${
                       isActive ? 'text-white' : 'text-gray-500'
                     }`}
                     style={{
