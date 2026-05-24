@@ -413,8 +413,8 @@ function CommunityPageInner() {
 
         {/* Popular posts - scale-on-swipe carousel */}
         {!isSearching && popularPosts.length > 0 && (
-          <div className="bg-white px-2.5 pt-4 pb-6 mb-2">
-            <h3 className="text-[17px] font-bold text-gray-900 mb-3 px-1">
+          <div className="bg-white pt-4 pb-2 mb-2">
+            <h3 className="text-[17px] font-bold text-gray-900 mb-3 px-3">
               유저게시판 인기글
             </h3>
             <PopularPostsCarousel posts={popularPosts} answerers={popularAnswerers} />
@@ -790,16 +790,20 @@ function PopularPostsCarousel({
   const updateScales = () => {
     const container = containerRef.current;
     if (!container) return;
-    const center = container.scrollLeft + container.clientWidth / 2;
-    const children = container.children;
-    for (let i = 0; i < children.length; i++) {
-      const el = children[i] as HTMLElement;
+    const cs = window.getComputedStyle(container);
+    const leftPad = parseFloat(cs.paddingLeft) || 0;
+    const first = container.children[0] as HTMLElement | undefined;
+    const cardWidth = first?.offsetWidth ?? 220;
+    // Active anchor is the leftmost snapped card center (so first card is "active" at scrollLeft = 0)
+    const activeX = container.scrollLeft + leftPad + cardWidth / 2;
+    for (let i = 0; i < container.children.length; i++) {
+      const el = container.children[i] as HTMLElement;
       const cardCenter = el.offsetLeft + el.offsetWidth / 2;
-      const dist = Math.abs(center - cardCenter);
+      const dist = Math.abs(activeX - cardCenter);
       const ref = el.offsetWidth + 12; // approx with gap
       const t = Math.min(1, dist / ref);
-      // Center = 1.2 (+0.2 from baseline), edge = 0.8 (-0.2 from baseline)
-      const scale = 1.2 - t * 0.4;
+      // Subtle scale: active = 1.0, adjacent = 0.92 (delta 0.08)
+      const scale = 1.0 - t * 0.08;
       el.style.transform = `scale(${scale})`;
     }
   };
@@ -827,13 +831,13 @@ function PopularPostsCarousel({
     <div
       ref={containerRef}
       onScroll={handleScroll}
-      className="flex gap-3 overflow-x-auto hide-scrollbar snap-x snap-mandatory px-[calc((100%-220px)/2)] lg:grid lg:grid-cols-3 lg:gap-4 lg:overflow-x-visible lg:snap-none lg:px-0"
+      className="flex gap-3 overflow-x-auto hide-scrollbar snap-x snap-mandatory pl-3 pr-12 pt-2 pb-12 lg:grid lg:grid-cols-3 lg:gap-4 lg:overflow-x-visible lg:snap-none lg:p-0"
     >
       {posts.map((post, idx) => (
         <div
           key={post.id}
-          className="snap-center origin-center flex-shrink-0 will-change-transform lg:will-change-auto"
-          style={{ transform: `scale(${idx === 0 ? 1.2 : 0.8})` }}
+          className="snap-start origin-left flex-shrink-0 will-change-transform lg:will-change-auto"
+          style={{ transform: `scale(${idx === 0 ? 1.0 : 0.92})` }}
         >
           <PopularPostCard post={post} answerer={answerers[post.id]} />
         </div>
