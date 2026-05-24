@@ -719,59 +719,97 @@ function CommunityPageInner() {
 /* ===================== Flowing Chat Bubbles (right → left) ===================== */
 
 function FlowingBubbles({ questions }: { questions: Post[] }) {
-  // Split into two lanes; each lane animates infinitely. The lanes have
-  // different speeds + offsets so bubbles visually overlap as they pass.
-  const lane1 = questions.filter((_, i) => i % 2 === 0);
-  const lane2 = questions.filter((_, i) => i % 2 === 1);
-  // Need at least one bubble in each lane for the doubled-loop trick
-  const safeLane1 = lane1.length > 0 ? lane1 : questions;
-  const safeLane2 = lane2.length > 0 ? lane2 : questions;
+  // Each question becomes a bubble with a deterministic pseudo-random
+  // variant and Y offset so the stream looks naturally scattered instead
+  // of a clean carousel row.
+  type Spec = { id: string; title: string; variant: 'blue' | 'gray'; yOffset: number };
+  const specs: Spec[] = questions.map((q, i) => {
+    const seed = (i * 9301 + 49297) & 0xffff;
+    const variant: 'blue' | 'gray' = (seed & 1) === 0 ? 'gray' : 'blue';
+    // -22 to +22 px Y variance
+    const yOffset = -22 + ((i * 37 + 11) % 45);
+    return { id: q.id, title: q.title, variant, yOffset };
+  });
+  const laneA = specs.filter((_, i) => i % 2 === 0);
+  const laneB = specs.filter((_, i) => i % 2 === 1);
+  const safeA = laneA.length > 0 ? laneA : specs;
+  const safeB = laneB.length > 0 ? laneB : specs;
 
   return (
     <div
       className="relative overflow-hidden"
       style={{
-        height: 96,
+        height: 132,
         maskImage:
-          'linear-gradient(to right, transparent 0, #000 40px, #000 calc(100% - 40px), transparent 100%)',
+          'linear-gradient(to right, transparent 0, #000 36px, #000 calc(100% - 36px), transparent 100%)',
         WebkitMaskImage:
-          'linear-gradient(to right, transparent 0, #000 40px, #000 calc(100% - 40px), transparent 100%)',
+          'linear-gradient(to right, transparent 0, #000 36px, #000 calc(100% - 36px), transparent 100%)',
       }}
     >
-      {/* Lane 1 — gray bubbles, top */}
-      <div
-        className="bubbles-flow-lane absolute top-1 left-0 flex items-center gap-3 whitespace-nowrap will-change-transform"
-        style={{ ['--bubble-flow-duration' as string]: '42s' }}
-      >
-        {[...safeLane1, ...safeLane1].map((post, i) => (
-          <BubbleChip key={`l1-${post.id}-${i}`} title={post.title} variant="gray" />
-        ))}
+      {/* Lane A — vertically-centered, faster */}
+      <div className="absolute left-0 right-0" style={{ top: '50%', transform: 'translateY(-50%)' }}>
+        <div
+          className="bubbles-flow-lane flex items-center gap-5 whitespace-nowrap will-change-transform"
+          style={{ ['--bubble-flow-duration' as string]: '46s' }}
+        >
+          {[...safeA, ...safeA].map((b, i) => (
+            <div
+              key={`A-${b.id}-${i}`}
+              className="flex-shrink-0"
+              style={{ transform: `translateY(${b.yOffset}px)` }}
+            >
+              <ChatBubble text={b.title} variant={b.variant} />
+            </div>
+          ))}
+        </div>
       </div>
-      {/* Lane 2 — blue bubbles, bottom, slightly different speed for overlap */}
-      <div
-        className="bubbles-flow-lane absolute bottom-1 left-0 flex items-center gap-4 whitespace-nowrap will-change-transform"
-        style={{ ['--bubble-flow-duration' as string]: '54s', animationDelay: '-18s' }}
-      >
-        {[...safeLane2, ...safeLane2].map((post, i) => (
-          <BubbleChip key={`l2-${post.id}-${i}`} title={post.title} variant="blue" />
-        ))}
+      {/* Lane B — vertically-centered, slower, opposite Y bias for overlap */}
+      <div className="absolute left-0 right-0" style={{ top: '50%', transform: 'translateY(-50%)' }}>
+        <div
+          className="bubbles-flow-lane flex items-center gap-7 whitespace-nowrap will-change-transform"
+          style={{ ['--bubble-flow-duration' as string]: '64s', animationDelay: '-26s' }}
+        >
+          {[...safeB, ...safeB].map((b, i) => (
+            <div
+              key={`B-${b.id}-${i}`}
+              className="flex-shrink-0"
+              style={{ transform: `translateY(${-b.yOffset}px)` }}
+            >
+              <ChatBubble text={b.title} variant={b.variant} />
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
 }
 
-function BubbleChip({ title, variant }: { title: string; variant: 'gray' | 'blue' }) {
+function ChatBubble({ text, variant }: { text: string; variant: 'blue' | 'gray' }) {
   const isBlue = variant === 'blue';
   return (
-    <span
-      className={`inline-flex h-[42px] items-center px-4 text-[14px] font-semibold leading-none flex-shrink-0 ${
-        isBlue
-          ? 'bg-[#1E85FF] text-white rounded-[22px] rounded-br-[6px]'
-          : 'bg-[#F1F2F4] text-[#2B313D] rounded-[22px] rounded-bl-[6px]'
-      }`}
-    >
-      <span className="truncate max-w-[260px]">{title}</span>
-    </span>
+    <div className="relative inline-flex">
+      <div
+        className="inline-flex h-[50px] items-center rounded-[16px] px-4 text-[15px] font-bold leading-none whitespace-nowrap"
+        style={{
+          backgroundColor: isBlue ? '#3182F6' : '#E5E8EB',
+          color: isBlue ? '#FFFFFF' : 'rgba(0, 12, 30, 0.8)',
+        }}
+      >
+        <span className="truncate max-w-[280px]">{text}</span>
+      </div>
+      <img
+        src={isBlue ? '/icons/bubble-tail-blue.svg' : '/icons/bubble-tail-gray.svg'}
+        alt=""
+        aria-hidden
+        width={16}
+        height={18}
+        className="absolute pointer-events-none"
+        style={{
+          bottom: 0,
+          [isBlue ? 'right' : 'left']: -7,
+        }}
+      />
+    </div>
   );
 }
 
@@ -831,7 +869,7 @@ function PopularPostsCarousel({
     <div
       ref={containerRef}
       onScroll={handleScroll}
-      className="flex gap-3 overflow-x-auto hide-scrollbar snap-x snap-mandatory pl-3 pr-12 pt-2 pb-12 lg:grid lg:grid-cols-3 lg:gap-4 lg:overflow-x-visible lg:snap-none lg:p-0"
+      className="flex gap-3 overflow-x-auto hide-scrollbar snap-x snap-mandatory pl-[12px] pr-12 pt-2 pb-12 lg:grid lg:grid-cols-3 lg:gap-4 lg:overflow-x-visible lg:snap-none lg:p-0"
     >
       {posts.map((post, idx) => (
         <div
