@@ -71,6 +71,7 @@ function getPostCreatedTime(post: Post) {
 }
 
 function CommunityPageInner() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const { isDoctor, posts: storePosts, catalogHydrated, user, isLoggedIn } = useStore();
   const [dbPosts, setDbPosts] = useState<typeof storePosts | null>(null);
@@ -213,71 +214,34 @@ function CommunityPageInner() {
   const popularPostIds = popularPosts.map((post) => post.id).join(',');
 
   useEffect(() => {
-    if (!hasSupabaseEnv() || !popularPostIds) {
+    if (!popularPostIds) {
       setPopularAnswerers({});
       return;
     }
 
     let cancelled = false;
-    const sb = createClient();
     const postIds = popularPostIds.split(',');
 
-    async function loadPopularAnswerers() {
-      const { data: rows } = await sb
-        .from('comments')
-        .select('id, post_id, author_id, created_at, author:profiles!comments_author_id_fkey(id, name, is_doctor, profile_image)')
-        .in('post_id', postIds)
-        .order('created_at', { ascending: true });
-      if (cancelled) return;
-
-      const doctorRows = ((rows ?? []) as any[]).filter((row) => {
-        const author = Array.isArray(row.author) ? row.author[0] : row.author;
-        return author?.is_doctor;
-      });
-      if (doctorRows.length === 0) {
-        setPopularAnswerers({});
-        return;
+    (async () => {
+      try {
+        const res = await fetch('/api/community/popular-answerers', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ postIds }),
+        });
+        if (cancelled) return;
+        if (!res.ok) {
+          setPopularAnswerers({});
+          return;
+        }
+        const payload = await res.json();
+        if (cancelled) return;
+        setPopularAnswerers((payload?.answerers as Record<string, PopularAnswerer>) ?? {});
+      } catch {
+        if (!cancelled) setPopularAnswerers({});
       }
+    })();
 
-      const doctorUserIds = [...new Set(doctorRows.map((row) => row.author_id).filter(Boolean))];
-      const { data: doctors } = doctorUserIds.length > 0
-        ? await sb
-            .from('doctors')
-            .select('user_id, title, specialty, profile_image, hospitals(name)')
-            .in('user_id', doctorUserIds)
-        : { data: [] };
-      if (cancelled) return;
-
-      const doctorMap = new Map<string, any>();
-      for (const doctor of doctors ?? []) {
-        doctorMap.set((doctor as any).user_id, doctor);
-      }
-
-      const answerCounts = new Map<string, number>();
-      for (const row of doctorRows) {
-        answerCounts.set(row.post_id, (answerCounts.get(row.post_id) ?? 0) + 1);
-      }
-
-      const next: Record<string, PopularAnswerer> = {};
-      for (const row of doctorRows) {
-        if (next[row.post_id]) continue;
-        const author = Array.isArray(row.author) ? row.author[0] : row.author;
-        const doctor = doctorMap.get(row.author_id);
-        const hospital = Array.isArray(doctor?.hospitals) ? doctor.hospitals[0] : doctor?.hospitals;
-        next[row.post_id] = {
-          id: row.author_id,
-          name: author?.name ?? '전문의',
-          profileImage: doctor?.profile_image ?? author?.profile_image ?? undefined,
-          title: doctor?.title ?? undefined,
-          specialty: doctor?.specialty ?? undefined,
-          hospitalName: hospital?.name ?? undefined,
-          answerCount: answerCounts.get(row.post_id) ?? 1,
-        };
-      }
-      setPopularAnswerers(next);
-    }
-
-    loadPopularAnswerers();
     return () => {
       cancelled = true;
     };
@@ -299,6 +263,7 @@ function CommunityPageInner() {
   };
 
   const boardHeader = () => {
+    if (myPostsMode) return '내가 쓴 글';
     if (effectiveActiveBoard === '질문게시판') return '의사에게 질문게시판';
     if (effectiveActiveBoard === '자유게시판') return '자유익명게시판';
     return '방금 올라온 글';
@@ -324,7 +289,10 @@ function CommunityPageInner() {
             <button
               type="button"
               onClick={() => {
-                if (!isLoggedIn) return;
+                if (!isLoggedIn) {
+                  router.push('/login');
+                  return;
+                }
                 setMyPostsMode(true);
               }}
               className={`text-[17px] font-bold leading-none transition-colors ${
@@ -414,7 +382,7 @@ function CommunityPageInner() {
         {/* Popular posts - scale-on-swipe carousel
             pb-0/mb-0 here: carousel itself reserves pb-12 (48px) internally so the
             card shadow renders fully even though the visible gap to the next section is small. */}
-        {!isSearching && popularPosts.length > 0 && (
+        {!myPostsMode && !isSearching && popularPosts.length > 0 && (
           <div className="bg-white pt-4 pb-0 mb-0">
             <h3 className="text-[17px] font-bold text-gray-900 mb-3 px-5">
               유저게시판 인기글
@@ -424,7 +392,7 @@ function CommunityPageInner() {
         )}
 
         {/* Live doctor Q&A - bubbles flowing right→left */}
-        {!isSearching && effectiveActiveBoard === '질문게시판' && liveQuestions.length > 0 && (
+        {!myPostsMode && !isSearching && effectiveActiveBoard === '질문게시판' && liveQuestions.length > 0 && (
           <Link
             href={`/community/live`}
             className="block bg-white px-2.5 pt-2 pb-4 mb-2"
@@ -484,7 +452,7 @@ function CommunityPageInner() {
         </div>
 
         {/* Question category sub-tabs — partner-style sliding indicator */}
-        {effectiveActiveBoard === '질문게시판' && (
+        {!myPostsMode && effectiveActiveBoard === '질문게시판' && (
           <div className="partner-community-category-shell bg-white">
             <div
               ref={categoryTabsRef}
@@ -875,12 +843,23 @@ function PopularPostCard({
   post: Post;
   answerer?: PopularAnswerer;
 }) {
+  const router = useRouter();
   const [following, setFollowing] = useState(false);
 
+  const goToPost = () => router.push(`/community/${post.id}`);
+
   return (
-    <Link
-      href={`/community/${post.id}`}
-      className="block w-[220px] rounded-[20px] border border-[#F1F2F5] bg-white p-4 shadow-[0_14px_32px_rgba(30,41,59,0.10)] transition-transform active:scale-[0.98]"
+    <div
+      role="link"
+      tabIndex={0}
+      onClick={goToPost}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          goToPost();
+        }
+      }}
+      className="block w-[220px] cursor-pointer rounded-[20px] border border-[#F1F2F5] bg-white p-4 shadow-[0_14px_32px_rgba(30,41,59,0.10)] transition-transform active:scale-[0.98]"
     >
       <div className="mb-3 flex items-start gap-3">
         <Avatar
@@ -893,7 +872,7 @@ function PopularPostCard({
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <p className="truncate text-[16px] font-bold leading-5 text-[#2B313D]">
-              {answerer?.name ?? '전문의'}
+              {answerer?.name ?? '답변 대기중'}
             </p>
             <button
               type="button"
@@ -912,7 +891,7 @@ function PopularPostCard({
             </button>
           </div>
           <p className="mt-1 truncate text-[13px] leading-4 text-[#A1A7B3]">
-            {answerer?.hospitalName ?? answerer?.specialty ?? '치과 전문의'}
+            {answerer?.hospitalName ?? answerer?.specialty ?? '소속 미공개'}
           </p>
         </div>
       </div>
@@ -931,16 +910,27 @@ function PopularPostCard({
           댓글 {post.commentCount.toLocaleString('ko-KR')}
         </span>
       </div>
-    </Link>
+    </div>
   );
 }
 
 /* ===================== Floating Seal Ask Button (question board) ===================== */
 
 function FloatingSealAskButton({ href }: { href: string }) {
+  const router = useRouter();
+  const isLoggedIn = useStore((s) => s.isLoggedIn);
+
+  const handleClick = (event: React.MouseEvent) => {
+    if (!isLoggedIn) {
+      event.preventDefault();
+      router.push('/login');
+    }
+  };
+
   return (
     <Link
       href={href}
+      onClick={handleClick}
       aria-label="질문하기"
       className="fixed z-30 inline-flex items-center justify-between rounded-full transition-transform active:scale-95"
       style={{
