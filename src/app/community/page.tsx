@@ -395,7 +395,7 @@ function CommunityPageInner() {
             card shadow renders fully even though the visible gap to the next section is small. */}
         {!myPostsMode && !isSearching && popularPosts.length > 0 && (
           <div className="bg-white pt-4 pb-0 mb-0">
-            <h3 className="text-[17px] font-bold text-gray-900 mb-3 pl-[24px] pr-[24px]">
+            <h3 className="text-[22px] font-bold text-[#2B313D] mb-3 pl-[24px] pr-[24px]">
               유저게시판 인기글
             </h3>
             <PopularPostsCarousel posts={popularPosts} answerers={popularAnswerers} />
@@ -410,30 +410,34 @@ function CommunityPageInner() {
           >
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-3">
-                {/* Stacked active-doctor avatars */}
-                <div className="flex -space-x-3 flex-shrink-0">
+                {/* Stacked active-doctor avatars — leftmost on top, fan-in on mount */}
+                <div className="flex -space-x-4 flex-shrink-0">
                   {[0, 1, 2].map((i) => {
                     const doc = activeDoctors[i];
                     return (
-                      <Avatar
+                      <div
                         key={doc?.id ?? `live-doc-slot-${i}`}
-                        src={doc?.profileImage}
-                        role="doctor"
-                        seed={doc?.id ?? `live-doctor-${i}`}
-                        size={32}
-                        className="bg-[#F2F7FF] ring-2 ring-white"
-                      />
+                        className="relative doctor-fan-in"
+                        style={{
+                          zIndex: 3 - i,
+                          animationDelay: `${i * 90}ms`,
+                          ['--fan-from' as string]: `${-12 - i * 16}px`,
+                        }}
+                      >
+                        <Avatar
+                          src={doc?.profileImage}
+                          role="doctor"
+                          seed={doc?.id ?? `live-doctor-${i}`}
+                          size={44}
+                          className="bg-[#F2F7FF] ring-2 ring-white"
+                        />
+                      </div>
                     );
                   })}
                 </div>
-                {/* Two-line title with LIVE badge inline with the top line */}
-                <h3 className="flex flex-col gap-0.5 text-[16px] font-extrabold leading-[1.15] text-gray-900">
-                  <span className="inline-flex items-center gap-2">
-                    실시간
-                    <span className="inline-flex h-[20px] items-center rounded-[5px] bg-[#FF3B30] px-1.5 text-[11px] font-extrabold leading-none text-white tracking-wider">
-                      LIVE
-                    </span>
-                  </span>
+                {/* Two-line title (no LIVE badge) */}
+                <h3 className="flex flex-col gap-0.5 text-[22px] font-bold leading-[1.15] text-[#2B313D]">
+                  <span>실시간</span>
                   <span>의사에게 질문</span>
                 </h3>
               </div>
@@ -450,7 +454,7 @@ function CommunityPageInner() {
             {effectiveActiveBoard === '질문게시판' && (
               <img src="/icons/community-doctor-board-v2.svg" alt="" width={22} height={22} />
             )}
-            <h3 className="text-[17px] font-bold text-gray-900">{boardHeader()}</h3>
+            <h3 className="text-[22px] font-bold text-[#2B313D]">{boardHeader()}</h3>
           </div>
           <div className="relative">
             <button
