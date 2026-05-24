@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { User, Reservation, Product, Post, Comment, Review, Hospital, Notification, PointHistory } from '@/types';
+import { pickCustomerProfileAvatarBySeed } from '@/lib/customer-profile-avatars';
 import { resolveHospitalImageUrl, resolveProductImageUrl } from '@/lib/images';
 import {
   products as mockProducts,
@@ -300,6 +301,7 @@ export const useStore = create<AppState>((set, get) => ({
         gender: '남성',
         birthYear: '1995',
         country: '대한민국',
+        profileImage: pickCustomerProfileAvatarBySeed('user1'),
         points: 5000,
         coupons: coupons,
       },

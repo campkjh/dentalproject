@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import { pickRandomCustomerProfileAvatar } from '@/lib/customer-profile-avatars';
 import { createAdminClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
@@ -78,6 +79,7 @@ export async function POST(req: NextRequest) {
     name,
     login_type: 'email',
     country: '대한민국',
+    profile_image: pickRandomCustomerProfileAvatar(),
   });
 
   return NextResponse.json({ ok: true });

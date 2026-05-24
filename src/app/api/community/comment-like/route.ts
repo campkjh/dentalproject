@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
+import { pickCustomerProfileAvatarBySeed } from '@/lib/customer-profile-avatars';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,6 +31,7 @@ export async function POST(req: NextRequest) {
         name: user.user_metadata?.name ?? '',
         login_type: 'email',
         country: '대한민국',
+        profile_image: pickCustomerProfileAvatarBySeed(user.id),
       }, { onConflict: 'id', ignoreDuplicates: true });
     }
 

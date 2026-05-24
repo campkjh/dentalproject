@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import { pickCustomerProfileAvatarBySeed } from '@/lib/customer-profile-avatars';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
@@ -52,6 +53,7 @@ export async function POST(req: NextRequest) {
         name: user.user_metadata?.name ?? '',
         login_type: 'email',
         country: '대한민국',
+        profile_image: pickCustomerProfileAvatarBySeed(user.id),
       }, { onConflict: 'id', ignoreDuplicates: true });
     }
 

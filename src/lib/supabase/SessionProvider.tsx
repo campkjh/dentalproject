@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { createClient, hasSupabaseEnv } from './client';
 import { useStore } from '@/store';
 import { clearMyHospitalCache } from '@/lib/partner/my-hospital-cache';
+import { pickCustomerProfileAvatarBySeed } from '@/lib/customer-profile-avatars';
 
 type Ctx = {
   session: Session | null;
@@ -109,6 +110,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         name: authUser.user_metadata?.name ?? '',
         login_type: 'email',
         country: '대한민국',
+        profile_image: pickCustomerProfileAvatarBySeed(userId),
       });
       const { data: created } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle();
       p = (created as Record<string, unknown> | null) ?? { id: userId };
@@ -124,6 +126,12 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         : profileIsDoctor === false && hasHospital === false
           ? false
           : cachedHospitalAccess ?? false;
+
+    if (p && !p.profile_image && !hasHospitalAccess) {
+      const profileImage = pickCustomerProfileAvatarBySeed(userId);
+      await supabase.from('profiles').update({ profile_image: profileImage }).eq('id', userId);
+      p = { ...p, profile_image: profileImage };
+    }
 
     if (profileIsDoctor !== null && hasHospital !== null) {
       writeCachedHospitalAccess(userId, hasHospitalAccess);
