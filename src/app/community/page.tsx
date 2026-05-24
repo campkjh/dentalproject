@@ -252,6 +252,17 @@ function CommunityPageInner() {
     .filter((p) => p.boardType === 'question')
     .slice(0, 12);
 
+  // Up to 3 unique doctors derived from popular post answerers, used as the
+  // "currently active" stack on the live Q&A header.
+  const activeDoctors = useMemo(() => {
+    const seen = new Map<string, PopularAnswerer>();
+    for (const answerer of Object.values(popularAnswerers)) {
+      if (!seen.has(answerer.id)) seen.set(answerer.id, answerer);
+      if (seen.size >= 3) break;
+    }
+    return Array.from(seen.values());
+  }, [popularAnswerers]);
+
   const handleScroll = () => {
     if (scrollContainerRef.current) {
       setShowScrollTop(scrollContainerRef.current.scrollTop > 300);
@@ -398,12 +409,33 @@ function CommunityPageInner() {
             className="block bg-white px-2.5 pt-2 pb-4 mb-2"
           >
             <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <img src="/icons/community-live-doctor-v2.svg" alt="" width={22} height={22} />
-                <h3 className="text-[17px] font-bold text-gray-900">실시간 의사에게 질문</h3>
-                <span className="inline-flex h-[20px] items-center rounded-[5px] bg-[#FF3B30] px-1.5 text-[11px] font-extrabold leading-none text-white tracking-wider">
-                  LIVE
-                </span>
+              <div className="flex items-center gap-3">
+                {/* Stacked active-doctor avatars */}
+                <div className="flex -space-x-3 flex-shrink-0">
+                  {[0, 1, 2].map((i) => {
+                    const doc = activeDoctors[i];
+                    return (
+                      <Avatar
+                        key={doc?.id ?? `live-doc-slot-${i}`}
+                        src={doc?.profileImage}
+                        role="doctor"
+                        seed={doc?.id ?? `live-doctor-${i}`}
+                        size={32}
+                        className="bg-[#F2F7FF] ring-2 ring-white"
+                      />
+                    );
+                  })}
+                </div>
+                {/* Two-line title with LIVE badge inline with the top line */}
+                <h3 className="flex flex-col gap-0.5 text-[16px] font-extrabold leading-[1.15] text-gray-900">
+                  <span className="inline-flex items-center gap-2">
+                    실시간
+                    <span className="inline-flex h-[20px] items-center rounded-[5px] bg-[#FF3B30] px-1.5 text-[11px] font-extrabold leading-none text-white tracking-wider">
+                      LIVE
+                    </span>
+                  </span>
+                  <span>의사에게 질문</span>
+                </h3>
               </div>
               <ChevronRight size={20} className="text-gray-400" />
             </div>
