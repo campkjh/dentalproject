@@ -384,7 +384,7 @@ function CommunityPageInner() {
             card shadow renders fully even though the visible gap to the next section is small. */}
         {!myPostsMode && !isSearching && popularPosts.length > 0 && (
           <div className="bg-white pt-4 pb-0 mb-0">
-            <h3 className="text-[17px] font-bold text-gray-900 mb-3 px-5">
+            <h3 className="text-[17px] font-bold text-gray-900 mb-3 pl-[24px] pr-[24px]">
               유저게시판 인기글
             </h3>
             <PopularPostsCarousel posts={popularPosts} answerers={popularAnswerers} />
@@ -703,7 +703,7 @@ function FlowingBubbles({ questions }: { questions: Post[] }) {
       {/* Top lane — blue, slow drift */}
       <div
         className="absolute left-0 right-0"
-        style={{ top: 32, transform: 'translateY(-50%)' }}
+        style={{ top: 38, transform: 'translateY(-50%)' }}
       >
         <div
           className="bubbles-flow-lane flex items-center gap-12 whitespace-nowrap will-change-transform"
@@ -716,10 +716,11 @@ function FlowingBubbles({ questions }: { questions: Post[] }) {
           ))}
         </div>
       </div>
-      {/* Bottom lane — gray, even slower drift, offset start */}
+      {/* Bottom lane — gray, even slower drift, pulled up so the tails of the
+          blue row brush against the top of the gray row for a soft overlap */}
       <div
         className="absolute left-0 right-0"
-        style={{ top: 92, transform: 'translateY(-50%)' }}
+        style={{ top: 78, transform: 'translateY(-50%)' }}
       >
         <div
           className="bubbles-flow-lane flex items-center gap-14 whitespace-nowrap will-change-transform"
@@ -821,7 +822,7 @@ function PopularPostsCarousel({
     <div
       ref={containerRef}
       onScroll={handleScroll}
-      className="flex gap-3 overflow-x-auto hide-scrollbar snap-x snap-mandatory pl-5 pr-12 pt-2 pb-12 lg:grid lg:grid-cols-3 lg:gap-4 lg:overflow-x-visible lg:snap-none lg:p-0"
+      className="flex gap-3 overflow-x-auto hide-scrollbar snap-x snap-mandatory pl-[24px] pr-[48px] pt-2 pb-12 lg:grid lg:grid-cols-3 lg:gap-4 lg:overflow-x-visible lg:snap-none lg:p-0"
     >
       {posts.map((post, idx) => (
         <div
