@@ -411,9 +411,11 @@ function CommunityPageInner() {
         {/* Skeleton */}
         {!catalogHydrated && posts.length === 0 && <CommunitySkeleton />}
 
-        {/* Popular posts - scale-on-swipe carousel */}
+        {/* Popular posts - scale-on-swipe carousel
+            pb-0/mb-0 here: carousel itself reserves pb-12 (48px) internally so the
+            card shadow renders fully even though the visible gap to the next section is small. */}
         {!isSearching && popularPosts.length > 0 && (
-          <div className="bg-white pt-4 pb-2 mb-2">
+          <div className="bg-white pt-4 pb-0 mb-0">
             <h3 className="text-[17px] font-bold text-gray-900 mb-3 px-3">
               유저게시판 인기글
             </h3>
@@ -425,7 +427,7 @@ function CommunityPageInner() {
         {!isSearching && effectiveActiveBoard === '질문게시판' && liveQuestions.length > 0 && (
           <Link
             href={`/community/live`}
-            className="block bg-white px-2.5 py-4 mb-2"
+            className="block bg-white px-2.5 pt-2 pb-4 mb-2"
           >
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
@@ -481,21 +483,19 @@ function CommunityPageInner() {
           </div>
         </div>
 
-        {/* Question category sub-tabs */}
+        {/* Question category sub-tabs — partner-style sliding indicator */}
         {effectiveActiveBoard === '질문게시판' && (
-          <div className="bg-white px-2.5 pb-2 pt-0.5">
+          <div className="partner-community-category-shell bg-white">
             <div
               ref={categoryTabsRef}
-              className="relative flex gap-2 overflow-x-auto hide-scrollbar"
+              className="partner-community-categories hide-scrollbar"
             >
               <span
                 aria-hidden
-                className="absolute top-0 bottom-0 rounded-[8px] bg-[#51535C] pointer-events-none"
+                className="partner-community-category-indicator"
                 style={{
-                  left: categoryIndicator.left,
                   width: categoryIndicator.width,
-                  transition:
-                    'left 420ms cubic-bezier(0.22, 1, 0.36, 1), width 420ms cubic-bezier(0.22, 1, 0.36, 1)',
+                  transform: `translateX(${categoryIndicator.left}px)`,
                 }}
               />
               {questionCategories.map((cat, i) => {
@@ -506,15 +506,9 @@ function CommunityPageInner() {
                     ref={(el) => {
                       categoryBtnRefs.current[i] = el;
                     }}
+                    type="button"
                     onClick={() => changeCategory(cat)}
-                    className={`pill-tab relative z-10 rounded-[8px] px-3.5 py-2 text-[16px] font-medium whitespace-nowrap ${
-                      isActive ? 'text-white' : 'text-gray-500'
-                    }`}
-                    style={{
-                      transition: 'color 420ms cubic-bezier(0.22, 1, 0.36, 1)',
-                      border: `1px solid ${isActive ? 'transparent' : '#E5E7EB'}`,
-                      background: 'transparent',
-                    }}
+                    className={isActive ? 'is-active' : undefined}
                   >
                     {cat}
                   </button>
