@@ -389,6 +389,22 @@ body {
   .doctor-fan-in { animation: none; }
 }
 
+/* ===== Floating ask button: ambient bounce every 2.6s ===== */
+@keyframes askBounce {
+  0%, 78%   { transform: translateY(0) scale(1); }
+  83%       { transform: translateY(-5px) scale(1.025); }
+  88%       { transform: translateY(0) scale(0.99); }
+  93%       { transform: translateY(-2px) scale(1.005); }
+  100%      { transform: translateY(0) scale(1); }
+}
+.ask-bounce {
+  animation: askBounce 2.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  transform-origin: 80% 90%;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ask-bounce { animation: none; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .partner-route-detail-enter {
     animation: none;

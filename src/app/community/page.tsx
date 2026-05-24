@@ -75,7 +75,9 @@ function CommunityPageInner() {
   const searchParams = useSearchParams();
   const { isDoctor, posts: storePosts, catalogHydrated, user, isLoggedIn } = useStore();
   const [dbPosts, setDbPosts] = useState<typeof storePosts | null>(null);
-  const posts = dbPosts ?? storePosts;
+  // When DB returns posts, prefer those; otherwise fall back to store (mock
+  // or hydrated catalog) so the page is never stranded on empty state.
+  const posts = dbPosts && dbPosts.length > 0 ? dbPosts : storePosts;
   const [activeBoard, setActiveBoard] = useState('질문게시판');
   const [sortBy, setSortBy] = useState('최신순');
   const [showSortDropdown, setShowSortDropdown] = useState(false);
@@ -99,7 +101,12 @@ function CommunityPageInner() {
   const [categoryIndicator, setCategoryIndicator] = useState({ left: 0, width: 0 });
 
   useEffect(() => {
-    if (!hasSupabaseEnv()) return;
+    if (!hasSupabaseEnv()) {
+      // No DB configured (e.g. local dev without env) — exit loading state so
+      // the store fallback can render instead of an indefinite skeleton.
+      setDbPosts([]);
+      return;
+    }
     const sb = createClient();
     sb.from('posts')
       .select('id, board_type, title, content, author_id, view_count, like_count, comment_count, tags, has_answer, answer_count, is_anonymous, anonymous_id, image_url, created_at, author:profiles!posts_author_id_fkey(name, is_doctor)')
@@ -578,16 +585,31 @@ function CommunityPageInner() {
                         <div className="flex-1 min-w-0">
                           <p className="text-[13px] text-gray-500 mb-1">
                             {post.authorName || '익명'}
+                            {post.authorTitle && (
+                              <span className="ml-1 text-[#2B313D] font-semibold">
+                                {post.authorTitle}
+                              </span>
+                            )}
+                            {post.authorHospital && (
+                              <>
+                                <span className="text-gray-300 mx-1.5">|</span>
+                                <span className="text-gray-500">{post.authorHospital}</span>
+                              </>
+                            )}
                           </p>
-                          <p className="text-[15px] font-bold text-gray-900 line-clamp-2 leading-snug">
+                          <p className="text-[17px] font-bold text-[#2B313D] line-clamp-2 leading-snug">
                             {post.title}
                           </p>
-                          <p className="text-[13px] text-gray-500 mt-1 line-clamp-2 leading-snug">
+                          <p className="text-[15px] text-gray-500 mt-1 line-clamp-2 leading-snug">
                             {post.content}
                           </p>
-                          <div className="flex items-center gap-2 mt-2">
+                          <div className="flex items-center gap-2 mt-2 flex-wrap">
                             <span className="text-xs text-gray-400">
                               {post.date}
+                            </span>
+                            <span className="inline-flex items-center gap-0.5 text-xs text-gray-400">
+                              <img src="/icons/community-views.svg" alt="" width={14} height={14} className="opacity-70" />
+                              {post.viewCount.toLocaleString('ko-KR')}
                             </span>
                             {post.hasAnswer && post.answerCount && post.answerCount > 0 ? (
                               <span className="inline-flex items-center gap-1 pl-1 pr-2 py-0.5 bg-[#EEF1FF] text-[#3852FF] text-[12px] rounded-full font-semibold">
@@ -969,7 +991,7 @@ function FloatingSealAskButton({ href }: { href: string }) {
       href={href}
       onClick={handleClick}
       aria-label="질문하기"
-      className="fixed z-30 inline-flex items-center justify-between rounded-full transition-transform active:scale-95"
+      className="ask-bounce fixed z-30 inline-flex items-center justify-between rounded-full transition-transform active:scale-95"
       style={{
         right: 16,
         bottom: 'calc(94px + env(safe-area-inset-bottom))',
