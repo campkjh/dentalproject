@@ -484,45 +484,42 @@ function CommunityPageInner() {
         {/* Question category sub-tabs */}
         {effectiveActiveBoard === '질문게시판' && (
           <div className="bg-white px-2.5 pb-2 pt-0.5">
-            <div className="flex items-center gap-2">
-              <div
-                ref={categoryTabsRef}
-                className="relative flex min-w-0 flex-1 gap-2 overflow-x-auto hide-scrollbar"
-              >
-                <span
-                  aria-hidden
-                  className="absolute top-0 bottom-0 rounded-[8px] bg-[#51535C] pointer-events-none"
-                  style={{
-                    left: categoryIndicator.left,
-                    width: categoryIndicator.width,
-                    transition:
-                      'left 420ms cubic-bezier(0.22, 1, 0.36, 1), width 420ms cubic-bezier(0.22, 1, 0.36, 1)',
-                  }}
-                />
-                {questionCategories.map((cat, i) => {
-                  const isActive = activeCategory === cat;
-                  return (
-                    <button
-                      key={cat}
-                      ref={(el) => {
-                        categoryBtnRefs.current[i] = el;
-                      }}
-                      onClick={() => changeCategory(cat)}
-                      className={`pill-tab relative z-10 rounded-[8px] px-3.5 py-2 text-[16px] font-medium whitespace-nowrap ${
-                        isActive ? 'text-white' : 'text-gray-500'
-                      }`}
-                      style={{
-                        transition: 'color 420ms cubic-bezier(0.22, 1, 0.36, 1)',
-                        border: `1px solid ${isActive ? 'transparent' : '#E5E7EB'}`,
-                        background: 'transparent',
-                      }}
-                    >
-                      {cat}
-                    </button>
-                  );
-                })}
-              </div>
-              <InlineAskButton href={`/community/write?board=question`} />
+            <div
+              ref={categoryTabsRef}
+              className="relative flex gap-2 overflow-x-auto hide-scrollbar"
+            >
+              <span
+                aria-hidden
+                className="absolute top-0 bottom-0 rounded-[8px] bg-[#51535C] pointer-events-none"
+                style={{
+                  left: categoryIndicator.left,
+                  width: categoryIndicator.width,
+                  transition:
+                    'left 420ms cubic-bezier(0.22, 1, 0.36, 1), width 420ms cubic-bezier(0.22, 1, 0.36, 1)',
+                }}
+              />
+              {questionCategories.map((cat, i) => {
+                const isActive = activeCategory === cat;
+                return (
+                  <button
+                    key={cat}
+                    ref={(el) => {
+                      categoryBtnRefs.current[i] = el;
+                    }}
+                    onClick={() => changeCategory(cat)}
+                    className={`pill-tab relative z-10 rounded-[8px] px-3.5 py-2 text-[16px] font-medium whitespace-nowrap ${
+                      isActive ? 'text-white' : 'text-gray-500'
+                    }`}
+                    style={{
+                      transition: 'color 420ms cubic-bezier(0.22, 1, 0.36, 1)',
+                      border: `1px solid ${isActive ? 'transparent' : '#E5E7EB'}`,
+                      background: 'transparent',
+                    }}
+                  >
+                    {cat}
+                  </button>
+                );
+              })}
             </div>
           </div>
         )}
@@ -696,9 +693,11 @@ function CommunityPageInner() {
         </div>
       </div>
 
-      {/* Floating write button — circle→pill expand + train border animation
-          Hidden on question board since the inline LIVE ask button covers it */}
-      {effectiveActiveBoard !== '질문게시판' && (
+      {/* Floating write button — seal-mascot LIVE style on question board,
+          purple expander on other boards */}
+      {effectiveActiveBoard === '질문게시판' ? (
+        <FloatingSealAskButton href={`/community/write?board=question`} />
+      ) : (
         <FloatingAskButton label={writeButtonLabel} href={`/community/write?board=${boardType}`} scrollContainer={scrollContainerRef} />
       )}
 
@@ -910,28 +909,49 @@ function PopularPostCard({
   );
 }
 
-/* ===================== Inline Ask Button (LIVE) ===================== */
+/* ===================== Floating Seal Ask Button (question board) ===================== */
 
-function InlineAskButton({ href }: { href: string }) {
+function FloatingSealAskButton({ href }: { href: string }) {
   return (
     <Link
       href={href}
-      className="relative flex-shrink-0 inline-flex h-[38px] items-center gap-1.5 rounded-[14px] bg-[#E8F2FF] pl-3 pr-2 transition-transform active:scale-95"
       aria-label="질문하기"
+      className="fixed z-30 inline-flex items-center justify-between rounded-full transition-transform active:scale-95"
+      style={{
+        right: 16,
+        bottom: 'calc(94px + env(safe-area-inset-bottom))',
+        width: 163,
+        height: 86,
+        background: '#F1F6FE',
+        border: '1px solid #FFFFFF',
+        boxShadow: '0 12px 28px rgba(30, 41, 99, 0.12)',
+        paddingLeft: 18,
+        paddingRight: 8,
+      }}
     >
-      <span className="absolute -top-1.5 left-2 inline-flex h-[16px] items-center rounded-[4px] bg-[#1E85FF] px-1 text-[9px] font-extrabold leading-none text-white tracking-wider">
-        LIVE
-      </span>
-      <span className="text-[14px] font-extrabold leading-none text-[#1E85FF]">질문하기</span>
-      <span
-        className="ml-0.5 inline-flex h-7 w-7 items-center justify-center rounded-full bg-white text-[#1E85FF]"
+      <div className="flex flex-col items-start gap-1.5">
+        <span
+          className="inline-flex h-[25px] items-center rounded-[8px] bg-white px-2 text-[13px] font-extrabold leading-none tracking-wider"
+          style={{ color: '#3182F6' }}
+        >
+          LIVE
+        </span>
+        <span
+          className="text-[18px] font-extrabold leading-none"
+          style={{ color: '#2B313D' }}
+        >
+          질문하기
+        </span>
+      </div>
+      <img
+        src="/images/community-ask-seal.png"
+        alt=""
         aria-hidden
-      >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="11" cy="11" r="7" />
-          <line x1="20" y1="20" x2="16.5" y2="16.5" />
-        </svg>
-      </span>
+        width={70}
+        height={70}
+        className="flex-shrink-0"
+        style={{ width: 70, height: 70, objectFit: 'contain' }}
+      />
     </Link>
   );
 }
