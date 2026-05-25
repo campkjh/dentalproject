@@ -170,6 +170,37 @@ export default function ProductDetailPage() {
   const [heroOutOfView, setHeroOutOfView] = useState(false);
   const reviewSectionRef = useRef<HTMLDivElement>(null);
   const heroRef = useRef<HTMLDivElement>(null);
+  // Reviews carousel — scale-down siblings as you scroll. Leftmost (snapped)
+  // card stays at 1.0; cards to the right shrink toward 0.9 with distance.
+  const reviewsCarouselRef = useRef<HTMLDivElement>(null);
+  const reviewsRafRef = useRef<number | null>(null);
+
+  const updateReviewScales = () => {
+    const container = reviewsCarouselRef.current;
+    if (!container) return;
+    const cs = window.getComputedStyle(container);
+    const leftPad = parseFloat(cs.paddingLeft) || 0;
+    const first = container.children[0] as HTMLElement | undefined;
+    const cardWidth = first?.offsetWidth ?? 288;
+    const activeX = container.scrollLeft + leftPad + cardWidth / 2;
+    for (let i = 0; i < container.children.length; i++) {
+      const el = container.children[i] as HTMLElement;
+      const cardCenter = el.offsetLeft + el.offsetWidth / 2;
+      const dist = Math.abs(activeX - cardCenter);
+      const refWidth = el.offsetWidth + 6; // 6px gap between cards
+      const t = Math.min(1, dist / refWidth);
+      const scale = 1.0 - t * 0.1; // 1.0 → 0.9 with distance
+      el.style.transform = `scale(${scale})`;
+    }
+  };
+
+  const handleReviewsScroll = () => {
+    if (reviewsRafRef.current != null) return;
+    reviewsRafRef.current = requestAnimationFrame(() => {
+      reviewsRafRef.current = null;
+      updateReviewScales();
+    });
+  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -198,6 +229,18 @@ export default function ProductDetailPage() {
 
   const productReviews = reviews.filter((r) => r.productId === product?.id);
   const productReviewCount = productReviews.length;
+
+  // Set initial review-card scales after mount + listen for resizes
+  useLayoutEffect(() => {
+    updateReviewScales();
+    const onResize = () => updateReviewScales();
+    window.addEventListener('resize', onResize);
+    return () => {
+      window.removeEventListener('resize', onResize);
+      if (reviewsRafRef.current != null) cancelAnimationFrame(reviewsRafRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [productReviews.length]);
 
   const hospitalProducts = products.filter((p) => p.hospitalId === product?.hospitalId && p.id !== product?.id);
 
@@ -396,15 +439,29 @@ export default function ProductDetailPage() {
           );
         })()}
         {productReviews.length > 0 && (
-          <div className="flex overflow-x-auto hide-scrollbar pb-2" style={{ gap: 6, scrollSnapType: 'x mandatory' }}>
-            {productReviews.map((review) => {
+          <div
+            ref={reviewsCarouselRef}
+            onScroll={handleReviewsScroll}
+            className="flex overflow-x-auto hide-scrollbar pb-2"
+            style={{ gap: 6, scrollSnapType: 'x mandatory' }}
+          >
+            {productReviews.map((review, idx) => {
               const withImages = hasReviewImages(review);
               return (
                 <Link
                   key={review.id}
                   href={`/review/${review.id}`}
-                  className="flex-shrink-0 flex flex-col card-press"
-                  style={{ width: 288, minHeight: withImages ? 358 : 192, borderRadius: 20, backgroundColor: '#F6F6F6', padding: 12, overflow: 'hidden', scrollSnapAlign: 'start' }}
+                  className="flex-shrink-0 flex flex-col card-press origin-left will-change-transform"
+                  style={{
+                    width: 288,
+                    minHeight: withImages ? 358 : 192,
+                    borderRadius: 20,
+                    backgroundColor: '#F6F6F6',
+                    padding: 12,
+                    overflow: 'hidden',
+                    scrollSnapAlign: 'start',
+                    transform: `scale(${idx === 0 ? 1.0 : 0.9})`,
+                  }}
                 >
                   {withImages && (
                     <ReviewImagePair beforeImage={review.beforeImage} afterImage={review.afterImage} />
