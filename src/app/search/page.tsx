@@ -42,7 +42,16 @@ const relatedTags: Record<string, string[]> = {
   plastic: ['입꼬리보톡스', '입꼬리필러', '필러녹이기', '입술필러', '제거주사', '코필러', '턱보톡스', '이마필러'],
 };
 
-const priceRanges = ['전체', '10만원 이하', '10~30만원', '30~50만원', '50~100만원', '100만원 이상'];
+// Preset price ranges. Each preset translates to a [min, max] interval —
+// max=null means "and up". When the user types into the inputs, the same
+// {min, max} are written; clicking a preset fills the inputs.
+const PRICE_PRESETS: { label: string; min: number | null; max: number | null }[] = [
+  { label: '50,000원 이하', min: null, max: 50000 },
+  { label: '50,000원 ~ 110,000원', min: 50000, max: 110000 },
+  { label: '110,000원 ~ 200,000원', min: 110000, max: 200000 },
+  { label: '200,000원 ~ 320,000원', min: 200000, max: 320000 },
+  { label: '320,000원 이상', min: 320000, max: null },
+];
 const bookingMethods = ['전체', '앱결제', '현장결제', '상담 후 결제'];
 const sortOptions = ['추천순', '가격 낮은순', '가격 높은순', '평점순', '리뷰 많은순'];
 
@@ -88,7 +97,10 @@ function SearchPage() {
   const [filterModalTab, setFilterModalTab] = useState<'region' | 'price' | 'booking' | null>(null);
   const [showSortModal, setShowSortModal] = useState(false);
   const [activeCategory, setActiveCategory] = useState(categoryParam ?? '');
-  const [selectedPrice, setSelectedPrice] = useState('전체');
+  // Price filter as a numeric range so the modal can mix free-input + presets.
+  // `null` on either side = open-ended (no lower bound / no upper bound).
+  const [priceMin, setPriceMin] = useState<number | null>(null);
+  const [priceMax, setPriceMax] = useState<number | null>(null);
   const [selectedBooking, setSelectedBooking] = useState('전체');
   const [selectedSort, setSelectedSort] = useState('추천순');
   const [hasSearched, setHasSearched] = useState(false);
@@ -140,13 +152,21 @@ function SearchPage() {
 
   // --- Price filter helper ---
   const matchesPrice = (p: typeof products[0]) => {
-    if (selectedPrice === '전체') return true;
-    if (selectedPrice === '10만원 이하') return p.price <= 100000;
-    if (selectedPrice === '10~50만원') return p.price > 100000 && p.price <= 500000;
-    if (selectedPrice === '50~100만원') return p.price > 500000 && p.price <= 1000000;
-    if (selectedPrice === '100만원 이상') return p.price > 1000000;
+    if (priceMin == null && priceMax == null) return true;
+    if (priceMin != null && p.price < priceMin) return false;
+    if (priceMax != null && p.price > priceMax) return false;
     return true;
   };
+
+  const priceLabel =
+    priceMin == null && priceMax == null
+      ? '가격'
+      : priceMin == null
+      ? `${(priceMax ?? 0).toLocaleString()}원 이하`
+      : priceMax == null
+      ? `${priceMin.toLocaleString()}원 이상`
+      : `${priceMin.toLocaleString()}~${priceMax.toLocaleString()}원`;
+  const priceActive = priceMin != null || priceMax != null;
 
   // --- Sort helper ---
   const sortResults = (arr: typeof products) => {
@@ -299,7 +319,8 @@ function SearchPage() {
           onChangeCategory={changeCategory}
           selectedRegions={selectedRegions}
           regionLabel={regionLabel}
-          selectedPrice={selectedPrice}
+          priceLabel={priceLabel}
+          priceActive={priceActive}
           selectedBooking={selectedBooking}
           selectedSort={selectedSort}
           setSelectedBooking={setSelectedBooking}
@@ -347,8 +368,10 @@ function SearchPage() {
             setSelectedRegions={setSelectedRegions}
             activeProvince={activeProvince}
             setActiveProvince={setActiveProvince}
-            selectedPrice={selectedPrice}
-            setSelectedPrice={setSelectedPrice}
+            priceMin={priceMin}
+            setPriceMin={setPriceMin}
+            priceMax={priceMax}
+            setPriceMax={setPriceMax}
             selectedBooking={selectedBooking}
             setSelectedBooking={setSelectedBooking}
             onClose={() => setFilterModalTab(null)}
@@ -413,7 +436,8 @@ function SearchPage() {
         onChangeCategory={changeCategory}
         selectedRegions={selectedRegions}
         regionLabel={regionLabel}
-        selectedPrice={selectedPrice}
+        priceLabel={priceLabel}
+        priceActive={priceActive}
         selectedBooking={selectedBooking}
         selectedSort={selectedSort}
         setSelectedBooking={setSelectedBooking}
@@ -501,8 +525,10 @@ function SearchPage() {
           setSelectedRegions={setSelectedRegions}
           activeProvince={activeProvince}
           setActiveProvince={setActiveProvince}
-          selectedPrice={selectedPrice}
-          setSelectedPrice={setSelectedPrice}
+          priceMin={priceMin}
+          setPriceMin={setPriceMin}
+          priceMax={priceMax}
+          setPriceMax={setPriceMax}
           selectedBooking={selectedBooking}
           setSelectedBooking={setSelectedBooking}
           onClose={() => setFilterModalTab(null)}
@@ -676,8 +702,10 @@ function FiltersBottomSheet({
   setSelectedRegions,
   activeProvince,
   setActiveProvince,
-  selectedPrice,
-  setSelectedPrice,
+  priceMin,
+  setPriceMin,
+  priceMax,
+  setPriceMax,
   selectedBooking,
   setSelectedBooking,
   onClose,
@@ -690,8 +718,10 @@ function FiltersBottomSheet({
   setSelectedRegions: React.Dispatch<React.SetStateAction<string[]>>;
   activeProvince: string;
   setActiveProvince: (p: string) => void;
-  selectedPrice: string;
-  setSelectedPrice: (p: string) => void;
+  priceMin: number | null;
+  setPriceMin: (n: number | null) => void;
+  priceMax: number | null;
+  setPriceMax: (n: number | null) => void;
   selectedBooking: string;
   setSelectedBooking: (b: string) => void;
   onClose: () => void;
@@ -743,7 +773,7 @@ function FiltersBottomSheet({
 
   const tabs: { key: FilterTab; label: string; hasValue: boolean }[] = [
     { key: 'region', label: '지역', hasValue: selectedRegions.length > 0 },
-    { key: 'price', label: '가격', hasValue: selectedPrice !== '전체' },
+    { key: 'price', label: '가격', hasValue: priceMin != null || priceMax != null },
     { key: 'booking', label: '예약방법', hasValue: selectedBooking !== '전체' },
   ];
 
@@ -905,37 +935,79 @@ function FiltersBottomSheet({
             </div>
           )}
 
-          {/* ----- PRICE ----- (single-select) */}
+          {/* ----- PRICE ----- (min/max inputs + preset pills) */}
           {activeTab === 'price' && (
-            <div className="h-full overflow-y-auto px-5">
-              {priceRanges.map((p) => {
-                const isChecked = selectedPrice === p;
-                return (
-                  <button
-                    key={p}
-                    onClick={() => setSelectedPrice(p)}
-                    className="w-full flex items-center gap-3 py-4"
-                  >
-                    <span
-                      className="flex items-center justify-center flex-shrink-0"
+            <div className="h-full overflow-y-auto px-5 pt-5">
+              {/* Input fields: min ~ max with 원 suffix on each side */}
+              <div className="flex items-center gap-2">
+                <div
+                  className="flex-1 flex items-center bg-white rounded-xl px-3"
+                  style={{ height: 48, border: '1px solid #E5E7EB' }}
+                >
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={priceMin == null ? '' : priceMin.toLocaleString()}
+                    onChange={(e) => {
+                      const digits = e.target.value.replace(/[^\d]/g, '');
+                      setPriceMin(digits ? Number(digits) : null);
+                    }}
+                    placeholder="19,900"
+                    className="flex-1 outline-none text-[15px] bg-transparent"
+                    style={{ color: '#2B313D' }}
+                  />
+                </div>
+                <span className="text-[15px]" style={{ color: '#2B313D' }}>원</span>
+                <span className="text-[15px]" style={{ color: '#A4ABBA' }}>~</span>
+                <div
+                  className="flex-1 flex items-center bg-white rounded-xl px-3"
+                  style={{ height: 48, border: '1px solid #E5E7EB' }}
+                >
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={priceMax == null ? '' : priceMax.toLocaleString()}
+                    onChange={(e) => {
+                      const digits = e.target.value.replace(/[^\d]/g, '');
+                      setPriceMax(digits ? Number(digits) : null);
+                    }}
+                    placeholder="500,000"
+                    className="flex-1 outline-none text-[15px] bg-transparent"
+                    style={{ color: '#2B313D' }}
+                  />
+                </div>
+                <span className="text-[15px]" style={{ color: '#2B313D' }}>원</span>
+              </div>
+
+              {/* Preset pills — clicking sets both inputs */}
+              <div className="flex flex-wrap gap-2 mt-5">
+                {PRICE_PRESETS.map((preset) => {
+                  const isActive = preset.min === priceMin && preset.max === priceMax;
+                  return (
+                    <button
+                      key={preset.label}
+                      onClick={() => {
+                        setPriceMin(preset.min);
+                        setPriceMax(preset.max);
+                      }}
+                      className="rounded-full"
                       style={{
-                        width: 24,
-                        height: 24,
-                        borderRadius: 12,
-                        backgroundColor: isChecked ? SELECT : 'transparent',
-                        border: isChecked ? 'none' : '1.5px solid #D1D5DB',
+                        height: 40,
+                        paddingLeft: 16,
+                        paddingRight: 16,
+                        fontSize: 14,
+                        fontWeight: 600,
+                        whiteSpace: 'nowrap',
+                        backgroundColor: isActive ? SELECT : '#fff',
+                        color: isActive ? '#fff' : '#51535C',
+                        border: isActive ? '1px solid ' + SELECT : '1px solid #E5E7EB',
                       }}
                     >
-                      {isChecked && (
-                        <span style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#fff' }} />
-                      )}
-                    </span>
-                    <span className="text-[17px]" style={{ color: '#2B313D' }}>
-                      {p}
-                    </span>
-                  </button>
-                );
-              })}
+                      {preset.label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           )}
 
@@ -990,14 +1062,27 @@ function FiltersBottomSheet({
           >
             필터 선택 완료
           </button>
-          {activeTab === 'region' && selectedRegions.length > 0 && (
-            <button
-              onClick={() => setSelectedRegions([])}
-              className="mt-2 w-full text-[13px] text-gray-400 font-medium py-1"
-            >
-              선택 초기화
-            </button>
-          )}
+          {(() => {
+            const showReset =
+              (activeTab === 'region' && selectedRegions.length > 0) ||
+              (activeTab === 'price' && (priceMin != null || priceMax != null)) ||
+              (activeTab === 'booking' && selectedBooking !== '전체');
+            if (!showReset) return null;
+            return (
+              <button
+                onClick={() => {
+                  if (activeTab === 'region') setSelectedRegions([]);
+                  else if (activeTab === 'price') {
+                    setPriceMin(null);
+                    setPriceMax(null);
+                  } else setSelectedBooking('전체');
+                }}
+                className="mt-2 w-full text-[13px] text-gray-400 font-medium py-1"
+              >
+                선택 초기화
+              </button>
+            );
+          })()}
         </div>
       </div>
     </div>
@@ -1014,7 +1099,8 @@ function ListPageFilters({
   onChangeCategory,
   selectedRegions,
   regionLabel,
-  selectedPrice,
+  priceLabel,
+  priceActive,
   selectedBooking,
   selectedSort,
   setSelectedBooking,
@@ -1028,7 +1114,8 @@ function ListPageFilters({
   onChangeCategory: (id: string) => void;
   selectedRegions: string[];
   regionLabel: string;
-  selectedPrice: string;
+  priceLabel: string;
+  priceActive: boolean;
   selectedBooking: string;
   selectedSort: string;
   setSelectedBooking: (b: string) => void;
@@ -1082,9 +1169,11 @@ function ListPageFilters({
 
   return (
     <div className="bg-white">
-      {/* Specialty category tabs */}
-      <div className="relative border-b border-gray-100">
-        <div className="flex gap-5 overflow-x-auto hide-scrollbar px-4 pt-3">
+      {/* Specialty category tabs — underline lives INSIDE the scroller so
+          offsetLeft (relative to the scrollable content) keeps it locked to
+          the active tab as the user scrolls horizontally. */}
+      <div className="border-b border-gray-100">
+        <div className="relative flex gap-5 overflow-x-auto hide-scrollbar px-4 pt-3">
           {tabsList.map((tab, i) => {
             const isActive = tab.id === activeCategory;
             return (
@@ -1108,44 +1197,34 @@ function ListPageFilters({
               </button>
             );
           })}
+          {/* Sliding underline (in-flow w.r.t. scroll, so it sticks to the active tab) */}
+          <span
+            aria-hidden
+            className="absolute bottom-0 h-[3px] rounded-full pointer-events-none"
+            style={{
+              left: indicator.left,
+              width: indicator.width,
+              backgroundColor: '#2B313D',
+              transition:
+                'left 380ms cubic-bezier(0.22, 1, 0.36, 1), width 380ms cubic-bezier(0.22, 1, 0.36, 1)',
+            }}
+          />
         </div>
-        {/* Sliding underline */}
-        <span
-          aria-hidden
-          className="absolute bottom-0 h-[3px] rounded-full pointer-events-none"
-          style={{
-            left: indicator.left,
-            width: indicator.width,
-            backgroundColor: '#2B313D',
-            transition:
-              'left 380ms cubic-bezier(0.22, 1, 0.36, 1), width 380ms cubic-bezier(0.22, 1, 0.36, 1)',
-          }}
-        />
       </div>
 
-      {/* Filter chips row */}
+      {/* Filter chips row — 지역 / 가격 / 예약방법 only */}
       <div className="flex gap-1.5 overflow-x-auto hide-scrollbar px-4 pt-3 pb-2">
         <button onClick={onOpenRegion} style={chipStyle(selectedRegions.length > 0)}>
           {selectedRegions.length > 0 ? regionLabel : '지역'}
           <ChevronDown size={14} />
         </button>
-        <button
-          onClick={onOpenBooking}
-          style={chipStyle(false)}
-          title="시술 카테고리는 준비중입니다"
-        >
-          시술 <ChevronDown size={14} />
-        </button>
-        <button onClick={onOpenPrice} style={chipStyle(selectedPrice !== '전체')}>
-          {selectedPrice !== '전체' ? selectedPrice : '가격'}
+        <button onClick={onOpenPrice} style={chipStyle(priceActive)}>
+          {priceLabel}
           <ChevronDown size={14} />
         </button>
         <button onClick={onOpenBooking} style={chipStyle(selectedBooking !== '전체')}>
           {selectedBooking !== '전체' ? selectedBooking : '예약방법'}
           <ChevronDown size={14} />
-        </button>
-        <button onClick={onOpenBooking} style={chipStyle(false)} title="병원 정보 필터는 준비중입니다">
-          병원정보 <ChevronDown size={14} />
         </button>
       </div>
 
