@@ -48,7 +48,11 @@ function detectDistrict(lat: number, lng: number): string {
 
 export default function HomePage() {
   const router = useRouter();
-  const { products, hospitals, reviews, categories, isLoggedIn, isDoctor, recentlyViewed, recentSearches, removeRecentSearch, catalogHydrated } = useStore();
+  const { products, hospitals, reviews, categories, isLoggedIn, isDoctor, recentlyViewed, recentSearches, removeRecentSearch, catalogHydrated, notifications, meHydrated } = useStore();
+  // Live unread count for the 쪽지 badge — only counted once /api/me has hydrated
+  // so we don't briefly render a 0 on the wrong account.
+  const unreadMessageCount =
+    isLoggedIn && meHydrated ? notifications.filter((n) => !n.isRead).length : 0;
   const [scrolled, setScrolled] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [scrollTopLeaving, setScrollTopLeaving] = useState(false);
@@ -213,7 +217,11 @@ export default function HomePage() {
                 }}
               >
                 <Send size={22} />
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] rounded-full min-w-[16px] h-4 flex items-center justify-center px-1">23</span>
+                {unreadMessageCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] rounded-full min-w-[16px] h-4 flex items-center justify-center px-1">
+                    {unreadMessageCount > 99 ? '99+' : unreadMessageCount}
+                  </span>
+                )}
               </Link>
             </div>
           ) : (
