@@ -51,7 +51,7 @@ export default function ProductCard({ product }: { product: Product }) {
       onClick={handleClick}
     >
       {/* 1:1 Image */}
-      <div className="relative aspect-square rounded-xl overflow-hidden bg-gray-100 mb-2">
+      <div className="relative aspect-square rounded-[20px] overflow-hidden bg-gray-100 mb-2">
         <img
           src={productImage}
           alt={product.title}

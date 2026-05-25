@@ -131,16 +131,7 @@ export default function WishlistPage() {
                   <h2 className="px-4 mb-4 text-[22px] font-bold text-[#2B313D] leading-[28px]">
                     실시간 <span className="text-[#8037FF]">TOP 10</span> 인기 시술
                   </h2>
-                  <div className="pl-4 pr-4 scroll-pl-4 pb-2 flex gap-3 overflow-x-auto hide-scrollbar snap-x snap-mandatory">
-                    {topProducts.map((product) => (
-                      <div
-                        key={product.id}
-                        className="snap-start flex-shrink-0 w-[156px]"
-                      >
-                        <ProductCard product={product} />
-                      </div>
-                    ))}
-                  </div>
+                  <TopProductsCarousel products={topProducts} />
                 </section>
               )}
             </>
@@ -179,6 +170,71 @@ export default function WishlistPage() {
       )}
 
       <div className="pb-24 lg:pb-0" />
+    </div>
+  );
+}
+
+/* ============================== TopProductsCarousel ============================== */
+
+function TopProductsCarousel({ products }: { products: import('@/types').Product[] }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const rafRef = useRef<number | null>(null);
+
+  const updateScales = () => {
+    const container = containerRef.current;
+    if (!container) return;
+    const cs = window.getComputedStyle(container);
+    const leftPad = parseFloat(cs.paddingLeft) || 0;
+    const first = container.children[0] as HTMLElement | undefined;
+    const cardWidth = first?.offsetWidth ?? 156;
+    // Active anchor is the leftmost snapped card center
+    const activeX = container.scrollLeft + leftPad + cardWidth / 2;
+    for (let i = 0; i < container.children.length; i++) {
+      const el = container.children[i] as HTMLElement;
+      const cardCenter = el.offsetLeft + el.offsetWidth / 2;
+      const dist = Math.abs(activeX - cardCenter);
+      const ref = el.offsetWidth + 12; // approx with gap
+      const t = Math.min(1, dist / ref);
+      // Subtle scale: active = 1.0, adjacent = 0.9 (delta 0.1)
+      const scale = 1.0 - t * 0.1;
+      el.style.transform = `scale(${scale})`;
+    }
+  };
+
+  const handleScroll = () => {
+    if (rafRef.current != null) return;
+    rafRef.current = requestAnimationFrame(() => {
+      rafRef.current = null;
+      updateScales();
+    });
+  };
+
+  useLayoutEffect(() => {
+    updateScales();
+    const onResize = () => updateScales();
+    window.addEventListener('resize', onResize);
+    return () => {
+      window.removeEventListener('resize', onResize);
+      if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [products.length]);
+
+  return (
+    <div
+      ref={containerRef}
+      onScroll={handleScroll}
+      className="pl-4 pr-12 scroll-pl-4 pb-6 flex gap-3 overflow-x-auto hide-scrollbar snap-x snap-mandatory"
+    >
+      {products.map((product, idx) => (
+        <div
+          key={product.id}
+          className="snap-start origin-left flex-shrink-0 w-[156px] will-change-transform"
+          style={{ transform: `scale(${idx === 0 ? 1.0 : 0.9})` }}
+        >
+          <ProductCard product={product} />
+        </div>
+      ))}
     </div>
   );
 }
