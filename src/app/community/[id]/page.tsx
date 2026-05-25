@@ -115,6 +115,17 @@ export default function PostDetailPage() {
   const isRealPost = /^[0-9a-f]{8}-/.test(postId);
 
   const [commentText, setCommentText] = useState('');
+  const commentTextareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Auto-grow the comment textarea up to 140px so multi-line comments expand
+  // the box instead of overflowing. Triggered on every commentText change so
+  // both typed input and post-submit reset shrink the box back.
+  useEffect(() => {
+    const ta = commentTextareaRef.current;
+    if (!ta) return;
+    ta.style.height = 'auto';
+    ta.style.height = `${Math.min(ta.scrollHeight, 140)}px`;
+  }, [commentText]);
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
   const [viewCount, setViewCount] = useState(0);
@@ -612,19 +623,29 @@ export default function PostDetailPage() {
         <div className="flex items-end gap-2 px-2.5 py-3">
           <div className="flex-1 relative">
             <textarea
+              ref={commentTextareaRef}
               value={commentText}
               onChange={(e) => { if (e.target.value.length <= 5000) setCommentText(e.target.value); }}
               placeholder={replyTo ? '답글을 입력해주세요' : '댓글을 입력해주세요'}
               rows={1}
-              className="w-full px-2.5 py-2.5 bg-gray-100 rounded-xl text-base resize-none focus:outline-none focus:ring-1 focus:ring-[#8037FF]"
-              style={{ minHeight: '40px', maxHeight: '100px' }}
+              className="block w-full px-3 bg-gray-100 rounded-xl text-base resize-none focus:outline-none focus:ring-1 focus:ring-[#8037FF] align-bottom"
+              style={{
+                height: 44,
+                minHeight: 44,
+                maxHeight: 140,
+                lineHeight: '24px',
+                paddingTop: 10,
+                paddingBottom: 10,
+                paddingRight: 64,
+              }}
             />
-            <span className="absolute right-3 bottom-2 text-[12px] text-gray-400">{commentText.length}/5000자</span>
+            <span className="absolute right-3 bottom-3 text-[12px] text-gray-400 pointer-events-none">{commentText.length}/5000자</span>
           </div>
           <button
             onClick={handleSubmitComment}
             disabled={!commentText.trim()}
-            className={`px-2.5 py-2.5 rounded-xl text-base font-medium flex-shrink-0 transition-colors ${commentText.trim() ? 'bg-[#8037FF] text-white' : 'bg-gray-200 text-gray-400'}`}
+            className={`rounded-xl text-base font-medium flex-shrink-0 transition-colors ${commentText.trim() ? 'bg-[#8037FF] text-white' : 'bg-gray-200 text-gray-400'}`}
+            style={{ height: 44, paddingLeft: 14, paddingRight: 14 }}
           >
             등록
           </button>
