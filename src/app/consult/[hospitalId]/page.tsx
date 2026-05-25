@@ -189,16 +189,16 @@ export default function ConsultChatPage() {
       {/* Header */}
       <header className="flex-shrink-0 h-14 px-2.5 border-b border-gray-100 flex items-center gap-2">
         <button onClick={() => router.back()} className="p-1 -ml-1">
-          <ChevronLeft size={22} className="text-gray-900" />
+          <ChevronLeft size={24} className="text-gray-900" />
         </button>
         <div className="flex-1 min-w-0">
-          <p className="text-[14px] font-bold text-gray-900 line-clamp-1">{hospital?.name ?? '채팅'}</p>
+          <p className="text-[16px] font-bold text-gray-900 line-clamp-1">{hospital?.name ?? '채팅'}</p>
           <div className="flex items-center gap-1 mt-0.5">
             <span className="relative flex h-1.5 w-1.5">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
               <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-green-500" />
             </span>
-            <p className="text-[11px] text-gray-500">실시간 · 평균 30분 내 답변</p>
+            <p className="text-[13px] text-gray-500">실시간 · 평균 30분 내 답변</p>
           </div>
         </div>
         {hospital?.phone && (
@@ -213,9 +213,9 @@ export default function ConsultChatPage() {
       </header>
 
       {/* Info banner */}
-      <div className="flex-shrink-0 px-2.5 py-2 bg-[#F4EFFF] flex items-start gap-2">
-        <Info size={12} className="text-[#8037FF] mt-0.5 flex-shrink-0" />
-        <p className="text-[11px] text-[#8037FF] leading-snug">
+      <div className="flex-shrink-0 px-2.5 py-2.5 bg-[#F4EFFF] flex items-start gap-2">
+        <Info size={14} className="text-[#8037FF] mt-0.5 flex-shrink-0" />
+        <p className="text-[13px] text-[#8037FF] leading-snug">
           의료 상담은 실제 진료를 대체하지 않습니다. 정확한 진단은 내원 후 안내받으세요.
         </p>
       </div>
@@ -236,7 +236,7 @@ export default function ConsultChatPage() {
             <button
               key={t}
               onClick={() => send(t)}
-              className="flex-shrink-0 px-3 py-1.5 rounded-full text-[12px] font-semibold text-gray-700 bg-white border border-gray-200 btn-press hover:bg-gray-50"
+              className="flex-shrink-0 px-3.5 py-2 rounded-full text-[14px] font-semibold text-gray-700 bg-white border border-gray-200 btn-press hover:bg-gray-50"
             >
               {t}
             </button>
@@ -275,7 +275,7 @@ export default function ConsultChatPage() {
             rows={1}
             placeholder={authUser ? '메시지 입력 (Enter 전송)' : '로그인 후 이용 가능합니다'}
             disabled={!authUser}
-            className="w-full text-[13px] outline-none bg-transparent resize-none placeholder:text-gray-400"
+            className="w-full text-[15px] outline-none bg-transparent resize-none placeholder:text-gray-400"
             style={{ maxHeight: 100 }}
           />
         </div>
@@ -290,7 +290,7 @@ export default function ConsultChatPage() {
             boxShadow: input.trim() && !pending && authUser ? '0 4px 12px rgba(49,130,246,0.3)' : 'none',
           }}
         >
-          <Send size={15} />
+          <Send size={18} />
         </button>
       </form>
     </div>
@@ -302,14 +302,14 @@ function Bubble({ msg, hospitalSeed }: { msg: Msg; hospitalSeed: string }) {
   return (
     <div className={`flex items-start gap-2 ${isUser ? 'flex-row-reverse' : ''} fade-in-up`}>
       {!isUser && (
-        <Avatar role="doctor" seed={hospitalSeed || msg.id} size={28} className="flex-shrink-0" />
+        <Avatar role="doctor" seed={hospitalSeed || msg.id} size={32} className="flex-shrink-0" />
       )}
       <div className="max-w-[78%]">
         {!isUser && msg.sender && (
-          <p className="text-[10px] text-gray-500 mb-0.5">{msg.sender}</p>
+          <p className="text-[12px] font-semibold text-gray-600 mb-1">{msg.sender}</p>
         )}
         <div
-          className="rounded-2xl px-3.5 py-2.5 text-[13px] leading-relaxed whitespace-pre-wrap"
+          className="rounded-2xl px-4 py-3 text-[15px] leading-relaxed whitespace-pre-wrap"
           style={{
             backgroundColor: isUser ? '#8037FF' : '#fff',
             color: isUser ? '#fff' : '#2B313D',
@@ -321,7 +321,7 @@ function Bubble({ msg, hospitalSeed }: { msg: Msg; hospitalSeed: string }) {
           {msg.text}
         </div>
         <p
-          className="text-[10px] text-gray-400 mt-1"
+          className="text-[12px] text-gray-400 mt-1"
           style={{ textAlign: isUser ? 'right' : 'left' }}
         >
           {msg.time}
