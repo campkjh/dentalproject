@@ -415,6 +415,20 @@ body {
   .avatar-bob { animation: none; }
 }
 
+/* ===== Live count digit roll: each changed digit slides up from below ===== */
+@keyframes digitRollIn {
+  0%   { transform: translateY(115%); opacity: 0; }
+  60%  { transform: translateY(-8%); opacity: 1; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+.digit-roll-in {
+  animation: digitRollIn 420ms cubic-bezier(0.22, 1.2, 0.36, 1);
+  will-change: transform, opacity;
+}
+@media (prefers-reduced-motion: reduce) {
+  .digit-roll-in { animation: none; }
+}
+
 /* ===== Live badge: flowing blue→purple gradient ===== */
 @keyframes liveBadgeFlow {
   from { background-position: 0% 50%; }

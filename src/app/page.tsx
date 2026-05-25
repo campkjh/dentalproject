@@ -890,6 +890,20 @@ function NearbyHotPlaces({
 /* ============================== Live Questions Teaser ============================== */
 
 function LiveQuestionsTeaser() {
+  // 실시간 접속자 수 — 3850~4450 사이를 ±수십 단위로 흔들어 "살아있는" 느낌.
+  // 진짜 presence 백엔드가 생기면 fetch로 바꿔치우면 됨.
+  const [liveCount, setLiveCount] = useState(() => 4000 + Math.floor(Math.random() * 250));
+  useEffect(() => {
+    const id = setInterval(() => {
+      setLiveCount((prev) => {
+        // -18 ~ +31 의 약한 상방 편향 random walk
+        const delta = Math.floor(Math.random() * 50) - 18;
+        return Math.max(3850, Math.min(4450, prev + delta));
+      });
+    }, 2800);
+    return () => clearInterval(id);
+  }, []);
+
   // Deterministic seeds + per-avatar Y offset + size jitter so the marquee
   // looks like a cluster of avatars bobbing through the row rather than a
   // tidy carousel line.
@@ -924,16 +938,51 @@ function LiveQuestionsTeaser() {
             relative is on the h2 (not the narrow "실시간" span) so the tooltip's
             left-1/2 centers on ~130px of heading width, preventing left-edge overflow. */}
         <h2 className="relative flex flex-col gap-0.5 text-[22px] font-bold leading-[1.15] text-[#2B313D] flex-shrink-0">
-          {/* Floating tooltip — tail points down toward "실시간" */}
-          <img
-            src="/icons/live-tooltip.svg"
-            alt=""
+          {/* Floating tooltip — bubble shape (SVG) + live count overlay.
+              Text is rendered as DOM so digits can roll-up animate. */}
+          <div
             aria-hidden
-            width={154}
-            height={66}
-            className="tooltip-bob absolute left-1/2 -top-[58px] pointer-events-none drop-shadow-[0_6px_18px_rgba(30,41,99,0.10)]"
-            style={{ transform: 'translate(-50%, 0)' }}
-          />
+            className="tooltip-bob absolute left-1/2 -top-[58px] pointer-events-none"
+            style={{
+              transform: 'translate(-50%, 0)',
+              width: 154,
+              height: 66,
+              filter: 'drop-shadow(0 6px 18px rgba(30,41,99,0.10))',
+            }}
+          >
+            {/* Bubble pill + downward tail (same shape as live-tooltip.svg, no baked text) */}
+            <svg
+              width={154}
+              height={66}
+              viewBox="0 0 154 66"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              style={{ position: 'absolute', inset: 0 }}
+            >
+              <rect width="154" height="54" rx="18" fill="white" />
+              <path
+                d="M75.7498 65.54L65.3458 56.808C63.1848 54.994 60.4528 54 57.6318 54H96.3678C93.5468 54 90.8148 54.994 88.6538 56.808L78.2498 65.54C77.5298 66.154 76.4698 66.154 75.7498 65.54Z"
+                fill="white"
+              />
+            </svg>
+            {/* Live text overlay */}
+            <div
+              className="absolute left-0 right-0 flex items-center justify-center"
+              style={{
+                top: 0,
+                height: 54,
+                color: 'rgba(0, 12, 30, 0.8)',
+                fontSize: 14,
+                fontWeight: 700,
+                letterSpacing: '-0.01em',
+                fontVariantNumeric: 'tabular-nums',
+                lineHeight: 1,
+              }}
+            >
+              <CountUp value={liveCount} />
+              <span style={{ marginLeft: 2 }}>접속중</span>
+            </div>
+          </div>
           <span>실시간</span>
           <span>의사에게 질문</span>
         </h2>
@@ -996,6 +1045,56 @@ function LiveQuestionsTeaser() {
         <ChevronRight size={20} className="text-gray-400 flex-shrink-0" />
       </div>
     </Link>
+  );
+}
+
+/* CountUp — renders a number where each changed digit re-mounts (key=position-char)
+   so the .digit-roll-in keyframe replays. Commas/non-digits don't animate. */
+function CountUp({ value }: { value: number }) {
+  const formatted = value.toLocaleString('ko-KR');
+  return (
+    <span className="inline-flex" aria-label={String(value)}>
+      {formatted.split('').map((ch, i) =>
+        /\d/.test(ch) ? (
+          <RollDigit key={`d-${i}-${ch}`} ch={ch} />
+        ) : (
+          <span key={`s-${i}`} aria-hidden>
+            {ch}
+          </span>
+        ),
+      )}
+    </span>
+  );
+}
+
+function RollDigit({ ch }: { ch: string }) {
+  // Width holder reserves a stable column; visible digit slides up from below
+  // each time React remounts this node (which happens on digit change).
+  return (
+    <span
+      style={{
+        display: 'inline-block',
+        position: 'relative',
+        height: '1em',
+        overflow: 'hidden',
+        verticalAlign: 'top',
+      }}
+    >
+      <span style={{ visibility: 'hidden' }}>{ch}</span>
+      <span
+        className="digit-roll-in"
+        style={{
+          position: 'absolute',
+          inset: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          lineHeight: 1,
+        }}
+      >
+        {ch}
+      </span>
+    </span>
   );
 }
 
