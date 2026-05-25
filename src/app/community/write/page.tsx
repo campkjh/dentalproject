@@ -37,7 +37,6 @@ function CommunityWritePage() {
     allowedBoardOptions.find((b) => b.value === boardParam)?.value || 'question'
   );
   const [showBoardDropdown, setShowBoardDropdown] = useState(false);
-  const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
@@ -47,6 +46,15 @@ function CommunityWritePage() {
 
   const MAX_CONTENT = 5000;
   const MAX_TAGS = 5;
+
+  // Derive a title from the first line / sentence of the body so the post
+  // schema stays valid even though the form no longer has a separate title.
+  const deriveTitle = (body: string) => {
+    const firstLine = body.split(/\n/)[0]?.trim() ?? '';
+    const firstSentence = firstLine.split(/[.!?。]/)[0]?.trim() ?? firstLine;
+    const candidate = firstSentence || firstLine || body.trim();
+    return candidate.slice(0, 60) || '제목 없음';
+  };
 
   const toggleTag = (tag: string) => {
     if (selectedTags.includes(tag)) {
@@ -108,10 +116,6 @@ function CommunityWritePage() {
       setBoardType('question');
       return;
     }
-    if (!title.trim()) {
-      showToast('제목을 입력해주세요.');
-      return;
-    }
     if (!content.trim()) {
       showToast('내용을 입력해주세요.');
       return;
@@ -126,7 +130,7 @@ function CommunityWritePage() {
     const post = {
       id: String(Date.now()),
       boardType,
-      title: title.trim(),
+      title: deriveTitle(content),
       content: content.trim(),
       authorName: isFreeBoard ? '익명' : (user?.name || '사용자'),
       authorTitle: user?.doctorInfo?.title,
@@ -158,36 +162,39 @@ function CommunityWritePage() {
     router.push(`/community${categoryParam}`);
   };
 
-  const isFormValid = title.trim().length > 0 && content.trim().length > 0 && !uploadingThumb;
+  const isFormValid = content.trim().length > 0 && !uploadingThumb;
 
   return (
     <div className="min-h-screen bg-white">
       <TopBar title="글작성" />
 
-      <div className="px-2.5 py-4 space-y-5">
-        {/* Category Dropdown */}
-        <div className="relative">
-          <label className="text-sm font-bold text-gray-900 mb-2 block">카테고리</label>
+      <div className="px-5 pt-5 pb-6 space-y-6">
+        {/* Category */}
+        <section className="relative">
+          <h2 className="text-[16px] font-bold text-[#2B313D]">카테고리</h2>
+          <p className="mt-1 text-[13px] text-[#A4ABBA]">게시글 유형을 선택해주세요.</p>
           <button
+            type="button"
             onClick={() => setShowBoardDropdown(!showBoardDropdown)}
-            className="w-full flex items-center justify-between border border-gray-200 rounded-xl px-2.5 py-3 bg-white"
+            className="mt-3 w-full flex items-center justify-between border border-[#E5E8EB] rounded-[12px] px-4 py-3.5 bg-white"
           >
-            <span className="text-sm text-gray-900 font-medium">{currentBoardLabel}</span>
-            <ChevronDown size={16} className="text-gray-400" />
+            <span className="text-[15px] text-[#2B313D] font-medium">{currentBoardLabel}</span>
+            <ChevronDown size={18} className="text-[#A4ABBA]" />
           </button>
           {showBoardDropdown && (
-            <div className="absolute left-0 right-0 top-full mt-1 bg-white rounded-xl border border-gray-200 shadow-lg z-20 overflow-hidden">
+            <div className="absolute left-0 right-0 top-full mt-1 bg-white rounded-[12px] border border-[#E5E8EB] shadow-lg z-20 overflow-hidden">
               {allowedBoardOptions.map((option) => (
                 <button
                   key={option.value}
+                  type="button"
                   onClick={() => {
                     setBoardType(option.value);
                     setShowBoardDropdown(false);
                   }}
-                  className={`w-full text-left px-2.5 py-3 text-sm border-b border-gray-50 last:border-0 ${
+                  className={`w-full text-left px-4 py-3 text-[15px] border-b border-gray-50 last:border-0 ${
                     boardType === option.value
-                      ? 'text-[#8037FF] font-medium bg-[#F4EFFF]'
-                      : 'text-gray-600'
+                      ? 'text-[#8037FF] font-semibold bg-[#F4EFFF]'
+                      : 'text-[#51535C]'
                   }`}
                 >
                   {option.label}
@@ -195,33 +202,20 @@ function CommunityWritePage() {
               ))}
             </div>
           )}
-        </div>
+        </section>
 
         {/* Anonymous notice for free board */}
         {boardType === 'free' && (
-          <div className="bg-[#F4EFFF] rounded-xl px-2.5 py-3">
-            <p className="text-xs text-[#8037FF]">
+          <div className="bg-[#F4EFFF] rounded-[12px] px-4 py-3">
+            <p className="text-[13px] text-[#8037FF]">
               자유게시판은 익명으로 작성됩니다. 자동으로 익명 ID가 부여됩니다.
             </p>
           </div>
         )}
 
-        {/* Title */}
-        <div>
-          <label className="text-sm font-bold text-gray-900 mb-2 block">제목</label>
-          <input
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="제목을 입력해 주세요"
-            className="w-full border border-gray-200 rounded-xl px-2.5 py-3 text-sm outline-none focus:border-[#8037FF] bg-white placeholder:text-gray-400"
-          />
-        </div>
-
         {/* Content */}
-        <div>
-          <label className="text-sm font-bold text-gray-900 mb-2 block">내용</label>
-          <div className="relative">
+        <section>
+          <div className="relative rounded-[12px] border border-[#E5E8EB] bg-white">
             <textarea
               value={content}
               onChange={(e) => {
@@ -229,74 +223,82 @@ function CommunityWritePage() {
                   setContent(e.target.value);
                 }
               }}
-              placeholder="내용을 입력해 주세요"
-              rows={8}
-              className="w-full border border-gray-200 rounded-xl px-2.5 py-3 text-sm outline-none focus:border-[#8037FF] resize-none bg-white placeholder:text-gray-400"
+              placeholder={'등록된 글은 저작권 법으로 보호됩니다.\n음란, 청소년 유해물, 기타 위법자료등을\n게시한 경우 게시물은 경고 없이 삭제 됩니다.'}
+              rows={10}
+              className="w-full rounded-[12px] px-4 pt-4 pb-9 text-[15px] leading-[1.55] outline-none focus:border-[#8037FF] resize-none bg-white text-[#2B313D] placeholder:text-[#A4ABBA]"
             />
-            <span className="absolute bottom-3 right-3 text-xs text-gray-400">
-              {content.length}/{MAX_CONTENT}
+            <span className="absolute bottom-3 right-4 text-[12px] text-[#A4ABBA]">
+              {content.length}/{MAX_CONTENT}자
             </span>
           </div>
-        </div>
+        </section>
 
-        {/* Thumbnail Upload */}
-        <div>
-          <label className="text-sm font-bold text-gray-900 mb-2 block">
-            <span className="text-gray-400 font-normal">[선택]</span> 썸네일 등록
-          </label>
-          {thumbnailPreview ? (
-            <div className="relative w-24 h-24">
-              <div className="w-24 h-24 rounded-xl overflow-hidden bg-gray-100">
-                <img
-                  src={thumbnailPreview}
-                  alt="썸네일 미리보기"
-                  className="w-full h-full object-cover"
-                />
-                {uploadingThumb && (
-                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center rounded-xl">
-                    <p className="text-white text-[10px] font-medium">업로드 중...</p>
-                  </div>
+        {/* Thumbnail */}
+        <section>
+          <h2 className="text-[16px] font-bold text-[#2B313D]">
+            <span>[선택]</span>썸네일 등록
+          </h2>
+          <p className="mt-1 text-[13px] text-[#A4ABBA]">*썸네일은 리스트에 80*80으로 노출됩니다.</p>
+          <div className="mt-3">
+            {thumbnailPreview ? (
+              <div className="relative w-[120px] h-[120px]">
+                <div className="w-[120px] h-[120px] rounded-[12px] overflow-hidden bg-gray-100">
+                  <img
+                    src={thumbnailPreview}
+                    alt="썸네일 미리보기"
+                    className="w-full h-full object-cover"
+                  />
+                  {uploadingThumb && (
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center rounded-[12px]">
+                      <p className="text-white text-[11px] font-medium">업로드 중...</p>
+                    </div>
+                  )}
+                </div>
+                {!uploadingThumb && (
+                  <button
+                    type="button"
+                    onClick={() => setThumbnailPreview(null)}
+                    className="absolute -top-2 -right-2 w-6 h-6 bg-gray-800 text-white rounded-full flex items-center justify-center"
+                    aria-label="썸네일 제거"
+                  >
+                    <X size={12} />
+                  </button>
                 )}
               </div>
-              {!uploadingThumb && (
-                <button
-                  onClick={() => setThumbnailPreview(null)}
-                  className="absolute -top-2 -right-2 w-5 h-5 bg-gray-800 text-white rounded-full flex items-center justify-center"
-                >
-                  <X size={12} />
-                </button>
-              )}
-            </div>
-          ) : (
-            <button
-              onClick={handleThumbnailUpload}
-              className="w-24 h-24 border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center gap-1 bg-white"
-            >
-              <Camera size={24} className="text-gray-400" />
-              <span className="text-[10px] text-gray-400">사진 추가</span>
-            </button>
-          )}
-        </div>
+            ) : (
+              <button
+                type="button"
+                onClick={handleThumbnailUpload}
+                className="w-[120px] h-[120px] rounded-[12px] flex items-center justify-center bg-[#F5F6F8]"
+                aria-label="썸네일 추가"
+              >
+                <Camera size={26} className="text-[#8B95A1]" />
+              </button>
+            )}
+          </div>
+        </section>
 
-        {/* 태그 선택 — 질문게시판: 환자용, 자유/과별: 의사용 */}
-        <div>
-          <label className="text-sm font-bold text-gray-900 mb-2 block">
-            <span className="text-gray-400 font-normal">[선택]</span> {boardType === 'question' ? '진료 분야' : '해시태그 등록'}
-            <span className="text-xs text-gray-400 font-normal ml-2">
+        {/* Hashtags */}
+        <section>
+          <h2 className="text-[16px] font-bold text-[#2B313D]">
+            <span>[선택]</span>해시태그 등록
+            <span className="ml-2 text-[12px] font-normal text-[#A4ABBA]">
               {selectedTags.length}/{MAX_TAGS}
             </span>
-          </label>
-          <div className="flex flex-wrap gap-2">
+          </h2>
+          <p className="mt-1 text-[13px] text-[#A4ABBA]">*최대 5개 까지 선택가능합니다.</p>
+          <div className="mt-3 flex flex-wrap gap-2">
             {(boardType === 'question' ? questionTags : communityTags).map((tag) => {
               const isSelected = selectedTags.includes(tag);
               return (
                 <button
                   key={tag}
+                  type="button"
                   onClick={() => toggleTag(tag)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                  className={`inline-flex items-center h-[32px] px-3 rounded-[8px] text-[13px] font-medium transition-colors border border-dashed ${
                     isSelected
-                      ? 'bg-[#8037FF] text-white'
-                      : 'bg-gray-100 text-gray-600'
+                      ? 'border-[#8037FF] bg-[#F4EFFF] text-[#8037FF]'
+                      : 'border-[#D1D5DB] text-[#6B7280] bg-white'
                   }`}
                 >
                   {tag}
@@ -304,15 +306,16 @@ function CommunityWritePage() {
               );
             })}
           </div>
-        </div>
+        </section>
       </div>
 
-      {/* Submit Button */}
-      <div className="px-2.5 py-6 mt-4">
+      {/* Submit */}
+      <div className="px-5 pb-8">
         <button
+          type="button"
           onClick={handleSubmit}
           disabled={!isFormValid || submitting}
-          className={`w-full py-3.5 rounded-xl font-bold text-sm transition-colors ${
+          className={`w-full py-4 rounded-[12px] font-bold text-[15px] transition-colors ${
             isFormValid && !submitting
               ? 'bg-[#8037FF] text-white'
               : 'bg-gray-200 text-gray-400 cursor-not-allowed'
