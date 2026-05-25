@@ -180,7 +180,7 @@ export default function MyPage() {
       {/* Customer History */}
       <div className="bg-white lg:bg-white lg:rounded-2xl lg:shadow-sm lg:p-6 lg:mb-4 stagger-children">
         <div className="px-2.5 pt-4 pb-2">
-          <h3 className="text-sm font-bold text-gray-900">고객내역</h3>
+          <h3 className="text-[18px] font-bold text-gray-900">고객내역</h3>
         </div>
         {customerMenuItems.map(renderMenuItem)}
       </div>
@@ -191,7 +191,7 @@ export default function MyPage() {
       {/* Customer Support */}
       <div className="bg-white lg:bg-white lg:rounded-2xl lg:shadow-sm lg:p-6 lg:mb-4 stagger-children">
         <div className="px-2.5 pt-4 pb-2">
-          <h3 className="text-sm font-bold text-gray-900">고객센터</h3>
+          <h3 className="text-[18px] font-bold text-gray-900">고객센터</h3>
         </div>
         {supportMenuItems.map(renderMenuItem)}
       </div>
