@@ -2,6 +2,8 @@
 
 import { useState, useRef, useEffect, useLayoutEffect, useMemo } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { ChevronLeft } from 'lucide-react';
 import { useStore } from '@/store';
 import EmptyState from '@/components/common/EmptyState';
 import LoginRequired from '@/components/common/LoginRequired';
@@ -55,6 +57,7 @@ const statusStyle: Record<
 };
 
 export default function PaymentsPage() {
+  const router = useRouter();
   const { isLoggedIn, reservations } = useStore();
   const [activeTab, setActiveTab] = useState('전체');
   const [direction, setDirection] = useState<'left' | 'right'>('right');
@@ -96,8 +99,17 @@ export default function PaymentsPage() {
 
   return (
     <div className="pb-[86px] lg:pb-0 bg-white min-h-screen page-enter">
-      {/* Header — same 22px extrabold pattern as 예약내역 */}
-      <div className="sticky top-0 z-40 bg-white flex items-center px-2.5 lg:hidden" style={{ height: 56 }}>
+      {/* Header — same 22px extrabold pattern as 예약내역, plus a back chevron
+          since this page is reached from mypage rather than the bottom nav. */}
+      <div className="sticky top-0 z-40 bg-white flex items-center gap-1 px-2.5 lg:hidden" style={{ height: 56 }}>
+        <button
+          type="button"
+          onClick={() => router.back()}
+          className="p-1 -ml-1"
+          aria-label="뒤로가기"
+        >
+          <ChevronLeft size={26} strokeWidth={2.4} className="text-[#2B313D]" />
+        </button>
         <h1 className="text-[22px] font-extrabold text-gray-900 leading-none">결제내역</h1>
       </div>
 
