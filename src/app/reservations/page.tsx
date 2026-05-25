@@ -205,7 +205,7 @@ export default function ReservationsPage() {
                       className="block card-press"
                     >
                       <div
-                        className="bg-white rounded-2xl p-3.5"
+                        className="bg-white rounded-3xl p-3.5"
                         style={{ boxShadow: '0 1px 2px rgba(16,24,40,0.04), 0 4px 16px rgba(16,24,40,0.04)' }}
                       >
                         {/* Status chip + date */}
