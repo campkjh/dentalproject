@@ -107,36 +107,30 @@ export default function FAQPage() {
     <div className="min-h-screen bg-white max-w-[480px] mx-auto page-enter">
       <TopBar title="자주하는질문" />
 
-      {/* Tabs with sliding pill indicator */}
-      <div className="px-2.5 pt-2 pb-3">
-        <div className="relative flex gap-1.5 overflow-x-auto hide-scrollbar">
+      {/* Tabs — same pattern as 예약내역 (partner-community-categories) */}
+      <div className="partner-community-category-shell sticky top-[48px] z-30 bg-white">
+        <div className="partner-community-categories hide-scrollbar">
           <span
             aria-hidden
-            className="absolute top-0 bottom-0 rounded-full bg-gray-900 pointer-events-none"
+            className="partner-community-category-indicator"
             style={{
-              left: indicator.left,
               width: indicator.width,
-              transition:
-                'left 420ms cubic-bezier(0.22, 1, 0.36, 1), width 420ms cubic-bezier(0.22, 1, 0.36, 1)',
+              transform: `translateX(${indicator.left}px)`,
+              opacity: indicator.width > 0 ? 1 : 0,
             }}
           />
           {tabs.map((t, i) => {
             const isActive = activeTab === t;
+            const showActive = isActive && indicator.width > 0;
             return (
               <button
                 key={t}
                 ref={(el) => {
                   tabBtnRefs.current[i] = el;
                 }}
+                type="button"
                 onClick={() => changeTab(t)}
-                className={`pill-tab relative z-10 px-3.5 py-1.5 rounded-full text-[13px] font-semibold whitespace-nowrap ${
-                  isActive ? 'text-white' : 'text-gray-500'
-                }`}
-                style={{
-                  transition: 'color 420ms cubic-bezier(0.22, 1, 0.36, 1)',
-                  border: `1px solid ${isActive ? 'transparent' : '#E5E7EB'}`,
-                  background: 'transparent',
-                }}
+                className={showActive ? 'is-active' : undefined}
               >
                 {t}
               </button>
