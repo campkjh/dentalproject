@@ -157,14 +157,14 @@ export default function MyPage() {
             className="flex-1 py-4 text-center hover:bg-gray-50 transition-colors"
           >
             <p className="text-xs text-gray-500 mb-1">내 포인트</p>
-            <p className="text-sm font-bold text-[#8037FF]">{(user?.points ?? 0).toLocaleString()}P</p>
+            <p className="text-[22px] font-bold text-[#2B313D]">{(user?.points ?? 0).toLocaleString()}P</p>
           </button>
           <button
             onClick={() => router.push('/mypage/coupons')}
             className="flex-1 py-4 text-center hover:bg-gray-50 transition-colors"
           >
             <p className="text-xs text-gray-500 mb-1">내 쿠폰</p>
-            <p className="text-sm font-bold text-[#8037FF]">{availableCoupons}개</p>
+            <p className="text-[22px] font-bold text-[#2B313D]">{availableCoupons}개</p>
           </button>
         </div>
       </div>
