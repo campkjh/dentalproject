@@ -185,7 +185,7 @@ export default function HomePage() {
       >
         {/* Default Header (logo + icons) */}
         <div className={`flex items-center justify-between px-2.5 py-3 transition-all duration-300 ${scrolled ? 'h-0 overflow-hidden opacity-0 py-0' : 'opacity-100'}`}>
-          <span className="text-lg font-bold text-[#8037FF]">로고</span>
+          <img src="/icons/brand-logo.svg" alt="키닥터" width={32} height={32} className="flex-shrink-0" />
           {isLoggedIn ? (
             <div className="flex items-center gap-2">
               <Link

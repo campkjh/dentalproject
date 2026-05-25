@@ -32,10 +32,8 @@ export default function DesktopHeader() {
         <div className="flex items-center justify-between h-16 px-6">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-[#8037FF] rounded-lg flex items-center justify-center">
-              <span className="text-lg">🦷</span>
-            </div>
-            <span className="text-xl font-bold text-[#8037FF]">키닥터</span>
+            <img src="/icons/brand-logo.svg" alt="" width={36} height={36} className="flex-shrink-0" />
+            <span className="text-xl font-bold text-[#7A71FF]">키닥터</span>
           </Link>
 
           {/* Search Bar */}
