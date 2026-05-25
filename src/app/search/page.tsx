@@ -588,8 +588,8 @@ function SearchProductListItem({ product }: { product: Product }) {
             </button>
           </div>
 
-          <p className="mt-1.5 text-[13px] text-gray-500 line-clamp-1">
-            {product.location ? `${product.location} · ${product.hospitalName}` : product.hospitalName}
+          <p className="mt-0.5 text-[13px] text-gray-500 line-clamp-1">
+            {product.location ? `${product.hospitalName} · ${product.location}` : product.hospitalName}
           </p>
 
           <div className="mt-1 flex items-center gap-1">
