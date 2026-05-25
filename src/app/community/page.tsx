@@ -758,7 +758,8 @@ function CommunityPageInner() {
         <FloatingAskButton label={writeButtonLabel} href={`/community/write?board=${boardType}`} scrollContainer={scrollContainerRef} />
       )}
 
-      {/* Scroll to top — same portal-based glass-blur button as the home page */}
+      {/* Scroll to top — same glass-blur button as home, but docked LEFT
+          so it doesn't sit under the floating 질문하기/글쓰기 button on the right. */}
       {showScrollTop &&
         createPortal(
           <button
@@ -768,7 +769,8 @@ function CommunityPageInner() {
             className={`${scrollTopLeaving ? 'scroll-top-leave' : 'scroll-top-bounce'} scroll-top-button fixed z-[10000] w-12 h-12 rounded-full p-0 text-gray-950`}
             style={{
               bottom: '104px',
-              right: '16px',
+              left: '16px',
+              right: 'auto',
               background: 'rgba(255, 255, 255, 0.82)',
               border: '1px solid rgba(229, 231, 235, 0.92)',
               boxShadow: '0 12px 34px rgba(17, 24, 39, 0.22)',
