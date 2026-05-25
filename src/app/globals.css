@@ -389,6 +389,20 @@ body {
   .doctor-fan-in { animation: none; }
 }
 
+/* ===== Floating avatar bob (vertical drift while marquee flows) ===== */
+@keyframes avatarBob {
+  0%   { transform: translateY(0); }
+  50%  { transform: translateY(-6px); }
+  100% { transform: translateY(0); }
+}
+.avatar-bob {
+  animation: avatarBob var(--bob-duration, 3.4s) ease-in-out infinite;
+  animation-delay: var(--bob-delay, 0s);
+}
+@media (prefers-reduced-motion: reduce) {
+  .avatar-bob { animation: none; }
+}
+
 /* ===== Live badge: flowing blue→purple gradient ===== */
 @keyframes liveBadgeFlow {
   from { background-position: 0% 50%; }

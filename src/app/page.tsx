@@ -951,23 +951,37 @@ function LiveQuestionsTeaser() {
               transform: 'translateY(-50%)',
             }}
           >
-            {[...variants, ...variants].map((v, i) => (
-              <div
-                key={`${v.seed}-${i}`}
-                className="flex-shrink-0"
-                style={{
-                  marginRight: v.gapAfter,
-                  transform: `translateY(${v.yOffset}px)`,
-                }}
-              >
-                <Avatar
-                  role={v.role}
-                  seed={v.seed}
-                  size={v.size}
-                  className="bg-[#F2F7FF] ring-2 ring-white"
-                />
-              </div>
-            ))}
+            {[...variants, ...variants].map((v, i) => {
+              // Per-avatar bob duration + phase delay so the column drifts
+              // independently. Big avatars bob slightly slower than small ones.
+              const bobDuration = (i % 2 === 0 ? 3.8 : 2.8) + ((i % 5) * 0.15);
+              const bobDelay = -((i * 0.37) % bobDuration);
+              return (
+                <div
+                  key={`${v.seed}-${i}`}
+                  className="flex-shrink-0"
+                  style={{
+                    marginRight: v.gapAfter,
+                    transform: `translateY(${v.yOffset}px)`,
+                  }}
+                >
+                  <div
+                    className="avatar-bob"
+                    style={{
+                      ['--bob-duration' as string]: `${bobDuration}s`,
+                      ['--bob-delay' as string]: `${bobDelay}s`,
+                    }}
+                  >
+                    <Avatar
+                      role={v.role}
+                      seed={v.seed}
+                      size={v.size}
+                      className="bg-[#F2F7FF] ring-2 ring-white"
+                    />
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
 
