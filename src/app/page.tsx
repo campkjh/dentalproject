@@ -987,7 +987,16 @@ function LiveQuestionsTeaser() {
               <span style={{ marginLeft: 2 }}>접속중</span>
             </div>
           </div>
-          <span>실시간</span>
+          <span
+            className="bg-clip-text text-transparent"
+            style={{
+              backgroundImage:
+                'linear-gradient(95deg, #2D6EF0 0%, #4A8BFF 45%, #7AB0FF 100%)',
+              WebkitBackgroundClip: 'text',
+            }}
+          >
+            실시간
+          </span>
           <span>의사에게 질문</span>
         </h2>
 

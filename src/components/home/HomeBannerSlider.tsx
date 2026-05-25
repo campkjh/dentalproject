@@ -100,7 +100,7 @@ export default function HomeBannerSlider() {
 
   return (
     <section
-      className="mx-4 mb-6 lg:mx-auto lg:max-w-7xl lg:px-6"
+      className="mx-4 mb-2 lg:mx-auto lg:max-w-7xl lg:px-6"
       aria-label="홈 배너"
       onTouchStart={(event) => {
         touchStartX.current = event.touches[0]?.clientX ?? null;
