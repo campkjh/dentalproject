@@ -404,7 +404,7 @@ export default function ProductDetailPage() {
                   key={review.id}
                   href={`/review/${review.id}`}
                   className="flex-shrink-0 flex flex-col card-press"
-                  style={{ width: 288, minHeight: withImages ? 358 : 192, borderRadius: 12, backgroundColor: '#F6F6F6', padding: 12, overflow: 'hidden', scrollSnapAlign: 'start' }}
+                  style={{ width: 288, minHeight: withImages ? 358 : 192, borderRadius: 20, backgroundColor: '#F6F6F6', padding: 12, overflow: 'hidden', scrollSnapAlign: 'start' }}
                 >
                   {withImages && (
                     <ReviewImagePair beforeImage={review.beforeImage} afterImage={review.afterImage} />
