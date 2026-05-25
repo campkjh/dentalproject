@@ -167,13 +167,21 @@ export default function ProductDetailPage() {
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
   const [heartAnim, setHeartAnim] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const [heroOutOfView, setHeroOutOfView] = useState(false);
   const reviewSectionRef = useRef<HTMLDivElement>(null);
+  const heroRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleScroll = () => {
       if (reviewSectionRef.current) {
         const rect = reviewSectionRef.current.getBoundingClientRect();
         setShowScrollTop(rect.bottom < 0);
+      }
+      // Hero out-of-view: when the hero image's bottom edge passes under the header
+      // (~48px), swap the header to compact mode (thumb + title).
+      if (heroRef.current) {
+        const r = heroRef.current.getBoundingClientRect();
+        setHeroOutOfView(r.bottom < 48);
       }
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
@@ -213,13 +221,52 @@ export default function ProductDetailPage() {
   return (
     <div className="bg-white min-h-screen page-enter" style={{ paddingTop: 48, paddingBottom: 72 }}>
 
-      {/* Fixed Header - portal to body */}
+      {/* Fixed Header — morphs into a compact "thumb + title" bar once hero
+          scrolls off-screen. Heart/Share stay docked right; back arrow stays
+          docked left; thumb+title is positioned absolutely so the collapsed
+          layout doesn't shift. */}
       <FixedBar position="top" className="lg:hidden">
-        <div className="flex items-center justify-between px-2.5 h-12 bg-white/90 backdrop-blur-md">
-          <button onClick={() => router.back()} className="p-1 -ml-1">
+        <div
+          className="relative flex items-center px-2.5"
+          style={{
+            height: heroOutOfView ? 64 : 48,
+            backgroundColor: heroOutOfView ? '#fff' : 'rgba(255,255,255,0.9)',
+            backdropFilter: heroOutOfView ? 'none' : 'blur(12px)',
+            WebkitBackdropFilter: heroOutOfView ? 'none' : 'blur(12px)',
+            borderBottom: heroOutOfView ? '1px solid #F2F3F5' : 'none',
+            transition:
+              'height 280ms cubic-bezier(0.22, 1, 0.36, 1), background-color 220ms ease-out, border-color 220ms ease-out',
+          }}
+        >
+          {/* Back arrow — always visible, docked left */}
+          <button onClick={() => router.back()} className="p-1 -ml-1 z-10 flex-shrink-0">
             <ChevronLeft size={24} style={{ color: '#2B313D' }} />
           </button>
-          <div className="flex items-center gap-3">
+
+          {/* Thumb + title — fades in when hero is out of view */}
+          <div
+            className="absolute flex items-center gap-2.5 min-w-0"
+            style={{
+              left: 48,
+              right: 92,
+              top: '50%',
+              transform: heroOutOfView ? 'translateY(-50%)' : 'translateY(calc(-50% + 6px))',
+              opacity: heroOutOfView ? 1 : 0,
+              pointerEvents: heroOutOfView ? 'auto' : 'none',
+              transition:
+                'opacity 240ms ease-out, transform 280ms cubic-bezier(0.22, 1, 0.36, 1)',
+            }}
+          >
+            <div className="w-11 h-11 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+              <img src={productImageUrl} alt="" className="w-full h-full object-cover" />
+            </div>
+            <p className="text-[15px] font-bold text-[#2B313D] truncate leading-tight">
+              {product.title}
+            </p>
+          </div>
+
+          {/* Heart + Share — always visible, docked right */}
+          <div className="ml-auto flex items-center gap-3 z-10 flex-shrink-0">
             {user && <button
               onClick={() => { toggleWishlist(product.id); setHeartAnim(true); setTimeout(() => setHeartAnim(false), 400); }}
             >
@@ -239,7 +286,7 @@ export default function ProductDetailPage() {
 
       <div className="lg:max-w-7xl lg:mx-auto lg:grid lg:grid-cols-5 lg:gap-8 lg:py-8 lg:px-6">
       {/* Product Image Area */}
-      <div className="relative lg:col-span-2 lg:sticky lg:top-20 lg:self-start">
+      <div ref={heroRef} className="relative lg:col-span-2 lg:sticky lg:top-20 lg:self-start">
         <div className="aspect-[4/3] bg-gradient-to-br from-purple-100 to-purple-100 flex items-center justify-center overflow-hidden lg:rounded-2xl">
           <img src={productImageUrl} alt={product.title} className="h-full w-full object-cover" />
         </div>
@@ -435,13 +482,6 @@ export default function ProductDetailPage() {
         <div className="bg-white">
           <div className="aspect-[4/3] bg-gradient-to-br from-purple-50 to-purple-50 flex items-center justify-center overflow-hidden">
             <img src={detailImageUrl} alt={`${product.title} 상세 이미지`} className="h-full w-full object-cover" />
-          </div>
-          <div className="px-2.5 py-5">
-            <h3 style={{ fontSize: 20, fontWeight: 600, color: '#2B313D', marginBottom: 8 }}>{product.title}</h3>
-            <p style={{ fontSize: 14, color: '#51535C', lineHeight: '22px' }}>
-              {product.hospitalName}에서 제공하는 {product.title} 시술입니다.
-              최고 수준의 의료진과 첨단 장비로 안전하고 만족스러운 결과를 약속드립니다.
-            </p>
           </div>
         </div>
       )}
