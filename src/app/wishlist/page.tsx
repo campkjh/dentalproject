@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useStore } from '@/store';
 import LoginRequired from '@/components/common/LoginRequired';
 import ProductCard from '@/components/common/ProductCard';
-import { ArrowUp, X, Heart } from 'lucide-react';
+import { ArrowUp, X } from 'lucide-react';
 
 type Tab = 'wishlist' | 'recent';
 
@@ -107,9 +107,13 @@ export default function WishlistPage() {
             <>
               {/* Rich empty state (matches mockup) */}
               <div className="px-5 pt-12 pb-8 flex flex-col items-center text-center">
-                <div className="w-[120px] h-[120px] rounded-[20px] bg-[#F4F5F7] flex items-center justify-center mb-6">
-                  <Heart size={48} className="text-[#D1D5DB]" strokeWidth={1.6} />
-                </div>
+                <img
+                  src="/icons/heart-empty.svg"
+                  alt=""
+                  width={62}
+                  height={62}
+                  className="mb-6"
+                />
                 <p className="text-[16px] leading-[24px] text-[#2B313D] font-medium">
                   {activeTab === 'wishlist' ? (
                     <>

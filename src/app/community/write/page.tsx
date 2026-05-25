@@ -307,6 +307,55 @@ function CommunityWritePage() {
             })}
           </div>
         </section>
+
+        {/* Customer-only guidelines (hidden for doctor users) */}
+        {!isDoctor && (
+          <>
+            <section
+              className="mt-2 rounded-[16px] bg-[#EAF3FF] px-4 py-4"
+              aria-labelledby="customer-guidance-title"
+            >
+              <div className="flex items-center gap-2 mb-3">
+                <span
+                  aria-hidden
+                  className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-[#1E85FF] text-white"
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                </span>
+                <h2 id="customer-guidance-title" className="text-[15px] font-bold text-[#1E85FF]">
+                  질문을 남기기 전에 확인해주세요!
+                </h2>
+              </div>
+              <ul className="list-disc pl-5 space-y-2 text-[13.5px] leading-[20px] text-[#2B313D]">
+                <li>질문에 대해 키닥터 건강 정보 AI가 답변을 드리며, 비대면 진료와는 달라요.</li>
+                <li>비대면 진료가 필요하시다면 홈에서 증상 또는 과목을 선택해 신청해주세요.</li>
+                <li>질문에는 개인정보를 입력하지 않도록 주의해주세요.</li>
+              </ul>
+            </section>
+
+            <section
+              className="rounded-[16px] bg-[#F5F6F8] px-4 py-5"
+              aria-labelledby="customer-policy-title"
+            >
+              <h2 id="customer-policy-title" className="text-[15px] font-bold text-[#2B313D] mb-3">
+                실시간 의료 상담은 이렇게 운영돼요.
+              </h2>
+              <ul className="list-disc pl-5 space-y-2.5 text-[13px] leading-[20px] text-[#51535C]">
+                <li>폭력적·공격적인 내용, 서비스 목적과 맞지 않는 질문, 동일 내용의 반복(3회 이상) 등은 사전 예고 없이 삭제될 수 있습니다.</li>
+                <li>성적 또는 선정적인 내용이 포함되어 있는 경우, 사전 예고 없이 비공개 처리 됩니다.</li>
+                <li>서비스 운영을 방해하는 행위가 반복될 경우, 회원과 의료진 보호를 위해 서비스 이용이 사전 안내 없이 한시적 또는 영구적으로 제한될 수 있습니다.</li>
+                <li>실시간 의료 상담에서 등록된 질문과 답변은 모두에게 공개되며, 서비스 홍보 목적으로 활용될 수 있습니다.</li>
+                <li>
+                  답변은 <strong className="font-bold text-[#2B313D]">참고용</strong>으로서 의학적 판단이나 진료 행위를 <strong className="font-bold text-[#2B313D]">대체할 수 없으며</strong>, 모든 약물 상호작용을 포함하지 않을 수 있습니다. 이에 대해 키닥터와 답변 의료인은 어떠한 책임도 지지 않습니다.
+                </li>
+                <li>정확한 진단을 위해서는 키닥터 앱에서 비대면 진료를 신청하거나, 가까운 병원에 내원해 주세요.</li>
+                <li>실시간 의료 상담에 등록한 질문은 고객센터를 통한 삭제 요청이 없는 한 계속 남게 됩니다.</li>
+              </ul>
+            </section>
+          </>
+        )}
       </div>
 
       {/* Submit */}
