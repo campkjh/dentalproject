@@ -176,7 +176,7 @@ export default function HomePage() {
   };
 
   return (
-    <div className="pb-[86px] lg:pb-0 page-enter">
+    <div className="pb-[86px] lg:pb-0 page-enter overflow-x-clip">
       {/* Sticky Header */}
       <div
         ref={headerRef}
