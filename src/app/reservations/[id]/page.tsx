@@ -58,7 +58,7 @@ export default function ReservationDetailPage() {
           <button onClick={() => router.back()} className="p-1 -ml-1">
             <ChevronLeft size={22} className="text-gray-900" />
           </button>
-          <h1 className="text-[16px] font-bold ml-1">예약 상세</h1>
+          <h1 className="text-[18px] font-bold ml-1">예약 상세</h1>
         </div>
         <div className="flex items-center justify-center py-20">
           <p className="text-gray-400 text-sm">예약 정보를 찾을 수 없습니다.</p>
@@ -109,7 +109,7 @@ export default function ReservationDetailPage() {
         <button onClick={() => router.back()} className="p-1 -ml-1">
           <ChevronLeft size={22} className="text-gray-900" />
         </button>
-        <h1 className="text-[16px] font-bold ml-1">예약 상세</h1>
+        <h1 className="text-[18px] font-bold ml-1">예약 상세</h1>
       </header>
 
       {/* Status hero */}
@@ -117,15 +117,15 @@ export default function ReservationDetailPage() {
         <div className="flex items-center gap-2 mb-2">
           <img src={statusIconSrc[reservation.status]} alt="" width={28} height={28} />
           <span
-            className={`inline-flex items-center text-[12px] font-bold px-2.5 py-1 rounded-full ${style.bg} ${style.text}`}
+            className={`inline-flex items-center text-[14px] font-bold px-2.5 py-1 rounded-full ${style.bg} ${style.text}`}
           >
             {style.label}
           </span>
         </div>
-        <p className="text-[22px] font-bold text-gray-900 leading-tight">
+        <p className="text-[24px] font-bold text-gray-900 leading-tight">
           {reservation.productTitle}
         </p>
-        <p className="text-[13px] text-gray-500 mt-1">{reservation.hospitalName}</p>
+        <p className="text-[15px] text-gray-500 mt-1">{reservation.hospitalName}</p>
       </section>
 
       {/* Product line */}
@@ -135,14 +135,14 @@ export default function ReservationDetailPage() {
             <img src={productImage} alt="" className="w-full h-full object-cover" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-[11px] text-gray-500 leading-tight">{reservation.hospitalName}</p>
-            <p className="text-[13px] font-semibold text-gray-900 line-clamp-1 leading-tight mt-0.5">
+            <p className="text-[13px] text-gray-500 leading-tight">{reservation.hospitalName}</p>
+            <p className="text-[15px] font-semibold text-gray-900 line-clamp-1 leading-tight mt-0.5">
               {reservation.productTitle}
             </p>
           </div>
-          <p className="text-[14px] font-bold text-gray-900 flex-shrink-0">
+          <p className="text-[16px] font-bold text-gray-900 flex-shrink-0">
             {basePrice.toLocaleString()}
-            <span className="text-[11px] text-gray-500 font-medium ml-0.5">원</span>
+            <span className="text-[13px] text-gray-500 font-medium ml-0.5">원</span>
           </p>
         </div>
       </div>
@@ -159,8 +159,8 @@ export default function ReservationDetailPage() {
           <Row label="예약번호" value={reservation.id} mono />
           {latestScheduleHistory && (
             <div className="mt-3 rounded-xl bg-[#F7F8FA] px-3 py-2.5">
-              <p className="text-[11px] font-bold text-[#8037FF] mb-1">변경내역</p>
-              <p className="text-[12px] font-semibold text-gray-600 leading-relaxed whitespace-pre-line">
+              <p className="text-[13px] font-bold text-[#8037FF] mb-1">변경내역</p>
+              <p className="text-[14px] font-semibold text-gray-600 leading-relaxed whitespace-pre-line">
                 {latestScheduleHistory.content}
               </p>
             </div>
@@ -177,7 +177,7 @@ export default function ReservationDetailPage() {
               right={
                 <Link
                   href={`/hospital/detail/${hospital.id}`}
-                  className="text-[12px] text-[#8037FF] font-semibold"
+                  className="text-[14px] text-[#8037FF] font-semibold"
                 >
                   병원 상세
                 </Link>
@@ -188,11 +188,11 @@ export default function ReservationDetailPage() {
                   <img src={hospitalImage} alt="" className="w-full h-full object-cover" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[14px] font-bold text-gray-900 line-clamp-1">
+                  <p className="text-[16px] font-bold text-gray-900 line-clamp-1">
                     {reservation.hospitalName}
                   </p>
                   {hospital.address && (
-                    <p className="text-[11px] text-gray-500 mt-0.5 line-clamp-1">
+                    <p className="text-[13px] text-gray-500 mt-0.5 line-clamp-1">
                       {hospital.address}
                     </p>
                   )}
@@ -200,12 +200,12 @@ export default function ReservationDetailPage() {
               </div>
               <div className="flex items-start gap-2 bg-gray-50 rounded-lg px-3 py-2.5">
                 <MapPin size={14} className="text-gray-400 mt-0.5 flex-shrink-0" />
-                <p className="flex-1 text-[12px] text-gray-700 leading-snug">
+                <p className="flex-1 text-[14px] text-gray-700 leading-snug">
                   {reservation.location}
                 </p>
                 <button
                   onClick={copyAddr}
-                  className="text-[11px] text-gray-500 font-semibold btn-press flex items-center gap-0.5 flex-shrink-0"
+                  className="text-[13px] text-gray-500 font-semibold btn-press flex items-center gap-0.5 flex-shrink-0"
                 >
                   <Copy size={11} /> 복사
                 </button>
@@ -213,7 +213,7 @@ export default function ReservationDetailPage() {
               <div className="grid grid-cols-2 gap-2 mt-2.5">
                 <a
                   href={`tel:${hospital.phone ?? ''}`}
-                  className="flex items-center justify-center gap-1.5 py-2.5 rounded-lg border border-gray-200 text-[12px] font-semibold text-gray-700 btn-press"
+                  className="flex items-center justify-center gap-1.5 py-2.5 rounded-lg border border-gray-200 text-[14px] font-semibold text-gray-700 btn-press"
                 >
                   <Phone size={13} /> 전화
                 </a>
@@ -222,7 +222,7 @@ export default function ReservationDetailPage() {
                     const q = encodeURIComponent(reservation.location || hospital.name);
                     window.open(`https://map.naver.com/p?q=${q}`, '_blank');
                   }}
-                  className="flex items-center justify-center gap-1.5 py-2.5 rounded-lg bg-gray-900 text-white text-[12px] font-semibold btn-press"
+                  className="flex items-center justify-center gap-1.5 py-2.5 rounded-lg bg-gray-900 text-white text-[14px] font-semibold btn-press"
                 >
                   <Navigation size={13} /> 길찾기
                 </button>
@@ -246,11 +246,11 @@ export default function ReservationDetailPage() {
                   className="flex-shrink-0"
                 />
                 <div className="min-w-0">
-                  <p className="text-[14px] font-semibold text-gray-900">
+                  <p className="text-[16px] font-semibold text-gray-900">
                     {reservation.assignedDoctor}
                   </p>
                   {reservation.assignedDoctorTitle && (
-                    <p className="text-[11px] text-gray-500 mt-0.5">
+                    <p className="text-[13px] text-gray-500 mt-0.5">
                       {reservation.assignedDoctorTitle}
                     </p>
                   )}
@@ -272,14 +272,14 @@ export default function ReservationDetailPage() {
             className="mt-3 pt-3 flex items-end justify-between"
             style={{ borderTop: '1px solid #F2F3F5' }}
           >
-            <span className="text-[13px] font-bold text-gray-900">총 결제금액</span>
-            <span className="text-[20px] font-bold text-gray-900 leading-none">
+            <span className="text-[15px] font-bold text-gray-900">총 결제금액</span>
+            <span className="text-[22px] font-bold text-gray-900 leading-none">
               {total.toLocaleString()}
-              <span className="text-[13px] font-semibold text-gray-600 ml-0.5">원</span>
+              <span className="text-[15px] font-semibold text-gray-600 ml-0.5">원</span>
             </span>
           </div>
           {reservation.paymentMethod && (
-            <p className="text-[11px] text-gray-400 mt-2 text-right">
+            <p className="text-[13px] text-gray-400 mt-2 text-right">
               {reservation.paymentMethod} 결제
             </p>
           )}
@@ -297,7 +297,7 @@ export default function ReservationDetailPage() {
             ].map((note, i) => (
               <li key={i} className="flex items-start gap-1.5">
                 <span className="text-gray-400 mt-0.5">•</span>
-                <span className="text-[12px] text-gray-600 leading-snug">{note}</span>
+                <span className="text-[14px] text-gray-600 leading-snug">{note}</span>
               </li>
             ))}
           </ul>
@@ -306,8 +306,8 @@ export default function ReservationDetailPage() {
         {/* 취소 사유 (취소된 경우) */}
         {reservation.status === 'cancelled' && reservation.cancelReason && (
           <div className="mx-2.5 my-2 px-3 py-3 rounded-lg bg-gray-50 fade-in-up">
-            <p className="text-[12px] font-bold text-gray-700 mb-1">취소 사유</p>
-            <p className="text-[12px] text-gray-600 leading-relaxed whitespace-pre-line">
+            <p className="text-[14px] font-bold text-gray-700 mb-1">취소 사유</p>
+            <p className="text-[14px] text-gray-600 leading-relaxed whitespace-pre-line">
               {reservation.cancelReason}
             </p>
           </div>
@@ -326,7 +326,7 @@ export default function ReservationDetailPage() {
           {canCancel && (
             <button
               onClick={handleCancel}
-              className="flex-1 py-3.5 rounded-xl border border-gray-200 text-[14px] font-bold text-gray-700 btn-press"
+              className="flex-1 py-3.5 rounded-xl border border-gray-200 text-[16px] font-bold text-gray-700 btn-press"
             >
               예약 취소
             </button>
@@ -336,7 +336,7 @@ export default function ReservationDetailPage() {
               onClick={() =>
                 router.push(`/mypage/reviews/write?productId=${reservation.productId ?? ''}&reservationId=${reservation.id}`)
               }
-              className="flex-1 py-3.5 rounded-xl bg-[#8037FF] text-white text-[14px] font-bold btn-press"
+              className="flex-1 py-3.5 rounded-xl bg-[#8037FF] text-white text-[16px] font-bold btn-press"
               style={{ boxShadow: '0 6px 16px rgba(49,130,246,0.3)' }}
             >
               리뷰 작성하고 500P 받기
@@ -345,7 +345,7 @@ export default function ReservationDetailPage() {
           {!canCancel && !canReview && (
             <Link
               href="/reservations"
-              className="flex-1 py-3.5 rounded-xl bg-gray-900 text-white text-[14px] font-bold text-center btn-press"
+              className="flex-1 py-3.5 rounded-xl bg-gray-900 text-white text-[16px] font-bold text-center btn-press"
             >
               예약내역으로
             </Link>
@@ -368,7 +368,7 @@ function Section({
   return (
     <div className="px-2.5 py-4">
       <div className="flex items-center justify-between mb-2.5">
-        <h3 className="text-[14px] font-bold text-gray-900 leading-tight">{title}</h3>
+        <h3 className="text-[16px] font-bold text-gray-900 leading-tight">{title}</h3>
         {right}
       </div>
       {children}
@@ -395,13 +395,13 @@ function Row({
 }) {
   return (
     <div className="flex items-start justify-between py-1.5">
-      <span className="text-[12px] text-gray-500">{label}</span>
+      <span className="text-[14px] text-gray-500">{label}</span>
       <span
-        className="text-[13px] font-semibold text-right break-all"
+        className="text-[15px] font-semibold text-right break-all"
         style={{
           color: accentColor ?? (highlight ? '#8037FF' : '#2B313D'),
           fontFamily: mono ? 'ui-monospace, SFMono-Regular, monospace' : undefined,
-          fontSize: highlight ? 14 : undefined,
+          fontSize: highlight ? 16 : undefined,
         }}
       >
         {value}
