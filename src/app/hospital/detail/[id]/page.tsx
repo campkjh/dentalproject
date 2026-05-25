@@ -170,23 +170,32 @@ export default function HospitalDetailPage() {
             </div>
           )}
 
-          {/* Stats card */}
+          {/* Stats card — 3 equal columns, each value + label centered */}
           <div
-            className="flex items-center justify-around mt-4 rounded-xl"
-            style={{ backgroundColor: '#F7F8FA', height: 56 }}
+            className="flex items-stretch mt-4 rounded-xl py-3"
+            style={{ backgroundColor: '#F7F8FA' }}
           >
-            <div className="flex items-center gap-1.5">
-              <Star size={18} fill="#FBBF24" stroke="#FBBF24" />
-              <span style={{ fontSize: 16, fontWeight: 700, color: '#2B313D' }}>{avgRating}</span>
+            <div className="flex-1 flex flex-col items-center justify-center">
+              <div className="flex items-center gap-1">
+                <Star size={16} fill="#FBBF24" stroke="#FBBF24" />
+                <span style={{ fontSize: 16, fontWeight: 700, color: '#2B313D' }}>{avgRating}</span>
+              </div>
+              <p style={{ fontSize: 12, color: '#A4ABBA', marginTop: 4 }}>평점</p>
             </div>
-            <div className="w-px h-6" style={{ backgroundColor: '#E5E7EB' }} />
-            <span style={{ fontSize: 16, fontWeight: 700, color: '#2B313D' }}>
-              {hospitalReviews.length || hospital.reviewCount}건
-            </span>
-            <div className="w-px h-6" style={{ backgroundColor: '#E5E7EB' }} />
-            <span style={{ fontSize: 16, fontWeight: 700, color: '#2B313D' }}>
-              {hospital.doctors.length}명
-            </span>
+            <div className="w-px self-center" style={{ backgroundColor: '#E5E7EB', height: 28 }} />
+            <div className="flex-1 flex flex-col items-center justify-center">
+              <span style={{ fontSize: 16, fontWeight: 700, color: '#2B313D' }}>
+                {hospitalReviews.length || hospital.reviewCount}건
+              </span>
+              <p style={{ fontSize: 12, color: '#A4ABBA', marginTop: 4 }}>진료건수</p>
+            </div>
+            <div className="w-px self-center" style={{ backgroundColor: '#E5E7EB', height: 28 }} />
+            <div className="flex-1 flex flex-col items-center justify-center">
+              <span style={{ fontSize: 16, fontWeight: 700, color: '#2B313D' }}>
+                {hospital.doctors.length}명
+              </span>
+              <p style={{ fontSize: 12, color: '#A4ABBA', marginTop: 4 }}>의료진수</p>
+            </div>
           </div>
         </section>
 
