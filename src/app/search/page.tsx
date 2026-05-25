@@ -760,19 +760,17 @@ function RegionFilterModal({
     };
   }, []);
 
-  const ORANGE = '#FF7A1A';
-  const ORANGE_BG = '#FFF7ED';
+  // Selection color — dark, consistent with the rest of the app's primary
+  // interaction color.
+  const SELECT = '#2B313D';
+  const SELECT_BG = '#F4F5F7';
   const RED_DOT = '#FF4757';
 
-  // Top tabs — only 지역 is active here; the rest hand off to other modals
-  // where they exist (가격, 예약방법). 시술 / 병원정보 don't have dedicated
-  // modals yet so clicking them is a no-op for now.
+  // Top tabs — three filter types only.
   const tabs: { key: string; onClick?: () => void; active?: boolean }[] = [
     { key: '지역', active: true },
-    { key: '시술' },
     { key: '가격', onClick: onSwitchToPrice },
     { key: '예약방법', onClick: onSwitchToBooking },
-    { key: '병원정보' },
   ];
 
   const sidebarProvinces = provinceKeys;
@@ -804,7 +802,7 @@ function RegionFilterModal({
                 className="relative"
               >
                 <span
-                  className="text-[18px] font-extrabold whitespace-nowrap"
+                  className="text-[20px] font-extrabold whitespace-nowrap"
                   style={{ color: isActive ? '#2B313D' : '#C5CAD4' }}
                 >
                   {t.key}
@@ -832,7 +830,7 @@ function RegionFilterModal({
         <div className="flex flex-1 overflow-hidden border-t border-gray-100">
           {/* Left sidebar */}
           <div
-            className="w-[100px] flex-shrink-0 overflow-y-auto"
+            className="w-[108px] flex-shrink-0 overflow-y-auto"
             style={{ backgroundColor: '#FAFAFB' }}
           >
             {sidebarProvinces.map((prov) => {
@@ -842,12 +840,12 @@ function RegionFilterModal({
                 <button
                   key={prov}
                   onClick={() => setActiveProvince(prov)}
-                  className="w-full text-left py-3.5 px-4 relative"
+                  className="w-full text-left py-4 px-4 relative"
                   style={{
-                    backgroundColor: isActive ? ORANGE_BG : 'transparent',
-                    color: isActive ? ORANGE : '#A4ABBA',
+                    backgroundColor: isActive ? SELECT_BG : 'transparent',
+                    color: isActive ? SELECT : '#A4ABBA',
                     fontWeight: isActive ? 700 : 500,
-                    fontSize: 15,
+                    fontSize: 17,
                   }}
                 >
                   {prov}
@@ -855,10 +853,10 @@ function RegionFilterModal({
                     <span
                       className="absolute rounded-full"
                       style={{
-                        top: 14,
-                        right: 16,
-                        width: 5,
-                        height: 5,
+                        top: 16,
+                        right: 14,
+                        width: 6,
+                        height: 6,
                         backgroundColor: RED_DOT,
                       }}
                     />
@@ -870,14 +868,14 @@ function RegionFilterModal({
 
           {/* Right: checkboxes */}
           <div className="flex-1 overflow-y-auto bg-white px-4">
-            {/* Current-location shortcut (kept from previous design) */}
+            {/* Current-location shortcut */}
             <button
               onClick={onLocate}
-              className="w-full flex items-center gap-3 py-3"
-              style={{ color: ORANGE }}
+              className="w-full flex items-center gap-3 py-3.5"
+              style={{ color: SELECT }}
             >
-              <Locate size={16} />
-              <span className="text-[14px] font-semibold">
+              <Locate size={18} />
+              <span className="text-[16px] font-semibold">
                 {locating ? '위치 찾는 중...' : '현재 위치로 설정'}
               </span>
             </button>
@@ -890,25 +888,25 @@ function RegionFilterModal({
                 <button
                   key={district}
                   onClick={() => toggleRegion(fullKey)}
-                  className="w-full flex items-center gap-3 py-3.5"
+                  className="w-full flex items-center gap-3 py-4"
                 >
                   <span
                     className="flex items-center justify-center flex-shrink-0"
                     style={{
-                      width: 22,
-                      height: 22,
-                      borderRadius: 4,
-                      backgroundColor: isChecked ? ORANGE : 'transparent',
+                      width: 24,
+                      height: 24,
+                      borderRadius: 5,
+                      backgroundColor: isChecked ? SELECT : 'transparent',
                       border: isChecked ? 'none' : '1.5px solid #D1D5DB',
                     }}
                   >
                     {isChecked && (
-                      <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={3}>
+                      <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={3}>
                         <path d="M20 6 9 17l-5-5" strokeLinecap="round" strokeLinejoin="round" />
                       </svg>
                     )}
                   </span>
-                  <span className="text-[15px]" style={{ color: '#2B313D' }}>
+                  <span className="text-[17px]" style={{ color: '#2B313D' }}>
                     {label}
                   </span>
                 </button>
