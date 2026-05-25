@@ -184,7 +184,7 @@ export default function PaymentsPage() {
                             <StatusIcon status={payment.status} size={16} />
                             {statusLabel[payment.status]}
                           </span>
-                          <span className="text-[11px] text-gray-400 font-medium">
+                          <span className="text-[15px] text-gray-400 font-medium">
                             {payment.date}
                           </span>
                         </div>
@@ -206,24 +206,20 @@ export default function PaymentsPage() {
                               <p className="text-[15px] text-gray-400 truncate leading-tight">
                                 {payment.location}
                               </p>
-                              {/* 결제 방식 태그 (앱결제 vs 현장결제) */}
+                              {/* 결제 방식 태그 (앱결제 vs 현장결제) — text only, no icon */}
                               {(() => {
                                 const isApp = payment.paymentMethod === '앱결제';
                                 return (
                                   <span
-                                    className="ml-auto flex-shrink-0 inline-flex items-center gap-1 rounded-md"
+                                    className="ml-auto flex-shrink-0 inline-flex items-center rounded-md"
                                     style={{
                                       fontSize: 11,
                                       fontWeight: 600,
-                                      padding: '2px 6px',
+                                      padding: '2px 8px',
                                       color: isApp ? '#8037FF' : '#51535C',
                                       backgroundColor: isApp ? '#F4EFFF' : '#F2F3F5',
                                     }}
                                   >
-                                    <svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-                                      <rect x="2" y="5" width="20" height="14" rx="2" />
-                                      <path d="M2 10h20" />
-                                    </svg>
                                     {isApp ? '앱결제' : '현장결제'}
                                   </span>
                                 );
@@ -236,8 +232,8 @@ export default function PaymentsPage() {
                         <div className="mt-2 pt-2 border-t border-dashed" style={{ borderColor: '#F2F3F5' }}>
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-1.5 text-gray-500">
-                              <IconCalendarMini size={15} />
-                              <span className="text-[12px]">{payment.reservationDate || payment.visitDate}</span>
+                              <IconCalendarMini size={16} />
+                              <span className="text-[15px]">{payment.reservationDate || payment.visitDate}</span>
                             </div>
                             <div className="flex items-baseline gap-0.5">
                               <span className="text-[15px] font-bold text-gray-900">
