@@ -916,28 +916,38 @@ function LiveQuestionsTeaser() {
   return (
     <Link
       href="/community"
-      className="block bg-white px-4 pt-3 pb-4"
+      className="relative z-[5] block bg-white px-4 pt-0 pb-4"
       aria-label="실시간 의사에게 질문"
     >
-      <div className="flex items-center gap-3 min-h-[100px]">
+      <div className="flex items-center gap-3 min-h-[120px]">
         {/* Left: title (flex-shrink-0 so the marquee takes the rest) */}
         <h2 className="flex flex-col gap-0.5 text-[22px] font-bold leading-[1.15] text-[#2B313D] flex-shrink-0">
-          <span className="inline-flex items-center gap-2">
-            실시간
-            <span className="live-badge-flow inline-flex h-[20px] items-center rounded-[5px] px-1.5 text-[11px] font-extrabold leading-none text-white tracking-wider">
-              LIVE
+          <span className="relative inline-flex items-center">
+            <span className="relative">
+              실시간
+              {/* Floating tooltip pointing down at "실시간" */}
+              <img
+                src="/icons/live-tooltip.svg"
+                alt=""
+                aria-hidden
+                width={154}
+                height={66}
+                className="tooltip-bob absolute left-1/2 -top-[58px] pointer-events-none drop-shadow-[0_6px_18px_rgba(30,41,99,0.10)]"
+                style={{ transform: 'translate(-50%, 0)' }}
+              />
             </span>
           </span>
           <span>의사에게 질문</span>
         </h2>
 
         {/* Right: floating avatars marquee, fills remaining width.
-            clip-path lets avatars overflow vertically (so they don't clip
-            top/bottom) while keeping the horizontal fade. */}
+            overflow-x clip + overflow-y visible lets avatars bob beyond the
+            band's top/bottom without being clipped, while still hiding
+            horizontal overflow at the edges. */}
         <div
-          className="relative flex-1 min-w-0 h-[100px]"
+          className="relative flex-1 min-w-0 h-[120px] overflow-x-clip"
           style={{
-            clipPath: 'inset(-40px 0 -40px 0)',
+            overflowY: 'visible',
             maskImage:
               'linear-gradient(to right, transparent 0, #000 24px, #000 calc(100% - 12px), transparent 100%)',
             WebkitMaskImage:

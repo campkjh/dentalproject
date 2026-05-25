@@ -389,6 +389,18 @@ body {
   .doctor-fan-in { animation: none; }
 }
 
+/* ===== Live tooltip: gentle 4px bob ===== */
+@keyframes tooltipBob {
+  0%, 100% { transform: translate(-50%, 0); }
+  50%      { transform: translate(-50%, -4px); }
+}
+.tooltip-bob {
+  animation: tooltipBob 2.8s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tooltip-bob { animation: none; }
+}
+
 /* ===== Floating avatar bob (vertical drift while marquee flows) ===== */
 @keyframes avatarBob {
   0%   { transform: translateY(0); }
