@@ -3,7 +3,7 @@
 import { useState, useMemo, Suspense, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Search, XCircle, ChevronLeft, ChevronDown, MapPin, Locate, Check, X, SlidersHorizontal, DollarSign, CalendarCheck, Star } from 'lucide-react';
+import { Search, XCircle, ChevronLeft, ChevronDown, MapPin, Locate, Check, X, SlidersHorizontal, DollarSign, CalendarCheck, Star, Heart } from 'lucide-react';
 import { useStore } from '@/store';
 import { regions, dentalSubCategories } from '@/lib/mock-data';
 import type { Product } from '@/types';
@@ -735,61 +735,111 @@ function SearchPage() {
 }
 
 function SearchProductListItem({ product }: { product: Product }) {
+  const { wishlist, toggleWishlist } = useStore();
+  const isWished = wishlist.includes(product.id);
+
   return (
     <Link
       href={`/product/${product.id}`}
-      className="flex gap-3 py-3.5 card-press"
+      className="block py-4 card-press"
     >
-      <div className="relative w-[112px] h-[112px] flex-shrink-0 overflow-hidden rounded-xl bg-gray-100">
-        <img
-          src={product.imageUrl}
-          alt={product.title}
-          className="w-full h-full object-cover"
-        />
-      </div>
-
-      <div className="min-w-0 flex-1 py-0.5">
-        <div className="flex items-center gap-1.5 mb-1">
-          <span className="text-[12px] font-normal text-gray-400 truncate">
-            {product.location || product.hospitalName}
-          </span>
-          <span className="w-0.5 h-0.5 rounded-full bg-gray-300 flex-shrink-0" />
-          <span className="flex items-center gap-0.5 text-[12px] font-medium text-gray-500 flex-shrink-0">
-            <Star size={12} fill="#FBBF24" stroke="#FBBF24" />
-            {product.rating.toFixed(1)}
-          </span>
+      {/* Top: thumbnail + info + heart */}
+      <div className="flex gap-3">
+        <div className="relative w-[120px] h-[120px] flex-shrink-0 overflow-hidden rounded-xl bg-gray-100">
+          <img
+            src={product.imageUrl}
+            alt={product.title}
+            className="w-full h-full object-cover"
+          />
         </div>
 
-        <h3 className="text-[15px] leading-[20px] font-medium text-gray-900 line-clamp-2">
-          {product.title}
-        </h3>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-2">
+            <h3 className="flex-1 text-[16px] leading-[22px] font-bold text-[#2B313D] line-clamp-2">
+              {product.title}
+            </h3>
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                toggleWishlist(product.id);
+              }}
+              className="flex-shrink-0 -mt-0.5 -mr-0.5 p-1"
+              aria-label={isWished ? '찜 해제' : '찜하기'}
+            >
+              <Heart
+                size={22}
+                fill={isWished ? '#EF4444' : 'none'}
+                stroke={isWished ? '#EF4444' : '#C5CAD4'}
+                strokeWidth={1.8}
+              />
+            </button>
+          </div>
 
-        <div className="mt-1.5 flex items-baseline gap-1.5">
+          <p className="mt-1.5 text-[13px] text-gray-500 line-clamp-1">
+            {product.location ? `${product.location} · ${product.hospitalName}` : product.hospitalName}
+          </p>
+
+          <div className="mt-1 flex items-center gap-1">
+            <Star size={14} fill="#FBBF24" stroke="#FBBF24" />
+            <span className="text-[14px] font-bold text-[#2B313D]">{product.rating.toFixed(1)}</span>
+            <span className="text-[13px] text-gray-400">({product.reviewCount.toLocaleString()})</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom: VAT 포함 + (discount) price + tags — right aligned */}
+      <div className="mt-3 flex flex-col items-end">
+        <p className="text-[12px] text-gray-400">
+          VAT 포함
+          {product.originalPrice && (
+            <>
+              {' '}·{' '}
+              <span className="line-through">{product.originalPrice.toLocaleString()}원</span>
+            </>
+          )}
+        </p>
+        <div className="flex items-baseline gap-1.5 mt-0.5">
           {product.discount && (
-            <span className="text-[13px] font-semibold text-[#8037FF]">
+            <span className="text-[18px] font-bold" style={{ color: '#A8741D' }}>
               {product.discount}%
             </span>
           )}
-          <span className="text-[18px] leading-none font-semibold text-gray-900">
+          <span className="text-[18px] font-bold text-[#2B313D]">
             {product.price.toLocaleString()}원
           </span>
         </div>
-
-        {product.originalPrice && (
-          <p className="mt-1 text-[12px] text-gray-300 line-through">
-            {product.originalPrice.toLocaleString()}원
-          </p>
-        )}
-
-        <div className="mt-2 flex items-center gap-1.5 overflow-hidden">
-          <span className="flex-shrink-0 rounded px-1.5 py-0.5 text-[11px] font-medium text-[#8037FF] bg-[#F0EBFF]">
+        <div className="flex gap-1.5 mt-2">
+          <span
+            className="inline-flex items-center gap-1 rounded-md"
+            style={{
+              fontSize: 11,
+              fontWeight: 600,
+              padding: '3px 8px',
+              color: '#1A7DFF',
+              backgroundColor: '#E6F0FF',
+            }}
+          >
+            <svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+              <rect x="2" y="5" width="20" height="14" rx="2" />
+              <path d="M2 10h20" />
+            </svg>
             앱결제
           </span>
-          <span className="flex-shrink-0 rounded px-1.5 py-0.5 text-[11px] font-medium text-gray-600 bg-gray-100">
+          <span
+            className="inline-flex items-center gap-1 rounded-md"
+            style={{
+              fontSize: 11,
+              fontWeight: 600,
+              padding: '3px 8px',
+              color: '#1FAF5B',
+              backgroundColor: '#E6F7EB',
+            }}
+          >
+            <svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4}>
+              <path d="M20 6 9 17l-5-5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
             앱예약
-          </span>
-          <span className="min-w-0 truncate text-[11px] text-gray-400">
-            리뷰 {product.reviewCount.toLocaleString()}개
           </span>
         </div>
       </div>
