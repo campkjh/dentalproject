@@ -2,7 +2,7 @@
 
 import { useRef, useCallback, useState } from 'react';
 import Link from 'next/link';
-import { Star, Heart, BadgeCheck, Crown } from 'lucide-react';
+import { Star, Heart, Crown } from 'lucide-react';
 import { Product } from '@/types';
 import { resolveProductImageUrl } from '@/lib/images';
 import { useStore } from '@/store';
@@ -90,11 +90,18 @@ export default function ProductCard({ product }: { product: Product }) {
 
       {/* Badges row */}
       <div className="flex items-center gap-1.5 mt-1.5">
-        <span style={{ fontSize: 11, fontWeight: 500, color: '#8037FF', backgroundColor: '#F0EBFF', borderRadius: 4, padding: '2px 6px' }}>앱결제</span>
-        <span style={{ fontSize: 11, fontWeight: 500, color: '#51535C', backgroundColor: '#F2F3F5', borderRadius: 4, padding: '2px 6px' }}>앱예약</span>
+        <span style={{ fontSize: 11, fontWeight: 500, color: '#51535C', backgroundColor: '#F2F3F5', borderRadius: 4, padding: '2px 6px' }}>앱결제</span>
         {product.rating >= 4.8 && (
-          <span className="flex items-center gap-0.5" style={{ fontSize: 11, fontWeight: 500, color: '#10B981', backgroundColor: '#ECFDF5', borderRadius: 4, padding: '2px 6px' }}>
-            <BadgeCheck size={10} /> 인증
+          <span className="flex items-center gap-1" style={{ fontSize: 11, fontWeight: 600, color: '#1E85FF' }}>
+            <span
+              className="inline-flex items-center justify-center rounded-full"
+              style={{ width: 14, height: 14, backgroundColor: '#1E85FF' }}
+            >
+              <svg width={9} height={9} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={3}>
+                <path d="M20 6 9 17l-5-5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </span>
+            인증병원
           </span>
         )}
         {product.likeCount >= 10 && (
