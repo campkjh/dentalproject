@@ -939,13 +939,13 @@ function LiveQuestionsTeaser() {
             left-1/2 centers on ~130px of heading width, preventing left-edge overflow. */}
         <h2 className="relative flex flex-col gap-0.5 text-[22px] font-bold leading-[1.15] text-[#2B313D] flex-shrink-0">
           {/* Floating tooltip — 70% scale of original svg (108×46),
-              shifted ~12px right of h2 center so the tail lands above-right of "실시간". */}
+              shifted ~32px right of h2 center so the tail lands above-right of "실시간". */}
           <div
             aria-hidden
             className="tooltip-bob absolute pointer-events-none"
             style={{
-              left: 'calc(50% + 12px)',
-              top: -40,
+              left: 'calc(50% + 32px)',
+              top: -28,
               transform: 'translate(-50%, 0)',
               width: 108,
               height: 46,
