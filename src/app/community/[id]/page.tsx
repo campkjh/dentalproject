@@ -552,15 +552,16 @@ export default function PostDetailPage() {
       {post.boardType === 'question' && (
         <div className="px-2.5 py-3 bg-gray-50 border-y border-gray-100">
           {hasAnswer ? (
-            <div className="flex items-center gap-2">
-              <MessageCircle size={16} className="text-[#8037FF]" />
-              <span className="text-base font-medium text-[#8037FF]">{doctorAnswerCount || post.answerCount}명이 답변했어요</span>
-            </div>
+            // Matches the same pill the list page renders next to each post.
+            <span className="inline-flex items-center gap-1 pl-1 pr-2.5 py-0.5 bg-[#EEF1FF] text-[#3852FF] text-[13px] rounded-full font-semibold">
+              <img src="/icons/community-answer.svg" alt="" width={20} height={20} />
+              {doctorAnswerCount || post.answerCount}명이 답변했어요
+            </span>
           ) : (
-            <div className="flex items-center gap-2">
-              <MessageCircle size={16} className="text-red-500" />
-              <span className="text-base font-medium text-red-500">답변이 필요해요!</span>
-            </div>
+            <span className="inline-flex items-center gap-1 pl-1 pr-2.5 py-0.5 bg-[#FFF8E1] text-[#B88700] text-[13px] rounded-full font-semibold">
+              <img src="/icons/community-need-answer.svg" alt="" width={20} height={20} />
+              답변이 필요해요!
+            </span>
           )}
         </div>
       )}
