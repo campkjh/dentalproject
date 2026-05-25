@@ -4,7 +4,6 @@ import { useRouter } from 'next/navigation';
 import { useStore } from '@/store';
 import LoginRequired from '@/components/common/LoginRequired';
 import { ChevronRight, Camera } from 'lucide-react';
-import { IconHospital } from '@/components/icons/MyPageIcons';
 import Avatar from '@/components/common/Avatar';
 
 function MenuIcon({ name, size = 22 }: { name: string; size?: number }) {
@@ -196,14 +195,41 @@ export default function MyPage() {
         {supportMenuItems.map(renderMenuItem)}
       </div>
 
-      {/* Hospital Registration */}
+      {/* Hospital Registration — image CTA */}
       <div className="px-2.5 py-6">
         <button
           onClick={() => router.push('/hospital/register')}
-          className="w-full py-3.5 bg-[#8037FF] text-white rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-[#6D28D9] transition-colors"
+          className="block w-full relative rounded-2xl overflow-hidden btn-press"
+          style={{ aspectRatio: '16/9' }}
+          aria-label="병원신청하기"
         >
-          <IconHospital size={22} />
-          병원신청하기
+          <img
+            src="/images/hospital-cta.png"
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+          {/* Bottom gradient so the label stays readable on bright glass */}
+          <div
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              background:
+                'linear-gradient(to top, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.15) 35%, rgba(0,0,0,0) 60%)',
+            }}
+          />
+          <div className="absolute left-5 right-5 bottom-4 flex items-center justify-between">
+            <span
+              style={{
+                fontSize: 20,
+                fontWeight: 700,
+                color: '#fff',
+                textShadow: '0 2px 10px rgba(0,0,0,0.35)',
+                letterSpacing: '-0.01em',
+              }}
+            >
+              병원신청하기
+            </span>
+            <ChevronRight size={20} className="text-white drop-shadow" />
+          </div>
         </button>
       </div>
 
