@@ -920,23 +920,21 @@ function LiveQuestionsTeaser() {
       aria-label="실시간 의사에게 질문"
     >
       <div className="flex items-center gap-3 min-h-[120px]">
-        {/* Left: title (flex-shrink-0 so the marquee takes the rest) */}
-        <h2 className="flex flex-col gap-0.5 text-[22px] font-bold leading-[1.15] text-[#2B313D] flex-shrink-0">
-          <span className="relative inline-flex items-center">
-            <span className="relative">
-              실시간
-              {/* Floating tooltip pointing down at "실시간" */}
-              <img
-                src="/icons/live-tooltip.svg"
-                alt=""
-                aria-hidden
-                width={154}
-                height={66}
-                className="tooltip-bob absolute left-1/2 -top-[58px] pointer-events-none drop-shadow-[0_6px_18px_rgba(30,41,99,0.10)]"
-                style={{ transform: 'translate(-50%, 0)' }}
-              />
-            </span>
-          </span>
+        {/* Left: title (flex-shrink-0 so the marquee takes the rest).
+            relative is on the h2 (not the narrow "실시간" span) so the tooltip's
+            left-1/2 centers on ~130px of heading width, preventing left-edge overflow. */}
+        <h2 className="relative flex flex-col gap-0.5 text-[22px] font-bold leading-[1.15] text-[#2B313D] flex-shrink-0">
+          {/* Floating tooltip — tail points down toward "실시간" */}
+          <img
+            src="/icons/live-tooltip.svg"
+            alt=""
+            aria-hidden
+            width={154}
+            height={66}
+            className="tooltip-bob absolute left-1/2 -top-[58px] pointer-events-none drop-shadow-[0_6px_18px_rgba(30,41,99,0.10)]"
+            style={{ transform: 'translate(-50%, 0)' }}
+          />
+          <span>실시간</span>
           <span>의사에게 질문</span>
         </h2>
 

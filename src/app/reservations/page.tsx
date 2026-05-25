@@ -223,21 +223,43 @@ export default function ReservationsPage() {
 
                         {/* Product info */}
                         <div className="flex gap-2.5 mt-2">
-                          <div className="w-[64px] h-[64px] rounded-xl bg-gray-100 overflow-hidden flex items-center justify-center flex-shrink-0">
+                          <div className="w-[72px] h-[72px] rounded-xl bg-gray-100 overflow-hidden flex items-center justify-center flex-shrink-0">
                             <img src={productImage} alt="" className="w-full h-full object-cover" />
                           </div>
-                          <div className="flex-1 min-w-0 flex flex-col justify-center">
-                            <p className="text-[14px] font-bold text-gray-900 line-clamp-1 leading-tight">
+                          <div className="flex-1 min-w-0 flex flex-col justify-center gap-0.5">
+                            <p className="text-[18px] font-bold text-gray-900 line-clamp-1 leading-tight">
                               {reservation.productTitle}
                             </p>
-                            <p className="text-[12px] text-gray-500 leading-tight">
+                            <p className="text-[15px] text-gray-500 leading-tight">
                               {reservation.hospitalName}
                             </p>
-                            <div className="flex items-center gap-0.5 mt-0.5">
-                              <span className="flex-shrink-0"><IconMapPin size={12} /></span>
-                              <p className="text-[11px] text-gray-400 truncate leading-tight">
+                            <div className="flex items-center gap-1 mt-0.5">
+                              <span className="flex-shrink-0"><IconMapPin size={15} /></span>
+                              <p className="text-[15px] text-gray-400 truncate leading-tight">
                                 {reservation.location}
                               </p>
+                              {/* 결제 방식 태그 (앱결제 vs 현장결제) */}
+                              {(() => {
+                                const isApp = reservation.paymentMethod === '앱결제';
+                                return (
+                                  <span
+                                    className="ml-auto flex-shrink-0 inline-flex items-center gap-1 rounded-md"
+                                    style={{
+                                      fontSize: 11,
+                                      fontWeight: 600,
+                                      padding: '2px 6px',
+                                      color: isApp ? '#8037FF' : '#51535C',
+                                      backgroundColor: isApp ? '#F4EFFF' : '#F2F3F5',
+                                    }}
+                                  >
+                                    <svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                                      <rect x="2" y="5" width="20" height="14" rx="2" />
+                                      <path d="M2 10h20" />
+                                    </svg>
+                                    {isApp ? '앱결제' : '현장결제'}
+                                  </span>
+                                );
+                              })()}
                             </div>
                           </div>
                         </div>
@@ -263,23 +285,39 @@ export default function ReservationsPage() {
                           )}
                         </div>
 
-                        {/* Action area */}
+                        {/* Action area — 상세보기 left, 예약취소 right (48px / 18px / weight 700 / radius 12) */}
                         {isPending && (
-                          <div className="mt-2.5 flex gap-2">
+                          <div className="mt-3 flex gap-2">
+                            <div
+                              className="btn-press flex-1 flex items-center justify-center text-white"
+                              style={{
+                                height: 48,
+                                borderRadius: 12,
+                                backgroundColor: '#292A2E',
+                                fontSize: 18,
+                                fontWeight: 700,
+                              }}
+                            >
+                              상세보기
+                            </div>
                             <button
                               onClick={(e) => {
                                 e.preventDefault();
                                 e.stopPropagation();
                                 handleCancel(reservation.id);
                               }}
-                              className="btn-press flex-1 py-2.5 border border-gray-200 text-gray-600 rounded-xl text-[13px] font-semibold bg-white hover:bg-gray-50"
+                              className="btn-press flex-1 flex items-center justify-center"
+                              style={{
+                                height: 48,
+                                borderRadius: 12,
+                                backgroundColor: '#F2F3F5',
+                                color: '#51535C',
+                                fontSize: 18,
+                                fontWeight: 700,
+                              }}
                             >
                               예약취소
                             </button>
-                            <div className="btn-press flex-1 py-2.5 bg-gray-900 text-white rounded-xl text-[13px] font-semibold flex items-center justify-center gap-1">
-                              상세보기
-                              <ChevronRight size={14} />
-                            </div>
                           </div>
                         )}
 
