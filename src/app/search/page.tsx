@@ -301,84 +301,34 @@ function SearchPage() {
           </div>
         )}
 
-        {/* 필터 버튼들 + 선택된 태그 */}
-        <div className="px-2.5 flex gap-2 overflow-x-auto hide-scrollbar border-b border-gray-100" style={{ paddingTop: 10, paddingBottom: 10 }}>
-          <button
-            onClick={() => setShowRegionModal(true)}
-            className="flex items-center gap-1 px-3 py-1.5 rounded-full whitespace-nowrap border transition-colors"
-            style={{ fontSize: 14, fontWeight: 500, boxShadow: '0 1px 4px rgba(0,0,0,0.06)', ...(selectedRegions.length > 0 ? { backgroundColor: '#2B313D', color: '#fff', borderColor: '#2B313D' } : { borderColor: '#E5E7EB', color: '#4B5563' }) }}
-          >
-            {selectedRegions.length > 0 ? regionLabel : '지역'}
-            <ChevronDown size={12} />
-          </button>
-          <button
-            onClick={() => setShowPriceModal(true)}
-            className="flex items-center gap-1 px-3 py-1.5 rounded-full whitespace-nowrap border transition-colors"
-            style={{ fontSize: 14, fontWeight: 500, boxShadow: '0 1px 4px rgba(0,0,0,0.06)', ...(selectedPrice !== '전체' ? { backgroundColor: '#2B313D', color: '#fff', borderColor: '#2B313D' } : { borderColor: '#E5E7EB', color: '#4B5563' }) }}
-          >
-            {selectedPrice !== '전체' ? selectedPrice : '가격'}
-            <ChevronDown size={12} />
-          </button>
-          <button
-            onClick={() => setShowBookingModal(true)}
-            className="flex items-center gap-1 px-3 py-1.5 rounded-full whitespace-nowrap border transition-colors"
-            style={{ fontSize: 14, fontWeight: 500, boxShadow: '0 1px 4px rgba(0,0,0,0.06)', ...(selectedBooking !== '전체' ? { backgroundColor: '#2B313D', color: '#fff', borderColor: '#2B313D' } : { borderColor: '#E5E7EB', color: '#4B5563' }) }}
-          >
-            {selectedBooking !== '전체' ? selectedBooking : '예약방법'}
-            <ChevronDown size={12} />
-          </button>
-          <button
-            onClick={() => setShowSortModal(true)}
-            className="flex items-center gap-1 px-3 py-1.5 rounded-full whitespace-nowrap border transition-colors"
-            style={{ fontSize: 14, fontWeight: 500, boxShadow: '0 1px 4px rgba(0,0,0,0.06)', borderColor: '#E5E7EB', color: '#4B5563' }}
-          >
-            {selectedSort}
-            <ChevronDown size={12} />
-          </button>
-          {selectedTags.map(tag => (
-            <span key={tag} className="flex items-center gap-1 px-3 py-1.5 rounded-full whitespace-nowrap"
-              style={{ fontSize: 12, fontWeight: 500, backgroundColor: '#F2F3F5', color: '#51535C', borderRadius: 8 }}>
-              {tag}
-              <button onClick={() => setSelectedTags(prev => prev.filter(t => t !== tag))}>
-                <X size={10} />
-              </button>
-            </span>
-          ))}
-        </div>
-
-        {/* 카테고리 아이콘 탭 */}
-        <div className="flex gap-3 overflow-x-auto hide-scrollbar px-2.5 py-3 lg:px-0">
-          {/* 전체 카테고리 */}
-          <button
-            onClick={() => setActiveCategory('')}
-            className="flex flex-col items-center gap-1.5 min-w-[52px]"
-          >
-            <div className={`w-11 h-11 rounded-full flex items-center justify-center transition-all p-2 ${
-              !activeCategory ? 'bg-[#F4EFFF] ring-2 ring-[#8037FF]' : 'bg-gray-50'
-            }`}>
-              <span className="text-lg">📋</span>
-            </div>
-            <span className={`text-[10px] whitespace-nowrap ${!activeCategory ? 'text-[#8037FF] font-bold' : 'text-gray-500'}`}>
-              전체
-            </span>
-          </button>
-          {categories.map((cat) => (
-            <button
-              key={cat.id}
-              onClick={() => setActiveCategory(cat.id)}
-              className="flex flex-col items-center gap-1.5 min-w-[52px]"
-            >
-              <div className={`w-11 h-11 rounded-full flex items-center justify-center transition-all p-2 ${
-                activeCategory === cat.id ? 'bg-[#F4EFFF] ring-2 ring-[#8037FF]' : 'bg-gray-50'
-              }`}>
-                <img src={cat.icon} alt={cat.name} className="w-full h-full" />
-              </div>
-              <span className={`text-[10px] whitespace-nowrap ${activeCategory === cat.id ? 'text-[#8037FF] font-bold' : 'text-gray-500'}`}>
-                {cat.name}
+        <ListPageFilters
+          selectedRegions={selectedRegions}
+          regionLabel={regionLabel}
+          selectedPrice={selectedPrice}
+          selectedBooking={selectedBooking}
+          selectedSort={selectedSort}
+          setSelectedBooking={setSelectedBooking}
+          onOpenRegion={() => setShowRegionModal(true)}
+          onOpenPrice={() => setShowPriceModal(true)}
+          onOpenBooking={() => setShowBookingModal(true)}
+          onOpenSort={() => setShowSortModal(true)}
+        />
+        {selectedTags.length > 0 && (
+          <div className="px-2.5 flex gap-2 overflow-x-auto hide-scrollbar pt-2 pb-1">
+            {selectedTags.map((tag) => (
+              <span
+                key={tag}
+                className="flex items-center gap-1 px-3 py-1 rounded-full whitespace-nowrap"
+                style={{ fontSize: 12, fontWeight: 500, backgroundColor: '#F2F3F5', color: '#51535C', borderRadius: 8 }}
+              >
+                {tag}
+                <button onClick={() => setSelectedTags((prev) => prev.filter((t) => t !== tag))}>
+                  <X size={10} />
+                </button>
               </span>
-            </button>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
 
         {/* 결과 */}
         <div className="px-2.5 pb-4 lg:max-w-7xl lg:mx-auto">
@@ -503,29 +453,19 @@ function SearchPage() {
         </div>
       </div>
 
-      {/* Filter buttons for normal search */}
-      <div className="px-2.5 flex gap-2 overflow-x-auto hide-scrollbar border-b border-gray-100" style={{ paddingTop: 10, paddingBottom: 10 }}>
-        <button onClick={() => setShowRegionModal(true)}
-          className="flex items-center gap-1 px-3 py-1.5 rounded-full whitespace-nowrap border transition-colors"
-          style={{ fontSize: 14, fontWeight: 500, boxShadow: '0 1px 4px rgba(0,0,0,0.06)', ...(selectedRegions.length > 0 ? { backgroundColor: '#2B313D', color: '#fff', borderColor: '#2B313D' } : { borderColor: '#E5E7EB', color: '#4B5563' }) }}>
-          {selectedRegions.length > 0 ? regionLabel : '지역'} <ChevronDown size={12} />
-        </button>
-        <button onClick={() => setShowPriceModal(true)}
-          className="flex items-center gap-1 px-3 py-1.5 rounded-full whitespace-nowrap border transition-colors"
-          style={{ fontSize: 14, fontWeight: 500, boxShadow: '0 1px 4px rgba(0,0,0,0.06)', ...(selectedPrice !== '전체' ? { backgroundColor: '#2B313D', color: '#fff', borderColor: '#2B313D' } : { borderColor: '#E5E7EB', color: '#4B5563' }) }}>
-          {selectedPrice !== '전체' ? selectedPrice : '가격'} <ChevronDown size={12} />
-        </button>
-        <button onClick={() => setShowBookingModal(true)}
-          className="flex items-center gap-1 px-3 py-1.5 rounded-full whitespace-nowrap border transition-colors"
-          style={{ fontSize: 14, fontWeight: 500, boxShadow: '0 1px 4px rgba(0,0,0,0.06)', ...(selectedBooking !== '전체' ? { backgroundColor: '#2B313D', color: '#fff', borderColor: '#2B313D' } : { borderColor: '#E5E7EB', color: '#4B5563' }) }}>
-          {selectedBooking !== '전체' ? selectedBooking : '예약방법'} <ChevronDown size={12} />
-        </button>
-        <button onClick={() => setShowSortModal(true)}
-          className="flex items-center gap-1 px-3 py-1.5 rounded-full whitespace-nowrap border transition-colors"
-          style={{ fontSize: 14, fontWeight: 500, boxShadow: '0 1px 4px rgba(0,0,0,0.06)', borderColor: '#E5E7EB', color: '#4B5563' }}>
-          {selectedSort} <ChevronDown size={12} />
-        </button>
-      </div>
+      {/* Filter section for normal search mode — same layout as category mode */}
+      <ListPageFilters
+        selectedRegions={selectedRegions}
+        regionLabel={regionLabel}
+        selectedPrice={selectedPrice}
+        selectedBooking={selectedBooking}
+        selectedSort={selectedSort}
+        setSelectedBooking={setSelectedBooking}
+        onOpenRegion={() => setShowRegionModal(true)}
+        onOpenPrice={() => setShowPriceModal(true)}
+        onOpenBooking={() => setShowBookingModal(true)}
+        onOpenSort={() => setShowSortModal(true)}
+      />
 
       <div className="lg:max-w-7xl lg:mx-auto lg:px-6 lg:py-6">
         <div className="lg:bg-white lg:rounded-2xl lg:shadow-sm lg:p-6">
@@ -669,7 +609,7 @@ function SearchProductListItem({ product }: { product: Product }) {
 
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
-            <h3 className="flex-1 text-[16px] leading-[22px] font-bold text-[#2B313D] line-clamp-2">
+            <h3 className="flex-1 text-[18px] leading-[24px] font-bold text-[#2B313D] line-clamp-2">
               {product.title}
             </h3>
             <button
@@ -1005,6 +945,154 @@ function RegionFilterModal({
             </button>
           )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+/* ===================== List page filter section =====================
+   Content-type tabs (이벤트 active, others visual placeholders) + filter
+   chips row (지역/시술/가격/예약방법/병원정보, dark when active) + sub-row
+   for the 앱결제 quick toggle and 추천순 sort. Used by both category mode
+   and search-result mode. */
+const CONTENT_TABS = ['이벤트', '커뮤니티', '시술후기', '시술설명', '병원', '의사'];
+
+function ListPageFilters({
+  selectedRegions,
+  regionLabel,
+  selectedPrice,
+  selectedBooking,
+  selectedSort,
+  setSelectedBooking,
+  onOpenRegion,
+  onOpenPrice,
+  onOpenBooking,
+  onOpenSort,
+}: {
+  selectedRegions: string[];
+  regionLabel: string;
+  selectedPrice: string;
+  selectedBooking: string;
+  selectedSort: string;
+  setSelectedBooking: (b: string) => void;
+  onOpenRegion: () => void;
+  onOpenPrice: () => void;
+  onOpenBooking: () => void;
+  onOpenSort: () => void;
+}) {
+  const [activeContentTab, setActiveContentTab] = useState('이벤트');
+  const isAppPay = selectedBooking === '앱결제';
+
+  const chipStyle = (active: boolean): React.CSSProperties => ({
+    fontSize: 14,
+    fontWeight: 600,
+    height: 36,
+    paddingLeft: 14,
+    paddingRight: 12,
+    borderRadius: 999,
+    whiteSpace: 'nowrap',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 4,
+    ...(active
+      ? { backgroundColor: '#2B313D', color: '#fff', border: '1px solid #2B313D' }
+      : { backgroundColor: '#fff', color: '#51535C', border: '1px solid #E5E7EB' }),
+  });
+
+  return (
+    <div className="bg-white">
+      {/* Content-type tabs */}
+      <div className="relative">
+        <div className="flex gap-5 overflow-x-auto hide-scrollbar px-4 pt-3 pb-2">
+          {CONTENT_TABS.map((tab) => {
+            const isActive = activeContentTab === tab;
+            return (
+              <button
+                key={tab}
+                onClick={() => setActiveContentTab(tab)}
+                className="relative pb-2 flex-shrink-0"
+              >
+                <span
+                  className="text-[16px] font-bold"
+                  style={{ color: isActive ? '#2B313D' : '#A4ABBA' }}
+                >
+                  {tab}
+                </span>
+                {isActive && (
+                  <span
+                    className="absolute left-0 right-0 -bottom-px h-[3px] rounded-full"
+                    style={{ backgroundColor: '#FF6900' }}
+                  />
+                )}
+              </button>
+            );
+          })}
+        </div>
+        <div className="h-px bg-gray-100" />
+      </div>
+
+      {/* Filter chips row */}
+      <div className="flex gap-1.5 overflow-x-auto hide-scrollbar px-4 pt-3 pb-2">
+        <button onClick={onOpenRegion} style={chipStyle(selectedRegions.length > 0)}>
+          {selectedRegions.length > 0 ? regionLabel : '지역'}
+          <ChevronDown size={14} />
+        </button>
+        <button
+          onClick={onOpenBooking}
+          style={chipStyle(false)}
+          title="시술 카테고리는 준비중입니다"
+        >
+          시술 <ChevronDown size={14} />
+        </button>
+        <button onClick={onOpenPrice} style={chipStyle(selectedPrice !== '전체')}>
+          {selectedPrice !== '전체' ? selectedPrice : '가격'}
+          <ChevronDown size={14} />
+        </button>
+        <button onClick={onOpenBooking} style={chipStyle(selectedBooking !== '전체')}>
+          {selectedBooking !== '전체' ? selectedBooking : '예약방법'}
+          <ChevronDown size={14} />
+        </button>
+        <button onClick={onOpenBooking} style={chipStyle(false)} title="병원 정보 필터는 준비중입니다">
+          병원정보 <ChevronDown size={14} />
+        </button>
+      </div>
+
+      {/* Sub-row: 앱결제 checkbox + 추천순 sort */}
+      <div className="flex items-center justify-between px-4 pt-2 pb-3">
+        <button
+          onClick={() => setSelectedBooking(isAppPay ? '전체' : '앱결제')}
+          className="flex items-center gap-2"
+        >
+          <span
+            className="flex items-center justify-center"
+            style={{
+              width: 20,
+              height: 20,
+              borderRadius: 4,
+              backgroundColor: isAppPay ? '#2B313D' : '#fff',
+              border: isAppPay ? 'none' : '1.5px solid #D1D5DB',
+            }}
+          >
+            {isAppPay && (
+              <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={3}>
+                <path d="M20 6 9 17l-5-5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            )}
+          </span>
+          <span className="text-[14px] font-medium" style={{ color: isAppPay ? '#2B313D' : '#51535C' }}>
+            앱결제
+          </span>
+        </button>
+        <button
+          onClick={onOpenSort}
+          className="flex items-center gap-1 text-[14px] font-medium"
+          style={{ color: '#51535C' }}
+        >
+          {selectedSort}
+          <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+            <path d="M3 6h18M6 12h12M10 18h4" strokeLinecap="round" />
+          </svg>
+        </button>
       </div>
     </div>
   );
