@@ -118,7 +118,7 @@ export default function CouponsPage() {
         className={`${direction === 'right' ? 'tab-slide-right' : 'tab-slide-left'}`}
       >
         {filteredCoupons.length === 0 ? (
-          <EmptyState icon="payment" message="쿠폰이 없어요" />
+          <EmptyState icon="coupon" message="쿠폰이 없어요" />
         ) : (
           <div className="bg-white divide-y divide-gray-50">
             {filteredCoupons.map((coupon) => {

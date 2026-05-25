@@ -7,11 +7,12 @@ const lucideIcons = {
   clock: Clock,
 };
 
-type IconName = 'calendar' | 'point' | keyof typeof lucideIcons;
+type IconName = 'calendar' | 'point' | 'coupon' | keyof typeof lucideIcons;
 
 const svgIcons: Partial<Record<IconName, string>> = {
   calendar: '/icons/calendar-empty.svg',
   point: '/icons/point-empty.svg',
+  coupon: '/icons/coupon-empty.svg',
 };
 
 interface EmptyStateProps {
