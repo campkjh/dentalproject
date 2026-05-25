@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { useStore } from '@/store';
 import TopBar from '@/components/common/TopBar';
 import LoginRequired from '@/components/common/LoginRequired';
@@ -10,10 +10,21 @@ import { ArrowUp, X } from 'lucide-react';
 
 type Tab = 'wishlist' | 'recent';
 
+const tabKeys: Tab[] = ['wishlist', 'recent'];
+
 export default function WishlistPage() {
   const { isLoggedIn, products, wishlist, recentlyViewed, toggleWishlist } = useStore();
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>('wishlist');
+  const tabBtnRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const [indicator, setIndicator] = useState({ left: 0, width: 0 });
+  const activeIndex = tabKeys.indexOf(activeTab);
+
+  useLayoutEffect(() => {
+    const btn = tabBtnRefs.current[activeIndex];
+    if (!btn) return;
+    setIndicator({ left: btn.offsetLeft, width: btn.offsetWidth });
+  }, [activeIndex]);
 
   const wishlistProducts = products.filter((p) => wishlist.includes(p.id));
   const recentProducts = recentlyViewed
@@ -39,22 +50,40 @@ export default function WishlistPage() {
         <LoginRequired />
       ) : (
         <>
-          {/* Tabs */}
-          <div className="px-2.5 border-b border-gray-100 sticky top-12 bg-white z-10">
-            <div className="flex gap-5">
-              <TabButton
-                active={activeTab === 'wishlist'}
-                onClick={() => setActiveTab('wishlist')}
-                label="찜목록"
-                count={wishlistProducts.length}
+          {/* Tabs — partner-style sliding indicator */}
+          <div className="partner-community-category-shell sticky top-12 bg-white z-10">
+            <div className="partner-community-categories hide-scrollbar">
+              <span
+                aria-hidden
+                className="partner-community-category-indicator"
+                style={{
+                  width: indicator.width,
+                  transform: `translateX(${indicator.left}px)`,
+                }}
               />
-              <TabButton
-                active={activeTab === 'recent'}
-                onClick={() => setActiveTab('recent')}
-                label="최근본"
-                count={recentProducts.length}
-                badge={hasNew ? 'NEW' : undefined}
-              />
+              {tabKeys.map((tab, i) => {
+                const isActive = activeTab === tab;
+                const label = tab === 'wishlist' ? '찜목록' : '최근본';
+                const count = tab === 'wishlist' ? wishlistProducts.length : recentProducts.length;
+                return (
+                  <button
+                    key={tab}
+                    ref={(el) => {
+                      tabBtnRefs.current[i] = el;
+                    }}
+                    type="button"
+                    onClick={() => setActiveTab(tab)}
+                    className={isActive ? 'is-active' : undefined}
+                  >
+                    {label}{count > 0 ? ` ${count}` : ''}
+                    {tab === 'recent' && hasNew && (
+                      <span className="ml-1 inline-flex items-center justify-center align-middle text-[9px] font-bold text-white bg-red-500 rounded-full px-1.5 leading-[14px] h-[14px]">
+                        NEW
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -103,52 +132,3 @@ export default function WishlistPage() {
   );
 }
 
-function TabButton({
-  active,
-  onClick,
-  label,
-  count,
-  badge,
-}: {
-  active: boolean;
-  onClick: () => void;
-  label: string;
-  count: number;
-  badge?: string;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className="relative pt-3 pb-3 flex items-center gap-1.5"
-      style={{ transition: 'color 200ms ease' }}
-    >
-      <span
-        className={`text-[15px] font-bold ${active ? 'text-gray-900' : 'text-gray-400'}`}
-        style={{ transition: 'color 200ms ease' }}
-      >
-        {label}
-      </span>
-      {count > 0 && (
-        <span
-          className={`text-[13px] font-semibold ${active ? 'text-[#8037FF]' : 'text-gray-300'}`}
-        >
-          {count}
-        </span>
-      )}
-      {badge && (
-        <span className="ml-0.5 text-[9px] font-bold text-white bg-red-500 rounded-full px-1.5 leading-[14px] h-[14px] flex items-center">
-          {badge}
-        </span>
-      )}
-      <span
-        aria-hidden
-        className="absolute left-0 right-0 bottom-0 h-[2px] bg-gray-900 rounded-full"
-        style={{
-          transform: active ? 'scaleX(1)' : 'scaleX(0)',
-          transformOrigin: 'center',
-          transition: 'transform 320ms cubic-bezier(0.22, 1, 0.36, 1)',
-        }}
-      />
-    </button>
-  );
-}

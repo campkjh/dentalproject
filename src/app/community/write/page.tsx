@@ -317,8 +317,8 @@ function CommunityWritePage() {
           disabled={!isFormValid || submitting}
           className={`w-full py-4 rounded-[12px] font-bold text-[15px] transition-colors ${
             isFormValid && !submitting
-              ? 'bg-[#8037FF] text-white'
-              : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+              ? 'bg-[#2B313D] text-white'
+              : 'bg-[#E5E8EB] text-[#A4ABBA] cursor-not-allowed'
           }`}
         >
           {submitting ? '등록 중…' : '게시글 등록'}

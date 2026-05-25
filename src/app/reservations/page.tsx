@@ -227,16 +227,14 @@ export default function ReservationsPage() {
               transition: 'padding 120ms cubic-bezier(0.22, 1, 0.36, 1), background-color 120ms ease',
             }}
           >
-              <div ref={tabsRef} className="relative flex gap-1.5 overflow-x-auto hide-scrollbar">
-                {/* Animated indicator pill */}
+              <div ref={tabsRef} className="partner-community-categories hide-scrollbar">
+                {/* Sliding indicator (partner-style) */}
                 <span
                   aria-hidden
-                  className="absolute top-0 bottom-0 rounded-full bg-gray-900 pointer-events-none"
+                  className="partner-community-category-indicator"
                   style={{
-                    left: indicator.left,
                     width: indicator.width,
-                    transition:
-                      'left 440ms cubic-bezier(0.22, 1, 0.36, 1), width 440ms cubic-bezier(0.22, 1, 0.36, 1)',
+                    transform: `translateX(${indicator.left}px)`,
                   }}
                 />
                 {statusTabs.map((tab, i) => {
@@ -247,15 +245,9 @@ export default function ReservationsPage() {
                       ref={(el) => {
                         tabBtnRefs.current[i] = el;
                       }}
+                      type="button"
                       onClick={() => changeTab(tab)}
-                      className={`pill-tab relative z-10 px-3.5 py-1.5 rounded-full text-[13px] font-semibold whitespace-nowrap ${
-                        isActive ? 'text-white' : 'text-gray-500'
-                      }`}
-                      style={{
-                        transition: 'color 440ms cubic-bezier(0.22, 1, 0.36, 1)',
-                        border: `1px solid ${isActive ? 'transparent' : '#E5E7EB'}`,
-                        background: 'transparent',
-                      }}
+                      className={isActive ? 'is-active' : undefined}
                     >
                       {tab}
                     </button>
