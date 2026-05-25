@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect, useLayoutEffect, useRef } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef, useMemo } from 'react';
+import Link from 'next/link';
 import { useStore } from '@/store';
 import LoginRequired from '@/components/common/LoginRequired';
-import EmptyState from '@/components/common/EmptyState';
 import ProductCard from '@/components/common/ProductCard';
-import { ArrowUp, X } from 'lucide-react';
+import { ArrowUp, X, Heart } from 'lucide-react';
 
 type Tab = 'wishlist' | 'recent';
 
@@ -32,6 +32,17 @@ export default function WishlistPage() {
 
   const displayed = activeTab === 'wishlist' ? wishlistProducts : recentProducts;
   const hasNew = recentProducts.length > 0;
+
+  // 실시간 TOP 10 인기 시술 — 좋아요 + 리뷰 수 기반 정렬
+  const topProducts = useMemo(() => {
+    return [...products]
+      .sort(
+        (a, b) =>
+          (b.likeCount ?? 0) + (b.reviewCount ?? 0) -
+          ((a.likeCount ?? 0) + (a.reviewCount ?? 0)),
+      )
+      .slice(0, 10);
+  }, [products]);
 
   useEffect(() => {
     const handleScroll = () => setShowScrollTop(window.scrollY > 300);
@@ -93,10 +104,54 @@ export default function WishlistPage() {
 
           {/* Content */}
           {displayed.length === 0 ? (
-            <EmptyState
-              icon={activeTab === 'wishlist' ? 'heart' : 'clock'}
-              message={activeTab === 'wishlist' ? '찜한 상품이 없습니다' : '최근 본 상품이 없습니다'}
-            />
+            <>
+              {/* Rich empty state (matches mockup) */}
+              <div className="px-5 pt-12 pb-8 flex flex-col items-center text-center">
+                <div className="w-[120px] h-[120px] rounded-[20px] bg-[#F4F5F7] flex items-center justify-center mb-6">
+                  <Heart size={48} className="text-[#D1D5DB]" strokeWidth={1.6} />
+                </div>
+                <p className="text-[16px] leading-[24px] text-[#2B313D] font-medium">
+                  {activeTab === 'wishlist' ? (
+                    <>
+                      아직 찜한 상품이 없네요.
+                      <br />
+                      이벤트를 둘러보고 관심있는 상품을 찜해보세요!
+                    </>
+                  ) : (
+                    <>
+                      최근 본 상품이 없네요.
+                      <br />
+                      이벤트를 둘러보고 관심있는 상품을 찾아보세요!
+                    </>
+                  )}
+                </p>
+                <Link
+                  href="/search"
+                  className="mt-7 w-full inline-flex items-center justify-center h-[56px] rounded-[12px] bg-[#FF6A2C] text-white text-[15px] font-bold transition-transform active:scale-[0.98]"
+                >
+                  이벤트 둘러보기
+                </Link>
+              </div>
+
+              {/* 실시간 TOP 10 인기 시술 */}
+              {topProducts.length > 0 && (
+                <section className="mt-2 border-t border-[#F2F3F5] pt-6 pb-10">
+                  <h2 className="px-5 mb-4 text-[22px] font-bold text-[#2B313D] leading-[28px]">
+                    실시간 <span className="text-[#FF6A2C]">TOP 10</span> 인기 시술
+                  </h2>
+                  <div className="px-5 pb-2 flex gap-3 overflow-x-auto hide-scrollbar snap-x snap-mandatory">
+                    {topProducts.map((product) => (
+                      <div
+                        key={product.id}
+                        className="snap-start flex-shrink-0 w-[156px]"
+                      >
+                        <ProductCard product={product} />
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
+            </>
           ) : (
             <div key={activeTab} className="px-2.5 py-4 list-fade-slide">
               <p className="text-sm text-gray-500 mb-4">총 {displayed.length}개</p>
