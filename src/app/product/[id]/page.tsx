@@ -310,8 +310,8 @@ export default function ProductDetailPage() {
       {/* Customer Reviews Summary - open */}
       <div ref={reviewSectionRef} className="bg-white px-2.5 py-4">
         <div className="flex items-center justify-between mb-4">
-          <h2 style={{ fontSize: 20, fontWeight: 600, color: '#2B313D' }}>고객후기모음</h2>
-          <span className="text-sm text-gray-400">{productReviews.length}건</span>
+          <h2 style={{ fontSize: 22, fontWeight: 600, color: '#2B313D' }}>고객후기모음</h2>
+          <span className="text-base text-gray-400">{productReviews.length}건</span>
         </div>
         {/* Rating summary with progress bars */}
         {productReviews.length > 0 && (() => {
@@ -322,7 +322,7 @@ export default function ProductDetailPage() {
             <div className="flex gap-5 mb-4" style={{ padding: '16px', backgroundColor: '#F9F9FB', borderRadius: 12 }}>
               {/* Left: score + stars */}
               <div className="flex flex-col items-center justify-center" style={{ minWidth: 80 }}>
-                <span style={{ fontSize: 36, fontWeight: 700, color: '#2B313D', lineHeight: 1 }}>{avgRating}</span>
+                <span style={{ fontSize: 38, fontWeight: 700, color: '#2B313D', lineHeight: 1 }}>{avgRating}</span>
                 <div className="flex gap-0.5 mt-2">
                   {[...Array(5)].map((_, i) => (
                     <Star key={i} size={14} fill={i < Math.round(Number(avgRating)) ? '#FBBF24' : '#E5E7EB'} stroke={i < Math.round(Number(avgRating)) ? '#FBBF24' : '#E5E7EB'} />
@@ -336,11 +336,11 @@ export default function ProductDetailPage() {
                   const pct = total > 0 ? (count / total) * 100 : 0;
                   return (
                     <div key={star} className="flex items-center gap-2">
-                      <span style={{ fontSize: 12, fontWeight: 500, color: '#A4ABBA', width: 14, textAlign: 'right' }}>{star}</span>
+                      <span style={{ fontSize: 14, fontWeight: 500, color: '#A4ABBA', width: 16, textAlign: 'right' }}>{star}</span>
                       <div className="flex-1 h-2 rounded-full" style={{ backgroundColor: '#E5E7EB' }}>
                         <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: '#FBBF24', transition: 'width 0.3s ease' }} />
                       </div>
-                      <span style={{ fontSize: 11, fontWeight: 500, color: '#A4ABBA', width: 32, textAlign: 'right' }}>{Math.round(pct)}%</span>
+                      <span style={{ fontSize: 13, fontWeight: 500, color: '#A4ABBA', width: 36, textAlign: 'right' }}>{Math.round(pct)}%</span>
                     </div>
                   );
                 })}
@@ -364,13 +364,13 @@ export default function ProductDetailPage() {
                   )}
                   {/* 시술비용 + 시술시기 태그 */}
                   <div className="flex gap-1" style={{ marginTop: withImages ? 8 : 0 }}>
-                    <span style={{ fontSize: 10, fontWeight: 600, color: '#2B313D', backgroundColor: 'rgba(200,206,218,0.2)', borderRadius: 6, padding: '2px 6px' }}>{review.totalCost.toLocaleString()}원</span>
-                    <span style={{ fontSize: 10, fontWeight: 600, color: '#2B313D', backgroundColor: 'rgba(200,206,218,0.2)', borderRadius: 6, padding: '2px 6px' }}>{review.treatmentDate}</span>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: '#2B313D', backgroundColor: 'rgba(200,206,218,0.2)', borderRadius: 6, padding: '2px 6px' }}>{review.totalCost.toLocaleString()}원</span>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: '#2B313D', backgroundColor: 'rgba(200,206,218,0.2)', borderRadius: 6, padding: '2px 6px' }}>{review.treatmentDate}</span>
                   </div>
                   {/* 시술명 */}
-                  <p style={{ fontSize: 13, fontWeight: 600, color: '#2B313D', marginTop: 6 }} className="truncate">{review.treatmentName}</p>
+                  <p style={{ fontSize: 15, fontWeight: 600, color: '#2B313D', marginTop: 6 }} className="truncate">{review.treatmentName}</p>
                   {/* 날짜 */}
-                  <p style={{ fontSize: 11, color: '#A4ABBA', marginTop: 2 }}>{review.date}</p>
+                  <p style={{ fontSize: 13, color: '#A4ABBA', marginTop: 2 }}>{review.date}</p>
                   {/* 별점 */}
                   <div className="flex items-center gap-1" style={{ marginTop: 4 }}>
                     <div className="flex">
@@ -378,10 +378,10 @@ export default function ProductDetailPage() {
                         <Star key={i} width={14} height={14} fill={i < review.rating ? '#FBBF24' : '#E5E7EB'} stroke={i < review.rating ? '#FBBF24' : '#E5E7EB'} />
                       ))}
                     </div>
-                    <span style={{ fontSize: 13, fontWeight: 600, color: '#2B313D' }}>{review.rating.toFixed(1)}</span>
+                    <span style={{ fontSize: 15, fontWeight: 600, color: '#2B313D' }}>{review.rating.toFixed(1)}</span>
                   </div>
                   {/* 후기 */}
-                  <p style={{ fontSize: 12, color: '#51535C', lineHeight: '17px', marginTop: 6, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: withImages ? 3 : 5, WebkitBoxOrient: 'vertical' as const }}>{review.content}</p>
+                  <p style={{ fontSize: 14, color: '#51535C', lineHeight: '19px', marginTop: 6, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: withImages ? 3 : 5, WebkitBoxOrient: 'vertical' as const }}>{review.content}</p>
                 </Link>
               );
             })}
@@ -403,7 +403,7 @@ export default function ProductDetailPage() {
                   tabBtnRefs.current[i] = el;
                 }}
                 onClick={() => changeTab(t)}
-                className="flex-1 py-3 text-[14px] font-semibold"
+                className="flex-1 py-3 text-[18px] font-semibold"
                 style={{
                   color: isActive ? '#2B313D' : '#A4ABBA',
                   transition: 'color 320ms cubic-bezier(0.22, 1, 0.36, 1)',
@@ -792,14 +792,14 @@ export default function ProductDetailPage() {
           <div className="flex items-center gap-2">
             <button
               onClick={() => router.push(`/booking?productId=${product.id}`)}
-              style={{ height: 48, borderRadius: 10, backgroundColor: '#8037FF', fontSize: 16, fontWeight: 600 }}
+              style={{ height: 48, borderRadius: 12, backgroundColor: '#8037FF', fontSize: 16, fontWeight: 700 }}
               className="flex-1 text-white btn-press"
             >
               예약하기
             </button>
             <button
               onClick={() => router.push(`/booking?productId=${product.id}&payment=app`)}
-              style={{ height: 48, borderRadius: 10, backgroundColor: '#2B313D', fontSize: 16, fontWeight: 600 }}
+              style={{ height: 48, borderRadius: 12, backgroundColor: '#2B313D', fontSize: 16, fontWeight: 700 }}
               className="flex-1 text-white btn-press"
             >
               앱결제
