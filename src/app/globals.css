@@ -221,10 +221,19 @@ body {
   100% { transform: scale(1); }
 }
 
-/* ===== Button Press ===== */
+/* ===== Button Press =====
+   Was scale(0.96). Now darken via filter — feels more like "this region
+   acknowledged the tap" without rubber-banding the layout. Disabling
+   touch-callout suppresses the iOS long-press preview shimmer on
+   buttons that wrap <img>. */
+.btn-press {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  transition: filter 0.12s ease-out;
+}
 .btn-press:active {
-  transform: scale(0.96);
-  transition: transform 0.1s ease;
+  filter: brightness(0.88);
 }
 
 /* ===== Card Press (darken + scale down) ===== */
