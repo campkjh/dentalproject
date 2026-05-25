@@ -221,7 +221,7 @@ export default function ReservationDetailPage() {
             className="btn-press mt-3 w-full rounded-xl bg-white flex items-center justify-center gap-2 text-[16px] font-bold text-[#2B313D]"
             style={{ height: 48 }}
           >
-            <NaverPinIcon />
+            <img src="/icons/naver-map.png" alt="" width={22} height={22} className="flex-shrink-0" />
             찾아가는길
           </button>
         </section>
@@ -332,26 +332,3 @@ function PolicyBlock({
   );
 }
 
-/** Naver Map location pin — blue→green gradient with a bold white "N". */
-function NaverPinIcon() {
-  return (
-    <svg width={22} height={22} viewBox="0 0 22 22" fill="none" aria-hidden>
-      <defs>
-        <linearGradient id="naverPinGrad" x1="18%" y1="0%" x2="82%" y2="100%">
-          <stop offset="0%" stopColor="#1F8AFF" />
-          <stop offset="55%" stopColor="#22B6C8" />
-          <stop offset="100%" stopColor="#22D365" />
-        </linearGradient>
-      </defs>
-      <path
-        d="M11 1.4C6.5 1.4 2.9 5 2.9 9.5c0 5.4 8.1 11.1 8.1 11.1s8.1-5.7 8.1-11.1C19.1 5 15.5 1.4 11 1.4z"
-        fill="url(#naverPinGrad)"
-      />
-      {/* Bold white N — slightly chunky strokes to match the brand mark */}
-      <path
-        d="M8 5.6h2.35l3.3 5.65V5.6H16v9.3h-2.35l-3.3-5.65v5.65H8V5.6z"
-        fill="#fff"
-      />
-    </svg>
-  );
-}
