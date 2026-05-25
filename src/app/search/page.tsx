@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo, Suspense, useEffect, useLayoutEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Search, XCircle, ChevronLeft, ChevronDown, MapPin, Locate, Check, X, SlidersHorizontal, DollarSign, CalendarCheck, Star, Heart } from 'lucide-react';
@@ -779,7 +780,11 @@ function FiltersBottomSheet({
 
   const transform = `translateY(${open ? dragOffset : 800}px)`;
 
-  return (
+  // Portal to document.body so the modal isn't trapped by any transformed
+  // ancestor (e.g. .page-enter applies translateY which would re-anchor
+  // position:fixed to itself). createPortal is safe here because the modal
+  // only mounts after a user click, well past hydration.
+  return createPortal(
     <div
       className="fixed inset-0 z-[100]"
       style={{
@@ -1085,7 +1090,8 @@ function FiltersBottomSheet({
           })()}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
