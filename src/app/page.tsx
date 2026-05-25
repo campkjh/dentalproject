@@ -976,7 +976,7 @@ function LiveQuestionsTeaser() {
                 top: 0,
                 height: 38,
                 color: 'rgba(0, 12, 30, 0.82)',
-                fontSize: 11,
+                fontSize: 13,
                 fontWeight: 700,
                 letterSpacing: '-0.01em',
                 fontVariantNumeric: 'tabular-nums',
