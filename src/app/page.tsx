@@ -899,11 +899,16 @@ function LiveQuestionsTeaser() {
     'q-sky', 'q-nu', 'q-ho', 'q-jun',
   ];
 
-  // Pseudo-random but stable per index
+  // Zigzag rhythm: even index = big & lifted up, odd = small & dropped down.
+  // Sizes + offsets ping-pong with a slight ±2 jitter so the line never reads
+  // perfectly mechanical.
   const variants = seeds.map((seed, i) => {
-    const yOffset = ((i * 53 + 11) % 28) - 14; // -14 ~ +14
-    const size = 36 + ((i * 17 + 5) % 14); // 36 ~ 50
-    const gapAfter = 8 + ((i * 23 + 7) % 18); // 8 ~ 26
+    const isBig = i % 2 === 0;
+    const sizeJitter = (i % 4 === 0 ? 2 : i % 4 === 2 ? -2 : 0); // -2/0/+2
+    const offsetJitter = (i % 6 === 0 ? -3 : i % 6 === 3 ? 3 : 0); // -3/0/+3
+    const size = (isBig ? 52 : 36) + sizeJitter; // 34, 38, 50, 54 → tight zigzag
+    const yOffset = (isBig ? -14 : 14) + offsetJitter; // up ~-14, down ~+14
+    const gapAfter = isBig ? 8 : 12;
     const role: 'doctor' | 'user' = i % 4 === 0 ? 'doctor' : 'user';
     return { seed, yOffset, size, gapAfter, role };
   });
