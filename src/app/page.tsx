@@ -1345,20 +1345,16 @@ function SectionHeader({
   );
 }
 
-function MoreButton({ href, label = '더보기' }: { href: string; label?: string }) {
+// MoreButton — collapses to a bare gray chevron in a 24×24 tap target.
+// The `label` prop is kept so older call sites compile, but it's ignored.
+function MoreButton({ href }: { href: string; label?: string }) {
   return (
     <Link
       href={href}
-      className="flex items-center gap-0.5 rounded-full pl-3 pr-2 py-1.5 text-[12px] font-semibold text-gray-900 transition-all duration-200 active:scale-105"
-      style={{
-        background: 'rgba(255, 255, 255, 0.58)',
-        border: '1px solid rgba(255, 255, 255, 0.74)',
-        boxShadow: '0 8px 24px rgba(17, 24, 39, 0.10)',
-        backdropFilter: 'blur(16px) saturate(160%)',
-        WebkitBackdropFilter: 'blur(16px) saturate(160%)',
-      }}
+      aria-label="더보기"
+      className="inline-flex items-center justify-center w-6 h-6 active:opacity-60"
     >
-      {label} <ChevronRight size={13} strokeWidth={2.3} />
+      <ChevronRight size={24} strokeWidth={1.8} className="text-gray-400" />
     </Link>
   );
 }
