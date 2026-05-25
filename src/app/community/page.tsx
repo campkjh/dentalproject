@@ -298,9 +298,14 @@ function CommunityPageInner() {
             <button
               type="button"
               onClick={() => setMyPostsMode(false)}
-              className={`text-[22px] font-extrabold leading-none transition-colors ${
-                myPostsMode ? 'text-gray-300' : 'text-gray-900'
-              }`}
+              className="font-extrabold leading-none"
+              style={{
+                fontSize: myPostsMode ? 17 : 22,
+                color: myPostsMode ? '#D1D5DB' : '#111827',
+                transition:
+                  'font-size 320ms cubic-bezier(0.22, 1, 0.36, 1), color 220ms ease-out',
+              }}
+              aria-pressed={!myPostsMode}
             >
               커뮤니티
             </button>
@@ -313,9 +318,13 @@ function CommunityPageInner() {
                 }
                 setMyPostsMode(true);
               }}
-              className={`text-[17px] font-bold leading-none transition-colors ${
-                myPostsMode ? 'text-gray-900' : 'text-gray-300'
-              }`}
+              className="font-extrabold leading-none"
+              style={{
+                fontSize: myPostsMode ? 22 : 17,
+                color: myPostsMode ? '#111827' : '#D1D5DB',
+                transition:
+                  'font-size 320ms cubic-bezier(0.22, 1, 0.36, 1), color 220ms ease-out',
+              }}
               aria-pressed={myPostsMode}
             >
               내글
