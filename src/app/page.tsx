@@ -938,22 +938,26 @@ function LiveQuestionsTeaser() {
             relative is on the h2 (not the narrow "실시간" span) so the tooltip's
             left-1/2 centers on ~130px of heading width, preventing left-edge overflow. */}
         <h2 className="relative flex flex-col gap-0.5 text-[22px] font-bold leading-[1.15] text-[#2B313D] flex-shrink-0">
-          {/* Floating tooltip — bubble shape (SVG) + live count overlay.
-              Text is rendered as DOM so digits can roll-up animate. */}
+          {/* Floating tooltip — 70% scale of original svg (108×46),
+              shifted ~12px right of h2 center so the tail lands above-right of "실시간". */}
           <div
             aria-hidden
-            className="tooltip-bob absolute left-1/2 -top-[58px] pointer-events-none"
+            className="tooltip-bob absolute pointer-events-none"
             style={{
+              left: 'calc(50% + 12px)',
+              top: -40,
               transform: 'translate(-50%, 0)',
-              width: 154,
-              height: 66,
-              filter: 'drop-shadow(0 6px 18px rgba(30,41,99,0.10))',
+              width: 108,
+              height: 46,
+              filter: 'drop-shadow(0 4px 12px rgba(30,41,99,0.08))',
             }}
           >
-            {/* Bubble pill + downward tail (same shape as live-tooltip.svg, no baked text) */}
+            {/* Bubble pill + downward tail. viewBox is unchanged so the path
+                math from the original SVG keeps working — only the rendered
+                size shrinks via width/height attrs. */}
             <svg
-              width={154}
-              height={66}
+              width={108}
+              height={46}
               viewBox="0 0 154 66"
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
@@ -965,14 +969,14 @@ function LiveQuestionsTeaser() {
                 fill="white"
               />
             </svg>
-            {/* Live text overlay */}
+            {/* Live text overlay — fits within the rect portion (38/46 of total height) */}
             <div
               className="absolute left-0 right-0 flex items-center justify-center"
               style={{
                 top: 0,
-                height: 54,
-                color: 'rgba(0, 12, 30, 0.8)',
-                fontSize: 14,
+                height: 38,
+                color: 'rgba(0, 12, 30, 0.82)',
+                fontSize: 11,
                 fontWeight: 700,
                 letterSpacing: '-0.01em',
                 fontVariantNumeric: 'tabular-nums',
