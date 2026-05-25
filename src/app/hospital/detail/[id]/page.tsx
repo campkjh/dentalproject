@@ -402,14 +402,63 @@ export default function HospitalDetailPage() {
           {activeTab === '리뷰' && (
             <section>
               {hospitalReviews.length > 0 ? (
-                <div className="space-y-5">
+                <div className="space-y-3">
                   {hospitalReviews.map((review) => {
                     const hasReviewImages = Boolean(review.beforeImage || review.afterImage);
+                    // Match the review to a doctor on this hospital so we can
+                    // surface "어떤 원장에게 시술받았는지" — profile pic, name,
+                    // specialty. Fall back to author info when there's no match.
+                    const doctor = hospital.doctors.find(
+                      (d) => d.id === review.doctorId || d.name === review.doctorName
+                    );
+                    const doctorName = doctor?.name || review.doctorName;
+                    const doctorTitle = doctor?.isOwner ? '대표원장' : (doctor?.title || '원장');
                     return (
-                      <div key={review.id} className="rounded-xl" style={{ border: '1px solid #F2F3F5', padding: 16 }}>
-                        <div className="flex items-center justify-between mb-2">
-                          <p style={{ fontSize: 15, fontWeight: 700, color: '#2B313D' }}>{review.authorName}</p>
-                          <div className="flex items-center gap-0.5">
+                      <div key={review.id} className="rounded-[20px]" style={{ backgroundColor: '#F9F9F9', padding: 16 }}>
+                        {/* Top row: doctor avatar + name/specialty/treatment date  ·  stars */}
+                        <div className="flex items-start gap-3 mb-3">
+                          {doctorName ? (
+                            <Avatar
+                              src={doctor?.profileImage}
+                              role="doctor"
+                              seed={doctorName}
+                              size={44}
+                              alt={doctorName}
+                              className="flex-shrink-0"
+                            />
+                          ) : (
+                            <div
+                              className="w-11 h-11 rounded-full flex-shrink-0"
+                              style={{ backgroundColor: '#E5E7EB' }}
+                            />
+                          )}
+                          <div className="flex-1 min-w-0">
+                            {doctorName ? (
+                              <p style={{ fontSize: 15, fontWeight: 700, color: '#2B313D' }}>
+                                {doctorName} {doctorTitle}
+                              </p>
+                            ) : (
+                              <p style={{ fontSize: 15, fontWeight: 700, color: '#2B313D' }}>
+                                {review.authorName}
+                              </p>
+                            )}
+                            {doctor?.specialty && (
+                              <p style={{ fontSize: 13, color: '#51535C', marginTop: 2 }}>
+                                {doctor.specialty}
+                              </p>
+                            )}
+                            {review.treatmentDate && (
+                              <p style={{ fontSize: 13, color: '#A4ABBA', marginTop: 2 }}>
+                                시술일 {review.treatmentDate}
+                              </p>
+                            )}
+                            {!review.treatmentDate && !doctor?.specialty && (
+                              <p style={{ fontSize: 13, color: '#A4ABBA', marginTop: 2 }}>
+                                {review.date}
+                              </p>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-0.5 flex-shrink-0 mt-0.5">
                             {[...Array(5)].map((_, i) => (
                               <Star
                                 key={i}
@@ -420,7 +469,7 @@ export default function HospitalDetailPage() {
                             ))}
                           </div>
                         </div>
-                        <p style={{ fontSize: 13, color: '#A4ABBA', marginBottom: 10 }}>{review.date}</p>
+
                         {hasReviewImages && (
                           <div className="flex gap-2 mb-3">
                             {review.beforeImage && (
