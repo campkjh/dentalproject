@@ -1,17 +1,17 @@
 'use client';
 
-import { useState, useRef, useEffect, useLayoutEffect } from 'react';
+import { useState, useRef, useLayoutEffect } from 'react';
 import { useStore } from '@/store';
 import TopBar from '@/components/common/TopBar';
 import EmptyState from '@/components/common/EmptyState';
 import LoginRequired from '@/components/common/LoginRequired';
-import { Coins } from 'lucide-react';
 
-const tabs = ['전체', '적립', '사용'];
+const tabs = ['전체', '적립', '사용'] as const;
+type Tab = (typeof tabs)[number];
 
 export default function PointsPage() {
   const { isLoggedIn, user, pointHistory } = useStore();
-  const [activeTab, setActiveTab] = useState('전체');
+  const [activeTab, setActiveTab] = useState<Tab>('전체');
   const [direction, setDirection] = useState<'left' | 'right'>('right');
   const prevIdxRef = useRef(0);
   const tabBtnRefs = useRef<(HTMLButtonElement | null)[]>([]);
@@ -19,7 +19,7 @@ export default function PointsPage() {
 
   const activeIdx = tabs.indexOf(activeTab);
 
-  const changeTab = (t: string) => {
+  const changeTab = (t: Tab) => {
     const nextIdx = tabs.indexOf(t);
     setDirection(nextIdx >= prevIdxRef.current ? 'right' : 'left');
     prevIdxRef.current = nextIdx;
@@ -30,16 +30,6 @@ export default function PointsPage() {
     const btn = tabBtnRefs.current[activeIdx];
     if (!btn) return;
     setIndicator({ left: btn.offsetLeft, width: btn.offsetWidth });
-  }, [activeIdx]);
-
-  useEffect(() => {
-    const onResize = () => {
-      const btn = tabBtnRefs.current[activeIdx];
-      if (!btn) return;
-      setIndicator({ left: btn.offsetLeft, width: btn.offsetWidth });
-    };
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
   }, [activeIdx]);
 
   if (!isLoggedIn) {
@@ -58,34 +48,34 @@ export default function PointsPage() {
     return true;
   });
 
+  const formattedPoints = (user?.points ?? 0).toLocaleString();
+
   return (
     <div className="min-h-screen bg-white max-w-[480px] mx-auto page-enter">
       <TopBar title="내 포인트" />
 
-      {/* Total Points */}
-      <div className="bg-white px-2.5 py-8 text-center fade-in-up">
-        <div className="w-14 h-14 bg-[#8037FF]/10 rounded-full flex items-center justify-center mx-auto mb-3">
-          <Coins size={26} className="text-[#8037FF]" />
+      {/* Hero: balance on the left, seal+hexagon illustration on the right */}
+      <div className="px-5 pt-6 pb-7 flex items-center justify-between gap-4">
+        <div className="flex-shrink-0 fade-in-up">
+          <p className="text-[14px] text-[#6B7280]">보유중인 포인트</p>
+          <p className="mt-1 text-[34px] font-extrabold text-[#2B313D] leading-none">
+            {formattedPoints}P
+          </p>
         </div>
-        <p className="text-sm text-gray-500 mb-1">보유 포인트</p>
-        <p className="text-3xl font-bold text-[#8037FF]">
-          {(user?.points ?? 0).toLocaleString()}P
-        </p>
+        <img
+          src="/images/point-seal-hero.png"
+          alt=""
+          aria-hidden
+          width={148}
+          height={120}
+          className="flex-shrink-0 select-none"
+          style={{ height: 120, width: 'auto', objectFit: 'contain' }}
+        />
       </div>
 
-      {/* Tabs with sliding pill indicator */}
-      <div className="bg-white px-2.5 pt-2 pb-3">
-        <div className="relative flex gap-1.5 overflow-x-auto hide-scrollbar">
-          <span
-            aria-hidden
-            className="absolute top-0 bottom-0 rounded-full bg-gray-900 pointer-events-none"
-            style={{
-              left: indicator.left,
-              width: indicator.width,
-              transition:
-                'left 420ms cubic-bezier(0.22, 1, 0.36, 1), width 420ms cubic-bezier(0.22, 1, 0.36, 1)',
-            }}
-          />
+      {/* Tabs: underline indicator (전체/적립/사용) */}
+      <div className="relative">
+        <div className="flex justify-around border-b border-gray-100 px-2">
           {tabs.map((t, i) => {
             const isActive = activeTab === t;
             return (
@@ -94,53 +84,65 @@ export default function PointsPage() {
                 ref={(el) => {
                   tabBtnRefs.current[i] = el;
                 }}
+                type="button"
                 onClick={() => changeTab(t)}
-                className={`pill-tab relative z-10 px-3.5 py-1.5 rounded-full text-[13px] font-semibold whitespace-nowrap ${
-                  isActive ? 'text-white' : 'text-gray-500'
-                }`}
-                style={{
-                  transition: 'color 420ms cubic-bezier(0.22, 1, 0.36, 1)',
-                  border: `1px solid ${isActive ? 'transparent' : '#E5E7EB'}`,
-                  background: 'transparent',
-                }}
+                className="flex-1 py-3.5 text-center relative"
+                style={{ transition: 'color 240ms ease' }}
               >
-                {t}
+                <span
+                  className={`text-[15px] font-bold ${
+                    isActive ? 'text-[#2B313D]' : 'text-[#D1D5DB]'
+                  }`}
+                >
+                  {t}
+                </span>
               </button>
             );
           })}
+          {/* Sliding underline */}
+          <span
+            aria-hidden
+            className="absolute bottom-0 h-[2px] bg-[#2B313D] pointer-events-none"
+            style={{
+              left: indicator.left,
+              width: indicator.width,
+              transition:
+                'left 320ms cubic-bezier(0.22, 1, 0.36, 1), width 320ms cubic-bezier(0.22, 1, 0.36, 1)',
+            }}
+          />
         </div>
       </div>
 
-      {/* Point History */}
+      {/* History */}
       <div
         key={activeTab}
         className={`${direction === 'right' ? 'tab-slide-right' : 'tab-slide-left'}`}
       >
         {filteredHistory.length === 0 ? (
-          <EmptyState icon="payment" message="포인트 내역이 없습니다" />
+          <EmptyState icon="point" message="포인트가 없어요" />
         ) : (
-          <div className="bg-white">
-            <div className="divide-y divide-gray-50">
-              {filteredHistory.map((item) => (
-                <div
-                  key={item.id}
-                  className="px-2.5 py-4 flex items-center justify-between"
-                >
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">{item.description}</p>
-                    <p className="text-xs text-gray-400 mt-1">{item.date}</p>
-                  </div>
-                  <span
-                    className={`text-sm font-bold ${
-                      item.amount > 0 ? 'text-[#8037FF]' : 'text-gray-500'
-                    }`}
-                  >
-                    {item.amount > 0 ? '+' : ''}
-                    {item.amount.toLocaleString()}P
-                  </span>
+          <div className="bg-white divide-y divide-gray-50">
+            {filteredHistory.map((item) => (
+              <div
+                key={item.id}
+                className="px-5 py-4 flex items-center justify-between"
+              >
+                <div>
+                  <p className="text-[15px] font-medium text-[#2B313D]">
+                    {item.description}
+                  </p>
+                  <p className="text-[12px] text-[#A4ABBA] mt-1">{item.date}</p>
                 </div>
-              ))}
-            </div>
+                <span
+                  className={`text-[15px] font-bold ${
+                    item.amount > 0 ? 'text-[#8037FF]' : 'text-[#6B7280]'
+                  }`}
+                >
+                  {item.amount > 0 ? '+' : ''}
+                  {item.amount.toLocaleString()}P
+                </span>
+              </div>
+            ))}
           </div>
         )}
       </div>

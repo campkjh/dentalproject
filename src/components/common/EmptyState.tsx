@@ -7,7 +7,12 @@ const lucideIcons = {
   clock: Clock,
 };
 
-type IconName = 'calendar' | keyof typeof lucideIcons;
+type IconName = 'calendar' | 'point' | keyof typeof lucideIcons;
+
+const svgIcons: Partial<Record<IconName, string>> = {
+  calendar: '/icons/calendar-empty.svg',
+  point: '/icons/point-empty.svg',
+};
 
 interface EmptyStateProps {
   icon?: IconName;
@@ -15,11 +20,13 @@ interface EmptyStateProps {
 }
 
 export default function EmptyState({ icon = 'calendar', message }: EmptyStateProps) {
+  const svgSrc = svgIcons[icon];
+
   return (
     <div className="flex flex-col items-center justify-center py-20">
-      {icon === 'calendar' ? (
+      {svgSrc ? (
         <img
-          src="/icons/calendar-empty.svg"
+          src={svgSrc}
           alt=""
           width={62}
           height={62}
@@ -27,7 +34,7 @@ export default function EmptyState({ icon = 'calendar', message }: EmptyStatePro
         />
       ) : (
         (() => {
-          const Icon = lucideIcons[icon];
+          const Icon = lucideIcons[icon as keyof typeof lucideIcons];
           return (
             <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4 bounce-in">
               <Icon size={28} className="text-[#8037FF]" />
