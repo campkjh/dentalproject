@@ -224,20 +224,25 @@ function SearchPage() {
         const { latitude, longitude } = pos.coords;
         const detected = detectSeoulDistrict(latitude, longitude);
         // detected.region is "서울시 ..."; normalize to "서울 ..." to match the
-        // PROVINCES keys used by the new modal.
+        // PROVINCES keys used by the modal.
         const province = detected.region.replace(/시\s+/, ' ').split(' ')[0].replace(/시$/, '');
         const district = detected.region.split(' ').slice(1).join(' ') || detected.sub;
         const entry = district ? `${province} ${district}` : province;
+        // Single-replace (drops any prior selection so the user clearly
+        // sees the detected region kick in).
         setSelectedRegions([entry]);
+        // Jump the sidebar to the matching province so the new checkbox is
+        // visible without the user having to scroll.
+        setActiveProvince(province);
         setLocating(false);
-        setFilterModalTab(null);
         showToast(`현재 위치: ${entry}`);
       },
       () => {
-        setLocating(false);
+        // Permission denied / timeout → graceful fallback to 강남구.
         setSelectedRegions(['서울 강남구']);
-        setFilterModalTab(null);
-        showToast('현재 위치 대신 강남구로 설정했어요. 직접 선택도 가능합니다.');
+        setActiveProvince('서울');
+        setLocating(false);
+        showToast('현재 위치 대신 강남구로 설정했어요.');
       },
       { enableHighAccuracy: false, timeout: 8000, maximumAge: 300000 }
     );
@@ -338,11 +343,6 @@ function SearchPage() {
         >
           <p className="text-sm text-gray-500 mb-3">
             <span className="font-bold text-black">{currentCat?.name || '전체'}</span> · {categoryResults.length}건
-            {selectedRegions.length > 0 && (
-              <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 bg-[#F4EFFF] text-[#8037FF] text-xs font-medium rounded-full">
-                <MapPin size={10} /> {regionLabel}
-              </span>
-            )}
           </p>
           {categoryResults.length > 0 ? (
             <div className="flex flex-col divide-y divide-gray-100 stagger-children">
@@ -455,13 +455,6 @@ function SearchPage() {
               key={activeCategory || 'all'}
               className={`px-2.5 stagger-children ${tabDirection === 'right' ? 'tab-slide-right' : 'tab-slide-left'}`}
             >
-              {selectedRegions.length > 0 && (
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="inline-flex items-center gap-1 px-3 py-1 bg-[#F4EFFF] text-[#8037FF] text-xs font-medium rounded-full">
-                    <MapPin size={12} /> {regionLabel}
-                  </span>
-                </div>
-              )}
               {searchResults.length > 0 ? (
                 <>
                   <p className="text-sm text-gray-500 mb-3">
@@ -1072,44 +1065,8 @@ function FiltersBottomSheet({
           )}
         </div>
 
-        {/* Bottom CTA */}
-        <div className="px-4 py-3 flex-shrink-0" style={{ borderTop: '1px solid #F2F3F5' }}>
-          <button
-            onClick={requestClose}
-            className="w-full flex items-center justify-center"
-            style={{
-              height: 48,
-              borderRadius: 12,
-              backgroundColor: '#2B313D',
-              color: '#fff',
-              fontSize: 16,
-              fontWeight: 700,
-            }}
-          >
-            필터 선택 완료
-          </button>
-          {(() => {
-            const showReset =
-              (activeTab === 'region' && selectedRegions.length > 0) ||
-              (activeTab === 'price' && (priceMin != null || priceMax != null)) ||
-              (activeTab === 'booking' && selectedBooking !== '전체');
-            if (!showReset) return null;
-            return (
-              <button
-                onClick={() => {
-                  if (activeTab === 'region') setSelectedRegions([]);
-                  else if (activeTab === 'price') {
-                    setPriceMin(null);
-                    setPriceMax(null);
-                  } else setSelectedBooking('전체');
-                }}
-                className="mt-2 w-full text-[13px] text-gray-400 font-medium py-1"
-              >
-                선택 초기화
-              </button>
-            );
-          })()}
-        </div>
+        {/* Sheet closes via backdrop tap / drag-down / pulling 필터 선택 완료
+            isn't needed since every checkbox toggle commits immediately. */}
       </div>
     </div>,
     document.body,
