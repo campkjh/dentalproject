@@ -80,14 +80,13 @@ function SearchPage() {
   }, [products, reviews]);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [query, setQuery] = useState('');
-  const [selectedRegion, setSelectedRegion] = useState('');
-  const [selectedSubRegion, setSelectedSubRegion] = useState('');
+  // Multi-select regions. Each entry is "경기 수원시", "서울 강남구", or
+  // "경기" (province-only = "전체"). Empty array = no region filter.
+  const [selectedRegions, setSelectedRegions] = useState<string[]>([]);
   const [showRegionModal, setShowRegionModal] = useState(false);
   const [showPriceModal, setShowPriceModal] = useState(false);
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [showSortModal, setShowSortModal] = useState(false);
-  const [regionStep, setRegionStep] = useState<'region' | 'sub'>('region');
-  const [tempRegion, setTempRegion] = useState('');
   const [activeCategory, setActiveCategory] = useState(categoryParam ?? '');
   const [selectedPrice, setSelectedPrice] = useState('전체');
   const [selectedBooking, setSelectedBooking] = useState('전체');
@@ -99,22 +98,27 @@ function SearchPage() {
   const currentCat = categories.find(c => c.id === activeCategory);
   const tags = relatedTags[activeCategory] ?? [];
 
-  const regionLabel = selectedRegion
-    ? selectedSubRegion && selectedSubRegion !== '전체'
-      ? `${selectedRegion} ${selectedSubRegion}`
-      : selectedRegion
-    : '';
+  const regionLabel =
+    selectedRegions.length === 0
+      ? ''
+      : selectedRegions.length === 1
+      ? selectedRegions[0]
+      : `지역 ${selectedRegions.length}개`;
 
   // --- Location filter helper ---
   const matchesRegion = (p: typeof products[0]) => {
-    if (!selectedRegion) return true;
+    if (selectedRegions.length === 0) return true;
     const loc = (p.location ?? '') + (p.hospitalName ?? '');
-    // Extract district from selectedRegion like "서울시 강남구" → "강남"
-    const regionKey = selectedRegion.replace(/시\s*/, '').replace(/구$/, '');
-    if (selectedSubRegion && selectedSubRegion !== '전체') {
-      return loc.includes(selectedSubRegion) || loc.includes(regionKey);
-    }
-    return loc.includes(regionKey) || loc.includes(selectedRegion);
+    return selectedRegions.some((entry) => {
+      const [province, district] = entry.split(' ');
+      if (district) {
+        const districtKey = district.replace(/시$/, '').replace(/구$/, '');
+        return loc.includes(district) || loc.includes(districtKey);
+      }
+      // Province-only entry = "전체" of that province → match any item
+      // containing the province name in its location/hospital field.
+      return loc.includes(province);
+    });
   };
 
   // --- Price filter helper ---
@@ -177,20 +181,21 @@ function SearchPage() {
     setLocating(true);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        // Map lat/lng to nearest Seoul district
         const { latitude, longitude } = pos.coords;
         const detected = detectSeoulDistrict(latitude, longitude);
-        setSelectedRegion(detected.region);
-        setSelectedSubRegion(detected.sub);
+        // detected.region is "서울시 ..."; normalize to "서울 ..." to match the
+        // PROVINCES keys used by the new modal.
+        const province = detected.region.replace(/시\s+/, ' ').split(' ')[0].replace(/시$/, '');
+        const district = detected.region.split(' ').slice(1).join(' ') || detected.sub;
+        const entry = district ? `${province} ${district}` : province;
+        setSelectedRegions([entry]);
         setLocating(false);
         setShowRegionModal(false);
-        showToast(`현재 위치: ${detected.region} ${detected.sub}`);
+        showToast(`현재 위치: ${entry}`);
       },
       () => {
         setLocating(false);
-        // Fallback to default region instead of showing error
-        setSelectedRegion('서울시 강남구');
-        setSelectedSubRegion('전체');
+        setSelectedRegions(['서울 강남구']);
         setShowRegionModal(false);
         showToast('현재 위치 대신 강남구로 설정했어요. 직접 선택도 가능합니다.');
       },
@@ -228,22 +233,10 @@ function SearchPage() {
 
   const [activeProvince, setActiveProvince] = useState('서울');
 
-  const handleSelectRegion = (region: string) => {
-    setTempRegion(region);
-    // Provinces always have sub-regions
-    setActiveProvince(region);
-    setRegionStep('sub');
-  };
-
-  const handleSelectSubRegion = (sub: string) => {
-    // Build region string like "서울시 강남구" or "경기 수원시"
-    const regionStr = sub === '전체'
-      ? activeProvince
-      : `${activeProvince} ${sub}`;
-    setSelectedRegion(regionStr);
-    setSelectedSubRegion(sub === '전체' ? '' : sub);
-    setShowRegionModal(false);
-    setRegionStep('region');
+  const toggleRegion = (entry: string) => {
+    setSelectedRegions((prev) =>
+      prev.includes(entry) ? prev.filter((r) => r !== entry) : [...prev, entry]
+    );
   };
 
   // ========== CATEGORY MODE ==========
@@ -311,11 +304,11 @@ function SearchPage() {
         {/* 필터 버튼들 + 선택된 태그 */}
         <div className="px-2.5 flex gap-2 overflow-x-auto hide-scrollbar border-b border-gray-100" style={{ paddingTop: 10, paddingBottom: 10 }}>
           <button
-            onClick={() => { setRegionStep('region'); setShowRegionModal(true); }}
+            onClick={() => setShowRegionModal(true)}
             className="flex items-center gap-1 px-3 py-1.5 rounded-full whitespace-nowrap border transition-colors"
-            style={{ fontSize: 14, fontWeight: 500, boxShadow: '0 1px 4px rgba(0,0,0,0.06)', ...(selectedRegion ? { backgroundColor: '#2B313D', color: '#fff', borderColor: '#2B313D' } : { borderColor: '#E5E7EB', color: '#4B5563' }) }}
+            style={{ fontSize: 14, fontWeight: 500, boxShadow: '0 1px 4px rgba(0,0,0,0.06)', ...(selectedRegions.length > 0 ? { backgroundColor: '#2B313D', color: '#fff', borderColor: '#2B313D' } : { borderColor: '#E5E7EB', color: '#4B5563' }) }}
           >
-            {selectedRegion ? regionLabel : '지역'}
+            {selectedRegions.length > 0 ? regionLabel : '지역'}
             <ChevronDown size={12} />
           </button>
           <button
@@ -391,7 +384,7 @@ function SearchPage() {
         <div className="px-2.5 pb-4 lg:max-w-7xl lg:mx-auto">
           <p className="text-sm text-gray-500 mb-3">
             <span className="font-bold text-black">{currentCat?.name || '전체'}</span> · {categoryResults.length}건
-            {selectedRegion && (
+            {selectedRegions.length > 0 && (
               <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 bg-[#F4EFFF] text-[#8037FF] text-xs font-medium rounded-full">
                 <MapPin size={10} /> {regionLabel}
               </span>
@@ -417,72 +410,18 @@ function SearchPage() {
         {/* ===== MODALS ===== */}
         {/* Region Modal */}
         {showRegionModal && (
-          <FilterModal title="지역 선택" onClose={() => { setShowRegionModal(false); setRegionStep('region'); }}>
-            {/* 현재 위치 */}
-            <button
-              onClick={handleCurrentLocation}
-              className="flex items-center gap-3 px-4 py-3 border-b border-gray-100 text-[#8037FF] hover:bg-purple-50 transition-colors"
-            >
-              <div className="w-7 h-7 bg-[#F4EFFF] rounded-full flex items-center justify-center">
-                <Locate size={14} />
-              </div>
-              <span className="text-[13px] font-medium">{locating ? '위치 찾는 중...' : '현재 위치로 설정'}</span>
-            </button>
-            {/* 전체 지역 초기화 */}
-            <button
-              onClick={() => { setSelectedRegion(''); setSelectedSubRegion(''); setShowRegionModal(false); }}
-              className={`w-full flex items-center justify-between px-4 py-3 text-[13px] border-b border-gray-100 ${!selectedRegion ? 'text-[#8037FF] font-bold bg-purple-50' : 'text-gray-600'}`}
-            >
-              <span>전체 지역</span>
-              {!selectedRegion && <Check size={14} className="text-[#8037FF]" />}
-            </button>
-            {/* 좌: 시/도 | 우: 구/시 */}
-            <div className="flex flex-1 overflow-hidden">
-              {/* Left: provinces */}
-              <div className="w-[110px] flex-shrink-0 border-r border-gray-100 overflow-y-auto bg-gray-50">
-                {provinceKeys.map((prov) => {
-                  const isActive = activeProvince === prov;
-                  return (
-                    <button
-                      key={prov}
-                      onClick={() => setActiveProvince(prov)}
-                      className="w-full text-left px-3 py-3 text-[13px] transition-colors"
-                      style={{
-                        backgroundColor: isActive ? '#fff' : 'transparent',
-                        color: isActive ? '#8037FF' : '#4B5563',
-                        fontWeight: isActive ? 700 : 500,
-                        borderRight: isActive ? '2px solid #8037FF' : '2px solid transparent',
-                      }}
-                    >
-                      {prov}
-                    </button>
-                  );
-                })}
-              </div>
-              {/* Right: districts */}
-              <div className="flex-1 overflow-y-auto">
-                {(PROVINCES[activeProvince] ?? []).map((district) => {
-                  const fullRegion = district === '전체' ? activeProvince : `${activeProvince} ${district}`;
-                  const isSelected = selectedRegion === fullRegion || (district === '전체' && selectedRegion === activeProvince);
-                  return (
-                    <button
-                      key={district}
-                      onClick={() => handleSelectSubRegion(district)}
-                      className="w-full flex items-center justify-between px-4 py-3 text-[13px] hover:bg-gray-50 transition-colors"
-                      style={{
-                        color: isSelected ? '#8037FF' : '#374151',
-                        fontWeight: isSelected ? 600 : 400,
-                        backgroundColor: isSelected ? '#F4EFFF' : 'transparent',
-                      }}
-                    >
-                      <span>{district}</span>
-                      {isSelected && <Check size={14} className="text-[#8037FF]" />}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </FilterModal>
+          <RegionFilterModal
+            selectedRegions={selectedRegions}
+            toggleRegion={toggleRegion}
+            setSelectedRegions={setSelectedRegions}
+            activeProvince={activeProvince}
+            setActiveProvince={setActiveProvince}
+            onClose={() => setShowRegionModal(false)}
+            onLocate={handleCurrentLocation}
+            locating={locating}
+            onSwitchToPrice={() => { setShowRegionModal(false); setShowPriceModal(true); }}
+            onSwitchToBooking={() => { setShowRegionModal(false); setShowBookingModal(true); }}
+          />
         )}
 
         {/* Price Modal */}
@@ -566,10 +505,10 @@ function SearchPage() {
 
       {/* Filter buttons for normal search */}
       <div className="px-2.5 flex gap-2 overflow-x-auto hide-scrollbar border-b border-gray-100" style={{ paddingTop: 10, paddingBottom: 10 }}>
-        <button onClick={() => { setRegionStep('region'); setShowRegionModal(true); }}
+        <button onClick={() => setShowRegionModal(true)}
           className="flex items-center gap-1 px-3 py-1.5 rounded-full whitespace-nowrap border transition-colors"
-          style={{ fontSize: 14, fontWeight: 500, boxShadow: '0 1px 4px rgba(0,0,0,0.06)', ...(selectedRegion ? { backgroundColor: '#2B313D', color: '#fff', borderColor: '#2B313D' } : { borderColor: '#E5E7EB', color: '#4B5563' }) }}>
-          {selectedRegion ? regionLabel : '지역'} <ChevronDown size={12} />
+          style={{ fontSize: 14, fontWeight: 500, boxShadow: '0 1px 4px rgba(0,0,0,0.06)', ...(selectedRegions.length > 0 ? { backgroundColor: '#2B313D', color: '#fff', borderColor: '#2B313D' } : { borderColor: '#E5E7EB', color: '#4B5563' }) }}>
+          {selectedRegions.length > 0 ? regionLabel : '지역'} <ChevronDown size={12} />
         </button>
         <button onClick={() => setShowPriceModal(true)}
           className="flex items-center gap-1 px-3 py-1.5 rounded-full whitespace-nowrap border transition-colors"
@@ -592,7 +531,7 @@ function SearchPage() {
         <div className="lg:bg-white lg:rounded-2xl lg:shadow-sm lg:p-6">
           {hasSearched ? (
             <div className="px-2.5 stagger-children">
-              {selectedRegion && (
+              {selectedRegions.length > 0 && (
                 <div className="flex items-center gap-2 mb-3">
                   <span className="inline-flex items-center gap-1 px-3 py-1 bg-[#F4EFFF] text-[#8037FF] text-xs font-medium rounded-full">
                     <MapPin size={12} /> {regionLabel}
@@ -656,43 +595,18 @@ function SearchPage() {
 
       {/* Shared Region Modal for normal search mode — same split design */}
       {showRegionModal && (
-        <FilterModal title="지역 선택" onClose={() => { setShowRegionModal(false); setRegionStep('region'); }}>
-          <button onClick={handleCurrentLocation} className="flex items-center gap-3 px-4 py-3 border-b border-gray-100 text-[#8037FF] hover:bg-purple-50 transition-colors">
-            <div className="w-7 h-7 bg-[#F4EFFF] rounded-full flex items-center justify-center"><Locate size={14} /></div>
-            <span className="text-[13px] font-medium">{locating ? '위치 찾는 중...' : '현재 위치로 설정'}</span>
-          </button>
-          <button onClick={() => { setSelectedRegion(''); setSelectedSubRegion(''); setShowRegionModal(false); }}
-            className={`w-full flex items-center justify-between px-4 py-3 text-[13px] border-b border-gray-100 ${!selectedRegion ? 'text-[#8037FF] font-bold bg-purple-50' : 'text-gray-600'}`}>
-            <span>전체 지역</span>{!selectedRegion && <Check size={14} className="text-[#8037FF]" />}
-          </button>
-          <div className="flex flex-1 overflow-hidden">
-            <div className="w-[110px] flex-shrink-0 border-r border-gray-100 overflow-y-auto bg-gray-50">
-              {provinceKeys.map((prov) => {
-                const isActive = activeProvince === prov;
-                return (
-                  <button key={prov} onClick={() => setActiveProvince(prov)}
-                    className="w-full text-left px-3 py-3 text-[13px] transition-colors"
-                    style={{ backgroundColor: isActive ? '#fff' : 'transparent', color: isActive ? '#8037FF' : '#4B5563', fontWeight: isActive ? 700 : 500, borderRight: isActive ? '2px solid #8037FF' : '2px solid transparent' }}>
-                    {prov}
-                  </button>
-                );
-              })}
-            </div>
-            <div className="flex-1 overflow-y-auto">
-              {(PROVINCES[activeProvince] ?? []).map((district) => {
-                const fullRegion = district === '전체' ? activeProvince : `${activeProvince} ${district}`;
-                const isSelected = selectedRegion === fullRegion || (district === '전체' && selectedRegion === activeProvince);
-                return (
-                  <button key={district} onClick={() => handleSelectSubRegion(district)}
-                    className="w-full flex items-center justify-between px-4 py-3 text-[13px] hover:bg-gray-50 transition-colors"
-                    style={{ color: isSelected ? '#8037FF' : '#374151', fontWeight: isSelected ? 600 : 400, backgroundColor: isSelected ? '#F4EFFF' : 'transparent' }}>
-                    <span>{district}</span>{isSelected && <Check size={14} className="text-[#8037FF]" />}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </FilterModal>
+        <RegionFilterModal
+          selectedRegions={selectedRegions}
+          toggleRegion={toggleRegion}
+          setSelectedRegions={setSelectedRegions}
+          activeProvince={activeProvince}
+          setActiveProvince={setActiveProvince}
+          onClose={() => setShowRegionModal(false)}
+          onLocate={handleCurrentLocation}
+          locating={locating}
+          onSwitchToPrice={() => { setShowRegionModal(false); setShowPriceModal(true); }}
+          onSwitchToBooking={() => { setShowRegionModal(false); setShowBookingModal(true); }}
+        />
       )}
       {showPriceModal && (
         <FilterModal title="가격대 선택" onClose={() => setShowPriceModal(false)}>
@@ -865,6 +779,232 @@ function FilterModal({ title, onClose, children }: { title: string; onClose: () 
           <button onClick={onClose}><X size={20} className="text-gray-400" /></button>
         </div>
         {children}
+      </div>
+    </div>
+  );
+}
+
+/* ====================== Region multi-select modal ======================
+   Bottom sheet with a drag handle, filter-type tabs at the top, a province
+   sidebar on the left, and grouped multi-select checkboxes on the right.
+   Closes via "필터 선택 완료" or backdrop tap. Selections persist across
+   open/close. */
+function RegionFilterModal({
+  selectedRegions,
+  toggleRegion,
+  setSelectedRegions,
+  activeProvince,
+  setActiveProvince,
+  onClose,
+  onLocate,
+  locating,
+  onSwitchToPrice,
+  onSwitchToBooking,
+}: {
+  selectedRegions: string[];
+  toggleRegion: (entry: string) => void;
+  setSelectedRegions: React.Dispatch<React.SetStateAction<string[]>>;
+  activeProvince: string;
+  setActiveProvince: (p: string) => void;
+  onClose: () => void;
+  onLocate: () => void;
+  locating: boolean;
+  onSwitchToPrice: () => void;
+  onSwitchToBooking: () => void;
+}) {
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, []);
+
+  const ORANGE = '#FF7A1A';
+  const ORANGE_BG = '#FFF7ED';
+  const RED_DOT = '#FF4757';
+
+  // Top tabs — only 지역 is active here; the rest hand off to other modals
+  // where they exist (가격, 예약방법). 시술 / 병원정보 don't have dedicated
+  // modals yet so clicking them is a no-op for now.
+  const tabs: { key: string; onClick?: () => void; active?: boolean }[] = [
+    { key: '지역', active: true },
+    { key: '시술' },
+    { key: '가격', onClick: onSwitchToPrice },
+    { key: '예약방법', onClick: onSwitchToBooking },
+    { key: '병원정보' },
+  ];
+
+  const sidebarProvinces = provinceKeys;
+
+  return (
+    <div
+      className="fixed inset-0 z-[100] bg-black/40 modal-overlay-enter"
+      onClick={onClose}
+    >
+      <div
+        className="absolute bottom-0 left-0 right-0 lg:bottom-auto lg:top-1/2 lg:left-1/2 lg:-translate-x-1/2 lg:-translate-y-1/2 lg:max-w-md lg:rounded-2xl bg-white rounded-t-2xl flex flex-col modal-content-enter"
+        style={{ height: '82vh', maxHeight: 740 }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Drag handle */}
+        <div className="flex justify-center pt-3 pb-2 flex-shrink-0">
+          <div className="w-10 h-1 rounded-full bg-gray-300" />
+        </div>
+
+        {/* Filter-type tabs */}
+        <div className="flex items-center gap-5 px-5 pb-3 flex-shrink-0">
+          {tabs.map((t) => {
+            const isActive = t.active;
+            return (
+              <button
+                key={t.key}
+                onClick={t.onClick}
+                disabled={!t.active && !t.onClick}
+                className="relative"
+              >
+                <span
+                  className="text-[18px] font-extrabold whitespace-nowrap"
+                  style={{ color: isActive ? '#2B313D' : '#C5CAD4' }}
+                >
+                  {t.key}
+                </span>
+                {/* Red dot — surface only on the active tab if there are
+                    selections, so users see "this filter has values". */}
+                {isActive && selectedRegions.length > 0 && (
+                  <span
+                    className="absolute rounded-full"
+                    style={{
+                      top: 0,
+                      right: -8,
+                      width: 5,
+                      height: 5,
+                      backgroundColor: RED_DOT,
+                    }}
+                  />
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Body: province sidebar + multi-select checkboxes */}
+        <div className="flex flex-1 overflow-hidden border-t border-gray-100">
+          {/* Left sidebar */}
+          <div
+            className="w-[100px] flex-shrink-0 overflow-y-auto"
+            style={{ backgroundColor: '#FAFAFB' }}
+          >
+            {sidebarProvinces.map((prov) => {
+              const isActive = activeProvince === prov;
+              const hasSelection = selectedRegions.some((r) => r.split(' ')[0] === prov);
+              return (
+                <button
+                  key={prov}
+                  onClick={() => setActiveProvince(prov)}
+                  className="w-full text-left py-3.5 px-4 relative"
+                  style={{
+                    backgroundColor: isActive ? ORANGE_BG : 'transparent',
+                    color: isActive ? ORANGE : '#A4ABBA',
+                    fontWeight: isActive ? 700 : 500,
+                    fontSize: 15,
+                  }}
+                >
+                  {prov}
+                  {hasSelection && (
+                    <span
+                      className="absolute rounded-full"
+                      style={{
+                        top: 14,
+                        right: 16,
+                        width: 5,
+                        height: 5,
+                        backgroundColor: RED_DOT,
+                      }}
+                    />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Right: checkboxes */}
+          <div className="flex-1 overflow-y-auto bg-white px-4">
+            {/* Current-location shortcut (kept from previous design) */}
+            <button
+              onClick={onLocate}
+              className="w-full flex items-center gap-3 py-3"
+              style={{ color: ORANGE }}
+            >
+              <Locate size={16} />
+              <span className="text-[14px] font-semibold">
+                {locating ? '위치 찾는 중...' : '현재 위치로 설정'}
+              </span>
+            </button>
+
+            {(PROVINCES[activeProvince] ?? []).map((district) => {
+              const fullKey = district === '전체' ? activeProvince : `${activeProvince} ${district}`;
+              const isChecked = selectedRegions.includes(fullKey);
+              const label = district === '전체' ? `${activeProvince} 전체` : district;
+              return (
+                <button
+                  key={district}
+                  onClick={() => toggleRegion(fullKey)}
+                  className="w-full flex items-center gap-3 py-3.5"
+                >
+                  <span
+                    className="flex items-center justify-center flex-shrink-0"
+                    style={{
+                      width: 22,
+                      height: 22,
+                      borderRadius: 4,
+                      backgroundColor: isChecked ? ORANGE : 'transparent',
+                      border: isChecked ? 'none' : '1.5px solid #D1D5DB',
+                    }}
+                  >
+                    {isChecked && (
+                      <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={3}>
+                        <path d="M20 6 9 17l-5-5" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    )}
+                  </span>
+                  <span className="text-[15px]" style={{ color: '#2B313D' }}>
+                    {label}
+                  </span>
+                </button>
+              );
+            })}
+            <div className="h-4" />
+          </div>
+        </div>
+
+        {/* Bottom CTA */}
+        <div className="px-4 py-3 flex-shrink-0" style={{ borderTop: '1px solid #F2F3F5' }}>
+          <button
+            onClick={onClose}
+            className="w-full flex items-center justify-center"
+            style={{
+              height: 48,
+              borderRadius: 12,
+              backgroundColor: selectedRegions.length > 0 ? '#2B313D' : '#F4F5F7',
+              color: selectedRegions.length > 0 ? '#fff' : '#A4ABBA',
+              fontSize: 16,
+              fontWeight: 700,
+            }}
+          >
+            {selectedRegions.length > 0
+              ? `필터 선택 완료 (${selectedRegions.length})`
+              : '필터 선택 완료'}
+          </button>
+          {selectedRegions.length > 0 && (
+            <button
+              onClick={() => setSelectedRegions([])}
+              className="mt-2 w-full text-[13px] text-gray-400 font-medium py-1"
+            >
+              선택 초기화
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
