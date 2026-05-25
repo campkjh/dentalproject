@@ -933,7 +933,7 @@ function LiveQuestionsTeaser() {
       className="relative z-[5] block bg-white px-4 pt-0 pb-4"
       aria-label="실시간 의사에게 질문"
     >
-      <div className="flex items-center gap-3 min-h-[120px]">
+      <div className="flex items-center gap-3 min-h-[96px]">
         {/* Left: title (flex-shrink-0 so the marquee takes the rest).
             relative is on the h2 (not the narrow "실시간" span) so the tooltip's
             left-1/2 centers on ~130px of heading width, preventing left-edge overflow. */}

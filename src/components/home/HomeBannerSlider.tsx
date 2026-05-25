@@ -114,7 +114,7 @@ export default function HomeBannerSlider() {
         go(diff < 0 ? 1 : -1);
       }}
     >
-      <div className="relative overflow-hidden rounded-[20px] bg-gray-100 shadow-[0_10px_30px_rgba(17,24,39,0.08)]">
+      <div className="relative overflow-hidden rounded-[20px] bg-gray-100">
         <div
           className="flex transition-transform duration-500 ease-out"
           style={{ transform: `translate3d(-${activeIndex * 100}%, 0, 0)` }}
