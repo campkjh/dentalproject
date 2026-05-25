@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, Suspense, useEffect } from 'react';
+import { useState, useMemo, Suspense, useEffect, useLayoutEffect, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Search, XCircle, ChevronLeft, ChevronDown, MapPin, Locate, Check, X, SlidersHorizontal, DollarSign, CalendarCheck, Star, Heart } from 'lucide-react';
@@ -78,7 +78,6 @@ function SearchPage() {
       .slice(0, 10)
       .map(([k]) => k);
   }, [products, reviews]);
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [query, setQuery] = useState('');
   // Multi-select regions. Each entry is "경기 수원시", "서울 강남구", or
   // "경기" (province-only = "전체"). Empty array = no region filter.
@@ -96,7 +95,20 @@ function SearchPage() {
 
   const isCategoryMode = categoryParam !== null;
   const currentCat = categories.find(c => c.id === activeCategory);
-  const tags = relatedTags[activeCategory] ?? [];
+
+  // Tab-switch animation: track which direction the next category sits
+  // (right vs left of the previous one) so we can play the matching
+  // slide on the results list.
+  const [tabDirection, setTabDirection] = useState<'left' | 'right'>('right');
+  const prevTabIdxRef = useRef(0);
+  const categoryTabIds = ['', ...categories.map((c) => c.id)];
+
+  const changeCategory = (id: string) => {
+    const nextIdx = categoryTabIds.indexOf(id);
+    setTabDirection(nextIdx >= prevTabIdxRef.current ? 'right' : 'left');
+    prevTabIdxRef.current = nextIdx;
+    setActiveCategory(id);
+  };
 
   const regionLabel =
     selectedRegions.length === 0
@@ -159,6 +171,8 @@ function SearchPage() {
               p.hospitalName.includes(query) ||
               p.subCategory.includes(query)
           )
+          // Category tab in search mode narrows the result set too
+          .filter((p) => !activeCategory || p.category === activeCategory)
           .filter(matchesRegion)
           .filter(matchesPrice)
       )
@@ -274,34 +288,10 @@ function SearchPage() {
           </div>
         </div>
 
-        {/* 연관 태그 */}
-        {tags.length > 0 && (
-          <div className="px-2.5 py-2">
-            <div className="flex gap-2 overflow-x-auto hide-scrollbar">
-              {tags.map((tag) => {
-                const isSelected = selectedTags.includes(tag);
-                return (
-                  <button
-                    key={tag}
-                    onClick={() => {
-                      setSelectedTags(prev => isSelected ? prev.filter(t => t !== tag) : [...prev, tag]);
-                    }}
-                    style={{
-                      fontSize: 12, fontWeight: 500, borderRadius: 8, color: '#51535C', backgroundColor: '#F2F3F5',
-                      border: isSelected ? '1.4px solid #2B313D' : '1.4px solid transparent',
-                      transition: 'border-color 0.15s ease',
-                    }}
-                    className="px-3 py-1.5 whitespace-nowrap"
-                  >
-                    {tag}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
         <ListPageFilters
+          categories={categories}
+          activeCategory={activeCategory}
+          onChangeCategory={changeCategory}
           selectedRegions={selectedRegions}
           regionLabel={regionLabel}
           selectedPrice={selectedPrice}
@@ -313,25 +303,12 @@ function SearchPage() {
           onOpenBooking={() => setShowBookingModal(true)}
           onOpenSort={() => setShowSortModal(true)}
         />
-        {selectedTags.length > 0 && (
-          <div className="px-2.5 flex gap-2 overflow-x-auto hide-scrollbar pt-2 pb-1">
-            {selectedTags.map((tag) => (
-              <span
-                key={tag}
-                className="flex items-center gap-1 px-3 py-1 rounded-full whitespace-nowrap"
-                style={{ fontSize: 12, fontWeight: 500, backgroundColor: '#F2F3F5', color: '#51535C', borderRadius: 8 }}
-              >
-                {tag}
-                <button onClick={() => setSelectedTags((prev) => prev.filter((t) => t !== tag))}>
-                  <X size={10} />
-                </button>
-              </span>
-            ))}
-          </div>
-        )}
 
-        {/* 결과 */}
-        <div className="px-2.5 pb-4 lg:max-w-7xl lg:mx-auto">
+        {/* 결과 — animated slide on tab switch */}
+        <div
+          key={activeCategory || 'all'}
+          className={`px-2.5 pb-4 lg:max-w-7xl lg:mx-auto ${tabDirection === 'right' ? 'tab-slide-right' : 'tab-slide-left'}`}
+        >
           <p className="text-sm text-gray-500 mb-3">
             <span className="font-bold text-black">{currentCat?.name || '전체'}</span> · {categoryResults.length}건
             {selectedRegions.length > 0 && (
@@ -455,6 +432,9 @@ function SearchPage() {
 
       {/* Filter section for normal search mode — same layout as category mode */}
       <ListPageFilters
+        categories={categories}
+        activeCategory={activeCategory}
+        onChangeCategory={changeCategory}
         selectedRegions={selectedRegions}
         regionLabel={regionLabel}
         selectedPrice={selectedPrice}
@@ -470,7 +450,10 @@ function SearchPage() {
       <div className="lg:max-w-7xl lg:mx-auto lg:px-6 lg:py-6">
         <div className="lg:bg-white lg:rounded-2xl lg:shadow-sm lg:p-6">
           {hasSearched ? (
-            <div className="px-2.5 stagger-children">
+            <div
+              key={activeCategory || 'all'}
+              className={`px-2.5 stagger-children ${tabDirection === 'right' ? 'tab-slide-right' : 'tab-slide-left'}`}
+            >
               {selectedRegions.length > 0 && (
                 <div className="flex items-center gap-2 mb-3">
                   <span className="inline-flex items-center gap-1 px-3 py-1 bg-[#F4EFFF] text-[#8037FF] text-xs font-medium rounded-full">
@@ -949,13 +932,13 @@ function RegionFilterModal({
 }
 
 /* ===================== List page filter section =====================
-   Content-type tabs (이벤트 active, others visual placeholders) + filter
-   chips row (지역/시술/가격/예약방법/병원정보, dark when active) + sub-row
-   for the 앱결제 quick toggle and 추천순 sort. Used by both category mode
-   and search-result mode. */
-const CONTENT_TABS = ['이벤트', '커뮤니티', '시술후기', '시술설명', '병원', '의사'];
-
+   Specialty category tabs (전체 + 치과/소아과/...) with sliding underline +
+   slide-on-switch animation. Below: filter chips row (지역/시술/가격/예약방법/
+   병원정보) + sub-row for the 앱결제 quick toggle and 추천순 sort. */
 function ListPageFilters({
+  categories,
+  activeCategory,
+  onChangeCategory,
   selectedRegions,
   regionLabel,
   selectedPrice,
@@ -967,6 +950,9 @@ function ListPageFilters({
   onOpenBooking,
   onOpenSort,
 }: {
+  categories: { id: string; name: string }[];
+  activeCategory: string;
+  onChangeCategory: (id: string) => void;
   selectedRegions: string[];
   regionLabel: string;
   selectedPrice: string;
@@ -978,8 +964,32 @@ function ListPageFilters({
   onOpenBooking: () => void;
   onOpenSort: () => void;
 }) {
-  const [activeContentTab, setActiveContentTab] = useState('이벤트');
   const isAppPay = selectedBooking === '앱결제';
+
+  // Sliding underline indicator
+  const tabsList: { id: string; name: string }[] = [
+    { id: '', name: '전체' },
+    ...categories,
+  ];
+  const tabBtnRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const [indicator, setIndicator] = useState({ left: 0, width: 0 });
+  const activeIdx = tabsList.findIndex((t) => t.id === activeCategory);
+
+  useLayoutEffect(() => {
+    const btn = tabBtnRefs.current[activeIdx >= 0 ? activeIdx : 0];
+    if (!btn) return;
+    setIndicator({ left: btn.offsetLeft, width: btn.offsetWidth });
+  }, [activeIdx, tabsList.length]);
+
+  useEffect(() => {
+    const onResize = () => {
+      const btn = tabBtnRefs.current[activeIdx >= 0 ? activeIdx : 0];
+      if (!btn) return;
+      setIndicator({ left: btn.offsetLeft, width: btn.offsetWidth });
+    };
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, [activeIdx]);
 
   const chipStyle = (active: boolean): React.CSSProperties => ({
     fontSize: 14,
@@ -999,34 +1009,45 @@ function ListPageFilters({
 
   return (
     <div className="bg-white">
-      {/* Content-type tabs */}
-      <div className="relative">
-        <div className="flex gap-5 overflow-x-auto hide-scrollbar px-4 pt-3 pb-2">
-          {CONTENT_TABS.map((tab) => {
-            const isActive = activeContentTab === tab;
+      {/* Specialty category tabs */}
+      <div className="relative border-b border-gray-100">
+        <div className="flex gap-5 overflow-x-auto hide-scrollbar px-4 pt-3">
+          {tabsList.map((tab, i) => {
+            const isActive = tab.id === activeCategory;
             return (
               <button
-                key={tab}
-                onClick={() => setActiveContentTab(tab)}
-                className="relative pb-2 flex-shrink-0"
+                key={tab.id || 'all'}
+                ref={(el) => {
+                  tabBtnRefs.current[i] = el;
+                }}
+                onClick={() => onChangeCategory(tab.id)}
+                className="relative pb-3 flex-shrink-0"
               >
                 <span
-                  className="text-[16px] font-bold"
-                  style={{ color: isActive ? '#2B313D' : '#A4ABBA' }}
+                  className="text-[16px] font-bold whitespace-nowrap"
+                  style={{
+                    color: isActive ? '#2B313D' : '#A4ABBA',
+                    transition: 'color 320ms cubic-bezier(0.22, 1, 0.36, 1)',
+                  }}
                 >
-                  {tab}
+                  {tab.name}
                 </span>
-                {isActive && (
-                  <span
-                    className="absolute left-0 right-0 -bottom-px h-[3px] rounded-full"
-                    style={{ backgroundColor: '#FF6900' }}
-                  />
-                )}
               </button>
             );
           })}
         </div>
-        <div className="h-px bg-gray-100" />
+        {/* Sliding underline */}
+        <span
+          aria-hidden
+          className="absolute bottom-0 h-[3px] rounded-full pointer-events-none"
+          style={{
+            left: indicator.left,
+            width: indicator.width,
+            backgroundColor: '#FF6900',
+            transition:
+              'left 380ms cubic-bezier(0.22, 1, 0.36, 1), width 380ms cubic-bezier(0.22, 1, 0.36, 1)',
+          }}
+        />
       </div>
 
       {/* Filter chips row */}
