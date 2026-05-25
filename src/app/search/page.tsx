@@ -7,6 +7,7 @@ import { Search, XCircle, ChevronLeft, ChevronDown, MapPin, Locate, Check, X, Sl
 import { useStore } from '@/store';
 import { regions, dentalSubCategories } from '@/lib/mock-data';
 import type { Product } from '@/types';
+import EmptyState from '@/components/common/EmptyState';
 
 const PROVINCES: Record<string, string[]> = {
   '서울': ['전체', '강남구', '서초구', '송파구', '강동구', '마포구', '용산구', '성동구', '광진구', '동대문구', '중랑구', '성북구', '강북구', '도봉구', '노원구', '은평구', '서대문구', '종로구', '중구', '동작구', '관악구', '금천구', '구로구', '영등포구', '양천구'],
@@ -82,9 +83,9 @@ function SearchPage() {
   // Multi-select regions. Each entry is "경기 수원시", "서울 강남구", or
   // "경기" (province-only = "전체"). Empty array = no region filter.
   const [selectedRegions, setSelectedRegions] = useState<string[]>([]);
-  const [showRegionModal, setShowRegionModal] = useState(false);
-  const [showPriceModal, setShowPriceModal] = useState(false);
-  const [showBookingModal, setShowBookingModal] = useState(false);
+  // Single state drives the unified filters bottom sheet — null = closed.
+  // The internal tabs switch by mutating this value, no remount.
+  const [filterModalTab, setFilterModalTab] = useState<'region' | 'price' | 'booking' | null>(null);
   const [showSortModal, setShowSortModal] = useState(false);
   const [activeCategory, setActiveCategory] = useState(categoryParam ?? '');
   const [selectedPrice, setSelectedPrice] = useState('전체');
@@ -110,11 +111,15 @@ function SearchPage() {
     setActiveCategory(id);
   };
 
+  // Province-only entry (no space) means that province's "전체" was checked.
+  // Surface that explicitly so users see "{province} 전체" instead of bare
+  // "{province}".
+  const formatRegion = (r: string) => (r.includes(' ') ? r : `${r} 전체`);
   const regionLabel =
     selectedRegions.length === 0
       ? ''
       : selectedRegions.length === 1
-      ? selectedRegions[0]
+      ? formatRegion(selectedRegions[0])
       : `지역 ${selectedRegions.length}개`;
 
   // --- Location filter helper ---
@@ -204,13 +209,13 @@ function SearchPage() {
         const entry = district ? `${province} ${district}` : province;
         setSelectedRegions([entry]);
         setLocating(false);
-        setShowRegionModal(false);
+        setFilterModalTab(null);
         showToast(`현재 위치: ${entry}`);
       },
       () => {
         setLocating(false);
         setSelectedRegions(['서울 강남구']);
-        setShowRegionModal(false);
+        setFilterModalTab(null);
         showToast('현재 위치 대신 강남구로 설정했어요. 직접 선택도 가능합니다.');
       },
       { enableHighAccuracy: false, timeout: 8000, maximumAge: 300000 }
@@ -298,9 +303,9 @@ function SearchPage() {
           selectedBooking={selectedBooking}
           selectedSort={selectedSort}
           setSelectedBooking={setSelectedBooking}
-          onOpenRegion={() => setShowRegionModal(true)}
-          onOpenPrice={() => setShowPriceModal(true)}
-          onOpenBooking={() => setShowBookingModal(true)}
+          onOpenRegion={() => setFilterModalTab('region')}
+          onOpenPrice={() => setFilterModalTab('price')}
+          onOpenBooking={() => setFilterModalTab('booking')}
           onOpenSort={() => setShowSortModal(true)}
         />
 
@@ -324,61 +329,32 @@ function SearchPage() {
               ))}
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center py-20">
-              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4 bounce-in">
-                <Search size={28} className="text-gray-300" />
-              </div>
-              <p style={{ fontSize: 18, fontWeight: 600, color: '#2B313D' }}>해당 카테고리에 상품이 없습니다.</p>
-              <p style={{ fontSize: 14, fontWeight: 500, color: '#51535C', marginTop: 2 }}>어떤 상품을 찾으시나요?</p>
-            </div>
+            <EmptyState
+              icon="category"
+              message="해당 카테고리에 상품이 없네요!"
+              subtitle="다른 카테고리도 둘러보세요"
+            />
           )}
         </div>
 
         {/* ===== MODALS ===== */}
-        {/* Region Modal */}
-        {showRegionModal && (
-          <RegionFilterModal
+        {/* Unified filter sheet — switches between 지역 / 가격 / 예약방법 internally */}
+        {filterModalTab && (
+          <FiltersBottomSheet
+            initialTab={filterModalTab}
             selectedRegions={selectedRegions}
             toggleRegion={toggleRegion}
             setSelectedRegions={setSelectedRegions}
             activeProvince={activeProvince}
             setActiveProvince={setActiveProvince}
-            onClose={() => setShowRegionModal(false)}
+            selectedPrice={selectedPrice}
+            setSelectedPrice={setSelectedPrice}
+            selectedBooking={selectedBooking}
+            setSelectedBooking={setSelectedBooking}
+            onClose={() => setFilterModalTab(null)}
             onLocate={handleCurrentLocation}
             locating={locating}
-            onSwitchToPrice={() => { setShowRegionModal(false); setShowPriceModal(true); }}
-            onSwitchToBooking={() => { setShowRegionModal(false); setShowBookingModal(true); }}
           />
-        )}
-
-        {/* Price Modal */}
-        {showPriceModal && (
-          <FilterModal title="가격대 선택" onClose={() => setShowPriceModal(false)}>
-            <div className="flex-1 overflow-y-auto">
-              {priceRanges.map((price) => (
-                <button key={price} onClick={() => { setSelectedPrice(price); setShowPriceModal(false); }}
-                  className={`w-full flex items-center justify-between px-5 py-3.5 text-sm hover:bg-gray-50 transition-colors ${selectedPrice === price ? 'text-[#8037FF] font-medium bg-purple-50' : 'text-gray-700'}`}>
-                  <span>{price}</span>
-                  {selectedPrice === price && <Check size={16} className="text-[#8037FF]" />}
-                </button>
-              ))}
-            </div>
-          </FilterModal>
-        )}
-
-        {/* Booking Modal */}
-        {showBookingModal && (
-          <FilterModal title="예약방법 선택" onClose={() => setShowBookingModal(false)}>
-            <div className="flex-1 overflow-y-auto">
-              {bookingMethods.map((method) => (
-                <button key={method} onClick={() => { setSelectedBooking(method); setShowBookingModal(false); }}
-                  className={`w-full flex items-center justify-between px-5 py-3.5 text-sm hover:bg-gray-50 transition-colors ${selectedBooking === method ? 'text-[#8037FF] font-medium bg-purple-50' : 'text-gray-700'}`}>
-                  <span>{method}</span>
-                  {selectedBooking === method && <Check size={16} className="text-[#8037FF]" />}
-                </button>
-              ))}
-            </div>
-          </FilterModal>
         )}
 
         {/* Sort Modal */}
@@ -441,9 +417,9 @@ function SearchPage() {
         selectedBooking={selectedBooking}
         selectedSort={selectedSort}
         setSelectedBooking={setSelectedBooking}
-        onOpenRegion={() => setShowRegionModal(true)}
-        onOpenPrice={() => setShowPriceModal(true)}
-        onOpenBooking={() => setShowBookingModal(true)}
+        onOpenRegion={() => setFilterModalTab('region')}
+        onOpenPrice={() => setFilterModalTab('price')}
+        onOpenBooking={() => setFilterModalTab('booking')}
         onOpenSort={() => setShowSortModal(true)}
       />
 
@@ -516,44 +492,23 @@ function SearchPage() {
         </div>
       </div>
 
-      {/* Shared Region Modal for normal search mode — same split design */}
-      {showRegionModal && (
-        <RegionFilterModal
+      {/* Unified filter sheet for search mode */}
+      {filterModalTab && (
+        <FiltersBottomSheet
+          initialTab={filterModalTab}
           selectedRegions={selectedRegions}
           toggleRegion={toggleRegion}
           setSelectedRegions={setSelectedRegions}
           activeProvince={activeProvince}
           setActiveProvince={setActiveProvince}
-          onClose={() => setShowRegionModal(false)}
+          selectedPrice={selectedPrice}
+          setSelectedPrice={setSelectedPrice}
+          selectedBooking={selectedBooking}
+          setSelectedBooking={setSelectedBooking}
+          onClose={() => setFilterModalTab(null)}
           onLocate={handleCurrentLocation}
           locating={locating}
-          onSwitchToPrice={() => { setShowRegionModal(false); setShowPriceModal(true); }}
-          onSwitchToBooking={() => { setShowRegionModal(false); setShowBookingModal(true); }}
         />
-      )}
-      {showPriceModal && (
-        <FilterModal title="가격대 선택" onClose={() => setShowPriceModal(false)}>
-          <div className="flex-1 overflow-y-auto">
-            {priceRanges.map((p) => (
-              <button key={p} onClick={() => { setSelectedPrice(p); setShowPriceModal(false); }}
-                className={`w-full flex items-center justify-between px-5 py-3.5 text-sm hover:bg-gray-50 ${selectedPrice === p ? 'text-[#8037FF] font-medium bg-purple-50' : 'text-gray-700'}`}>
-                <span>{p}</span>{selectedPrice === p && <Check size={16} className="text-[#8037FF]" />}
-              </button>
-            ))}
-          </div>
-        </FilterModal>
-      )}
-      {showBookingModal && (
-        <FilterModal title="예약방법 선택" onClose={() => setShowBookingModal(false)}>
-          <div className="flex-1 overflow-y-auto">
-            {bookingMethods.map((m) => (
-              <button key={m} onClick={() => { setSelectedBooking(m); setShowBookingModal(false); }}
-                className={`w-full flex items-center justify-between px-5 py-3.5 text-sm hover:bg-gray-50 ${selectedBooking === m ? 'text-[#8037FF] font-medium bg-purple-50' : 'text-gray-700'}`}>
-                <span>{m}</span>{selectedBooking === m && <Check size={16} className="text-[#8037FF]" />}
-              </button>
-            ))}
-          </div>
-        </FilterModal>
       )}
       {showSortModal && (
         <FilterModal title="정렬" onClose={() => setShowSortModal(false)}>
@@ -712,87 +667,139 @@ function FilterModal({ title, onClose, children }: { title: string; onClose: () 
    sidebar on the left, and grouped multi-select checkboxes on the right.
    Closes via "필터 선택 완료" or backdrop tap. Selections persist across
    open/close. */
-function RegionFilterModal({
+type FilterTab = 'region' | 'price' | 'booking';
+
+function FiltersBottomSheet({
+  initialTab,
   selectedRegions,
   toggleRegion,
   setSelectedRegions,
   activeProvince,
   setActiveProvince,
+  selectedPrice,
+  setSelectedPrice,
+  selectedBooking,
+  setSelectedBooking,
   onClose,
   onLocate,
   locating,
-  onSwitchToPrice,
-  onSwitchToBooking,
 }: {
+  initialTab: FilterTab;
   selectedRegions: string[];
   toggleRegion: (entry: string) => void;
   setSelectedRegions: React.Dispatch<React.SetStateAction<string[]>>;
   activeProvince: string;
   setActiveProvince: (p: string) => void;
+  selectedPrice: string;
+  setSelectedPrice: (p: string) => void;
+  selectedBooking: string;
+  setSelectedBooking: (b: string) => void;
   onClose: () => void;
   onLocate: () => void;
   locating: boolean;
-  onSwitchToPrice: () => void;
-  onSwitchToBooking: () => void;
 }) {
+  const [activeTab, setActiveTab] = useState<FilterTab>(initialTab);
+  // open: false starts the sheet off-screen for a slide-up entrance; an
+  // immediate rAF flips it to true so the transform transitions cleanly.
+  const [open, setOpen] = useState(false);
+  const [dragOffset, setDragOffset] = useState(0);
+  const touchStartY = useRef<number | null>(null);
+
   useEffect(() => {
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
+    requestAnimationFrame(() => setOpen(true));
     return () => {
       document.body.style.overflow = prev;
     };
   }, []);
 
-  // Selection color — dark, consistent with the rest of the app's primary
-  // interaction color.
+  // Wrap close in a small animated exit — translate down then unmount.
+  const requestClose = () => {
+    setOpen(false);
+    setTimeout(onClose, 240);
+  };
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    touchStartY.current = e.touches[0].clientY;
+  };
+  const onTouchMove = (e: React.TouchEvent) => {
+    if (touchStartY.current == null) return;
+    const dy = e.touches[0].clientY - touchStartY.current;
+    if (dy > 0) setDragOffset(dy);
+  };
+  const onTouchEnd = () => {
+    if (dragOffset > 110) {
+      requestClose();
+    } else {
+      setDragOffset(0);
+    }
+    touchStartY.current = null;
+  };
+
   const SELECT = '#2B313D';
   const SELECT_BG = '#F4F5F7';
   const RED_DOT = '#FF4757';
 
-  // Top tabs — three filter types only.
-  const tabs: { key: string; onClick?: () => void; active?: boolean }[] = [
-    { key: '지역', active: true },
-    { key: '가격', onClick: onSwitchToPrice },
-    { key: '예약방법', onClick: onSwitchToBooking },
+  const tabs: { key: FilterTab; label: string; hasValue: boolean }[] = [
+    { key: 'region', label: '지역', hasValue: selectedRegions.length > 0 },
+    { key: 'price', label: '가격', hasValue: selectedPrice !== '전체' },
+    { key: 'booking', label: '예약방법', hasValue: selectedBooking !== '전체' },
   ];
 
-  const sidebarProvinces = provinceKeys;
+  const transform = `translateY(${open ? dragOffset : 800}px)`;
 
   return (
     <div
-      className="fixed inset-0 z-[100] bg-black/40 modal-overlay-enter"
-      onClick={onClose}
+      className="fixed inset-0 z-[100]"
+      style={{
+        backgroundColor: open ? 'rgba(0,0,0,0.4)' : 'rgba(0,0,0,0)',
+        transition: 'background-color 240ms ease-out',
+      }}
+      onClick={requestClose}
     >
       <div
-        className="absolute bottom-0 left-0 right-0 lg:bottom-auto lg:top-1/2 lg:left-1/2 lg:-translate-x-1/2 lg:-translate-y-1/2 lg:max-w-md lg:rounded-2xl bg-white rounded-t-2xl flex flex-col modal-content-enter"
-        style={{ height: '82vh', maxHeight: 740 }}
+        className="absolute bottom-0 left-0 right-0 lg:bottom-auto lg:top-1/2 lg:left-1/2 lg:-translate-x-1/2 lg:-translate-y-1/2 lg:max-w-md lg:rounded-2xl bg-white rounded-t-2xl flex flex-col"
+        style={{
+          height: '82vh',
+          maxHeight: 740,
+          transform,
+          transition: touchStartY.current == null
+            ? 'transform 260ms cubic-bezier(0.22, 1, 0.36, 1)'
+            : 'none',
+        }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Drag handle */}
-        <div className="flex justify-center pt-3 pb-2 flex-shrink-0">
+        {/* Drag handle — drag down past 110px to dismiss */}
+        <div
+          className="flex justify-center pt-3 pb-2 flex-shrink-0 cursor-grab active:cursor-grabbing"
+          onTouchStart={onTouchStart}
+          onTouchMove={onTouchMove}
+          onTouchEnd={onTouchEnd}
+        >
           <div className="w-10 h-1 rounded-full bg-gray-300" />
         </div>
 
         {/* Filter-type tabs */}
         <div className="flex items-center gap-5 px-5 pb-3 flex-shrink-0">
           {tabs.map((t) => {
-            const isActive = t.active;
+            const isActive = activeTab === t.key;
             return (
               <button
                 key={t.key}
-                onClick={t.onClick}
-                disabled={!t.active && !t.onClick}
+                onClick={() => setActiveTab(t.key)}
                 className="relative"
               >
                 <span
                   className="text-[20px] font-extrabold whitespace-nowrap"
-                  style={{ color: isActive ? '#2B313D' : '#C5CAD4' }}
+                  style={{
+                    color: isActive ? '#2B313D' : '#C5CAD4',
+                    transition: 'color 240ms ease',
+                  }}
                 >
-                  {t.key}
+                  {t.label}
                 </span>
-                {/* Red dot — surface only on the active tab if there are
-                    selections, so users see "this filter has values". */}
-                {isActive && selectedRegions.length > 0 && (
+                {t.hasValue && (
                   <span
                     className="absolute rounded-full"
                     style={{
@@ -809,115 +816,181 @@ function RegionFilterModal({
           })}
         </div>
 
-        {/* Body: province sidebar + multi-select checkboxes */}
-        <div className="flex flex-1 overflow-hidden border-t border-gray-100">
-          {/* Left sidebar */}
-          <div
-            className="w-[108px] flex-shrink-0 overflow-y-auto"
-            style={{ backgroundColor: '#FAFAFB' }}
-          >
-            {sidebarProvinces.map((prov) => {
-              const isActive = activeProvince === prov;
-              const hasSelection = selectedRegions.some((r) => r.split(' ')[0] === prov);
-              return (
-                <button
-                  key={prov}
-                  onClick={() => setActiveProvince(prov)}
-                  className="w-full text-left py-4 px-4 relative"
-                  style={{
-                    backgroundColor: isActive ? SELECT_BG : 'transparent',
-                    color: isActive ? SELECT : '#A4ABBA',
-                    fontWeight: isActive ? 700 : 500,
-                    fontSize: 17,
-                  }}
-                >
-                  {prov}
-                  {hasSelection && (
-                    <span
-                      className="absolute rounded-full"
+        {/* Body — switches based on activeTab */}
+        <div className="flex-1 overflow-hidden border-t border-gray-100">
+          {/* ----- REGION ----- */}
+          {activeTab === 'region' && (
+            <div className="flex h-full overflow-hidden">
+              <div
+                className="w-[108px] flex-shrink-0 overflow-y-auto"
+                style={{ backgroundColor: '#FAFAFB' }}
+              >
+                {provinceKeys.map((prov) => {
+                  const isActive = activeProvince === prov;
+                  const hasSelection = selectedRegions.some((r) => r.split(' ')[0] === prov);
+                  return (
+                    <button
+                      key={prov}
+                      onClick={() => setActiveProvince(prov)}
+                      className="w-full text-left py-4 px-4 relative"
                       style={{
-                        top: 16,
-                        right: 14,
-                        width: 6,
-                        height: 6,
-                        backgroundColor: RED_DOT,
+                        backgroundColor: isActive ? SELECT_BG : 'transparent',
+                        color: isActive ? SELECT : '#A4ABBA',
+                        fontWeight: isActive ? 700 : 500,
+                        fontSize: 17,
                       }}
-                    />
-                  )}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Right: checkboxes */}
-          <div className="flex-1 overflow-y-auto bg-white px-4">
-            {/* Current-location shortcut */}
-            <button
-              onClick={onLocate}
-              className="w-full flex items-center gap-3 py-3.5"
-              style={{ color: SELECT }}
-            >
-              <Locate size={18} />
-              <span className="text-[16px] font-semibold">
-                {locating ? '위치 찾는 중...' : '현재 위치로 설정'}
-              </span>
-            </button>
-
-            {(PROVINCES[activeProvince] ?? []).map((district) => {
-              const fullKey = district === '전체' ? activeProvince : `${activeProvince} ${district}`;
-              const isChecked = selectedRegions.includes(fullKey);
-              const label = district === '전체' ? `${activeProvince} 전체` : district;
-              return (
+                    >
+                      {prov}
+                      {hasSelection && (
+                        <span
+                          className="absolute rounded-full"
+                          style={{
+                            top: 16,
+                            right: 14,
+                            width: 6,
+                            height: 6,
+                            backgroundColor: RED_DOT,
+                          }}
+                        />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="flex-1 overflow-y-auto bg-white px-4">
                 <button
-                  key={district}
-                  onClick={() => toggleRegion(fullKey)}
-                  className="w-full flex items-center gap-3 py-4"
+                  onClick={onLocate}
+                  className="w-full flex items-center gap-3 py-3.5"
+                  style={{ color: SELECT }}
                 >
-                  <span
-                    className="flex items-center justify-center flex-shrink-0"
-                    style={{
-                      width: 24,
-                      height: 24,
-                      borderRadius: 5,
-                      backgroundColor: isChecked ? SELECT : 'transparent',
-                      border: isChecked ? 'none' : '1.5px solid #D1D5DB',
-                    }}
-                  >
-                    {isChecked && (
-                      <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={3}>
-                        <path d="M20 6 9 17l-5-5" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    )}
-                  </span>
-                  <span className="text-[17px]" style={{ color: '#2B313D' }}>
-                    {label}
+                  <Locate size={18} />
+                  <span className="text-[16px] font-semibold">
+                    {locating ? '위치 찾는 중...' : '현재 위치로 설정'}
                   </span>
                 </button>
-              );
-            })}
-            <div className="h-4" />
-          </div>
+                {(PROVINCES[activeProvince] ?? []).map((district) => {
+                  const fullKey = district === '전체' ? activeProvince : `${activeProvince} ${district}`;
+                  const isChecked = selectedRegions.includes(fullKey);
+                  const label = district === '전체' ? `${activeProvince} 전체` : district;
+                  return (
+                    <button
+                      key={district}
+                      onClick={() => toggleRegion(fullKey)}
+                      className="w-full flex items-center gap-3 py-4"
+                    >
+                      <span
+                        className="flex items-center justify-center flex-shrink-0"
+                        style={{
+                          width: 24,
+                          height: 24,
+                          borderRadius: 5,
+                          backgroundColor: isChecked ? SELECT : 'transparent',
+                          border: isChecked ? 'none' : '1.5px solid #D1D5DB',
+                        }}
+                      >
+                        {isChecked && (
+                          <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={3}>
+                            <path d="M20 6 9 17l-5-5" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        )}
+                      </span>
+                      <span className="text-[17px]" style={{ color: '#2B313D' }}>
+                        {label}
+                      </span>
+                    </button>
+                  );
+                })}
+                <div className="h-4" />
+              </div>
+            </div>
+          )}
+
+          {/* ----- PRICE ----- (single-select) */}
+          {activeTab === 'price' && (
+            <div className="h-full overflow-y-auto px-5">
+              {priceRanges.map((p) => {
+                const isChecked = selectedPrice === p;
+                return (
+                  <button
+                    key={p}
+                    onClick={() => setSelectedPrice(p)}
+                    className="w-full flex items-center gap-3 py-4"
+                  >
+                    <span
+                      className="flex items-center justify-center flex-shrink-0"
+                      style={{
+                        width: 24,
+                        height: 24,
+                        borderRadius: 12,
+                        backgroundColor: isChecked ? SELECT : 'transparent',
+                        border: isChecked ? 'none' : '1.5px solid #D1D5DB',
+                      }}
+                    >
+                      {isChecked && (
+                        <span style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#fff' }} />
+                      )}
+                    </span>
+                    <span className="text-[17px]" style={{ color: '#2B313D' }}>
+                      {p}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {/* ----- BOOKING ----- (single-select) */}
+          {activeTab === 'booking' && (
+            <div className="h-full overflow-y-auto px-5">
+              {bookingMethods.map((m) => {
+                const isChecked = selectedBooking === m;
+                return (
+                  <button
+                    key={m}
+                    onClick={() => setSelectedBooking(m)}
+                    className="w-full flex items-center gap-3 py-4"
+                  >
+                    <span
+                      className="flex items-center justify-center flex-shrink-0"
+                      style={{
+                        width: 24,
+                        height: 24,
+                        borderRadius: 12,
+                        backgroundColor: isChecked ? SELECT : 'transparent',
+                        border: isChecked ? 'none' : '1.5px solid #D1D5DB',
+                      }}
+                    >
+                      {isChecked && (
+                        <span style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#fff' }} />
+                      )}
+                    </span>
+                    <span className="text-[17px]" style={{ color: '#2B313D' }}>
+                      {m}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* Bottom CTA */}
         <div className="px-4 py-3 flex-shrink-0" style={{ borderTop: '1px solid #F2F3F5' }}>
           <button
-            onClick={onClose}
+            onClick={requestClose}
             className="w-full flex items-center justify-center"
             style={{
               height: 48,
               borderRadius: 12,
-              backgroundColor: selectedRegions.length > 0 ? '#2B313D' : '#F4F5F7',
-              color: selectedRegions.length > 0 ? '#fff' : '#A4ABBA',
+              backgroundColor: '#2B313D',
+              color: '#fff',
               fontSize: 16,
               fontWeight: 700,
             }}
           >
-            {selectedRegions.length > 0
-              ? `필터 선택 완료 (${selectedRegions.length})`
-              : '필터 선택 완료'}
+            필터 선택 완료
           </button>
-          {selectedRegions.length > 0 && (
+          {activeTab === 'region' && selectedRegions.length > 0 && (
             <button
               onClick={() => setSelectedRegions([])}
               className="mt-2 w-full text-[13px] text-gray-400 font-medium py-1"
@@ -1043,7 +1116,7 @@ function ListPageFilters({
           style={{
             left: indicator.left,
             width: indicator.width,
-            backgroundColor: '#FF6900',
+            backgroundColor: '#2B313D',
             transition:
               'left 380ms cubic-bezier(0.22, 1, 0.36, 1), width 380ms cubic-bezier(0.22, 1, 0.36, 1)',
           }}

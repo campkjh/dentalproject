@@ -7,7 +7,7 @@ const lucideIcons = {
   clock: Clock,
 };
 
-type IconName = 'calendar' | 'point' | 'coupon' | keyof typeof lucideIcons;
+type IconName = 'calendar' | 'point' | 'coupon' | 'category' | keyof typeof lucideIcons;
 
 const svgIcons: Partial<Record<IconName, string>> = {
   calendar: '/icons/calendar-empty.svg',
@@ -15,6 +15,7 @@ const svgIcons: Partial<Record<IconName, string>> = {
   coupon: '/icons/coupon-empty.svg',
   // Overrides the lucide CreditCard fallback when icon="payment" is requested.
   payment: '/icons/payment-empty.svg',
+  category: '/icons/category-empty.svg',
 };
 
 interface EmptyStateProps {
