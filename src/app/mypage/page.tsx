@@ -195,11 +195,11 @@ export default function MyPage() {
         {supportMenuItems.map(renderMenuItem)}
       </div>
 
-      {/* Hospital Registration — image CTA */}
-      <div className="px-2.5 py-6">
+      {/* Hospital Registration — full-bleed image CTA, label up top */}
+      <div className="py-6">
         <button
           onClick={() => router.push('/hospital/register')}
-          className="block w-full relative rounded-2xl overflow-hidden btn-press"
+          className="block w-full relative overflow-hidden btn-press"
           style={{ aspectRatio: '16/9' }}
           aria-label="병원신청하기"
         >
@@ -208,15 +208,15 @@ export default function MyPage() {
             alt=""
             className="absolute inset-0 w-full h-full object-cover"
           />
-          {/* Bottom gradient so the label stays readable on bright glass */}
+          {/* Top gradient so the label reads cleanly against the sky */}
           <div
             className="absolute inset-0 pointer-events-none"
             style={{
               background:
-                'linear-gradient(to top, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.15) 35%, rgba(0,0,0,0) 60%)',
+                'linear-gradient(to bottom, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.12) 40%, rgba(0,0,0,0) 70%)',
             }}
           />
-          <div className="absolute left-5 right-5 bottom-4 flex items-center justify-between">
+          <div className="absolute left-5 right-5 top-4 flex items-center justify-between">
             <span
               style={{
                 fontSize: 20,
