@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { createPortal } from 'react-dom';
 import { Search, Send, ChevronLeft, ChevronRight, Star, MapPin, X, ArrowUp } from 'lucide-react';
 import ProductCard from '@/components/common/ProductCard';
+import Avatar from '@/components/common/Avatar';
 import HomeBannerSlider from '@/components/home/HomeBannerSlider';
 import { useStore } from '@/store';
 import { resolveHospitalImageUrl } from '@/lib/images';
@@ -345,6 +346,9 @@ export default function HomePage() {
       <div className="lg:bg-white lg:rounded-2xl lg:shadow-sm lg:my-6">
 
         <HomeBannerSlider />
+
+        {/* Live Q&A teaser — between banner and category grid */}
+        <LiveQuestionsTeaser />
 
         {/* Categories — 5x2 pager (swipe horizontally) */}
         <div ref={categorySectionRef}>
@@ -880,6 +884,69 @@ function NearbyHotPlaces({
         </div>
       </div>
     </div>
+  );
+}
+
+/* ============================== Live Questions Teaser ============================== */
+
+function LiveQuestionsTeaser() {
+  // Deterministic seeds for the flowing avatar marquee — keep the row populated
+  // even when there are no DB-side question authors handy.
+  const seeds = [
+    'q-seo', 'q-min', 'q-jin', 'q-hye', 'q-yul', 'q-jae',
+    'q-soo', 'q-han', 'q-da', 'q-eun', 'q-rin', 'q-bom',
+  ];
+
+  return (
+    <Link
+      href="/community"
+      className="block bg-white px-4 pt-2 pb-4"
+      aria-label="실시간 의사에게 질문"
+    >
+      <div className="flex items-center justify-between gap-3 mb-3">
+        <h2 className="flex flex-col gap-0.5 text-[22px] font-bold leading-[1.15] text-[#2B313D]">
+          <span className="inline-flex items-center gap-2">
+            실시간
+            <span className="inline-flex h-[20px] items-center rounded-[5px] bg-[#FF3B30] px-1.5 text-[11px] font-extrabold leading-none text-white tracking-wider">
+              LIVE
+            </span>
+          </span>
+          <span>의사에게 질문</span>
+        </h2>
+        <ChevronRight size={20} className="text-gray-400 flex-shrink-0" />
+      </div>
+
+      {/* Marquee of questioner avatars, right→left */}
+      <div
+        className="relative overflow-hidden"
+        style={{
+          height: 56,
+          maskImage:
+            'linear-gradient(to right, transparent 0, #000 32px, #000 calc(100% - 32px), transparent 100%)',
+          WebkitMaskImage:
+            'linear-gradient(to right, transparent 0, #000 32px, #000 calc(100% - 32px), transparent 100%)',
+        }}
+      >
+        <div
+          className="bubbles-flow-lane absolute left-0 top-1/2 flex items-center gap-3 whitespace-nowrap will-change-transform"
+          style={{
+            ['--bubble-flow-duration' as string]: '38s',
+            transform: 'translateY(-50%)',
+          }}
+        >
+          {[...seeds, ...seeds].map((seed, i) => (
+            <div key={`${seed}-${i}`} className="flex-shrink-0">
+              <Avatar
+                role={i % 4 === 0 ? 'doctor' : 'user'}
+                seed={seed}
+                size={44}
+                className="bg-[#F2F7FF] ring-2 ring-white"
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+    </Link>
   );
 }
 
