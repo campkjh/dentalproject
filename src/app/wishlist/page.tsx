@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { useStore } from '@/store';
-import TopBar from '@/components/common/TopBar';
 import LoginRequired from '@/components/common/LoginRequired';
 import EmptyState from '@/components/common/EmptyState';
 import ProductCard from '@/components/common/ProductCard';
@@ -44,14 +43,17 @@ export default function WishlistPage() {
 
   return (
     <div className="min-h-screen bg-white max-w-[480px] mx-auto lg:max-w-7xl lg:px-6 lg:py-6">
-      <TopBar title="찜목록" />
+      {/* Header — community-style: 22px extrabold */}
+      <div className="sticky top-0 z-40 bg-white flex items-center px-2.5 lg:hidden" style={{ height: 56 }}>
+        <h1 className="text-[22px] font-extrabold text-gray-900 leading-none">찜목록</h1>
+      </div>
 
       {!isLoggedIn ? (
         <LoginRequired />
       ) : (
         <>
           {/* Tabs — partner-style sliding indicator */}
-          <div className="partner-community-category-shell sticky top-12 bg-white z-10">
+          <div className="partner-community-category-shell sticky top-[56px] bg-white z-10">
             <div className="partner-community-categories hide-scrollbar">
               <span
                 aria-hidden
@@ -59,10 +61,12 @@ export default function WishlistPage() {
                 style={{
                   width: indicator.width,
                   transform: `translateX(${indicator.left}px)`,
+                  opacity: indicator.width > 0 ? 1 : 0,
                 }}
               />
               {tabKeys.map((tab, i) => {
                 const isActive = activeTab === tab;
+                const showActive = isActive && indicator.width > 0;
                 const label = tab === 'wishlist' ? '찜목록' : '최근본';
                 const count = tab === 'wishlist' ? wishlistProducts.length : recentProducts.length;
                 return (
@@ -73,7 +77,7 @@ export default function WishlistPage() {
                     }}
                     type="button"
                     onClick={() => setActiveTab(tab)}
-                    className={isActive ? 'is-active' : undefined}
+                    className={showActive ? 'is-active' : undefined}
                   >
                     {label}{count > 0 ? ` ${count}` : ''}
                     {tab === 'recent' && hasNew && (

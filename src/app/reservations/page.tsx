@@ -118,19 +118,6 @@ export default function ReservationsPage() {
     return () => window.removeEventListener('resize', handleResize);
   }, [activeIndex]);
 
-  // Scroll-driven collapse: hero fades while tabs dock into TopBar
-  const [dockProgress, setDockProgress] = useState(0);
-  useEffect(() => {
-    const COLLAPSE = 140;
-    const onScroll = () => {
-      const y = window.scrollY;
-      setDockProgress(Math.min(1, Math.max(0, y / COLLAPSE)));
-    };
-    onScroll();
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
-
   const filtered = useMemo(
     () =>
       reservations.filter((r) => {
@@ -141,17 +128,6 @@ export default function ReservationsPage() {
     [reservations, activeTab]
   );
 
-  const counts = useMemo(() => {
-    const c: Record<Reservation['status'], number> = {
-      pending: 0,
-      confirmed: 0,
-      completed: 0,
-      cancelled: 0,
-    };
-    reservations.forEach((r) => (c[r.status] += 1));
-    return c;
-  }, [reservations]);
-
   const handleCancel = (id: string) => {
     showModal('예약 취소', '예약을 취소하시겠습니까?', () => {
       updateReservationStatus(id, 'cancelled');
@@ -161,104 +137,45 @@ export default function ReservationsPage() {
 
   return (
     <div className="pb-[86px] lg:pb-0 bg-white min-h-screen page-enter">
-      {/* Custom tall header (70px) */}
-      <div className="sticky top-0 z-40 bg-white flex items-center px-2.5 lg:hidden" style={{ height: 70 }}>
-        <h1 className="text-xl font-bold">예약내역</h1>
+      {/* Header — community-style: 22px extrabold */}
+      <div className="sticky top-0 z-40 bg-white flex items-center px-2.5 lg:hidden" style={{ height: 56 }}>
+        <h1 className="text-[22px] font-extrabold text-gray-900 leading-none">예약내역</h1>
       </div>
 
       {!isLoggedIn ? (
         <LoginRequired />
       ) : (
         <>
-          {/* Summary hero */}
-          <div
-            className="bg-white px-2.5 fade-in-up overflow-hidden"
-            style={{
-              paddingTop: `${8 * (1 - dockProgress)}px`,
-              paddingBottom: `${20 * (1 - dockProgress)}px`,
-              maxHeight: `${(1 - dockProgress) * 220}px`,
-              opacity: 1 - dockProgress * 0.85,
-              transform: `translateY(${-dockProgress * 16}px)`,
-              transition: 'transform 60ms linear',
-            }}
-          >
-            <p className="text-[22px] font-bold text-gray-900 leading-tight">
-              총 <span className="text-[#8037FF]">{reservations.length}</span>건의 예약이 있어요
-            </p>
-            <div className="mt-4 grid grid-cols-4 gap-2">
-              {(
-                [
-                  { key: 'pending', label: '확인중' },
-                  { key: 'confirmed', label: '확정' },
-                  { key: 'completed', label: '완료' },
-                  { key: 'cancelled', label: '취소' },
-                ] as { key: Reservation['status']; label: string }[]
-              ).map((s) => {
-                const style = statusStyle[s.key];
+          {/* Sticky tabs (no docking — hero/summary removed) */}
+          <div className="partner-community-category-shell sticky top-[56px] z-[45] bg-white">
+            <div ref={tabsRef} className="partner-community-categories hide-scrollbar">
+              <span
+                aria-hidden
+                className="partner-community-category-indicator"
+                style={{
+                  width: indicator.width,
+                  transform: `translateX(${indicator.left}px)`,
+                  opacity: indicator.width > 0 ? 1 : 0,
+                }}
+              />
+              {statusTabs.map((tab, i) => {
+                const isActive = activeTab === tab;
+                const showActive = isActive && indicator.width > 0;
                 return (
                   <button
-                    key={s.key}
-                    onClick={() => changeTab(statusLabel[s.key])}
-                    className={`${style.bg} rounded-2xl px-2 py-3 text-center card-press flex flex-col items-center`}
+                    key={tab}
+                    ref={(el) => {
+                      tabBtnRefs.current[i] = el;
+                    }}
+                    type="button"
+                    onClick={() => changeTab(tab)}
+                    className={showActive ? 'is-active' : undefined}
                   >
-                    <StatusIcon status={s.key} size={30} />
-                    <p className={`text-[11px] font-medium ${style.text} mt-1`}>{s.label}</p>
-                    <p className={`text-base font-bold ${style.text} mt-0.5 leading-none`}>
-                      {counts[s.key]}
-                    </p>
+                    {tab}
                   </button>
                 );
               })}
             </div>
-          </div>
-
-          {/* Sticky tabs with sliding indicator + dock-into-title animation */}
-          <div
-            className="sticky z-[45]"
-            style={{
-              top: 0,
-              paddingLeft: `${10 + (1 - Math.pow(1 - dockProgress, 2)) * 114}px`,
-              paddingRight: '10px',
-              paddingTop: `${12 + dockProgress * 10}px`,
-              paddingBottom: `${12 + dockProgress * 10}px`,
-              backgroundColor: `rgba(255, 255, 255, ${Math.max(0, 1 - dockProgress * 1.4)})`,
-              marginTop: '-8px',
-              transform: `translateY(${-Math.pow(dockProgress, 2) * 6}px)`,
-              transition: 'padding 120ms cubic-bezier(0.22, 1, 0.36, 1), background-color 120ms ease',
-            }}
-          >
-              <div ref={tabsRef} className="partner-community-categories hide-scrollbar">
-                {/* Sliding indicator (partner-style) */}
-                <span
-                  aria-hidden
-                  className="partner-community-category-indicator"
-                  style={{
-                    width: indicator.width,
-                    transform: `translateX(${indicator.left}px)`,
-                  }}
-                />
-                {statusTabs.map((tab, i) => {
-                  const isActive = activeTab === tab;
-                  return (
-                    <button
-                      key={tab}
-                      ref={(el) => {
-                        tabBtnRefs.current[i] = el;
-                      }}
-                      type="button"
-                      onClick={() => changeTab(tab)}
-                      className={isActive ? 'is-active' : undefined}
-                    >
-                      {tab}
-                    </button>
-                  );
-                })}
-              </div>
-            {/* Bottom hairline appears only when docked */}
-            <div
-              className="absolute left-0 right-0 bottom-0 h-px bg-gray-100 pointer-events-none"
-              style={{ opacity: dockProgress }}
-            />
           </div>
 
           {/* Reservation list */}
