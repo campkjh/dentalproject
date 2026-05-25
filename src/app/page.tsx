@@ -1064,7 +1064,7 @@ function SectionHeader({
       <div className="min-w-0">
         <div className="flex items-center gap-2">
           {icon && <img src={icon} alt={title} className="w-6 h-6 flex-shrink-0" />}
-          <h2 className="font-bold text-[18px] leading-[24px] text-gray-900">{title}</h2>
+          <h2 className="font-bold text-[22px] leading-[28px] text-[#2B313D]">{title}</h2>
         </div>
         {subtitle && (
           <p className="mt-0.5 text-[14px] leading-[19px] text-gray-400">
