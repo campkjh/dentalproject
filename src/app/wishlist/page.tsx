@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useLayoutEffect, useRef, useMemo } from 'react';
-import Link from 'next/link';
 import { useStore } from '@/store';
 import LoginRequired from '@/components/common/LoginRequired';
 import ProductCard from '@/components/common/ProductCard';
@@ -106,7 +105,7 @@ export default function WishlistPage() {
           {displayed.length === 0 ? (
             <>
               {/* Rich empty state (matches mockup) */}
-              <div className="px-5 pt-12 pb-8 flex flex-col items-center text-center">
+              <div className="px-5 pt-12 pb-10 flex flex-col items-center text-center">
                 <img
                   src="/icons/heart-empty.svg"
                   alt=""
@@ -114,36 +113,25 @@ export default function WishlistPage() {
                   height={62}
                   className="mb-6"
                 />
-                <p className="text-[16px] leading-[24px] text-[#2B313D] font-medium">
-                  {activeTab === 'wishlist' ? (
-                    <>
-                      아직 찜한 상품이 없네요.
-                      <br />
-                      이벤트를 둘러보고 관심있는 상품을 찜해보세요!
-                    </>
-                  ) : (
-                    <>
-                      최근 본 상품이 없네요.
-                      <br />
-                      이벤트를 둘러보고 관심있는 상품을 찾아보세요!
-                    </>
-                  )}
+                <p className="text-[22px] leading-[30px] font-bold text-[#2B313D]">
+                  {activeTab === 'wishlist'
+                    ? '아직 찜한 상품이 없네요!'
+                    : '최근 본 상품이 없네요!'}
                 </p>
-                <Link
-                  href="/search"
-                  className="mt-7 w-full inline-flex items-center justify-center h-[56px] rounded-[12px] bg-[#FF6A2C] text-white text-[15px] font-bold transition-transform active:scale-[0.98]"
-                >
-                  이벤트 둘러보기
-                </Link>
+                <p className="mt-2 text-[16px] leading-[22px] font-medium text-[#51535C]">
+                  {activeTab === 'wishlist'
+                    ? '상품을 둘러보고 관심있는 상품을 찜해보세요!'
+                    : '상품을 둘러보고 관심있는 상품을 찾아보세요!'}
+                </p>
               </div>
 
               {/* 실시간 TOP 10 인기 시술 */}
               {topProducts.length > 0 && (
                 <section className="mt-2 border-t border-[#F2F3F5] pt-6 pb-10">
-                  <h2 className="px-5 mb-4 text-[22px] font-bold text-[#2B313D] leading-[28px]">
-                    실시간 <span className="text-[#FF6A2C]">TOP 10</span> 인기 시술
+                  <h2 className="px-4 mb-4 text-[22px] font-bold text-[#2B313D] leading-[28px]">
+                    실시간 <span className="text-[#8037FF]">TOP 10</span> 인기 시술
                   </h2>
-                  <div className="px-5 pb-2 flex gap-3 overflow-x-auto hide-scrollbar snap-x snap-mandatory">
+                  <div className="pl-4 pr-4 scroll-pl-4 pb-2 flex gap-3 overflow-x-auto hide-scrollbar snap-x snap-mandatory">
                     {topProducts.map((product) => (
                       <div
                         key={product.id}
