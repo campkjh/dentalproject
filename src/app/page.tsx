@@ -890,12 +890,23 @@ function NearbyHotPlaces({
 /* ============================== Live Questions Teaser ============================== */
 
 function LiveQuestionsTeaser() {
-  // Deterministic seeds for the flowing avatar marquee — keep the row populated
-  // even when there are no DB-side question authors handy.
+  // Deterministic seeds + per-avatar Y offset + size jitter so the marquee
+  // looks like a cluster of avatars bobbing through the row rather than a
+  // tidy carousel line.
   const seeds = [
     'q-seo', 'q-min', 'q-jin', 'q-hye', 'q-yul', 'q-jae',
     'q-soo', 'q-han', 'q-da', 'q-eun', 'q-rin', 'q-bom',
+    'q-sky', 'q-nu', 'q-ho', 'q-jun',
   ];
+
+  // Pseudo-random but stable per index
+  const variants = seeds.map((seed, i) => {
+    const yOffset = ((i * 53 + 11) % 28) - 14; // -14 ~ +14
+    const size = 36 + ((i * 17 + 5) % 14); // 36 ~ 50
+    const gapAfter = 8 + ((i * 23 + 7) % 18); // 8 ~ 26
+    const role: 'doctor' | 'user' = i % 4 === 0 ? 'doctor' : 'user';
+    return { seed, yOffset, size, gapAfter, role };
+  });
 
   return (
     <Link
@@ -903,8 +914,9 @@ function LiveQuestionsTeaser() {
       className="block bg-white px-4 pt-2 pb-4"
       aria-label="실시간 의사에게 질문"
     >
-      <div className="flex items-center justify-between gap-3 mb-3">
-        <h2 className="flex flex-col gap-0.5 text-[22px] font-bold leading-[1.15] text-[#2B313D]">
+      <div className="flex items-stretch gap-3">
+        {/* Left: title (flex-shrink-0 so the marquee takes the rest) */}
+        <h2 className="flex flex-col justify-center gap-0.5 text-[22px] font-bold leading-[1.15] text-[#2B313D] flex-shrink-0">
           <span className="inline-flex items-center gap-2">
             실시간
             <span className="inline-flex h-[20px] items-center rounded-[5px] bg-[#FF3B30] px-1.5 text-[11px] font-extrabold leading-none text-white tracking-wider">
@@ -913,38 +925,45 @@ function LiveQuestionsTeaser() {
           </span>
           <span>의사에게 질문</span>
         </h2>
-        <ChevronRight size={20} className="text-gray-400 flex-shrink-0" />
-      </div>
 
-      {/* Marquee of questioner avatars, right→left */}
-      <div
-        className="relative overflow-hidden"
-        style={{
-          height: 56,
-          maskImage:
-            'linear-gradient(to right, transparent 0, #000 32px, #000 calc(100% - 32px), transparent 100%)',
-          WebkitMaskImage:
-            'linear-gradient(to right, transparent 0, #000 32px, #000 calc(100% - 32px), transparent 100%)',
-        }}
-      >
+        {/* Right: floating avatars marquee, fills remaining width */}
         <div
-          className="bubbles-flow-lane absolute left-0 top-1/2 flex items-center gap-3 whitespace-nowrap will-change-transform"
+          className="relative flex-1 overflow-hidden min-w-0"
           style={{
-            ['--bubble-flow-duration' as string]: '38s',
-            transform: 'translateY(-50%)',
+            maskImage:
+              'linear-gradient(to right, transparent 0, #000 24px, #000 calc(100% - 12px), transparent 100%)',
+            WebkitMaskImage:
+              'linear-gradient(to right, transparent 0, #000 24px, #000 calc(100% - 12px), transparent 100%)',
           }}
         >
-          {[...seeds, ...seeds].map((seed, i) => (
-            <div key={`${seed}-${i}`} className="flex-shrink-0">
-              <Avatar
-                role={i % 4 === 0 ? 'doctor' : 'user'}
-                seed={seed}
-                size={44}
-                className="bg-[#F2F7FF] ring-2 ring-white"
-              />
-            </div>
-          ))}
+          <div
+            className="bubbles-flow-lane absolute left-0 top-1/2 flex items-center whitespace-nowrap will-change-transform"
+            style={{
+              ['--bubble-flow-duration' as string]: '34s',
+              transform: 'translateY(-50%)',
+            }}
+          >
+            {[...variants, ...variants].map((v, i) => (
+              <div
+                key={`${v.seed}-${i}`}
+                className="flex-shrink-0"
+                style={{
+                  marginRight: v.gapAfter,
+                  transform: `translateY(${v.yOffset}px)`,
+                }}
+              >
+                <Avatar
+                  role={v.role}
+                  seed={v.seed}
+                  size={v.size}
+                  className="bg-[#F2F7FF] ring-2 ring-white"
+                />
+              </div>
+            ))}
+          </div>
         </div>
+
+        <ChevronRight size={20} className="text-gray-400 flex-shrink-0 self-center" />
       </div>
     </Link>
   );
