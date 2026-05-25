@@ -232,8 +232,6 @@ export default function MyPage() {
           </div>
         </button>
       </div>
-
-      <div className="pb-24" />
     </div>
   );
 }
