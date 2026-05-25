@@ -3,21 +3,24 @@
 import { useState, useMemo, useRef, useEffect, useLayoutEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import {
-  Star,
-  MapPin,
-  Phone,
-  Clock,
-  User,
-  ChevronRight,
-} from 'lucide-react';
+import { Star, ChevronLeft, Maximize2 } from 'lucide-react';
 import Avatar from '@/components/common/Avatar';
-import TopBar from '@/components/common/TopBar';
 import ProductCard from '@/components/common/ProductCard';
 import { useStore } from '@/store';
+import { resolveHospitalImageUrl } from '@/lib/images';
 import { createClient, hasSupabaseEnv } from '@/lib/supabase/client';
 
 const TABS = ['병원소개', '의료진', '진료시간', '리뷰'];
+
+const WEEK_DAYS = [
+  { name: '일요일', short: '일' },
+  { name: '월요일', short: '월' },
+  { name: '화요일', short: '화' },
+  { name: '수요일', short: '수' },
+  { name: '목요일', short: '목' },
+  { name: '금요일', short: '금' },
+  { name: '토요일', short: '토' },
+];
 
 export default function HospitalDetailPage() {
   const params = useParams();
@@ -25,7 +28,6 @@ export default function HospitalDetailPage() {
   const { hospitals, products, reviews } = useStore();
   const [activeTab, setActiveTab] = useState('병원소개');
   const [tabDir, setTabDir] = useState<'left' | 'right'>('right');
-  const [coverIdx, setCoverIdx] = useState(0);
   const [liveCoverImages, setLiveCoverImages] = useState<string[] | null>(null);
   const prevIdxRef = useRef(0);
   const tabBtnRefs = useRef<(HTMLButtonElement | null)[]>([]);
@@ -75,7 +77,7 @@ export default function HospitalDetailPage() {
     return (hospitalReviews.reduce((sum, r) => sum + r.rating, 0) / hospitalReviews.length).toFixed(1);
   }, [hospitalReviews, hospital]);
 
-  // DB에서 최신 cover_images/image_url 실시간 로드
+  // Live cover_images load from supabase (kept from previous implementation)
   useEffect(() => {
     if (!hospital?.id || !hasSupabaseEnv()) return;
     Promise.resolve(
@@ -105,115 +107,91 @@ export default function HospitalDetailPage() {
     (u) => u && !u.startsWith('data:')
   ) ?? [];
 
+  const hospitalLogo = resolveHospitalImageUrl(hospital);
+  const todayIdx = new Date().getDay(); // 0=Sun, 1=Mon, ...
+
+  const openNaverMap = () => {
+    const q = encodeURIComponent(hospital.address || hospital.name);
+    window.open(`https://map.naver.com/p?q=${q}`, '_blank');
+  };
+
   return (
     <div className="pb-[86px] lg:pb-0 bg-white min-h-screen">
       <div className="lg:max-w-5xl lg:mx-auto">
-        {/* TopBar */}
-        <TopBar title={hospital.name} showBack />
+        {/* Minimal header — just back arrow, no title (hospital name lives on the hero) */}
+        <header className="sticky top-0 z-40 bg-white h-14 flex items-center px-4">
+          <button onClick={() => router.back()} className="p-1 -ml-1" aria-label="뒤로가기">
+            <ChevronLeft size={26} strokeWidth={2.4} className="text-[#2B313D]" />
+          </button>
+        </header>
 
-        {/* Cover Image Slider */}
-        <div className="relative aspect-[16/9] lg:aspect-[3/1] lg:rounded-2xl lg:mt-2 overflow-hidden"
-          style={{ background: 'linear-gradient(135deg, #8037FF, #A78BFA)' }}>
-          {coverImages.length > 0 ? (
-            <img
-              key={coverImages[coverIdx % coverImages.length]}
-              src={coverImages[coverIdx % coverImages.length]}
-              alt=""
-              className="absolute inset-0 w-full h-full object-cover"
-              onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
-            />
-          ) : null}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+        {/* Hero — cover carousel + hospital name overlay + position pill */}
+        <CoverHero images={coverImages} name={hospital.name} />
 
-          {/* 슬라이드 화살표 */}
-          {coverImages.length > 1 && (
-            <>
-              <button type="button" aria-label="이전"
-                onClick={() => setCoverIdx((p) => (p - 1 + coverImages.length) % coverImages.length)}
-                className="absolute left-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full flex items-center justify-center"
-                style={{ background: 'rgba(0,0,0,0.35)', border: 'none', color: '#fff', fontSize: 18, cursor: 'pointer' }}>‹</button>
-              <button type="button" aria-label="다음"
-                onClick={() => setCoverIdx((p) => (p + 1) % coverImages.length)}
-                className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full flex items-center justify-center"
-                style={{ background: 'rgba(0,0,0,0.35)', border: 'none', color: '#fff', fontSize: 18, cursor: 'pointer' }}>›</button>
-              <div className="absolute bottom-10 left-0 right-0 flex justify-center gap-1.5">
-                {coverImages.map((_, i) => (
-                  <button key={i} type="button" onClick={() => setCoverIdx(i)}
-                    style={{ width: 6, height: 6, borderRadius: '50%', border: 'none', cursor: 'pointer', padding: 0,
-                      background: i === coverIdx % coverImages.length ? '#fff' : 'rgba(255,255,255,0.45)' }} />
-                ))}
-              </div>
-            </>
+        {/* Info card — logo + address/phone + tag chips */}
+        <section className="px-4 pt-4">
+          <div className="flex items-start gap-3">
+            <div
+              className="w-[72px] h-[72px] rounded-xl overflow-hidden flex-shrink-0 flex items-center justify-center"
+              style={{ backgroundColor: '#F4F5F7' }}
+            >
+              <img src={hospitalLogo} alt={hospital.name} className="w-full h-full object-cover" />
+            </div>
+            <div className="flex-1 min-w-0 pt-1">
+              <p className="text-[15px] text-[#51535C] leading-[22px] line-clamp-1">
+                {hospital.address}
+              </p>
+              <p className="text-[15px] text-[#51535C] leading-[22px] mt-0.5">
+                {hospital.phone}
+              </p>
+            </div>
+          </div>
+
+          {/* Tag chips */}
+          {hospital.tags && hospital.tags.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mt-3">
+              {hospital.tags.slice(0, 3).map((tag) => (
+                <span
+                  key={tag}
+                  className="inline-flex items-center"
+                  style={{ backgroundColor: '#F2F3F5', borderRadius: 8, fontSize: 14, color: '#51535C', padding: '4px 12px' }}
+                >
+                  {tag}
+                </span>
+              ))}
+              {hospital.tags.length > 3 && (
+                <span
+                  className="inline-flex items-center"
+                  style={{ backgroundColor: '#F2F3F5', borderRadius: 8, fontSize: 14, color: '#A4ABBA', padding: '4px 12px' }}
+                >
+                  +{hospital.tags.length - 3}
+                </span>
+              )}
+            </div>
           )}
 
-          <div className="relative z-10 p-4 lg:p-6 flex flex-col justify-end h-full">
-            <span className="inline-block text-xs bg-white/20 backdrop-blur-sm text-white rounded-full px-3 py-1 mb-2 w-fit">
-              {hospital.category}
-            </span>
-            <h1 className="text-xl lg:text-2xl font-bold text-white">{hospital.name}</h1>
-          </div>
-        </div>
-
-        {/* Hospital Info */}
-        <div className="px-2.5 py-4">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-xs bg-purple-50 text-[#8037FF] font-medium rounded-full px-3 py-1">
-              {hospital.category}
-            </span>
-          </div>
-          <div className="flex items-center gap-1.5 text-sm text-gray-500 mb-1.5">
-            <MapPin size={14} className="text-gray-400 flex-shrink-0" />
-            <span>{hospital.location}</span>
-          </div>
-          <div className="flex items-center gap-1.5 text-sm text-gray-500 mb-3">
-            <Phone size={14} className="text-gray-400 flex-shrink-0" />
-            <span>{hospital.phone}</span>
-          </div>
-
-          {/* Tags */}
-          <div className="flex flex-wrap gap-1.5 mb-4">
-            {hospital.tags.map((tag) => (
-              <span key={tag} className="text-xs bg-gray-100 text-gray-600 rounded-full px-2.5 py-1">
-                {tag}
-              </span>
-            ))}
-          </div>
-
-          {/* Naver Map Button */}
-          <button
-            onClick={() => {
-              const query = encodeURIComponent(hospital.address + ' ' + hospital.name);
-              window.open(`https://map.naver.com/v5/search/${query}`, '_blank');
-            }}
-            className="w-full py-2.5 bg-[#8037FF] text-white rounded-xl text-sm font-medium mb-4"
+          {/* Stats card */}
+          <div
+            className="flex items-center justify-around mt-4 rounded-xl"
+            style={{ backgroundColor: '#F7F8FA', height: 56 }}
           >
-            찾아가는길
-          </button>
-
-          {/* Stats Row */}
-          <div className="flex items-center justify-around bg-gray-50 rounded-xl py-3">
-            <div className="text-center">
-              <div className="flex items-center gap-1 justify-center mb-0.5">
-                <Star size={14} fill="#FBBF24" stroke="#FBBF24" />
-                <span className="text-sm font-bold">{avgRating}</span>
-              </div>
-              <span className="text-[11px] text-gray-400">평점</span>
+            <div className="flex items-center gap-1.5">
+              <Star size={18} fill="#FBBF24" stroke="#FBBF24" />
+              <span style={{ fontSize: 16, fontWeight: 700, color: '#2B313D' }}>{avgRating}</span>
             </div>
-            <div className="w-px h-8 bg-gray-200" />
-            <div className="text-center">
-              <p className="text-sm font-bold mb-0.5">{hospital.reviewCount}건</p>
-              <span className="text-[11px] text-gray-400">리뷰</span>
-            </div>
-            <div className="w-px h-8 bg-gray-200" />
-            <div className="text-center">
-              <p className="text-sm font-bold mb-0.5">{hospital.doctors.length}명</p>
-              <span className="text-[11px] text-gray-400">의사</span>
-            </div>
+            <div className="w-px h-6" style={{ backgroundColor: '#E5E7EB' }} />
+            <span style={{ fontSize: 16, fontWeight: 700, color: '#2B313D' }}>
+              {hospitalReviews.length || hospital.reviewCount}건
+            </span>
+            <div className="w-px h-6" style={{ backgroundColor: '#E5E7EB' }} />
+            <span style={{ fontSize: 16, fontWeight: 700, color: '#2B313D' }}>
+              {hospital.doctors.length}명
+            </span>
           </div>
-        </div>
+        </section>
 
-        {/* Tabs with sliding indicator */}
-        <div style={{ position: 'sticky', top: 0, zIndex: 30 }} className="bg-white">
+        {/* Sticky tabs */}
+        <div style={{ position: 'sticky', top: 56, zIndex: 30 }} className="bg-white mt-4">
           <div className="relative flex border-b border-gray-100">
             {TABS.map((t, i) => {
               const isActive = activeTab === t;
@@ -224,7 +202,7 @@ export default function HospitalDetailPage() {
                     tabBtnRefs.current[i] = el;
                   }}
                   onClick={() => changeTab(t)}
-                  className="flex-1 py-3 text-[14px] font-semibold"
+                  className="flex-1 py-3 text-[16px] font-bold"
                   style={{
                     color: isActive ? '#2B313D' : '#A4ABBA',
                     transition: 'color 320ms cubic-bezier(0.22, 1, 0.36, 1)',
@@ -247,39 +225,37 @@ export default function HospitalDetailPage() {
           </div>
         </div>
 
-        {/* Tab Content — directional slide on tab change */}
+        {/* Tab content */}
         <div
           key={activeTab}
-          className={`px-2.5 py-4 ${tabDir === 'right' ? 'tab-slide-right' : 'tab-slide-left'}`}
+          className={`px-4 py-5 ${tabDir === 'right' ? 'tab-slide-right' : 'tab-slide-left'}`}
         >
-          {/* 병원소개 Tab */}
+          {/* ===================== 병원소개 ===================== */}
           {activeTab === '병원소개' && (
-            <div>
-              {hospital.introduction ? (
-                <div className="mb-6">
-                  <h3 className="font-bold text-sm mb-2">소개</h3>
-                  <p className="text-sm text-gray-600 leading-relaxed">{hospital.introduction}</p>
-                </div>
-              ) : (
-                <div className="mb-6">
-                  <p className="text-sm text-gray-400">등록된 소개 정보가 없습니다.</p>
-                </div>
-              )}
+            <div className="space-y-7">
+              {/* 병원소개 */}
+              <section>
+                <h2 style={{ fontSize: 20, fontWeight: 700, color: '#2B313D', marginBottom: 12 }}>
+                  병원소개
+                </h2>
+                {hospital.introduction ? (
+                  <p style={{ fontSize: 15, color: '#51535C', lineHeight: '24px', whiteSpace: 'pre-line' }}>
+                    {hospital.introduction}
+                  </p>
+                ) : (
+                  <p style={{ fontSize: 15, color: '#A4ABBA' }}>등록된 소개 정보가 없습니다.</p>
+                )}
+              </section>
 
-              {/* Address with map placeholder */}
-              <div className="mb-4">
-                <h3 className="font-bold text-sm mb-2">주소</h3>
-                <div className="flex items-start gap-2 mb-3">
-                  <MapPin size={16} className="text-[#8037FF] flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-sm text-gray-700">{hospital.address}</p>
-                    {hospital.addressDetail && (
-                      <p className="text-xs text-gray-400 mt-1 whitespace-pre-line">{hospital.addressDetail}</p>
-                    )}
-                  </div>
-                </div>
-                {/* Google Maps Embed */}
-                <div className="aspect-[16/9] rounded-xl overflow-hidden border border-gray-200">
+              {/* 병원위치 */}
+              <section>
+                <h2 style={{ fontSize: 20, fontWeight: 700, color: '#2B313D', marginBottom: 12 }}>
+                  병원위치
+                </h2>
+                <div
+                  className="relative aspect-[16/10] rounded-xl overflow-hidden"
+                  style={{ border: '1px solid #E5E7EB' }}
+                >
                   <iframe
                     src={`https://maps.google.com/maps?q=${encodeURIComponent(hospital.address)}&t=&z=16&ie=UTF8&iwloc=&output=embed`}
                     width="100%"
@@ -290,143 +266,152 @@ export default function HospitalDetailPage() {
                     referrerPolicy="no-referrer-when-downgrade"
                     title="병원 위치"
                   />
+                  <button
+                    onClick={() => window.open(`https://maps.google.com/?q=${encodeURIComponent(hospital.address)}`, '_blank')}
+                    className="absolute top-2 right-2 w-8 h-8 bg-white rounded-md flex items-center justify-center"
+                    style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.12)' }}
+                    aria-label="지도 확대"
+                  >
+                    <Maximize2 size={14} className="text-gray-700" />
+                  </button>
                 </div>
-              </div>
-            </div>
-          )}
 
-          {/* 의료진 Tab */}
-          {activeTab === '의료진' && (
-            <div className="space-y-3 lg:grid lg:grid-cols-2 lg:gap-4 lg:space-y-0">
-              {hospital.doctors.map((doctor) => (
-                <Link
-                  key={doctor.id}
-                  href={`/doctor/${doctor.id}`}
-                  className="flex items-start gap-3 p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
+                {/* 찾아가는길 button */}
+                <button
+                  onClick={openNaverMap}
+                  className="btn-press w-full flex items-center justify-center gap-2 mt-3"
+                  style={{ height: 48, borderRadius: 12, backgroundColor: '#F4F5F7', fontSize: 16, fontWeight: 700, color: '#2B313D' }}
                 >
-                  <Avatar
-                    src={doctor.profileImage}
-                    role="doctor"
-                    seed={doctor.name}
-                    size={56}
-                    alt={doctor.name}
-                    className="flex-shrink-0"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5 mb-1">
-                      <span className="text-sm font-bold">{doctor.name}</span>
-                      <span className="text-xs text-[#8037FF] font-medium">{doctor.title}</span>
-                      {doctor.isOwner && (
-                        <span className="text-[10px] bg-[#8037FF] text-white rounded px-1.5 py-0.5">
-                          대표원장
-                        </span>
-                      )}
-                    </div>
-                    {doctor.specialty && (
-                      <p className="text-xs text-gray-500 mb-1">{doctor.specialty}</p>
-                    )}
-                    {doctor.bio && (
-                      <p className="text-xs text-gray-400 line-clamp-2">{doctor.bio}</p>
-                    )}
-                  </div>
-                  <ChevronRight size={16} className="text-gray-300 flex-shrink-0 mt-1" />
-                </Link>
-              ))}
+                  <img src="/icons/naver-map.png" alt="" width={22} height={22} className="flex-shrink-0" />
+                  찾아가는길
+                </button>
+
+                {/* Address text */}
+                <p style={{ fontSize: 15, color: '#2B313D', marginTop: 16, lineHeight: '22px' }}>
+                  {hospital.address}
+                </p>
+                {hospital.addressDetail && (
+                  <p style={{ fontSize: 15, color: '#51535C', marginTop: 8, lineHeight: '22px', whiteSpace: 'pre-line' }}>
+                    {hospital.addressDetail}
+                  </p>
+                )}
+              </section>
             </div>
           )}
 
-          {/* 진료시간 Tab */}
+          {/* ===================== 의료진 ===================== */}
+          {activeTab === '의료진' && (
+            <section>
+              <h2 style={{ fontSize: 20, fontWeight: 700, color: '#2B313D', marginBottom: 16 }}>
+                의사정보
+              </h2>
+              {hospital.doctors.length > 0 ? (
+                <div className="space-y-5">
+                  {hospital.doctors.map((doctor) => (
+                    <Link
+                      key={doctor.id}
+                      href={`/doctor/${doctor.id}`}
+                      className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+                    >
+                      <Avatar
+                        src={doctor.profileImage}
+                        role="doctor"
+                        seed={doctor.name}
+                        size={60}
+                        alt={doctor.name}
+                        className="flex-shrink-0"
+                      />
+                      <div className="min-w-0">
+                        <p style={{ fontSize: 16, fontWeight: 700, color: '#2B313D' }}>
+                          {doctor.name} {doctor.isOwner ? '대표원장' : doctor.title || '원장'}
+                        </p>
+                        {doctor.specialty && (
+                          <p style={{ fontSize: 14, color: '#51535C', marginTop: 3 }}>
+                            {doctor.specialty}
+                          </p>
+                        )}
+                        <p style={{ fontSize: 13, color: '#A4ABBA', marginTop: 2 }}>{hospital.name}</p>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <p style={{ fontSize: 15, color: '#A4ABBA' }}>등록된 의료진 정보가 없습니다.</p>
+              )}
+            </section>
+          )}
+
+          {/* ===================== 진료시간 ===================== */}
           {activeTab === '진료시간' && (
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <Clock size={16} className="text-[#8037FF]" />
-                <h3 className="font-bold text-sm">진료시간</h3>
-              </div>
-              <div className="bg-gray-50 rounded-xl p-4">
-                {hospital.operatingHours.map((oh) => (
-                  <div key={oh.day} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
-                    <span className="text-sm font-medium text-gray-700 w-8">{oh.day}</span>
-                    {oh.isClosed ? (
-                      <span className="text-sm text-red-400 font-medium">휴진</span>
-                    ) : (
-                      <span className="text-sm text-gray-600">
-                        {oh.startTime} - {oh.endTime}
-                      </span>
-                    )}
-                  </div>
-                ))}
+            <section>
+              <div className="space-y-1">
+                {WEEK_DAYS.map((d, idx) => {
+                  const oh = hospital.operatingHours.find((o) => o.day === d.short || o.day === d.name);
+                  const isToday = idx === todayIdx;
+                  const isClosed = !oh || oh.isClosed;
+                  return (
+                    <div
+                      key={d.short}
+                      className="flex items-center gap-3"
+                      style={{
+                        padding: '12px 12px',
+                        borderRadius: 12,
+                        backgroundColor: isToday ? '#F4F5F7' : 'transparent',
+                      }}
+                    >
+                      <div
+                        className="flex items-center justify-center flex-shrink-0"
+                        style={{
+                          width: 28,
+                          height: 28,
+                          borderRadius: 14,
+                          backgroundColor: isToday ? '#2B313D' : '#F2F3F5',
+                          color: isToday ? '#fff' : '#A4ABBA',
+                          fontSize: 13,
+                          fontWeight: 600,
+                        }}
+                      >
+                        {idx + 1}
+                      </div>
+                      <div>
+                        <p style={{ fontSize: 16, fontWeight: 600, color: '#2B313D' }}>{d.name}</p>
+                        <p style={{ fontSize: 14, color: isClosed ? '#A4ABBA' : '#51535C', marginTop: 2 }}>
+                          {isClosed ? '휴무' : `${oh!.startTime}~${oh!.endTime}`}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
               {hospital.holidayNotice && (
-                <div className="mt-3 p-3 bg-red-50 rounded-xl">
-                  <p className="text-xs text-red-500">{hospital.holidayNotice}</p>
-                </div>
+                <p style={{ fontSize: 14, color: '#EF4444', marginTop: 12 }}>{hospital.holidayNotice}</p>
               )}
-            </div>
+            </section>
           )}
 
-          {/* 리뷰 Tab */}
+          {/* ===================== 리뷰 ===================== */}
           {activeTab === '리뷰' && (
-            <div>
-              {/* Average Rating Display */}
-              <div className="flex items-center gap-4 mb-6 p-4 bg-gray-50 rounded-xl">
-                <div className="text-center">
-                  <p className="text-3xl font-bold text-[#8037FF]">{avgRating}</p>
-                  <div className="flex items-center gap-0.5 mt-1 justify-center">
-                    {[...Array(5)].map((_, i) => (
-                      <Star
-                        key={i}
-                        size={12}
-                        fill={i < Math.round(Number(avgRating)) ? '#FBBF24' : '#E5E7EB'}
-                        stroke={i < Math.round(Number(avgRating)) ? '#FBBF24' : '#E5E7EB'}
-                      />
-                    ))}
-                  </div>
-                  <p className="text-xs text-gray-400 mt-1">{hospitalReviews.length}건의 리뷰</p>
-                </div>
-              </div>
-
-              {/* Review List */}
+            <section>
               {hospitalReviews.length > 0 ? (
-                <div className="space-y-4">
+                <div className="space-y-5">
                   {hospitalReviews.map((review) => {
                     const hasReviewImages = Boolean(review.beforeImage || review.afterImage);
-
                     return (
-                      <div key={review.id} className="border border-gray-100 rounded-xl p-4">
-                        {/* Reviewer info */}
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
-                              <User size={14} className="text-[#8037FF]" />
-                            </div>
-                            <div>
-                              <p className="text-sm font-bold">{review.authorName}</p>
-                              <p className="text-[11px] text-gray-400">{review.date}</p>
-                            </div>
-                          </div>
+                      <div key={review.id} className="rounded-xl" style={{ border: '1px solid #F2F3F5', padding: 16 }}>
+                        <div className="flex items-center justify-between mb-2">
+                          <p style={{ fontSize: 15, fontWeight: 700, color: '#2B313D' }}>{review.authorName}</p>
                           <div className="flex items-center gap-0.5">
                             {[...Array(5)].map((_, i) => (
                               <Star
                                 key={i}
-                                size={12}
+                                size={13}
                                 fill={i < review.rating ? '#FBBF24' : '#E5E7EB'}
                                 stroke={i < review.rating ? '#FBBF24' : '#E5E7EB'}
                               />
                             ))}
                           </div>
                         </div>
-
-                        {/* Treatment info */}
-                        <div className="bg-gray-50 rounded-lg p-3 mb-3">
-                          <p className="text-xs text-gray-500">시술명: {review.treatmentName}</p>
-                          <p className="text-xs text-gray-500 mt-1">
-                            비용: {review.totalCost.toLocaleString()}원
-                          </p>
-                          {review.doctorName && (
-                            <p className="text-xs text-[#8037FF] mt-1">담당의: {review.doctorName}</p>
-                          )}
-                        </div>
-
+                        <p style={{ fontSize: 13, color: '#A4ABBA', marginBottom: 10 }}>{review.date}</p>
                         {hasReviewImages && (
                           <div className="flex gap-2 mb-3">
                             {review.beforeImage && (
@@ -441,36 +426,106 @@ export default function HospitalDetailPage() {
                             )}
                           </div>
                         )}
-
-                        {/* Review content */}
-                        <p className="text-sm text-gray-700 leading-relaxed">{review.content}</p>
+                        <p style={{ fontSize: 14, color: '#51535C', lineHeight: '22px' }}>{review.content}</p>
                       </div>
                     );
                   })}
                 </div>
               ) : (
-                <div className="py-10 text-center text-gray-400 text-sm">
+                <p style={{ fontSize: 15, color: '#A4ABBA', textAlign: 'center', paddingTop: 32, paddingBottom: 32 }}>
                   아직 리뷰가 없습니다
-                </div>
+                </p>
               )}
-            </div>
+            </section>
           )}
         </div>
 
-        {/* 이 병원의 상품 Section */}
+        {/* ===================== 더많은 상품 ===================== */}
         {hospitalProducts.length > 0 && (
-          <div className="px-2.5 py-4 border-t border-gray-100">
-            <h2 className="font-bold mb-3">이 병원의 상품</h2>
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
-              {hospitalProducts.map((product) => (
-                <ProductCard key={product.id} product={product} />
+          <section className="pt-2 pb-6">
+            <h2 className="px-4" style={{ fontSize: 20, fontWeight: 700, color: '#2B313D', marginBottom: 14 }}>
+              더많은 상품
+            </h2>
+            <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-1 px-4">
+              {hospitalProducts.map((hp) => (
+                <div key={hp.id} className="w-[140px] flex-shrink-0">
+                  <ProductCard product={hp} />
+                </div>
               ))}
             </div>
-          </div>
+          </section>
         )}
       </div>
+    </div>
+  );
+}
 
-      {/* BottomNav on mobile */}
+/* Hero — horizontal scroll-snap carousel + hospital name overlay + N/total pill. */
+function CoverHero({ images, name }: { images: string[]; name: string }) {
+  const [idx, setIdx] = useState(0);
+  const ref = useRef<HTMLDivElement>(null);
+
+  const handleScroll = () => {
+    const el = ref.current;
+    if (!el) return;
+    const i = Math.round(el.scrollLeft / el.clientWidth);
+    if (i !== idx) setIdx(i);
+  };
+
+  const hasImages = images && images.length > 0;
+
+  return (
+    <div className="relative">
+      {hasImages ? (
+        <div
+          ref={ref}
+          onScroll={handleScroll}
+          className="flex overflow-x-auto hide-scrollbar snap-x snap-mandatory"
+          style={{ scrollBehavior: 'smooth' }}
+        >
+          {images.map((src, i) => (
+            <div key={i} className="aspect-[16/10] w-full flex-shrink-0 snap-start bg-gray-200">
+              <img src={src} alt="" className="w-full h-full object-cover" />
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div
+          className="aspect-[16/10] w-full"
+          style={{ background: 'linear-gradient(135deg, #8037FF, #A78BFA)' }}
+        />
+      )}
+
+      {/* Bottom-gradient + hospital name overlay */}
+      <div
+        className="absolute inset-x-0 bottom-0 pointer-events-none"
+        style={{
+          height: '50%',
+          background: 'linear-gradient(to top, rgba(0,0,0,0.55), rgba(0,0,0,0))',
+        }}
+      />
+      <h1
+        className="absolute left-4 bottom-4"
+        style={{
+          fontSize: 26,
+          fontWeight: 800,
+          color: '#fff',
+          textShadow: '0 2px 12px rgba(0,0,0,0.4)',
+          letterSpacing: '-0.01em',
+        }}
+      >
+        {name}
+      </h1>
+
+      {/* Position pill — only if multiple images */}
+      {hasImages && images.length > 1 && (
+        <div
+          className="absolute bottom-4 right-4 text-white text-[12px] font-medium px-2.5 py-1 rounded-full backdrop-blur"
+          style={{ backgroundColor: 'rgba(0,0,0,0.45)' }}
+        >
+          {idx + 1}/{images.length}
+        </div>
+      )}
     </div>
   );
 }
