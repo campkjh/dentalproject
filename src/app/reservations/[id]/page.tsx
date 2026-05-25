@@ -332,15 +332,26 @@ function PolicyBlock({
   );
 }
 
-/** Naver Map green location pin with "N" inside */
+/** Naver Map location pin — blue→green gradient with a bold white "N". */
 function NaverPinIcon() {
   return (
     <svg width={22} height={22} viewBox="0 0 22 22" fill="none" aria-hidden>
+      <defs>
+        <linearGradient id="naverPinGrad" x1="18%" y1="0%" x2="82%" y2="100%">
+          <stop offset="0%" stopColor="#1F8AFF" />
+          <stop offset="55%" stopColor="#22B6C8" />
+          <stop offset="100%" stopColor="#22D365" />
+        </linearGradient>
+      </defs>
       <path
-        d="M11 1.5C6.58 1.5 3 5.08 3 9.5c0 5.5 8 11 8 11s8-5.5 8-11c0-4.42-3.58-8-8-8z"
-        fill="#03C75A"
+        d="M11 1.4C6.5 1.4 2.9 5 2.9 9.5c0 5.4 8.1 11.1 8.1 11.1s8.1-5.7 8.1-11.1C19.1 5 15.5 1.4 11 1.4z"
+        fill="url(#naverPinGrad)"
       />
-      <path d="M8.6 6h2.05l2.75 4.85V6h1.95v9h-2.05l-2.75-4.85V15H8.6V6z" fill="#fff" />
+      {/* Bold white N — slightly chunky strokes to match the brand mark */}
+      <path
+        d="M8 5.6h2.35l3.3 5.65V5.6H16v9.3h-2.35l-3.3-5.65v5.65H8V5.6z"
+        fill="#fff"
+      />
     </svg>
   );
 }
