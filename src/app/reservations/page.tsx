@@ -216,7 +216,7 @@ export default function ReservationsPage() {
                             <StatusIcon status={reservation.status} size={16} />
                             {statusLabel[reservation.status]}
                           </span>
-                          <span className="text-[11px] text-gray-400 font-medium">
+                          <span className="text-[15px] text-gray-400 font-medium">
                             {reservation.date}
                           </span>
                         </div>
