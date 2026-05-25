@@ -1,14 +1,12 @@
 'use client';
 
 import { useState, useRef, useEffect, useLayoutEffect, Suspense, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { createClient, hasSupabaseEnv } from '@/lib/supabase/client';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Avatar from '@/components/common/Avatar';
-import { ChevronDown, ChevronRight, Search } from 'lucide-react';
-import {
-  IconArrowUp,
-} from '@/components/icons/AppIcons';
+import { ChevronDown, ChevronRight, Search, ArrowUp } from 'lucide-react';
 import TopBar from '@/components/common/TopBar';
 import { useStore } from '@/store';
 import { Post } from '@/types';
@@ -82,6 +80,9 @@ function CommunityPageInner() {
   const [sortBy, setSortBy] = useState('최신순');
   const [showSortDropdown, setShowSortDropdown] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const [scrollTopLeaving, setScrollTopLeaving] = useState(false);
+  const showScrollTopRef = useRef(false);
+  const scrollTopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [popularAnswerers, setPopularAnswerers] = useState<Record<string, PopularAnswerer>>({});
@@ -271,10 +272,37 @@ function CommunityPageInner() {
   }, [popularAnswerers]);
 
   const handleScroll = () => {
-    if (scrollContainerRef.current) {
-      setShowScrollTop(scrollContainerRef.current.scrollTop > 300);
+    if (!scrollContainerRef.current) return;
+    const isPastThreshold = scrollContainerRef.current.scrollTop > 300;
+
+    // Same show/leave logic as the home page so the bounce-in /
+    // scroll-top-leave CSS animations play through cleanly.
+    if (isPastThreshold) {
+      if (scrollTopTimerRef.current) {
+        clearTimeout(scrollTopTimerRef.current);
+        scrollTopTimerRef.current = null;
+      }
+      showScrollTopRef.current = true;
+      setShowScrollTop(true);
+      setScrollTopLeaving(false);
+      return;
     }
+
+    if (!showScrollTopRef.current) return;
+    setScrollTopLeaving(true);
+    if (scrollTopTimerRef.current) clearTimeout(scrollTopTimerRef.current);
+    scrollTopTimerRef.current = setTimeout(() => {
+      showScrollTopRef.current = false;
+      setShowScrollTop(false);
+      setScrollTopLeaving(false);
+    }, 260);
   };
+
+  useEffect(() => {
+    return () => {
+      if (scrollTopTimerRef.current) clearTimeout(scrollTopTimerRef.current);
+    };
+  }, []);
 
   const scrollToTop = () => {
     scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
@@ -730,16 +758,30 @@ function CommunityPageInner() {
         <FloatingAskButton label={writeButtonLabel} href={`/community/write?board=${boardType}`} scrollContainer={scrollContainerRef} />
       )}
 
-      {/* Scroll to top */}
-      {showScrollTop && (
-        <button
-          onClick={scrollToTop}
-          className="fixed bottom-40 right-4 z-30 w-10 h-10 bg-white border border-gray-200 rounded-full shadow-md flex items-center justify-center"
-          style={{ right: 'calc(50% - 215px + 16px)' }}
-        >
-          <IconArrowUp size={20} />
-        </button>
-      )}
+      {/* Scroll to top — same portal-based glass-blur button as the home page */}
+      {showScrollTop &&
+        createPortal(
+          <button
+            type="button"
+            aria-label="상단으로 이동"
+            onClick={scrollToTop}
+            className={`${scrollTopLeaving ? 'scroll-top-leave' : 'scroll-top-bounce'} scroll-top-button fixed z-[10000] w-12 h-12 rounded-full p-0 text-gray-950`}
+            style={{
+              bottom: '104px',
+              right: '16px',
+              background: 'rgba(255, 255, 255, 0.82)',
+              border: '1px solid rgba(229, 231, 235, 0.92)',
+              boxShadow: '0 12px 34px rgba(17, 24, 39, 0.22)',
+              backdropFilter: 'blur(18px) saturate(170%)',
+              WebkitBackdropFilter: 'blur(18px) saturate(170%)',
+            }}
+          >
+            <span className="scroll-top-button-inner">
+              <ArrowUp size={21} strokeWidth={1.9} />
+            </span>
+          </button>,
+          document.body
+        )}
 
     </div>
   );
