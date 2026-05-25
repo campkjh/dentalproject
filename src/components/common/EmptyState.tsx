@@ -13,6 +13,8 @@ const svgIcons: Partial<Record<IconName, string>> = {
   calendar: '/icons/calendar-empty.svg',
   point: '/icons/point-empty.svg',
   coupon: '/icons/coupon-empty.svg',
+  // Overrides the lucide CreditCard fallback when icon="payment" is requested.
+  payment: '/icons/payment-empty.svg',
 };
 
 interface EmptyStateProps {
