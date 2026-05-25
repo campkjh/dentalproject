@@ -911,25 +911,28 @@ function LiveQuestionsTeaser() {
   return (
     <Link
       href="/community"
-      className="block bg-white px-4 pt-2 pb-4"
+      className="block bg-white px-4 pt-3 pb-4"
       aria-label="실시간 의사에게 질문"
     >
-      <div className="flex items-stretch gap-3">
+      <div className="flex items-center gap-3 min-h-[100px]">
         {/* Left: title (flex-shrink-0 so the marquee takes the rest) */}
-        <h2 className="flex flex-col justify-center gap-0.5 text-[22px] font-bold leading-[1.15] text-[#2B313D] flex-shrink-0">
+        <h2 className="flex flex-col gap-0.5 text-[22px] font-bold leading-[1.15] text-[#2B313D] flex-shrink-0">
           <span className="inline-flex items-center gap-2">
             실시간
-            <span className="inline-flex h-[20px] items-center rounded-[5px] bg-[#FF3B30] px-1.5 text-[11px] font-extrabold leading-none text-white tracking-wider">
+            <span className="live-badge-flow inline-flex h-[20px] items-center rounded-[5px] px-1.5 text-[11px] font-extrabold leading-none text-white tracking-wider">
               LIVE
             </span>
           </span>
           <span>의사에게 질문</span>
         </h2>
 
-        {/* Right: floating avatars marquee, fills remaining width */}
+        {/* Right: floating avatars marquee, fills remaining width.
+            clip-path lets avatars overflow vertically (so they don't clip
+            top/bottom) while keeping the horizontal fade. */}
         <div
-          className="relative flex-1 overflow-hidden min-w-0"
+          className="relative flex-1 min-w-0 h-[100px]"
           style={{
+            clipPath: 'inset(-40px 0 -40px 0)',
             maskImage:
               'linear-gradient(to right, transparent 0, #000 24px, #000 calc(100% - 12px), transparent 100%)',
             WebkitMaskImage:
@@ -963,7 +966,7 @@ function LiveQuestionsTeaser() {
           </div>
         </div>
 
-        <ChevronRight size={20} className="text-gray-400 flex-shrink-0 self-center" />
+        <ChevronRight size={20} className="text-gray-400 flex-shrink-0" />
       </div>
     </Link>
   );

@@ -389,6 +389,20 @@ body {
   .doctor-fan-in { animation: none; }
 }
 
+/* ===== Live badge: flowing blue→purple gradient ===== */
+@keyframes liveBadgeFlow {
+  from { background-position: 0% 50%; }
+  to   { background-position: 200% 50%; }
+}
+.live-badge-flow {
+  background: linear-gradient(90deg, #1E85FF 0%, #5C6CFF 25%, #8037FF 50%, #5C6CFF 75%, #1E85FF 100%);
+  background-size: 200% 100%;
+  animation: liveBadgeFlow 3.2s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .live-badge-flow { animation: none; }
+}
+
 /* ===== Floating ask button: ambient bounce every 2.6s ===== */
 @keyframes askBounce {
   0%, 78%   { transform: translateY(0) scale(1); }
