@@ -940,15 +940,22 @@ function FiltersBottomSheet({
             </div>
           )}
 
-          {/* ----- PRICE ----- (min/max inputs + preset pills) */}
+          {/* ----- PRICE ----- (min/max stacked inputs + toggleable preset pills) */}
           {activeTab === 'price' && (
             <div className="h-full overflow-y-auto px-5 pt-5">
-              {/* Input fields: min ~ max with 원 suffix on each side */}
-              <div className="flex items-center gap-2">
+              {/* Min input — top */}
+              <div className="flex flex-col gap-2.5">
                 <div
-                  className="flex-1 flex items-center bg-white rounded-xl px-3"
-                  style={{ height: 48, border: '1px solid #E5E7EB' }}
+                  className="flex items-center px-4"
+                  style={{
+                    height: 52,
+                    borderRadius: 12,
+                    backgroundColor: '#F9F9F9',
+                  }}
                 >
+                  <span className="text-[14px] flex-shrink-0 mr-3" style={{ color: '#A4ABBA' }}>
+                    최소
+                  </span>
                   <input
                     type="text"
                     inputMode="numeric"
@@ -957,17 +964,25 @@ function FiltersBottomSheet({
                       const digits = e.target.value.replace(/[^\d]/g, '');
                       setPriceMin(digits ? Number(digits) : null);
                     }}
-                    placeholder="19,900"
-                    className="flex-1 outline-none text-[15px] bg-transparent"
+                    placeholder="0"
+                    className="flex-1 outline-none text-[16px] bg-transparent text-right"
                     style={{ color: '#2B313D' }}
                   />
+                  <span className="text-[15px] ml-2" style={{ color: '#2B313D' }}>원</span>
                 </div>
-                <span className="text-[15px]" style={{ color: '#2B313D' }}>원</span>
-                <span className="text-[15px]" style={{ color: '#A4ABBA' }}>~</span>
+
+                {/* Max input — bottom */}
                 <div
-                  className="flex-1 flex items-center bg-white rounded-xl px-3"
-                  style={{ height: 48, border: '1px solid #E5E7EB' }}
+                  className="flex items-center px-4"
+                  style={{
+                    height: 52,
+                    borderRadius: 12,
+                    backgroundColor: '#F9F9F9',
+                  }}
                 >
+                  <span className="text-[14px] flex-shrink-0 mr-3" style={{ color: '#A4ABBA' }}>
+                    최대
+                  </span>
                   <input
                     type="text"
                     inputMode="numeric"
@@ -976,15 +991,15 @@ function FiltersBottomSheet({
                       const digits = e.target.value.replace(/[^\d]/g, '');
                       setPriceMax(digits ? Number(digits) : null);
                     }}
-                    placeholder="500,000"
-                    className="flex-1 outline-none text-[15px] bg-transparent"
+                    placeholder="제한 없음"
+                    className="flex-1 outline-none text-[16px] bg-transparent text-right"
                     style={{ color: '#2B313D' }}
                   />
+                  <span className="text-[15px] ml-2" style={{ color: '#2B313D' }}>원</span>
                 </div>
-                <span className="text-[15px]" style={{ color: '#2B313D' }}>원</span>
               </div>
 
-              {/* Preset pills — clicking sets both inputs */}
+              {/* Preset pills — clicking the active one again clears the filter */}
               <div className="flex flex-wrap gap-2 mt-5">
                 {PRICE_PRESETS.map((preset) => {
                   const isActive = preset.min === priceMin && preset.max === priceMax;
@@ -992,8 +1007,14 @@ function FiltersBottomSheet({
                     <button
                       key={preset.label}
                       onClick={() => {
-                        setPriceMin(preset.min);
-                        setPriceMax(preset.max);
+                        if (isActive) {
+                          // Toggle off — clear the filter
+                          setPriceMin(null);
+                          setPriceMax(null);
+                        } else {
+                          setPriceMin(preset.min);
+                          setPriceMax(preset.max);
+                        }
                       }}
                       className="rounded-full"
                       style={{
