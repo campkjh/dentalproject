@@ -59,39 +59,39 @@ const CommentCard = memo(function CommentCard({
         />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="text-xs font-bold text-gray-900">{displayName}</span>
+            <span className="text-sm font-bold text-gray-900">{displayName}</span>
             {comment.authorIsDoctor && !comment.isAnonymous && (
-              <span className="px-1.5 py-0.5 bg-[#8037FF] text-white text-[10px] rounded font-medium">
+              <span className="px-1.5 py-0.5 bg-[#8037FF] text-white text-[12px] rounded font-medium">
                 {comment.authorTitle ?? '의사'}
               </span>
             )}
           </div>
           {comment.authorIsDoctor && !comment.isAnonymous && (comment.authorHospital || comment.authorSpecialty) && (
-            <p className="text-[10px] text-gray-400 mt-0.5">
+            <p className="text-[12px] text-gray-400 mt-0.5">
               {[comment.authorHospital, comment.authorSpecialty].filter(Boolean).join(' · ')}
             </p>
           )}
         </div>
-        <span className="text-[10px] text-gray-400">{comment.date}</span>
+        <span className="text-[12px] text-gray-400">{comment.date}</span>
       </div>
 
-      <p className="text-sm text-gray-700 leading-relaxed ml-[38px] whitespace-pre-line">{comment.content}</p>
+      <p className="text-base text-gray-700 leading-relaxed ml-[38px] whitespace-pre-line">{comment.content}</p>
 
       <div className="flex items-center gap-4 ml-[38px] mt-2">
         <button
           onClick={() => onLike(comment.id)}
-          className={`flex items-center gap-1 text-[10px] ${cl?.liked ? 'text-red-400' : 'text-gray-400'}`}
+          className={`flex items-center gap-1 text-[12px] ${cl?.liked ? 'text-red-400' : 'text-gray-400'}`}
         >
           <Heart size={12} className={cl?.liked ? 'fill-red-400' : ''} />
           {cl?.count ?? comment.likeCount}
         </button>
         {!isReply && (
-          <button onClick={() => onReply(comment.id, displayName)} className="flex items-center gap-1 text-[10px] text-gray-400">
+          <button onClick={() => onReply(comment.id, displayName)} className="flex items-center gap-1 text-[12px] text-gray-400">
             <MessageCircle size={12} />답글
           </button>
         )}
         {userId === comment.authorId && (
-          <button onClick={() => onDelete(comment.id)} className="flex items-center gap-1 text-[10px] text-red-400">
+          <button onClick={() => onDelete(comment.id)} className="flex items-center gap-1 text-[12px] text-red-400">
             <Trash2 size={12} />삭제
           </button>
         )}
@@ -459,13 +459,13 @@ export default function PostDetailPage() {
           <div className="absolute right-4 top-12 bg-white border border-gray-200 rounded-xl shadow-lg z-50 overflow-hidden">
             {isOwnPost ? (
               <>
-                <button onClick={handleDelete} className="block w-full px-5 py-3 text-sm text-left text-red-500">삭제하기</button>
-                <button onClick={() => { setShowMenu(false); router.push(`/community/${postId}/edit`); }} className="block w-full px-5 py-3 text-sm text-left text-gray-700 border-t border-gray-100">수정하기</button>
+                <button onClick={handleDelete} className="block w-full px-5 py-3 text-base text-left text-red-500">삭제하기</button>
+                <button onClick={() => { setShowMenu(false); router.push(`/community/${postId}/edit`); }} className="block w-full px-5 py-3 text-base text-left text-gray-700 border-t border-gray-100">수정하기</button>
               </>
             ) : (
               <>
-                <button onClick={() => { setShowMenu(false); showModal('신고하기', '이 게시글을 신고하시겠습니까?', () => showToast('신고가 접수되었습니다.')); }} className="block w-full px-5 py-3 text-sm text-left text-red-500">신고하기</button>
-                <button onClick={() => { setShowMenu(false); showModal('유저 차단하기', '이 유저를 차단하시겠습니까?', () => showToast('유저가 차단되었습니다.')); }} className="block w-full px-5 py-3 text-sm text-left text-gray-700 border-t border-gray-100">유저 차단하기</button>
+                <button onClick={() => { setShowMenu(false); showModal('신고하기', '이 게시글을 신고하시겠습니까?', () => showToast('신고가 접수되었습니다.')); }} className="block w-full px-5 py-3 text-base text-left text-red-500">신고하기</button>
+                <button onClick={() => { setShowMenu(false); showModal('유저 차단하기', '이 유저를 차단하시겠습니까?', () => showToast('유저가 차단되었습니다.')); }} className="block w-full px-5 py-3 text-base text-left text-gray-700 border-t border-gray-100">유저 차단하기</button>
               </>
             )}
           </div>
@@ -480,8 +480,8 @@ export default function PostDetailPage() {
           <div className="flex items-start gap-2">
             <AlertTriangle size={16} className="text-yellow-600 flex-shrink-0 mt-0.5" />
             <div>
-              <p className="text-xs font-bold text-yellow-700 mb-1">주의사항</p>
-              <p className="text-[11px] text-yellow-600 leading-relaxed">자유익명게시판은 익명으로 운영됩니다.</p>
+              <p className="text-sm font-bold text-yellow-700 mb-1">주의사항</p>
+              <p className="text-[13px] text-yellow-600 leading-relaxed">자유익명게시판은 익명으로 운영됩니다.</p>
             </div>
           </div>
         </div>
@@ -492,22 +492,22 @@ export default function PostDetailPage() {
           <Avatar role={post.authorTitle ? 'doctor' : 'user'} seed={post.anonymousId || post.authorId || post.id} size={40} className="flex-shrink-0" />
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <span className="text-sm font-bold text-gray-900">
+              <span className="text-base font-bold text-gray-900">
                 {post.isAnonymous ? `익명 ${post.anonymousId}` : post.authorName}
               </span>
               {post.boardType === 'dental' && (
-                <span className="px-1.5 py-0.5 bg-[#8037FF] text-white text-[10px] rounded font-medium">치과</span>
+                <span className="px-1.5 py-0.5 bg-[#8037FF] text-white text-[12px] rounded font-medium">치과</span>
               )}
             </div>
             {!post.isAnonymous && (
-              <p className="text-xs text-gray-400">{post.authorTitle}{post.authorHospital && ` | ${post.authorHospital}`}</p>
+              <p className="text-sm text-gray-400">{post.authorTitle}{post.authorHospital && ` | ${post.authorHospital}`}</p>
             )}
           </div>
-          <span className="text-xs text-gray-400">{post.date}</span>
+          <span className="text-sm text-gray-400">{post.date}</span>
         </div>
 
-        <h1 className="text-lg font-bold text-gray-900 mb-3">{post.title}</h1>
-        <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">{post.content}</p>
+        <h1 className="text-xl font-bold text-gray-900 mb-3">{post.title}</h1>
+        <p className="text-base text-gray-700 leading-relaxed whitespace-pre-line">{post.content}</p>
 
         {post.imageUrl && !post.imageUrl.startsWith('data:') && (
           <div className="mt-4 rounded-xl overflow-hidden">
@@ -516,10 +516,10 @@ export default function PostDetailPage() {
         )}
 
         <div className="flex items-center gap-4 mt-4 pt-3 border-t border-gray-100">
-          <span className="flex items-center gap-1 text-xs text-gray-400">
+          <span className="flex items-center gap-1 text-sm text-gray-400">
             <Eye size={14} />{viewCount || post.viewCount}
           </span>
-          <button onClick={handleLike} className="flex items-center gap-1 text-xs">
+          <button onClick={handleLike} className="flex items-center gap-1 text-sm">
             <Heart size={14} className={liked ? 'fill-red-500 text-red-500' : 'text-gray-400'} />
             <span className={liked ? 'text-red-500' : 'text-gray-400'}>{likeCount}</span>
           </button>
@@ -528,13 +528,13 @@ export default function PostDetailPage() {
         {post.tags.length > 0 && (
           <div className="flex flex-wrap gap-1.5 mt-3">
             {post.tags.map((tag) => (
-              <span key={tag} className="px-2.5 py-1 bg-gray-100 text-gray-500 text-xs rounded-full">#{tag}</span>
+              <span key={tag} className="px-2.5 py-1 bg-gray-100 text-gray-500 text-sm rounded-full">#{tag}</span>
             ))}
           </div>
         )}
 
         <div className="mt-4 bg-gray-50 rounded-xl p-3">
-          <p className="text-[10px] text-gray-400 leading-relaxed">본 게시글의 저작권은 작성자에게 있으며, 무단 전재 및 배포를 금합니다.</p>
+          <p className="text-[12px] text-gray-400 leading-relaxed">본 게시글의 저작권은 작성자에게 있으며, 무단 전재 및 배포를 금합니다.</p>
         </div>
       </div>
 
@@ -543,19 +543,19 @@ export default function PostDetailPage() {
           {hasAnswer ? (
             <div className="flex items-center gap-2">
               <MessageCircle size={16} className="text-[#8037FF]" />
-              <span className="text-sm font-medium text-[#8037FF]">{doctorAnswerCount || post.answerCount}명이 답변했어요</span>
+              <span className="text-base font-medium text-[#8037FF]">{doctorAnswerCount || post.answerCount}명이 답변했어요</span>
             </div>
           ) : (
             <div className="flex items-center gap-2">
               <MessageCircle size={16} className="text-red-500" />
-              <span className="text-sm font-medium text-red-500">답변이 필요해요!</span>
+              <span className="text-base font-medium text-red-500">답변이 필요해요!</span>
             </div>
           )}
         </div>
       )}
 
       <div className="px-2.5 py-4">
-        <h3 className="text-sm font-bold text-gray-900 mb-4">댓글 {postComments.length}</h3>
+        <h3 className="text-base font-bold text-gray-900 mb-4">댓글 {postComments.length}</h3>
         {dbComments === null ? (
           /* 댓글 로딩 스켈레톤 */
           <div className="space-y-4">
@@ -577,7 +577,7 @@ export default function PostDetailPage() {
           </div>
         ) : topComments.length === 0 ? (
           <div className="flex items-center justify-center py-10">
-            <p className="text-sm text-gray-400">아직 댓글이 없습니다. 첫 댓글을 남겨보세요!</p>
+            <p className="text-base text-gray-400">아직 댓글이 없습니다. 첫 댓글을 남겨보세요!</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -602,7 +602,7 @@ export default function PostDetailPage() {
       <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] bg-white border-t border-gray-200 z-50">
         {replyTo && (
           <div className="flex items-center justify-between px-3 py-2 bg-gray-50 border-b border-gray-100">
-            <span className="text-xs text-gray-500">
+            <span className="text-sm text-gray-500">
               <CornerDownRight size={12} className="inline mr-1" />
               <span className="font-medium">{replyTo.authorName}</span>에게 답글
             </span>
@@ -616,15 +616,15 @@ export default function PostDetailPage() {
               onChange={(e) => { if (e.target.value.length <= 5000) setCommentText(e.target.value); }}
               placeholder={replyTo ? '답글을 입력해주세요' : '댓글을 입력해주세요'}
               rows={1}
-              className="w-full px-2.5 py-2.5 bg-gray-100 rounded-xl text-sm resize-none focus:outline-none focus:ring-1 focus:ring-[#8037FF]"
+              className="w-full px-2.5 py-2.5 bg-gray-100 rounded-xl text-base resize-none focus:outline-none focus:ring-1 focus:ring-[#8037FF]"
               style={{ minHeight: '40px', maxHeight: '100px' }}
             />
-            <span className="absolute right-3 bottom-2 text-[10px] text-gray-400">{commentText.length}/5000자</span>
+            <span className="absolute right-3 bottom-2 text-[12px] text-gray-400">{commentText.length}/5000자</span>
           </div>
           <button
             onClick={handleSubmitComment}
             disabled={!commentText.trim()}
-            className={`px-2.5 py-2.5 rounded-xl text-sm font-medium flex-shrink-0 transition-colors ${commentText.trim() ? 'bg-[#8037FF] text-white' : 'bg-gray-200 text-gray-400'}`}
+            className={`px-2.5 py-2.5 rounded-xl text-base font-medium flex-shrink-0 transition-colors ${commentText.trim() ? 'bg-[#8037FF] text-white' : 'bg-gray-200 text-gray-400'}`}
           >
             등록
           </button>
