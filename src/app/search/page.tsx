@@ -400,57 +400,59 @@ function SearchPage() {
   }
 
   // ========== NORMAL SEARCH MODE ==========
-  return (
-    <div className="pb-[86px] lg:pb-0 bg-white min-h-screen page-enter">
-      {/* Header */}
-      <div style={{ position: 'sticky', top: 0, zIndex: 40 }} className="bg-white px-3 py-2 flex items-center gap-2 lg:hidden">
-        <button onClick={() => router.back()} className="p-1 flex-shrink-0">
-          <ChevronLeft size={24} className="text-gray-800" />
-        </button>
-        <div style={{ height: 46 }} className="flex-1 flex items-center bg-gray-100 rounded-xl px-2.5 gap-2">
-          <Search size={18} className="text-gray-400 flex-shrink-0" />
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => { setQuery(e.target.value); if (!e.target.value) setHasSearched(false); }}
-            onKeyDown={handleKeyDown}
-            placeholder="원하는 시술이 있으신가요?"
-            style={{ fontSize: 16 }}
-            className="flex-1 bg-transparent outline-none placeholder-gray-400 text-gray-900"
-          />
-          {query && (
-            <button onClick={() => { setQuery(''); setHasSearched(false); }}>
-              <svg width={20} height={20} viewBox="0 0 24 24" fill="none">
-                <circle cx="12" cy="12" r="10" fill="rgba(43,49,61,0.6)" />
-                <path d="m15 9-6 6" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
-                <path d="m9 9 6 6" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
-              </svg>
-            </button>
-          )}
+  // When the user has actually run a search we collapse back to the compact
+  // header layout (back + inline search bar) so results have more room. The
+  // landing state (no search yet) uses the dedicated "검색" title + combined
+  // region/keyword box per the new design.
+  if (hasSearched) {
+    return (
+      <div className="pb-[86px] lg:pb-0 bg-white min-h-screen page-enter">
+        <div style={{ position: 'sticky', top: 0, zIndex: 40 }} className="bg-white px-3 py-2 flex items-center gap-2 lg:hidden">
+          <button onClick={() => router.back()} className="p-1 flex-shrink-0">
+            <ChevronLeft size={24} className="text-gray-800" />
+          </button>
+          <div style={{ height: 46 }} className="flex-1 flex items-center bg-gray-100 rounded-xl px-2.5 gap-2">
+            <Search size={18} className="text-gray-400 flex-shrink-0" />
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => { setQuery(e.target.value); if (!e.target.value) setHasSearched(false); }}
+              onKeyDown={handleKeyDown}
+              placeholder="원하는 시술이 있으신가요?"
+              style={{ fontSize: 16 }}
+              className="flex-1 bg-transparent outline-none placeholder-gray-400 text-gray-900"
+            />
+            {query && (
+              <button onClick={() => { setQuery(''); setHasSearched(false); }}>
+                <svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="10" fill="rgba(43,49,61,0.6)" />
+                  <path d="m15 9-6 6" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
+                  <path d="m9 9 6 6" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
+                </svg>
+              </button>
+            )}
+          </div>
         </div>
-      </div>
 
-      {/* Filter section for normal search mode — same layout as category mode */}
-      <ListPageFilters
-        categories={categories}
-        activeCategory={activeCategory}
-        onChangeCategory={changeCategory}
-        selectedRegions={selectedRegions}
-        regionLabel={regionLabel}
-        priceLabel={priceLabel}
-        priceActive={priceActive}
-        selectedBooking={selectedBooking}
-        selectedSort={selectedSort}
-        setSelectedBooking={setSelectedBooking}
-        onOpenRegion={() => setFilterModalTab('region')}
-        onOpenPrice={() => setFilterModalTab('price')}
-        onOpenBooking={() => setFilterModalTab('booking')}
-        onOpenSort={() => setShowSortModal(true)}
-      />
+        <ListPageFilters
+          categories={categories}
+          activeCategory={activeCategory}
+          onChangeCategory={changeCategory}
+          selectedRegions={selectedRegions}
+          regionLabel={regionLabel}
+          priceLabel={priceLabel}
+          priceActive={priceActive}
+          selectedBooking={selectedBooking}
+          selectedSort={selectedSort}
+          setSelectedBooking={setSelectedBooking}
+          onOpenRegion={() => setFilterModalTab('region')}
+          onOpenPrice={() => setFilterModalTab('price')}
+          onOpenBooking={() => setFilterModalTab('booking')}
+          onOpenSort={() => setShowSortModal(true)}
+        />
 
-      <div className="lg:max-w-7xl lg:mx-auto lg:px-6 lg:py-6">
-        <div className="lg:bg-white lg:rounded-2xl lg:shadow-sm lg:p-6">
-          {hasSearched ? (
+        <div className="lg:max-w-7xl lg:mx-auto lg:px-6 lg:py-6">
+          <div className="lg:bg-white lg:rounded-2xl lg:shadow-sm lg:p-6">
             <div
               key={activeCategory || 'all'}
               className={`px-2.5 stagger-children ${tabDirection === 'right' ? 'tab-slide-right' : 'tab-slide-left'}`}
@@ -476,37 +478,192 @@ function SearchPage() {
                 </div>
               )}
             </div>
-          ) : (
-            <>
-              {recentSearches.length > 0 && (
-                <div className="px-2.5 mb-6 fade-in-up">
-                  <h2 className="text-sm font-bold mb-3">최근검색어</h2>
-                  <div className="flex flex-wrap gap-2">
-                    {recentSearches.map((keyword) => (
-                      <div key={keyword} className="flex items-center gap-1.5 bg-gray-100 rounded-full px-3 py-1.5 hover:bg-gray-200 transition-colors">
-                        <button onClick={() => handleSearch(keyword)} className="text-sm text-gray-700">{keyword}</button>
-                        <button onClick={() => removeRecentSearch(keyword)} className="text-gray-400 hover:text-gray-600">
-                          <X size={14} />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
+          </div>
+        </div>
+
+        {filterModalTab && (
+          <FiltersBottomSheet
+            initialTab={filterModalTab}
+            selectedRegions={selectedRegions}
+            toggleRegion={toggleRegion}
+            setSelectedRegions={setSelectedRegions}
+            activeProvince={activeProvince}
+            setActiveProvince={setActiveProvince}
+            priceMin={priceMin}
+            setPriceMin={setPriceMin}
+            priceMax={priceMax}
+            setPriceMax={setPriceMax}
+            selectedBooking={selectedBooking}
+            setSelectedBooking={setSelectedBooking}
+            onClose={() => setFilterModalTab(null)}
+            onLocate={handleCurrentLocation}
+            locating={locating}
+          />
+        )}
+        {showSortModal && (
+          <FilterModal title="정렬" onClose={() => setShowSortModal(false)}>
+            <div className="flex-1 overflow-y-auto">
+              {sortOptions.map((o) => (
+                <button key={o} onClick={() => { setSelectedSort(o); setShowSortModal(false); }}
+                  className={`w-full flex items-center justify-between px-5 py-3.5 text-sm hover:bg-gray-50 ${selectedSort === o ? 'text-[#8037FF] font-medium bg-purple-50' : 'text-gray-700'}`}>
+                  <span>{o}</span>{selectedSort === o && <Check size={16} className="text-[#8037FF]" />}
+                </button>
+              ))}
+            </div>
+          </FilterModal>
+        )}
+      </div>
+    );
+  }
+
+  // ===== Landing state — matches the "검색" mock =====
+  return (
+    <div className="pb-[86px] lg:pb-0 bg-white min-h-screen page-enter">
+      {/* Header: back arrow + "검색" title */}
+      <div
+        style={{ position: 'sticky', top: 0, zIndex: 40 }}
+        className="bg-white px-4 pt-3 pb-2 flex items-center gap-2"
+      >
+        <button
+          onClick={() => router.back()}
+          className="p-1 -ml-1 flex-shrink-0"
+          aria-label="뒤로가기"
+        >
+          <ChevronLeft size={26} className="text-[#2B313D]" strokeWidth={2.2} />
+        </button>
+        <h1 className="text-[22px] font-extrabold text-[#2B313D] leading-none">검색</h1>
+      </div>
+
+      {/* Combined region + keyword box */}
+      <div className="px-4 pt-3 lg:max-w-2xl lg:mx-auto">
+        <div
+          className="rounded-2xl overflow-hidden"
+          style={{ border: '1px solid #E5E7EB', backgroundColor: '#fff' }}
+        >
+          <button
+            type="button"
+            onClick={() => setFilterModalTab('region')}
+            className="w-full flex items-center justify-between px-5"
+            style={{ height: 56 }}
+          >
+            <span
+              className="text-[16px]"
+              style={{
+                color: selectedRegions.length > 0 ? '#2B313D' : '#C5CAD4',
+                fontWeight: selectedRegions.length > 0 ? 600 : 400,
+              }}
+            >
+              {selectedRegions.length > 0 ? regionLabel : '지역을 선택해주세요.'}
+            </span>
+            <ChevronDown size={20} className="text-[#C5CAD4]" />
+          </button>
+          <div style={{ height: 1, backgroundColor: '#F1F2F4' }} />
+          <div className="flex items-center px-5" style={{ height: 56 }}>
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="검색어를 입력해주세요."
+              className="flex-1 bg-transparent outline-none text-[16px] text-[#2B313D] placeholder:text-[#C5CAD4] placeholder:font-normal"
+            />
+            {query && (
+              <button
+                onClick={() => setQuery('')}
+                className="flex-shrink-0 ml-2"
+                aria-label="검색어 지우기"
+              >
+                <svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="10" fill="rgba(43,49,61,0.45)" />
+                  <path d="m15 9-6 6" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
+                  <path d="m9 9 6 6" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
+                </svg>
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="lg:max-w-2xl lg:mx-auto">
+        {recentSearches.length > 0 && (
+          <div className="px-4 pt-6 fade-in-up">
+            <h2 className="text-[15px] font-bold text-[#2B313D] mb-3">최근검색어</h2>
+            <div className="flex flex-wrap gap-2">
+              {recentSearches.map((keyword) => (
+                <div
+                  key={keyword}
+                  className="inline-flex items-center gap-1.5 rounded-full"
+                  style={{
+                    backgroundColor: '#F2F3F5',
+                    paddingLeft: 12,
+                    paddingRight: 16,
+                    height: 36,
+                  }}
+                >
+                  <button
+                    onClick={() => removeRecentSearch(keyword)}
+                    className="flex-shrink-0"
+                    aria-label={`${keyword} 삭제`}
+                  >
+                    <X size={16} className="text-[#A4ABBA]" strokeWidth={2.2} />
+                  </button>
+                  <button
+                    onClick={() => handleSearch(keyword)}
+                    className="text-[15px] font-semibold text-[#2B313D]"
+                  >
+                    {keyword}
+                  </button>
                 </div>
-              )}
-              <div className="px-2.5 fade-in-up fade-in-up-delay-1">
-                <h2 className="text-sm font-bold mb-3">인기검색어</h2>
-                <div className="grid grid-cols-2 lg:grid-cols-5 gap-x-4 stagger-children">
-                  {popularSearches.map((keyword, index) => (
-                    <button key={keyword} onClick={() => handleSearch(keyword)}
-                      className="flex items-center gap-3 py-2.5 text-left hover:bg-gray-50 rounded-lg px-2 transition-colors">
-                      <span className={`text-sm font-bold w-5 text-center ${index < 3 ? 'text-[#8037FF]' : 'text-gray-400'}`}>{index + 1}</span>
-                      <span className="text-sm text-gray-800">{keyword}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </>
-          )}
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="px-4 pt-6 pb-6 fade-in-up fade-in-up-delay-1">
+          <h2 className="text-[15px] font-bold text-[#2B313D] mb-2">인기검색어</h2>
+
+          {/* 추천 (AD) row — promoted slot above the ranking */}
+          <button
+            type="button"
+            className="w-full flex items-center gap-3 py-3 text-left"
+          >
+            <span
+              className="inline-flex items-center justify-center rounded-md flex-shrink-0"
+              style={{
+                backgroundColor: '#F1ECFF',
+                color: '#8037FF',
+                fontSize: 12,
+                fontWeight: 700,
+                height: 26,
+                paddingLeft: 8,
+                paddingRight: 8,
+              }}
+            >
+              추천
+            </span>
+            <span className="text-[16px] font-semibold text-[#2B313D]">
+              바르는 여드름 약
+            </span>
+            <span className="text-[13px] font-medium text-[#C5CAD4]">AD</span>
+          </button>
+
+          <div className="flex flex-col">
+            {popularSearches.map((keyword, index) => (
+              <button
+                key={keyword}
+                onClick={() => handleSearch(keyword)}
+                className="flex items-center gap-4 py-3 text-left"
+              >
+                <span
+                  className="text-[16px] font-bold flex-shrink-0 text-center"
+                  style={{ color: '#8037FF', width: 22 }}
+                >
+                  {index + 1}
+                </span>
+                <span className="text-[16px] text-[#2B313D]">{keyword}</span>
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
