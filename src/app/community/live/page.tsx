@@ -283,7 +283,7 @@ export default function CommunityLivePage() {
   };
 
   return (
-    <div className="h-[100dvh] flex flex-col bg-white max-w-[480px] mx-auto">
+    <div className="h-[100dvh] flex flex-col bg-white max-w-[500px] mx-auto">
       {/* Header */}
       <header className="sticky top-0 z-30 bg-white border-b border-gray-100">
         <div className="flex items-center gap-2 px-2.5 h-12">

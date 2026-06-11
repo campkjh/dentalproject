@@ -17,7 +17,7 @@ export async function GET() {
   await cancelExpiredPendingReservations(admin);
   await completePastConfirmedReservations(admin);
 
-  const { data, error } = await sb
+  const { data, error } = await admin
     .from('reservations')
     .select(
       `id, status, amount, customer_name, customer_phone, payment_type, payment_method, created_at, visit_at,

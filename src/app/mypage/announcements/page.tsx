@@ -8,7 +8,7 @@ import { ChevronRight } from 'lucide-react';
 export default function AnnouncementsPage() {
   const announcements = useStore((s) => s.announcements);
   return (
-    <div className="min-h-screen bg-white max-w-[480px] mx-auto">
+    <div className="min-h-screen bg-white max-w-[500px] mx-auto">
       <TopBar title="공지사항" />
 
       <div className="divide-y divide-gray-100">

@@ -33,9 +33,10 @@ function LoginInner() {
 
   const isLoggedIn = useStore((s) => s.isLoggedIn);
   const isDoctor = useStore((s) => s.isDoctor);
+  const isAdmin = useStore((s) => s.isAdmin);
   useEffect(() => {
-    if (isLoggedIn) router.replace(isDoctor ? '/partner' : '/');
-  }, [isLoggedIn, isDoctor, router]);
+    if (isLoggedIn) router.replace(isAdmin ? '/admin' : isDoctor ? '/partner' : '/');
+  }, [isLoggedIn, isDoctor, isAdmin, router]);
 
   const isLogin = mode === 'login';
   const canSubmit =
@@ -61,13 +62,13 @@ function LoginInner() {
     setSuccessMsg(null);
     try {
       if (isLogin) {
-        const { error, isDoctor } = await signInWithEmail(email.trim(), password);
+        const { error, isDoctor, isAdmin } = await signInWithEmail(email.trim(), password);
         if (error) {
           setError(translate(error));
           if (isRateLimitError(error)) setRetryAfter(60);
           return;
         }
-        router.replace(isDoctor ? '/partner' : '/');
+        router.replace(isAdmin ? '/admin' : isDoctor ? '/partner' : '/');
       } else {
         const { error, needsConfirm } = await signUpWithEmail(
           email.trim(),
@@ -91,7 +92,7 @@ function LoginInner() {
   };
 
   return (
-    <div className="min-h-screen bg-white max-w-[480px] mx-auto flex flex-col">
+    <div className="min-h-screen bg-white max-w-[500px] mx-auto flex flex-col">
       {/* Back button */}
       <div className="px-2 pt-3">
         <button onClick={() => router.back()} className="p-1.5 -ml-0.5 rounded-full hover:bg-gray-100 transition-colors">

@@ -33,10 +33,11 @@ export async function GET() {
       .from('products')
       .select(
         `id, title, location, price, original_price, discount, rating, review_count, like_count,
-         image_url, detail_image_url, tags, category, sub_category, hospital_id,
+         image_url, detail_image_url, description, tags, category, sub_category, hospital_id,
          hospitals (id, name, location)`
       )
-      .eq('status', 'active'),
+      .eq('status', 'active')
+      .eq('approval_status', 'approved'),
     sb.from('categories').select('*').order('sort_order'),
     sb
       .from('reviews')
@@ -59,6 +60,19 @@ export async function GET() {
   if (hospitalsRes.error) return NextResponse.json({ error: hospitalsRes.error.message }, { status: 500 });
   let productsData = productsRes.data as any[] | null;
   let productsError = productsRes.error;
+
+  if (productsError && isMissingProductColumn(productsError, 'approval_status')) {
+    const fallback = await sb
+      .from('products')
+      .select(
+        `id, title, location, price, original_price, discount, rating, review_count, like_count,
+         image_url, detail_image_url, tags, category, sub_category, hospital_id,
+         hospitals (id, name, location)`
+      )
+      .eq('status', 'active');
+    productsData = fallback.data;
+    productsError = fallback.error;
+  }
 
   if (productsError && isMissingProductColumn(productsError, 'detail_image_url')) {
     const fallback = await sb

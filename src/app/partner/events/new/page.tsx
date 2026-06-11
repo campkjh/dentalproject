@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { ChevronLeft } from 'lucide-react';
 import { useStore } from '@/store';
 import { useSession } from '@/lib/supabase/SessionProvider';
+import { ImageUploader } from '@/components/admin/ImageUploader';
 
 export default function EventNewPage() {
   const router = useRouter();
@@ -99,12 +100,13 @@ export default function EventNewPage() {
               className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:border-[#8037FF] resize-none"
             />
           </Field>
-          <Field label="대표 이미지 URL (선택)">
-            <input
+          <Field label="대표 이미지 (선택)">
+            <ImageUploader
               value={imageUrl}
-              onChange={(e) => setImageUrl(e.target.value)}
-              placeholder="https://..."
-              className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:border-[#8037FF]"
+              onChange={setImageUrl}
+              folder="event-cover"
+              aspect="4/3"
+              placeholder="이벤트 대표 이미지 업로드"
             />
           </Field>
         </div>

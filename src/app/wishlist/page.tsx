@@ -52,7 +52,7 @@ export default function WishlistPage() {
   const scrollToTop = () => window.scrollTo({ top: 0, behavior: 'smooth' });
 
   return (
-    <div className="min-h-screen bg-white max-w-[480px] mx-auto lg:max-w-7xl lg:px-6 lg:py-6">
+    <div className="min-h-screen bg-white max-w-[500px] mx-auto lg:max-w-7xl lg:px-6 lg:py-6">
       {/* Header — community-style: 22px extrabold */}
       <div className="sticky top-0 z-40 bg-white flex items-center px-2.5 lg:hidden" style={{ height: 56 }}>
         <h1 className="text-[22px] font-extrabold text-gray-900 leading-none">찜목록</h1>
@@ -163,7 +163,7 @@ export default function WishlistPage() {
       {showScrollTop && (
         <button
           onClick={scrollToTop}
-          className="fixed bottom-24 right-4 max-w-[480px] w-10 h-10 bg-white border border-gray-200 rounded-full shadow-lg flex items-center justify-center z-40 hover:bg-gray-50 transition-colors"
+          className="fixed bottom-24 right-4 max-w-[500px] w-10 h-10 bg-white border border-gray-200 rounded-full shadow-lg flex items-center justify-center z-40 hover:bg-gray-50 transition-colors"
         >
           <ArrowUp size={18} className="text-gray-600" />
         </button>

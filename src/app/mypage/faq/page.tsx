@@ -104,7 +104,7 @@ export default function FAQPage() {
   const currentFaqs = faqData[activeTab] ?? [];
 
   return (
-    <div className="min-h-screen bg-white max-w-[480px] mx-auto page-enter">
+    <div className="min-h-screen bg-white max-w-[500px] mx-auto page-enter">
       <TopBar title="자주하는질문" />
 
       {/* Tabs — same pattern as 예약내역 (partner-community-categories) */}

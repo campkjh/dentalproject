@@ -611,7 +611,7 @@ export default function PostDetailPage() {
       </div>
 
       {/* 댓글 입력 */}
-      <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] bg-white border-t border-gray-200 z-50">
+      <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[500px] bg-white border-t border-gray-200 z-50">
         {replyTo && (
           <div className="flex items-center justify-between px-3 py-2 bg-gray-50 border-b border-gray-100">
             <span className="text-sm text-gray-500">

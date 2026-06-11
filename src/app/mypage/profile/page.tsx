@@ -46,7 +46,7 @@ export default function ProfilePage() {
 
   if (!isLoggedIn) {
     return (
-      <div className="min-h-screen bg-white max-w-[480px] mx-auto">
+      <div className="min-h-screen bg-white max-w-[500px] mx-auto">
         <TopBar title="프로필 설정" />
         <LoginRequired />
       </div>
@@ -118,7 +118,7 @@ export default function ProfilePage() {
   ];
 
   return (
-    <div className="min-h-screen bg-white max-w-[480px] mx-auto page-enter">
+    <div className="min-h-screen bg-white max-w-[500px] mx-auto page-enter">
       <TopBar title="프로필 설정" />
 
       {/* Profile Avatar */}
@@ -281,7 +281,7 @@ function EditSheet({
       onClick={onClose}
     >
       <div
-        className="bg-white w-full max-w-[480px] rounded-t-2xl lg:rounded-2xl max-h-[80vh] flex flex-col modal-content-enter"
+        className="bg-white w-full max-w-[500px] rounded-t-2xl lg:rounded-2xl max-h-[80vh] flex flex-col modal-content-enter"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">

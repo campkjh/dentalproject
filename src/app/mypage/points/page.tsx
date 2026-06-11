@@ -34,7 +34,7 @@ export default function PointsPage() {
 
   if (!isLoggedIn) {
     return (
-      <div className="min-h-screen bg-white max-w-[480px] mx-auto">
+      <div className="min-h-screen bg-white max-w-[500px] mx-auto">
         <TopBar title="내 포인트" />
         <LoginRequired />
       </div>
@@ -51,7 +51,7 @@ export default function PointsPage() {
   const formattedPoints = (user?.points ?? 0).toLocaleString();
 
   return (
-    <div className="min-h-screen bg-white max-w-[480px] mx-auto page-enter">
+    <div className="min-h-screen bg-white max-w-[500px] mx-auto page-enter">
       <TopBar title="내 포인트" />
 
       {/* Hero: balance on the left, seal+hexagon illustration on the right */}

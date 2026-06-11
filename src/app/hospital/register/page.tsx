@@ -5,10 +5,7 @@ import { useRouter } from 'next/navigation';
 import {
   Check,
   ChevronRight,
-  Eye,
-  FileText,
   Plane,
-  Search,
   Upload,
   X,
 } from 'lucide-react';
@@ -50,6 +47,44 @@ function formatBiznum(raw: string): string {
   if (d.length <= 3) return d;
   if (d.length <= 5) return `${d.slice(0, 3)} ${d.slice(3)}`;
   return `${d.slice(0, 3)} ${d.slice(3, 5)} ${d.slice(5)}`;
+}
+
+type PostcodeData = { zonecode: string; address: string };
+type PostcodeCtor = new (opts: { oncomplete: (data: PostcodeData) => void }) => { open: () => void };
+
+function openPostcode(
+  setHospitalInfo: React.Dispatch<
+    React.SetStateAction<{
+      name: string;
+      ownerName: string;
+      phone: string;
+      businessNumber: string;
+      postalCode: string;
+      address: string;
+      addressDetail: string;
+      logoUrl: string;
+    }>
+  >
+) {
+  const apply = (data: PostcodeData) => {
+    setHospitalInfo((prev) => ({
+      ...prev,
+      postalCode: data.zonecode,
+      address: data.address,
+    }));
+  };
+  const winAny = window as unknown as { daum?: { Postcode: PostcodeCtor } };
+  if (winAny.daum?.Postcode) {
+    new winAny.daum.Postcode({ oncomplete: apply }).open();
+    return;
+  }
+  const s = document.createElement('script');
+  s.src = '//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js';
+  s.onload = () => {
+    const w = window as unknown as { daum: { Postcode: PostcodeCtor } };
+    new w.daum.Postcode({ oncomplete: apply }).open();
+  };
+  document.body.appendChild(s);
 }
 
 interface AgreementTable {
@@ -331,6 +366,10 @@ export default function HospitalRegisterPage() {
     ownerName: '',
     phone: '',
     businessNumber: '',
+    postalCode: '',
+    address: '',
+    addressDetail: '',
+    logoUrl: '',
   });
   const [operatingHours, setOperatingHours] = useState(
     ['월', '화', '수', '목', '금', '토'].map((day) => ({
@@ -344,7 +383,9 @@ export default function HospitalRegisterPage() {
     name: '',
     specialty: '',
     licenseNumber: '',
+    profileImage: '',
   });
+  const [documents, setDocuments] = useState<Record<string, string>>({});
 
   // Step transition direction for slide animation
   const [stepDir, setStepDir] = useState<'forward' | 'backward'>('forward');
@@ -368,6 +409,7 @@ export default function HospitalRegisterPage() {
       if (d.hospitalInfo) setHospitalInfo(d.hospitalInfo);
       if (Array.isArray(d.operatingHours)) setOperatingHours(d.operatingHours);
       if (d.doctorInfo) setDoctorInfo(d.doctorInfo);
+      if (d.documents && typeof d.documents === 'object') setDocuments(d.documents);
     } catch {}
   }, []);
 
@@ -388,6 +430,7 @@ export default function HospitalRegisterPage() {
         hospitalInfo,
         operatingHours,
         doctorInfo,
+        documents,
         savedAt: new Date().toISOString(),
       };
       localStorage.setItem('hospitalRegisterDraft', JSON.stringify(payload));
@@ -465,7 +508,7 @@ export default function HospitalRegisterPage() {
       case 3:
         return !!registerType;
       case 4:
-        return hospitalSearch.length > 0;
+        return !!(hospitalInfo.postalCode && hospitalInfo.address);
       case 5:
         return allRequiredAgreed;
       case 6:
@@ -493,7 +536,7 @@ export default function HospitalRegisterPage() {
       case 3:
         return '등록 유형 선택';
       case 4:
-        return '병원 검색';
+        return '병원 주소';
       case 5:
         return '약관 동의';
       case 6:
@@ -530,7 +573,7 @@ export default function HospitalRegisterPage() {
                   }}
                   className={`flex flex-col items-center gap-2 py-4 px-2 rounded-xl border transition-colors card-press ${
                     selectedSpecialty === s.id
-                      ? 'border-[#3182F6] bg-[#E8F3FF]/30'
+                      ? 'border-[#333C4A] bg-[#F2F4F6]/30'
                       : 'border-gray-200'
                   }`}
                 >
@@ -540,7 +583,7 @@ export default function HospitalRegisterPage() {
                   <span
                     className={`font-medium text-[12px] text-center leading-tight ${
                       selectedSpecialty === s.id
-                        ? 'text-[#3182F6]'
+                        ? 'text-[#333C4A]'
                         : 'text-gray-700'
                     }`}
                   >
@@ -573,7 +616,7 @@ export default function HospitalRegisterPage() {
                   onClick={() => toggleTreatment(t)}
                   className={`px-3 py-2 rounded-full text-sm font-medium transition-colors ${
                     selectedTreatments.has(t)
-                      ? 'bg-[#3182F6] text-white'
+                      ? 'bg-[#333C4A] text-white'
                       : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                   }`}
                 >
@@ -600,7 +643,7 @@ export default function HospitalRegisterPage() {
                 onClick={() => setRegisterType('hospital')}
                 className={`w-full p-4 rounded-xl border text-left transition-colors ${
                   registerType === 'hospital'
-                    ? 'border-[#3182F6] bg-[#E8F3FF]/30'
+                    ? 'border-[#333C4A] bg-[#F2F4F6]/30'
                     : 'border-gray-200'
                 }`}
               >
@@ -617,7 +660,7 @@ export default function HospitalRegisterPage() {
                     size={20}
                     className={
                       registerType === 'hospital'
-                        ? 'text-[#3182F6]'
+                        ? 'text-[#333C4A]'
                         : 'text-gray-300'
                     }
                   />
@@ -627,7 +670,7 @@ export default function HospitalRegisterPage() {
                 onClick={() => setRegisterType('doctor')}
                 className={`w-full p-4 rounded-xl border text-left transition-colors ${
                   registerType === 'doctor'
-                    ? 'border-[#3182F6] bg-[#E8F3FF]/30'
+                    ? 'border-[#333C4A] bg-[#F2F4F6]/30'
                     : 'border-gray-200'
                 }`}
               >
@@ -644,7 +687,7 @@ export default function HospitalRegisterPage() {
                     size={20}
                     className={
                       registerType === 'doctor'
-                        ? 'text-[#3182F6]'
+                        ? 'text-[#333C4A]'
                         : 'text-gray-300'
                     }
                   />
@@ -656,52 +699,69 @@ export default function HospitalRegisterPage() {
 
       case 4:
         return (
-          <div className="px-2.5 py-6 space-y-4">
-            <div>
-              <h2 className="text-xl font-bold text-gray-900 mb-1">
-                병원을 검색해주세요
+          <div>
+            <div className="tds-top">
+              <span className="tds-top-eyebrow">병원 주소</span>
+              <h2 className="tds-top-title">
+                병원 주소를 입력해주세요
               </h2>
-              <p className="text-sm text-gray-500">
-                등록하려는 병원을 검색합니다.
+              <p className="tds-top-desc">
+                환자에게 노출되는 위치 정보입니다.
               </p>
             </div>
-            <div className="relative">
-              <Search
-                size={18}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-              />
-              <input
-                type="text"
-                value={hospitalSearch}
-                onChange={(e) => setHospitalSearch(e.target.value)}
-                placeholder="병원명을 입력해주세요"
-                className="w-full pl-10 pr-4 py-3 bg-gray-50 rounded-xl text-sm border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#3182F6] focus:border-[#3182F6]"
-              />
-            </div>
-
-            {hospitalSearch.length > 0 && (
-              <div className="space-y-2">
-                <button
-                  onClick={() => setHospitalSearch('참포도나무치과의원')}
-                  className="w-full p-3 rounded-xl border border-gray-200 text-left hover:border-[#3182F6] transition-colors"
-                >
-                  <p className="font-medium text-sm text-gray-900">
-                    참포도나무치과의원
-                  </p>
-                  <p className="text-xs text-gray-500 mt-0.5">
-                    서울 서초구 양재동 20-7
-                  </p>
-                </button>
-                <div className="text-center py-4">
-                  <p className="text-sm text-gray-500 mb-2">
-                    원하는 병원이 없나요?
-                  </p>
-                  <button className="text-sm text-[#3182F6] font-medium">
-                    직접 등록하기
+            <div className="tds-form">
+              <div>
+                <label className="tds-field-label">우편번호</label>
+                <div className="flex gap-2 items-stretch">
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={hospitalInfo.postalCode}
+                    readOnly
+                    placeholder="우편번호"
+                    className="tds-input flex-1 cursor-pointer"
+                    onClick={() => openPostcode(setHospitalInfo)}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => openPostcode(setHospitalInfo)}
+                    className="flex-shrink-0 px-5 rounded-[14px] bg-[#333C4A] text-white text-[15px] font-semibold whitespace-nowrap self-stretch min-h-[54px]"
+                  >
+                    주소 검색
                   </button>
                 </div>
               </div>
-            )}
+              <div>
+                <label className="tds-field-label">기본 주소</label>
+                <input
+                  type="text"
+                  value={hospitalInfo.address}
+                  onChange={(e) =>
+                    setHospitalInfo((prev) => ({
+                      ...prev,
+                      address: e.target.value,
+                    }))
+                  }
+                  placeholder="주소 검색을 통해 입력해주세요"
+                  className="tds-input"
+                />
+              </div>
+              <div>
+                <label className="tds-field-label">상세 주소</label>
+                <input
+                  type="text"
+                  value={hospitalInfo.addressDetail}
+                  onChange={(e) =>
+                    setHospitalInfo((prev) => ({
+                      ...prev,
+                      addressDetail: e.target.value,
+                    }))
+                  }
+                  placeholder="건물명, 동·호수 등 (선택)"
+                  className="tds-input"
+                />
+              </div>
+            </div>
           </div>
         );
 
@@ -731,7 +791,7 @@ export default function HospitalRegisterPage() {
                       >
                         <div
                           className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 transition-colors duration-200 ${
-                            isChecked ? 'bg-[#3182F6]' : 'border-2 border-gray-300'
+                            isChecked ? 'bg-[#333C4A]' : 'border-2 border-gray-300'
                           }`}
                         >
                           {isChecked && <Check size={12} className="text-white check-pop" />}
@@ -860,7 +920,7 @@ export default function HospitalRegisterPage() {
                   </span>
                 </div>
 
-                <p className="px-1 text-[13px] text-[#3182F6] font-semibold mb-2">
+                <p className="px-1 text-[13px] text-[#333C4A] font-semibold mb-2">
                   필수 서류
                 </p>
                 <div className="space-y-2 mb-4">
@@ -878,15 +938,27 @@ export default function HospitalRegisterPage() {
                       desc: '보건복지부 발급, 대표자 명의',
                     },
                     {
-                      title: '전문의 자격증',
-                      desc: '대표 원장 전문의 자격 (해당 진료과)',
-                    },
-                    {
                       title: '대표자 신분증 사본',
                       desc: '주민등록증 또는 운전면허증',
                     },
                   ].map((doc) => (
-                    <DocUploadRow key={doc.title} title={doc.title} desc={doc.desc} required />
+                    <DocUploadRow
+                      key={doc.title}
+                      title={doc.title}
+                      desc={doc.desc}
+                      required
+                      value={documents[doc.title] ?? ''}
+                      onChange={(url) =>
+                        setDocuments((prev) => {
+                          if (!url) {
+                            const next = { ...prev };
+                            delete next[doc.title];
+                            return next;
+                          }
+                          return { ...prev, [doc.title]: url };
+                        })
+                      }
+                    />
                   ))}
                 </div>
 
@@ -895,6 +967,10 @@ export default function HospitalRegisterPage() {
                 </p>
                 <div className="space-y-2">
                   {[
+                    {
+                      title: '전문의 자격증',
+                      desc: '대표 원장 전문의 자격 (해당 진료과)',
+                    },
                     {
                       title: '의료기관 대표자 인감증명서',
                       desc: '3개월 이내 발급, 직인 대신 제출 가능',
@@ -912,12 +988,27 @@ export default function HospitalRegisterPage() {
                       desc: '복수 전문의 운영 시 첨부',
                     },
                   ].map((doc) => (
-                    <DocUploadRow key={doc.title} title={doc.title} desc={doc.desc} />
+                    <DocUploadRow
+                      key={doc.title}
+                      title={doc.title}
+                      desc={doc.desc}
+                      value={documents[doc.title] ?? ''}
+                      onChange={(url) =>
+                        setDocuments((prev) => {
+                          if (!url) {
+                            const next = { ...prev };
+                            delete next[doc.title];
+                            return next;
+                          }
+                          return { ...prev, [doc.title]: url };
+                        })
+                      }
+                    />
                   ))}
                 </div>
 
-                <div className="mt-3 px-4 py-3 rounded-[14px] bg-[rgba(49,130,246,0.08)]">
-                  <p className="text-[13px] text-[#1B64DA] font-semibold leading-snug">
+                <div className="mt-3 px-4 py-3 rounded-[14px] bg-[rgba(51,60,74,0.06)]">
+                  <p className="text-[13px] text-[#222831] font-semibold leading-snug">
                     * 의료법 제33조, 제57조 및 관련 고시에 따라 의료기관 운영 자격을 확인하기
                     위해 상기 서류가 요구됩니다. 제출된 서류는 심사 목적 외에 사용되지 않으며
                     승인 이후 안전하게 파기됩니다.
@@ -986,7 +1077,7 @@ export default function HospitalRegisterPage() {
                     className={`px-2 py-1 text-xs rounded-lg font-medium ${
                       oh.closed
                         ? 'bg-gray-200 text-gray-500'
-                        : 'bg-[#E8F3FF] text-[#3182F6]'
+                        : 'bg-[#F2F4F6] text-[#333C4A]'
                     }`}
                   >
                     {oh.closed ? '휴진' : '진료'}
@@ -1006,10 +1097,18 @@ export default function HospitalRegisterPage() {
                 원장 정보를 입력해주세요
               </h2>
               <p className="tds-top-desc">
-                진료 신뢰도를 높이는 기본 정보를 입력합니다.
+                의사 면허 등 자격 서류는 앞에서 첨부 완료했어요.
+                <br />
+                환자에게 노출될 기본 정보만 입력해주세요.
               </p>
             </div>
             <div className="tds-form">
+              <ProfilePhotoUploader
+                value={doctorInfo.profileImage}
+                onChange={(url) =>
+                  setDoctorInfo((prev) => ({ ...prev, profileImage: url }))
+                }
+              />
               <div>
                 <label className="tds-field-label">
                   원장명
@@ -1037,26 +1136,10 @@ export default function HospitalRegisterPage() {
                       specialty: e.target.value,
                     }))
                   }
-                  placeholder="전문분야를 입력해주세요"
+                  placeholder="예) 임플란트, 보철"
                   className="tds-input"
                 />
-              </div>
-              <div>
-                <label className="tds-field-label">
-                  면허번호
-                </label>
-                <input
-                  type="text"
-                  value={doctorInfo.licenseNumber}
-                  onChange={(e) =>
-                    setDoctorInfo((prev) => ({
-                      ...prev,
-                      licenseNumber: e.target.value,
-                    }))
-                  }
-                  placeholder="면허번호를 입력해주세요"
-                  className="tds-input"
-                />
+                <p className="tds-help">선택 사항입니다.</p>
               </div>
             </div>
           </div>
@@ -1073,8 +1156,8 @@ export default function HospitalRegisterPage() {
       <div className="tds-screen min-h-screen flex flex-col">
         <TopBar title="" showBack={false} />
         <div className="flex-1 flex flex-col items-center justify-center px-2.5">
-          <div className="w-20 h-20 bg-[rgba(49,130,246,0.1)] rounded-[24px] flex items-center justify-center mb-6">
-            <Plane size={36} className="text-[#3182F6]" />
+          <div className="w-20 h-20 bg-[rgba(51,60,74,0.08)] rounded-[24px] flex items-center justify-center mb-6">
+            <Plane size={36} className="text-[#333C4A]" />
           </div>
           <h2 className="text-[28px] leading-[37px] font-extrabold text-[#191F28] mb-2">
             회원가입을 축하해요!
@@ -1085,7 +1168,7 @@ export default function HospitalRegisterPage() {
             심사 후 승인이 완료되면 알려드릴게요.
           </p>
           <button
-            onClick={() => router.push('/hospital')}
+            onClick={() => router.push('/partner')}
             className="tds-button-primary mt-8 w-full max-w-[280px]"
           >
             시작하기
@@ -1156,7 +1239,12 @@ export default function HospitalRegisterPage() {
                     treatments: Array.from(selectedTreatments),
                     hospitalInfo,
                     operatingHours,
-                    doctorInfo,
+                    doctorInfo: {
+                      ...doctorInfo,
+                      licenseImage: documents['의사 면허증'] || '',
+                      certificationImage: documents['전문의 자격증'] || '',
+                    },
+                    documents,
                   }),
                 });
                 if (!res.ok) {
@@ -1218,36 +1306,63 @@ function DocUploadRow({
   title,
   desc,
   required,
+  value,
+  onChange,
 }: {
   title: string;
   desc: string;
   required?: boolean;
+  value: string;
+  onChange: (url: string) => void;
 }) {
-  const [fileName, setFileName] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [fileName, setFileName] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
+    e.target.value = '';
     if (!f) return;
+    setUploading(true);
+    setError(null);
     setFileName(f.name);
+    try {
+      const formData = new FormData();
+      formData.append('file', f);
+      formData.append('folder', 'hospital-docs');
+      const res = await fetch('/api/upload', { method: 'POST', body: formData });
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok || !payload.url) {
+        setError(payload.error || '업로드 실패');
+        setFileName(null);
+        return;
+      }
+      onChange(payload.url);
+    } catch {
+      setError('업로드 실패');
+      setFileName(null);
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleReset = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setFileName(null);
     if (inputRef.current) inputRef.current.value = '';
     inputRef.current?.click();
   };
 
-  const uploaded = !!fileName;
+  const uploaded = !!value;
+  const display = fileName || (value ? value.split('/').pop() : null);
   return (
     <label
       htmlFor={`doc-${title}`}
       className="tds-list-row w-full text-left cursor-pointer transition-colors"
       style={{
-        borderColor: uploaded ? '#3182F6' : 'var(--tds-border)',
-        backgroundColor: uploaded ? 'rgba(49,130,246,0.06)' : '#fff',
+        borderColor: uploaded ? '#333C4A' : 'var(--tds-border)',
+        backgroundColor: uploaded ? 'rgba(51,60,74,0.05)' : '#fff',
       }}
     >
       <input
@@ -1269,19 +1384,107 @@ function DocUploadRow({
           )}
         </div>
         <p className="tds-list-desc truncate">
-          {uploaded ? fileName : desc}
+          {uploading ? '업로드 중…' : error ? error : uploaded ? display : desc}
         </p>
       </div>
-      {uploaded && (
+      {uploaded && !uploading && (
         <button
           type="button"
           onClick={handleReset}
-          className="flex-shrink-0 text-[13px] font-semibold text-[#3182F6] px-1.5 py-0.5"
+          className="flex-shrink-0 text-[13px] font-semibold text-[#333C4A] px-1.5 py-0.5"
         >
           다시 올리기
         </button>
       )}
     </label>
+  );
+}
+
+function ProfilePhotoUploader({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (url: string) => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setUploading(true);
+    setError(null);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('folder', 'doctor-profiles');
+      const res = await fetch('/api/upload', { method: 'POST', body: formData });
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok || !payload.url) {
+        setError(payload.error || '업로드에 실패했어요.');
+        return;
+      }
+      onChange(payload.url);
+    } catch {
+      setError('업로드 실패');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-col items-center pt-2 pb-3">
+      <button
+        type="button"
+        onClick={() => inputRef.current?.click()}
+        disabled={uploading}
+        className="relative w-28 h-28 rounded-full overflow-hidden bg-[#F2F4F6] border border-[#E5E8EB] flex items-center justify-center transition-transform active:scale-95 disabled:opacity-60"
+        aria-label="프로필 사진 업로드"
+      >
+        {value ? (
+          <img src={value} alt="프로필 사진" className="w-full h-full object-cover" />
+        ) : (
+          <svg width="38" height="38" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="8" r="4" stroke="#8B95A1" strokeWidth="1.8" />
+            <path
+              d="M4 20c0-4 4-6 8-6s8 2 8 6"
+              stroke="#8B95A1"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+            />
+          </svg>
+        )}
+        <span className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-[#333C4A] text-white flex items-center justify-center shadow-md">
+          <Upload size={14} />
+        </span>
+      </button>
+      <p className="mt-3 text-[13px] font-semibold text-[#333C4A]">
+        {uploading ? '업로드 중…' : value ? '프로필 사진 변경' : '프로필 사진 추가'}
+      </p>
+      <p className="text-[12px] text-[#8B95A1] mt-0.5">
+        정면 얼굴이 잘 보이는 사진을 권장합니다.
+      </p>
+      {value && (
+        <button
+          type="button"
+          onClick={() => onChange('')}
+          className="mt-2 text-[12px] text-[#8B95A1] underline"
+        >
+          사진 제거
+        </button>
+      )}
+      {error && <p className="mt-2 text-[12px] text-[#E54848]">{error}</p>}
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleFile}
+      />
+    </div>
   );
 }
 
@@ -1376,7 +1579,7 @@ function AgreementSheet({
         <div className="px-5 py-4 border-t border-gray-100">
           <button
             onClick={onAgree}
-            className="w-full py-3.5 bg-[#3182F6] text-white rounded-xl text-base font-bold btn-press"
+            className="w-full py-3.5 bg-[#333C4A] text-white rounded-xl text-base font-bold btn-press"
           >
             {item.required ? '동의하고 계속하기' : '동의합니다'}
           </button>
@@ -1481,7 +1684,7 @@ function SequentialAgreeFlow({
         <div className="px-5 pt-4 pb-3 border-b border-gray-100">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <span className="text-[11px] font-bold text-[#3182F6] bg-[#E8F3FF] px-2 py-0.5 rounded-full">
+              <span className="text-[11px] font-bold text-[#333C4A] bg-[#F2F4F6] px-2 py-0.5 rounded-full">
                 {currentNumber} / {totalSteps}
               </span>
               <h3 className="text-[15px] font-bold text-gray-900">
@@ -1495,7 +1698,7 @@ function SequentialAgreeFlow({
           {/* Progress bar */}
           <div className="relative h-1 bg-gray-100 rounded-full overflow-hidden">
             <div
-              className="absolute inset-y-0 left-0 bg-[#3182F6] rounded-full"
+              className="absolute inset-y-0 left-0 bg-[#333C4A] rounded-full"
               style={{
                 width: `${progressPct}%`,
                 transition: 'width 380ms cubic-bezier(0.22, 1, 0.36, 1)',
@@ -1539,7 +1742,7 @@ function SequentialAgreeFlow({
               onClick={handleFinalSubmit}
               className={`w-full py-3.5 rounded-xl text-base font-bold transition-colors ${
                 sigUrl
-                  ? 'bg-[#3182F6] text-white btn-press'
+                  ? 'bg-[#333C4A] text-white btn-press'
                   : 'bg-gray-200 text-gray-400 cursor-not-allowed'
               }`}
             >
@@ -1551,7 +1754,7 @@ function SequentialAgreeFlow({
               onClick={handleAgree}
               className={`agree-btn w-full py-3.5 rounded-xl text-base font-bold transition-colors ${
                 reachedBottom
-                  ? 'bg-[#3182F6] text-white'
+                  ? 'bg-[#333C4A] text-white'
                   : 'bg-gray-200 text-gray-400 cursor-not-allowed'
               } ${justChecked ? 'is-checked' : ''}`}
             >
@@ -1730,7 +1933,7 @@ function SignatureStep({
       <div className="mt-4">
         <p className="text-[13px] font-semibold text-gray-900 mb-2">직인 이미지 첨부 (선택)</p>
         <label
-          className="flex items-center gap-2 px-3 py-2.5 rounded-xl border border-dashed border-gray-300 text-[13px] text-gray-600 cursor-pointer hover:border-[#3182F6] transition-colors"
+          className="flex items-center gap-2 px-3 py-2.5 rounded-xl border border-dashed border-gray-300 text-[13px] text-gray-600 cursor-pointer hover:border-[#333C4A] transition-colors"
         >
           <Upload size={16} className="text-gray-400" />
           {sealPreview ? '직인 이미지 변경' : '직인/인감 이미지 업로드'}

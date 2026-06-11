@@ -14,6 +14,7 @@ export default function DoctorEditPage() {
   const params = useParams();
   const router = useRouter();
   const showToast = useStore((s) => s.showToast);
+  const showConfirm = useStore((s) => s.showConfirm);
   const id = params.id as string;
   const isNew = id === 'new';
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -31,7 +32,6 @@ export default function DoctorEditPage() {
   const [loading, setLoading] = useState(!isNew);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [showLeaveDialog, setShowLeaveDialog] = useState(false);
   const [leaving, setLeaving] = useState(false);
 
   useEffect(() => {
@@ -153,27 +153,33 @@ export default function DoctorEditPage() {
     }
   };
 
-  const handleLeave = async () => {
-    setLeaving(true);
-    try {
-      const res = await fetch(`/api/my-hospital/doctors/${id}`, { method: 'DELETE' });
-      if (!res.ok) {
-        const j = await res.json().catch(() => ({}));
-        throw new Error((j as any).error || '탈퇴 처리에 실패했습니다.');
+  const handleLeave = () => {
+    if (leaving) return;
+    showConfirm(
+      '정말로 병원을 탈퇴 하시겠습니까?',
+      '탈퇴처리가 되며 목록에서 사라집니다.',
+      async () => {
+        setLeaving(true);
+        try {
+          const res = await fetch(`/api/my-hospital/doctors/${id}`, { method: 'DELETE' });
+          if (!res.ok) {
+            const j = await res.json().catch(() => ({}));
+            throw new Error((j as any).error || '탈퇴 처리에 실패했습니다.');
+          }
+          showToast('병원에서 탈퇴했습니다.');
+          if (id === selfDoctorId) {
+            useStore.setState({ isDoctor: false });
+            router.replace('/');
+            return;
+          }
+          router.replace('/partner/doctors');
+        } catch (e: any) {
+          showToast(e?.message || '탈퇴 처리에 실패했습니다.');
+        } finally {
+          setLeaving(false);
+        }
       }
-      showToast('병원에서 탈퇴했습니다.');
-      if (id === selfDoctorId) {
-        useStore.setState({ isDoctor: false });
-        router.replace('/');
-        return;
-      }
-      router.replace('/partner/doctors');
-    } catch (e: any) {
-      showToast(e?.message || '탈퇴 처리에 실패했습니다.');
-    } finally {
-      setLeaving(false);
-      setShowLeaveDialog(false);
-    }
+    );
   };
 
   return (
@@ -234,7 +240,7 @@ export default function DoctorEditPage() {
               <span>{hospitalName || '소속 병원 미등록'}</span>
               <button type="button" className="change" onClick={() => showToast('병원 변경은 관리자 승인이 필요합니다.')}>변경</button>
               {!isNew && (
-                <button type="button" className="leave" onClick={() => setShowLeaveDialog(true)}>탈퇴</button>
+                <button type="button" className="leave" onClick={handleLeave}>탈퇴</button>
               )}
             </div>
           </section>
@@ -245,22 +251,6 @@ export default function DoctorEditPage() {
         {saving ? '저장 중...' : '저장하기'}
       </button>
 
-      {showLeaveDialog && (
-        <div className="partner-profile-dialog-layer" role="presentation" onClick={() => setShowLeaveDialog(false)}>
-          <div className="partner-profile-dialog" role="dialog" aria-modal="true" aria-labelledby="leave-title" onClick={(event) => event.stopPropagation()}>
-            <h2 id="leave-title">정말로 병원을 탈퇴 하시겠습니까?</h2>
-            <p>탈퇴처리가 되며 목록에서 사라집니다.</p>
-            <div>
-              <button type="button" className="confirm" onClick={handleLeave} disabled={leaving}>
-                네
-              </button>
-              <button type="button" className="cancel" onClick={() => setShowLeaveDialog(false)} disabled={leaving}>
-                아니요
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

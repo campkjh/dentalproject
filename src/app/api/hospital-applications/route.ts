@@ -127,25 +127,58 @@ export async function POST(req: NextRequest) {
   if (!hospitalName) return NextResponse.json({ error: '병원명을 입력해 주세요.' }, { status: 400 });
   if (!ownerName) return NextResponse.json({ error: '대표자명을 입력해 주세요.' }, { status: 400 });
   if (!doctorName) return NextResponse.json({ error: '병원장 이름을 입력해 주세요.' }, { status: 400 });
-  if (!profileImage) return NextResponse.json({ error: '프로필 사진을 첨부해 주세요.' }, { status: 400 });
-  if (!licenseImage) return NextResponse.json({ error: '의사면허 이미지를 첨부해 주세요.' }, { status: 400 });
 
-  const { data: hospital, error: hospitalError } = await admin
+  const submittedDocs =
+    body.documents && typeof body.documents === 'object' && !Array.isArray(body.documents)
+      ? (body.documents as Record<string, string>)
+      : {};
+
+  const baseInsert: Record<string, any> = {
+    name: hospitalName,
+    category,
+    phone: cleanString(hospitalInfo.phone) || null,
+    tags: Array.isArray(body.treatments) ? body.treatments : [],
+    cover_images: [],
+    address: cleanString(hospitalInfo.address),
+    owner_id: user.id,
+    status: 'pending',
+  };
+
+  let hospitalRes = await admin
     .from('hospitals')
-    .insert({
-      name: hospitalName,
-      category,
-      phone: cleanString(hospitalInfo.phone) || null,
-      tags: Array.isArray(body.treatments) ? body.treatments : [],
-      cover_images: [],
-      address: cleanString(hospitalInfo.address),
-      owner_id: user.id,
-      status: 'pending',
-    })
+    .insert({ ...baseInsert, submitted_documents: submittedDocs })
     .select('id')
     .single();
 
-  if (hospitalError) return NextResponse.json({ error: hospitalError.message }, { status: 400 });
+  if (
+    hospitalRes.error &&
+    /submitted_documents/i.test(`${hospitalRes.error.message ?? ''} ${hospitalRes.error.details ?? ''}`)
+  ) {
+    hospitalRes = await admin.from('hospitals').insert(baseInsert).select('id').single();
+  }
+
+  const hospital = hospitalRes.data;
+  const hospitalError = hospitalRes.error;
+
+  if (hospitalError || !hospital) {
+    return NextResponse.json({ error: hospitalError?.message ?? '병원 생성에 실패했습니다.' }, { status: 400 });
+  }
+
+  // Persist operating hours submitted at registration time
+  if (Array.isArray(body.operatingHours) && body.operatingHours.length > 0) {
+    const rows = body.operatingHours
+      .map((h: any) => ({
+        hospital_id: hospital.id,
+        day: cleanString(h?.day),
+        start_time: h?.closed ? null : cleanString(h?.start) || null,
+        end_time: h?.closed ? null : cleanString(h?.end) || null,
+        is_closed: !!h?.closed,
+      }))
+      .filter((r: any) => r.day);
+    if (rows.length > 0) {
+      await admin.from('operating_hours').upsert(rows, { onConflict: 'hospital_id,day' });
+    }
+  }
 
   const { data: doctor, error: doctorError } = await insertDoctor(admin, {
     hospital_id: hospital.id,

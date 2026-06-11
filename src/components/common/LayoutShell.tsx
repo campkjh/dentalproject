@@ -18,7 +18,7 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
   return (
     <>
       <DesktopHeader />
-      <div className="max-w-[480px] lg:max-w-none mx-auto bg-white lg:bg-gray-50 w-full min-h-dvh shadow-xl lg:shadow-none lg:pt-[112px]">
+      <div className="max-w-[500px] lg:max-w-none mx-auto bg-white lg:bg-gray-50 w-full min-h-dvh shadow-xl lg:shadow-none lg:pt-[112px]">
         {children}
       </div>
       <Footer />

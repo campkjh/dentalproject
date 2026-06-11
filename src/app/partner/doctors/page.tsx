@@ -38,6 +38,7 @@ export default function PartnerDoctorsPage() {
   const router = useRouter();
   const { authUser } = useSession();
   const showToast = useStore((s) => s.showToast);
+  const showConfirm = useStore((s) => s.showConfirm);
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [hospitalId, setHospitalId] = useState<string | null>(null);
   const [hospitalName, setHospitalName] = useState('');
@@ -138,31 +139,32 @@ export default function PartnerDoctorsPage() {
     }
   };
 
-  const handleLeave = async (doctor: Doctor) => {
+  const handleLeave = (doctor: Doctor) => {
     const isSelf = doctor.id === currentDoctorId || doctor.user_id === authUser?.id;
+    const title = isSelf ? '병원 탈퇴' : '원장 탈퇴';
     const message = isSelf
       ? '병원을 탈퇴하시겠습니까?'
       : `${doctor.name} 원장을 병원에서 탈퇴 처리할까요?`;
-    if (!window.confirm(message)) return;
-
-    setActingId(doctor.id);
-    try {
-      const res = await fetch(`/api/my-hospital/doctors/${doctor.id}`, { method: 'DELETE' });
-      if (!res.ok) {
-        const j = await res.json().catch(() => ({}));
-        showToast((j as any).error || '탈퇴 처리에 실패했습니다.');
-        return;
+    showConfirm(title, message, async () => {
+      setActingId(doctor.id);
+      try {
+        const res = await fetch(`/api/my-hospital/doctors/${doctor.id}`, { method: 'DELETE' });
+        if (!res.ok) {
+          const j = await res.json().catch(() => ({}));
+          showToast((j as any).error || '탈퇴 처리에 실패했습니다.');
+          return;
+        }
+        showToast(isSelf ? '병원에서 탈퇴했습니다.' : `${doctor.name} 원장을 탈퇴 처리했습니다.`);
+        if (isSelf && !isOwner) {
+          useStore.setState({ isDoctor: false });
+          router.replace('/');
+          return;
+        }
+        await reload();
+      } finally {
+        setActingId(null);
       }
-      showToast(isSelf ? '병원에서 탈퇴했습니다.' : `${doctor.name} 원장을 탈퇴 처리했습니다.`);
-      if (isSelf && !isOwner) {
-        useStore.setState({ isDoctor: false });
-        router.replace('/');
-        return;
-      }
-      await reload();
-    } finally {
-      setActingId(null);
-    }
+    });
   };
 
   const visibleDoctors = doctors.filter((doctor) => getMemberStatus(doctor) === 'active' && doctor.is_active !== false);

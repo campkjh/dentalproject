@@ -81,7 +81,7 @@ export default function NotificationSettingsPage() {
   const toggle = (k: NotifKey) => setValues((v) => ({ ...v, [k]: !v[k] }));
 
   return (
-    <div className="min-h-screen bg-white max-w-[480px] mx-auto pb-12">
+    <div className="min-h-screen bg-white max-w-[500px] mx-auto pb-12">
       <TopBar title="알림 설정" />
 
       {!isLoggedIn ? (

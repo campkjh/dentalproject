@@ -63,6 +63,7 @@ type ProductRow = {
   reservation_count?: number | null;
   image_url?: string | null;
   detail_image_url?: string | null;
+  description?: string | null;
   tags?: string[] | null;
   category?: string | null;
   sub_category?: string | null;
@@ -77,6 +78,7 @@ type ProductRow = {
     discount: number | null;
     image_url: string | null;
     detail_image_url: string | null;
+    description: string | null;
     tags: string[];
     category: string | null;
     sub_category: string | null;
@@ -100,6 +102,7 @@ type ProductForm = {
   discount: string;
   imageUrl: string;
   detailImageUrl: string;
+  description: string;
   tags: string[];
 };
 
@@ -150,6 +153,7 @@ const EMPTY_PRODUCT_FORM: ProductForm = {
   discount: '',
   imageUrl: '',
   detailImageUrl: '',
+  description: '',
   tags: [],
 };
 
@@ -352,6 +356,7 @@ function pendingChangeEntries(product: ProductRow) {
     ['sub_category', '세부 카테고리'],
     ['image_url', '이미지'],
     ['detail_image_url', '상세 이미지'],
+    ['description', '상품 설명'],
     ['tags', '태그'],
     ['location', '지역'],
   ];
@@ -363,20 +368,36 @@ function pendingChangeEntries(product: ProductRow) {
 
 function toProductForm(product?: ProductRow): ProductForm {
   if (!product) return { ...EMPTY_PRODUCT_FORM };
+  const pc = product.pending_changes ?? {};
+  const pick = <K extends keyof NonNullable<ProductRow['pending_changes']>>(key: K, fallback: any) =>
+    Object.prototype.hasOwnProperty.call(pc, key) ? (pc as any)[key] : fallback;
+
+  const mergedTitle = pick('title', product.title);
+  const mergedCategory = pick('category', product.category);
+  const mergedSubCategory = pick('sub_category', product.sub_category);
+  const mergedPrice = pick('price', product.price);
+  const mergedOriginalPrice = pick('original_price', product.original_price);
+  const mergedDiscount = pick('discount', product.discount);
+  const mergedImageUrl = pick('image_url', product.image_url);
+  const mergedDetailImageUrl = pick('detail_image_url', product.detail_image_url);
+  const mergedDescription = pick('description', product.description);
+  const mergedTags = pick('tags', product.tags);
+
   return {
-    title: product.title ?? '',
-    category: product.category ?? 'dental',
-    subCategory: product.sub_category ?? '',
-    price: typeof product.price === 'number' ? String(product.price) : '',
-    originalPrice: typeof product.original_price === 'number'
-      ? String(product.original_price)
-      : typeof product.price === 'number'
-        ? String(product.price)
+    title: mergedTitle ?? '',
+    category: mergedCategory ?? 'dental',
+    subCategory: mergedSubCategory ?? '',
+    price: typeof mergedPrice === 'number' ? String(mergedPrice) : '',
+    originalPrice: typeof mergedOriginalPrice === 'number'
+      ? String(mergedOriginalPrice)
+      : typeof mergedPrice === 'number'
+        ? String(mergedPrice)
         : '',
-    discount: typeof product.discount === 'number' ? String(product.discount) : '0',
-    imageUrl: product.image_url ?? '',
-    detailImageUrl: product.detail_image_url ?? '',
-    tags: product.tags ?? [],
+    discount: typeof mergedDiscount === 'number' ? String(mergedDiscount) : '0',
+    imageUrl: mergedImageUrl ?? '',
+    detailImageUrl: mergedDetailImageUrl ?? '',
+    description: mergedDescription ?? '',
+    tags: Array.isArray(mergedTags) ? mergedTags : [],
   };
 }
 
@@ -393,6 +414,7 @@ function productPayload(form: ProductForm) {
     discount,
     imageUrl: form.imageUrl,
     detailImageUrl: form.detailImageUrl,
+    description: form.description,
     tags: form.tags,
   };
 }
@@ -577,6 +599,7 @@ export default function PartnerHomePage() {
   const router = useRouter();
   const { authUser } = useSession();
   const showToast = useStore((s) => s.showToast);
+  const showConfirm = useStore((s) => s.showConfirm);
   const {
     data: hospitalData,
     loading,
@@ -598,7 +621,6 @@ export default function PartnerHomePage() {
   const thumbnailInputRef = useRef<HTMLInputElement>(null);
   const detailInputRef = useRef<HTMLInputElement>(null);
   const [filterIndicator, setFilterIndicator] = useState({ x: 20, width: 64 });
-  const [pendingAction, setPendingAction] = useState<{ id: string; status: ReservationRow['status'] } | null>(null);
   const [productModal, setProductModal] = useState<{ mode: 'create' | 'edit'; product?: ProductRow } | null>(null);
   const [productForm, setProductForm] = useState<ProductForm>({ ...EMPTY_PRODUCT_FORM });
   const [productTagDraft, setProductTagDraft] = useState('');
@@ -691,15 +713,6 @@ export default function PartnerHomePage() {
       mutateHospital(() => previous ?? null);
       showToast('네트워크 오류가 발생했습니다.');
     }
-  };
-
-  const closeConfirm = () => setPendingAction(null);
-
-  const runConfirm = () => {
-    if (!pendingAction) return;
-    const action = pendingAction;
-    setPendingAction(null);
-    void updateStatus(action.id, action.status);
   };
 
   const openProductCreate = () => {
@@ -844,33 +857,33 @@ export default function PartnerHomePage() {
     }
   };
 
-  const requestProductDelete = async (product: ProductRow) => {
-    if (!window.confirm(`${product.title} 삭제를 요청할까요?`)) return;
-
-    setProductSaving(true);
-    try {
-      const res = await fetch('/api/my-hospital/products', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: product.id }),
-      });
-      if (!res.ok) {
+  const requestProductDelete = (product: ProductRow) => {
+    showConfirm('상품 삭제', `${product.title} 삭제를 요청할까요?`, async () => {
+      setProductSaving(true);
+      try {
+        const res = await fetch('/api/my-hospital/products', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: product.id }),
+        });
+        if (!res.ok) {
+          const payload = await res.json().catch(() => ({}));
+          showToast(payload.error || '상품 삭제 요청에 실패했습니다.');
+          return;
+        }
         const payload = await res.json().catch(() => ({}));
-        showToast(payload.error || '상품 삭제 요청에 실패했습니다.');
-        return;
+        if (payload.approvalRequired === false) {
+          showToast('상품을 삭제했습니다.');
+        } else {
+          showToast(payload.removedDraft ? '상품 추가 요청을 취소했습니다.' : '상품 삭제 승인 요청을 보냈습니다.');
+        }
+        await refreshHospital({ force: true, showLoading: false });
+      } catch {
+        showToast('네트워크 오류가 발생했습니다.');
+      } finally {
+        setProductSaving(false);
       }
-      const payload = await res.json().catch(() => ({}));
-      if (payload.approvalRequired === false) {
-        showToast('상품을 삭제했습니다.');
-      } else {
-        showToast(payload.removedDraft ? '상품 추가 요청을 취소했습니다.' : '상품 삭제 승인 요청을 보냈습니다.');
-      }
-      await refreshHospital({ force: true, showLoading: false });
-    } catch {
-      showToast('네트워크 오류가 발생했습니다.');
-    } finally {
-      setProductSaving(false);
-    }
+    });
   };
 
   if (loading) {
@@ -1008,7 +1021,15 @@ export default function PartnerHomePage() {
                   router.push(`/partner/reservations/${action.id}/cancel`);
                   return;
                 }
-                setPendingAction(action);
+                const title = action.status === 'confirmed'
+                  ? '정말로 예약을 확정 하시겠습니까?'
+                  : '정말로 예약을 취소 하시겠습니까?';
+                const message = action.status === 'confirmed'
+                  ? '예약이 확정되며 스케줄에 표시됩니다'
+                  : '예약이 취소되며 취소 내역에 표시됩니다';
+                showConfirm(title, message, () => {
+                  void updateStatus(action.id, action.status);
+                });
               }}
               onDetailRequest={(id) => router.push(`/partner/reservations/${id}`)}
             />
@@ -1016,29 +1037,6 @@ export default function PartnerHomePage() {
             )}
           </section>
         </>
-      )}
-
-      {pendingAction && (
-        <div className="partner-figma-dialog-backdrop" role="presentation">
-          <div className="partner-figma-alert" role="dialog" aria-modal="true">
-            <div className="partner-figma-alert-copy">
-              <h2>
-                {pendingAction.status === 'confirmed'
-                  ? '정말로 예약을 확정 하시겠습니까?'
-                  : '정말로 예약을 취소 하시겠습니까?'}
-              </h2>
-              <p>
-                {pendingAction.status === 'confirmed'
-                  ? '예약이 확정되며 스케줄에 표시됩니다'
-                  : '예약이 취소되며 취소 내역에 표시됩니다'}
-              </p>
-            </div>
-            <div className="partner-figma-alert-actions">
-              <button type="button" onClick={runConfirm}>네</button>
-              <button type="button" onClick={closeConfirm}>아니요</button>
-            </div>
-          </div>
-        </div>
       )}
 
       {productModal && (
@@ -1158,6 +1156,22 @@ export default function PartnerHomePage() {
                   event.currentTarget.value = '';
                 }}
               />
+            </label>
+            <label>
+              상품 설명
+              <textarea
+                value={productForm.description}
+                onChange={(e) =>
+                  setProductForm((prev) => ({ ...prev, description: e.target.value }))
+                }
+                placeholder="시술 절차, 마취 여부, 회복 기간 등 환자에게 도움 될 내용을 자세히 작성해주세요."
+                rows={8}
+                className="partner-product-description"
+                maxLength={4000}
+              />
+              <span className="partner-product-description-hint">
+                {productForm.description.length}/4000자 · 줄바꿈은 그대로 노출됩니다.
+              </span>
             </label>
             <div className="partner-product-tag-field">
               태그

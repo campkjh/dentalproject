@@ -17,7 +17,7 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { sb, isAdmin } = await requireAdmin();
+  const { isAdmin } = await requireAdmin();
   if (!isAdmin) return NextResponse.json({ error: '관리자 권한이 필요합니다.' }, { status: 403 });
 
   const { id } = await params;
@@ -26,11 +26,11 @@ export async function PATCH(
   if (!['pending', 'approved', 'rejected', 'suspended'].includes(status)) {
     return NextResponse.json({ error: '잘못된 상태값' }, { status: 400 });
   }
-  const { error } = await sb.from('hospitals').update({ status }).eq('id', id);
+  const admin = await createAdminClient();
+  const { error } = await admin.from('hospitals').update({ status }).eq('id', id);
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
 
-  const admin = await createAdminClient();
-  const { data: hospital } = await sb
+  const { data: hospital } = await admin
     .from('hospitals')
     .select('owner_id, name')
     .eq('id', id)

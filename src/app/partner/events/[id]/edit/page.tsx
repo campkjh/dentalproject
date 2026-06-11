@@ -6,6 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { ChevronLeft } from 'lucide-react';
 import { useStore } from '@/store';
 import { useSession } from '@/lib/supabase/SessionProvider';
+import { ImageUploader } from '@/components/admin/ImageUploader';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export default function EventEditPage() {
@@ -13,6 +14,7 @@ export default function EventEditPage() {
   const router = useRouter();
   const { authUser } = useSession();
   const showToast = useStore((s) => s.showToast);
+  const showConfirm = useStore((s) => s.showConfirm);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [evt, setEvt] = useState<any>(null);
@@ -91,15 +93,16 @@ export default function EventEditPage() {
     }
   };
 
-  const remove = async () => {
-    if (!confirm('이 이벤트를 삭제할까요?')) return;
-    const res = await fetch(`/api/my-hospital/events/${id}`, { method: 'DELETE' });
-    if (res.ok) {
-      showToast('삭제되었습니다.');
-      router.push('/partner/events/list');
-    } else {
-      showToast('삭제 실패');
-    }
+  const remove = () => {
+    showConfirm('이벤트 삭제', '이 이벤트를 삭제할까요?', async () => {
+      const res = await fetch(`/api/my-hospital/events/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        showToast('삭제되었습니다.');
+        router.push('/partner/events/list');
+      } else {
+        showToast('삭제 실패');
+      }
+    });
   };
 
   if (!authUser) {
@@ -151,8 +154,14 @@ export default function EventEditPage() {
           <Field label="이벤트 소개">
             <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={4} className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:border-[#8037FF] resize-none" />
           </Field>
-          <Field label="대표 이미지 URL">
-            <input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:border-[#8037FF]" />
+          <Field label="대표 이미지">
+            <ImageUploader
+              value={imageUrl}
+              onChange={setImageUrl}
+              folder="event-cover"
+              aspect="4/3"
+              placeholder="이벤트 대표 이미지 업로드"
+            />
           </Field>
         </div>
       </Card>

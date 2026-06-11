@@ -35,7 +35,7 @@ export default function ReservationDetailPage() {
 
   if (!reservation) {
     return (
-      <div className="min-h-screen bg-white max-w-[480px] mx-auto">
+      <div className="min-h-screen bg-white max-w-[500px] mx-auto">
         <PageHeader onBack={() => router.back()} />
         <div className="flex items-center justify-center py-20">
           <p className="text-gray-400 text-sm">예약 정보를 찾을 수 없습니다.</p>
@@ -70,7 +70,7 @@ export default function ReservationDetailPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white max-w-[480px] mx-auto pb-12 page-enter">
+    <div className="min-h-screen bg-white max-w-[500px] mx-auto pb-12 page-enter">
       <PageHeader onBack={() => router.back()} />
 
       <div className="px-4 space-y-3 pb-8">

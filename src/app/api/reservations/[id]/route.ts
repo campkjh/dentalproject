@@ -196,8 +196,10 @@ export async function PATCH(
 
   const isPatientOwner = reservation.user_id === user.id;
   const isHospitalManager = await canManageHospital(admin, user.id, reservation.hospital_id);
+  const { data: profile } = await admin.from('profiles').select('is_admin').eq('id', user.id).maybeSingle();
+  const isPlatformAdmin = Boolean(profile?.is_admin);
 
-  if (!isPatientOwner && !isHospitalManager) {
+  if (!isPatientOwner && !isHospitalManager && !isPlatformAdmin) {
     return NextResponse.json({ error: '예약을 변경할 권한이 없습니다.' }, { status: 403 });
   }
 
@@ -213,7 +215,7 @@ export async function PATCH(
       return NextResponse.json({ error: '취소된 예약은 다시 변경할 수 없습니다.' }, { status: 400 });
     }
 
-    if (!isHospitalManager && nextStatus !== 'cancelled') {
+    if (!isHospitalManager && !isPlatformAdmin && nextStatus !== 'cancelled') {
       return NextResponse.json({ error: '고객은 예약 취소만 요청할 수 있습니다.' }, { status: 403 });
     }
 

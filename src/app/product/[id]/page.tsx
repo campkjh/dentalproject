@@ -540,6 +540,13 @@ export default function ProductDetailPage() {
           <div className="aspect-[4/3] bg-gradient-to-br from-purple-50 to-purple-50 flex items-center justify-center overflow-hidden">
             <img src={detailImageUrl} alt={`${product.title} 상세 이미지`} className="h-full w-full object-cover" />
           </div>
+          {product.description && product.description.trim().length > 0 && (
+            <div className="px-5 py-5">
+              <p className="text-[15px] leading-[1.7] text-[#191F28] whitespace-pre-wrap break-words">
+                {product.description}
+              </p>
+            </div>
+          )}
         </div>
       )}
 

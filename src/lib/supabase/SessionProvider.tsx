@@ -12,7 +12,7 @@ type Ctx = {
   session: Session | null;
   authUser: SupabaseUser | null;
   loading: boolean;
-  signInWithEmail: (email: string, password: string) => Promise<{ error: string | null; isDoctor?: boolean }>;
+  signInWithEmail: (email: string, password: string) => Promise<{ error: string | null; isDoctor?: boolean; isAdmin?: boolean }>;
   signUpWithEmail: (email: string, password: string, name?: string) => Promise<{ error: string | null; needsConfirm: boolean }>;
   signInWithOAuth: (provider: 'kakao' | 'apple') => Promise<void>;
   signOut: () => Promise<void>;
@@ -83,7 +83,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const mountedRef = useRef(false);
   const sessionRef = useRef<Session | null>(null);
   const syncSeqRef = useRef(0);
-  const recoveryPromiseRef = useRef<Promise<{ isDoctor: boolean }> | null>(null);
+  const recoveryPromiseRef = useRef<Promise<{ isDoctor: boolean; isAdmin: boolean }> | null>(null);
   const storeLogin = useStore((s) => s.login);
   const storeLogout = useStore((s) => s.logout);
   const hydrateCatalog = useStore((s) => s.hydrateCatalog);
@@ -92,8 +92,8 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
   const supabase = useMemo(() => (hasSupabaseEnv() ? createClient() : null), []);
 
-  const hydrateProfile = useCallback(async (authUser: SupabaseUser) => {
-    if (!supabase) return false;
+  const hydrateProfile = useCallback(async (authUser: SupabaseUser): Promise<{ hasHospitalAccess: boolean; isAdmin: boolean }> => {
+    if (!supabase) return { hasHospitalAccess: false, isAdmin: false };
     const userId = authUser.id;
     const [profileRes, hospitalRes] = await Promise.all([
       supabase.from('profiles').select('*').eq('id', userId).maybeSingle(),
@@ -118,6 +118,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
     const loginType = (p?.login_type as 'kakao' | 'apple' | undefined) ?? 'kakao';
     const profileIsDoctor = p ? Boolean(p.is_doctor) : null;
+    const isAdmin = p ? Boolean(p.is_admin) : false;
     const hasHospital = hospitalQuerySucceeded ? Boolean(hospitalRes.data) : null;
     const cachedHospitalAccess = readCachedHospitalAccess(userId);
     const hasHospitalAccess =
@@ -154,8 +155,9 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         isDoctor: hasHospitalAccess,
       },
       isDoctor: hasHospitalAccess,
+      isAdmin,
     });
-    return hasHospitalAccess;
+    return { hasHospitalAccess, isAdmin };
   }, [supabase]);
 
   const syncSession = useCallback(async (
@@ -173,15 +175,15 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       storeLogout();
       resetMe();
       if (mountedRef.current && syncId === syncSeqRef.current) setLoading(false);
-      return { isDoctor: false };
+      return { isDoctor: false, isAdmin: false };
     }
 
     if (showLoading) setLoading(true);
 
     const fallbackHospitalAccess = readCachedHospitalAccess(nextSession.user.id) ?? false;
-    const hasHospitalAccess = await withTimeout(
-      hydrateProfile(nextSession.user).catch(() => fallbackHospitalAccess),
-      fallbackHospitalAccess
+    const result = await withTimeout(
+      hydrateProfile(nextSession.user).catch(() => ({ hasHospitalAccess: fallbackHospitalAccess, isAdmin: false })),
+      { hasHospitalAccess: fallbackHospitalAccess, isAdmin: false }
     );
 
     if (hydrateUserData) {
@@ -192,14 +194,14 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     }
 
     if (mountedRef.current && syncId === syncSeqRef.current) setLoading(false);
-    return { isDoctor: hasHospitalAccess };
+    return { isDoctor: result.hasHospitalAccess, isAdmin: result.isAdmin };
   }, [hydrateMe, hydrateProfile, resetMe, storeLogout]);
 
   const recoverSession = useCallback(async (options: { showLoading?: boolean; hydrateUserData?: boolean } = {}) => {
     if (recoveryPromiseRef.current) return recoveryPromiseRef.current;
     if (!supabase) {
       setLoading(false);
-      return { isDoctor: false };
+      return { isDoctor: false, isAdmin: false };
     }
 
     const recoveryPromise = (async () => {
@@ -237,7 +239,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       return await recoveryPromise;
     } catch {
       setLoading(false);
-      return { isDoctor: false };
+      return { isDoctor: false, isAdmin: false };
     } finally {
       if (recoveryPromiseRef.current === recoveryPromise) {
         recoveryPromiseRef.current = null;
@@ -320,10 +322,11 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
           setLoading(false);
           return { error: error.message };
         }
-        const { isDoctor } = await syncSession(data.session, { showLoading: true });
+        const { isDoctor, isAdmin } = await syncSession(data.session, { showLoading: true });
         return {
           error: null,
           isDoctor,
+          isAdmin,
         };
       } catch (error) {
         setLoading(false);

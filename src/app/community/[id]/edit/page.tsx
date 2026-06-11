@@ -226,7 +226,7 @@ function EditPostPage() {
         )}
       </div>
 
-      <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] px-2.5 py-3 bg-white border-t border-gray-100">
+      <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[500px] px-2.5 py-3 bg-white border-t border-gray-100">
         <button
           onClick={handleSubmit}
           disabled={submitting || uploading || !title.trim() || !content.trim()}

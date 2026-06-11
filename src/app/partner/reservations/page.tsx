@@ -178,13 +178,13 @@ function ScheduleSettingsView({
   onShowReservations: () => void;
 }) {
   const showToast = useStore((s) => s.showToast);
+  const showConfirm = useStore((s) => s.showConfirm);
   const today = new Date();
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth());
   const [selected, setSelected] = useState(dateKey(today));
   const [settings, setSettings] = useState<ScheduleSettings>({ disabledDays: [], disabledSlots: {} });
   const [loadingSettings, setLoadingSettings] = useState(true);
-  const [pendingAction, setPendingAction] = useState<ScheduleAction | null>(null);
   const [savingAction, setSavingAction] = useState(false);
 
   useEffect(() => {
@@ -268,11 +268,17 @@ function ScheduleSettingsView({
     }
   };
 
-  const confirmAction = () => {
-    if (!pendingAction) return;
-    const action = pendingAction;
-    setPendingAction(null);
-    void saveScheduleAction(action);
+  const promptScheduleAction = (action: ScheduleAction) => {
+    if (savingAction) return;
+    const title = action.kind === 'day'
+      ? action.disabled ? '정말로 비활성화 하시겠습니까?' : '정말로 활성화 하시겠습니까?'
+      : `${timeHourLabel(action.time)} 진료를 ${action.disabled ? '비활성화' : '활성화'} 하시겠습니까?`;
+    const message = action.kind === 'day'
+      ? action.disabled ? '해당일의 모든시간의 스케줄이 비활성화 됩니다.' : '해당일의 스케줄을 다시 예약 가능 상태로 변경합니다.'
+      : action.disabled ? '해당 시간에 환자가 있는지 확인해주세요.' : '해당 시간의 예약 접수를 다시 활성화합니다.';
+    showConfirm(title, message, () => {
+      void saveScheduleAction(action);
+    });
   };
 
   return (
@@ -342,7 +348,7 @@ function ScheduleSettingsView({
         <button
           type="button"
           className={selectedDayDisabled ? 'is-restore' : undefined}
-          onClick={() => setPendingAction({ kind: 'day', date: selected, disabled: !selectedDayDisabled })}
+          onClick={() => promptScheduleAction({ kind: 'day', date: selected, disabled: !selectedDayDisabled })}
           disabled={loadingSettings || savingAction}
         >
           {selectedDayDisabled ? '진료일 활성화' : '진료일 비활성화'}
@@ -357,7 +363,7 @@ function ScheduleSettingsView({
                 type="button"
                 className={disabled ? 'is-disabled' : undefined}
                 disabled={loadingSettings || savingAction || selectedDayDisabled}
-                onClick={() => setPendingAction({ kind: 'time', date: selected, time, disabled: !selectedSlotSet.has(time) })}
+                onClick={() => promptScheduleAction({ kind: 'time', date: selected, time, disabled: !selectedSlotSet.has(time) })}
               >
                 {time}
               </button>
@@ -366,28 +372,6 @@ function ScheduleSettingsView({
         </div>
       </section>
 
-      {pendingAction && (
-        <div className="partner-figma-dialog-backdrop" role="presentation">
-          <div className="partner-figma-alert partner-schedule-alert" role="dialog" aria-modal="true">
-            <div className="partner-figma-alert-copy">
-              <h2>
-                {pendingAction.kind === 'day'
-                  ? pendingAction.disabled ? '정말로 비활성화 하시겠습니까?' : '정말로 활성화 하시겠습니까?'
-                  : `${timeHourLabel(pendingAction.time)} 진료를 ${pendingAction.disabled ? '비활성화' : '활성화'} 하시겠습니까?`}
-              </h2>
-              <p>
-                {pendingAction.kind === 'day'
-                  ? pendingAction.disabled ? '해당일의 모든시간의 스케줄이 비활성화 됩니다.' : '해당일의 스케줄을 다시 예약 가능 상태로 변경합니다.'
-                  : pendingAction.disabled ? '해당 시간에 환자가 있는지 확인해주세요.' : '해당 시간의 예약 접수를 다시 활성화합니다.'}
-              </p>
-            </div>
-            <div className="partner-figma-alert-actions">
-              <button type="button" onClick={confirmAction} disabled={savingAction}>네</button>
-              <button type="button" onClick={() => setPendingAction(null)} disabled={savingAction}>아니요</button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

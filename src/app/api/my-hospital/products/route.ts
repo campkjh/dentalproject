@@ -96,6 +96,7 @@ function buildProductPatch(body: any, required: boolean) {
   const location = cleanNullableText(body.location);
   const imageUrl = cleanNullableText(body.imageUrl);
   const detailImageUrl = cleanNullableText(body.detailImageUrl);
+  const description = cleanNullableText(body.description);
   const price = cleanNumber(body.price);
   const originalPrice = cleanNullableNumber(body.originalPrice, Object.hasOwn(body, 'originalPrice'));
   const discount = cleanNullableNumber(body.discount, Object.hasOwn(body, 'discount'));
@@ -107,6 +108,7 @@ function buildProductPatch(body: any, required: boolean) {
   if (location !== undefined) patch.location = location;
   if (imageUrl !== undefined) patch.image_url = imageUrl;
   if (detailImageUrl !== undefined) patch.detail_image_url = detailImageUrl;
+  if (description !== undefined) patch.description = description;
   if (price !== undefined) patch.price = price;
   if (originalPrice !== undefined) patch.original_price = originalPrice;
   if (discount !== undefined) patch.discount = discount;

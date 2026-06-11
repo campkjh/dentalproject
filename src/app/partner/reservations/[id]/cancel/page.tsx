@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ChevronLeft, Info, X } from 'lucide-react';
+import { ChevronLeft, Info } from 'lucide-react';
 import { normalizeProductImageUrl } from '@/lib/images';
 import { useMyHospitalData } from '@/lib/partner/my-hospital-cache';
 import { useSession } from '@/lib/supabase/SessionProvider';
@@ -58,6 +58,7 @@ export default function PartnerReservationCancelPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const showToast = useStore((s) => s.showToast);
+  const showConfirm = useStore((s) => s.showConfirm);
   const { authUser } = useSession();
   const {
     data: hospitalData,
@@ -71,7 +72,6 @@ export default function PartnerReservationCancelPage() {
   const [reason, setReason] = useState('');
   const [loading, setLoading] = useState(() => !cachedReservation);
   const [submitting, setSubmitting] = useState(false);
-  const [confirming, setConfirming] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -146,37 +146,42 @@ export default function PartnerReservationCancelPage() {
     });
   };
 
-  const submit = async () => {
+  const submit = () => {
     if (!canSubmit) {
       showToast('고객에게 전달할 취소 사유를 5자 이상 입력해주세요.');
       return;
     }
-    setConfirming(false);
-    setSubmitting(true);
-    try {
-      const res = await fetch(`/api/reservations/${params.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'cancelled', cancelReason: reason.trim() }),
-      });
-      const payload = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(payload.error || '예약 취소에 실패했습니다.');
-      patchReservation((current) => current
-        ? {
-          ...current,
-          status: 'cancelled',
-          cancel_reason: reason.trim(),
-          cancel_at: current.cancel_at ?? new Date().toISOString(),
+    showConfirm(
+      '예약을 취소하시겠습니까?',
+      '작성한 취소 사유가 고객에게 전달됩니다.',
+      async () => {
+        setSubmitting(true);
+        try {
+          const res = await fetch(`/api/reservations/${params.id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: 'cancelled', cancelReason: reason.trim() }),
+          });
+          const payload = await res.json().catch(() => ({}));
+          if (!res.ok) throw new Error(payload.error || '예약 취소에 실패했습니다.');
+          patchReservation((current) => current
+            ? {
+              ...current,
+              status: 'cancelled',
+              cancel_reason: reason.trim(),
+              cancel_at: current.cancel_at ?? new Date().toISOString(),
+            }
+            : current
+          );
+          showToast('예약 취소 사유를 고객에게 전달했습니다.');
+          router.replace(`/partner/reservations/${params.id}`);
+        } catch (error) {
+          showToast(error instanceof Error ? error.message : '예약 취소에 실패했습니다.');
+        } finally {
+          setSubmitting(false);
         }
-        : current
-      );
-      showToast('예약 취소 사유를 고객에게 전달했습니다.');
-      router.replace(`/partner/reservations/${params.id}`);
-    } catch (error) {
-      showToast(error instanceof Error ? error.message : '예약 취소에 실패했습니다.');
-    } finally {
-      setSubmitting(false);
-    }
+      }
+    );
   };
 
   return (
@@ -292,30 +297,12 @@ export default function PartnerReservationCancelPage() {
 
       {reservation?.status !== 'cancelled' && (
         <div className="partner-cancel-bottom">
-          <button type="button" onClick={() => setConfirming(true)} disabled={!canSubmit}>
+          <button type="button" onClick={submit} disabled={!canSubmit}>
             {submitting ? '전달 중...' : '예약취소 전달'}
           </button>
         </div>
       )}
 
-      {confirming && (
-        <div className="partner-cancel-dialog-backdrop">
-          <div className="partner-cancel-dialog" role="dialog" aria-modal="true">
-            <h2>예약을 취소하시겠습니까?</h2>
-            <p>작성한 취소 사유가 고객에게 전달됩니다.</p>
-            <div>
-              <button type="button" onClick={submit}>네</button>
-              <button type="button" onClick={() => setConfirming(false)}>아니요</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {confirming && (
-        <button type="button" className="partner-cancel-dialog-close" aria-label="닫기" onClick={() => setConfirming(false)}>
-          <X size={24} />
-        </button>
-      )}
     </div>
   );
 }

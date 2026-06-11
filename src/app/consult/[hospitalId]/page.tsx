@@ -185,7 +185,7 @@ export default function ConsultChatPage() {
   );
 
   return (
-    <div className="h-[100dvh] bg-white max-w-[480px] mx-auto flex flex-col">
+    <div className="h-[100dvh] bg-white max-w-[500px] mx-auto flex flex-col">
       {/* Header */}
       <header className="flex-shrink-0 h-14 px-2.5 border-b border-gray-100 flex items-center gap-2">
         <button onClick={() => router.back()} className="p-1 -ml-1">

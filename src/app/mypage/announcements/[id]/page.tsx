@@ -12,7 +12,7 @@ export default function AnnouncementDetailPage() {
 
   if (!announcement) {
     return (
-      <div className="min-h-screen bg-white max-w-[480px] mx-auto">
+      <div className="min-h-screen bg-white max-w-[500px] mx-auto">
         <TopBar title="공지사항" />
         <div className="flex flex-col items-center justify-center py-20 px-2.5">
           <p className="text-sm text-gray-500 mb-4">공지사항을 찾을 수 없습니다.</p>
@@ -25,7 +25,7 @@ export default function AnnouncementDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white max-w-[480px] mx-auto pb-12">
+    <div className="min-h-screen bg-white max-w-[500px] mx-auto pb-12">
       <TopBar title="공지사항" />
 
       <article className="px-2.5 py-6">

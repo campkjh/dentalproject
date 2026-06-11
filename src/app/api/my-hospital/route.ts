@@ -131,6 +131,8 @@ async function fetchHospitalProductsWithFallback(
 ) {
   const selectors = [
     `id, title, location, price, original_price, discount, rating, review_count, image_url, tags,
+       detail_image_url, description, category, sub_category, status, approval_status, pending_changes, created_at`,
+    `id, title, location, price, original_price, discount, rating, review_count, image_url, tags,
        detail_image_url, category, sub_category, status, approval_status, pending_changes, created_at`,
     'id, title, location, price, original_price, discount, rating, review_count, image_url, tags, category, sub_category, status, approval_status, pending_changes, created_at',
     'id, title, location, price, original_price, discount, rating, review_count, image_url, tags, detail_image_url, category, sub_category, status, created_at',

@@ -97,8 +97,8 @@ export default function HospitalManagePage() {
 
   if (!authUser) {
     return (
-      <div className="min-h-screen bg-white max-w-[480px] mx-auto pt-12">
-        <div className="fixed left-1/2 top-0 z-50 flex h-12 w-full max-w-[480px] -translate-x-1/2 items-center bg-white px-2.5 lg:top-[112px]">
+      <div className="min-h-screen bg-white max-w-[500px] mx-auto pt-12">
+        <div className="fixed left-1/2 top-0 z-50 flex h-12 w-full max-w-[500px] -translate-x-1/2 items-center bg-white px-2.5 lg:top-[112px]">
           <h1 className="text-lg font-bold">병원관리</h1>
         </div>
         <LoginRequired />
@@ -108,8 +108,8 @@ export default function HospitalManagePage() {
 
   if (!hospital) {
     return (
-      <div className="min-h-screen bg-white max-w-[480px] mx-auto pt-12">
-        <div className="fixed left-1/2 top-0 z-50 flex h-12 w-full max-w-[480px] -translate-x-1/2 items-center bg-white px-2.5 lg:top-[112px]">
+      <div className="min-h-screen bg-white max-w-[500px] mx-auto pt-12">
+        <div className="fixed left-1/2 top-0 z-50 flex h-12 w-full max-w-[500px] -translate-x-1/2 items-center bg-white px-2.5 lg:top-[112px]">
           <h1 className="text-lg font-bold">병원관리</h1>
         </div>
         <div className="flex flex-col items-center justify-center py-20 px-6">
@@ -155,7 +155,7 @@ export default function HospitalManagePage() {
 
   return (
     <div className="pb-[86px] pt-12 bg-white min-h-screen">
-      <div className="fixed left-1/2 top-0 z-50 flex h-12 w-full max-w-[480px] -translate-x-1/2 items-center justify-between bg-white px-2.5 lg:top-[112px]">
+      <div className="fixed left-1/2 top-0 z-50 flex h-12 w-full max-w-[500px] -translate-x-1/2 items-center justify-between bg-white px-2.5 lg:top-[112px]">
         <h1 className="text-lg font-bold">병원관리</h1>
         {hospital.status === 'pending' && (
           <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-[#FFF4E6] text-[#FFA04E]">

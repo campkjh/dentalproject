@@ -1,27 +1,12 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
-import {
-  Search,
-  Plus,
-  ChevronDown,
-  ChevronUp,
-  ChevronsUpDown,
-  Star,
-  Eye,
-  Ban,
-  Trash2,
-  Check,
-  X,
-  ChevronLeft,
-  ChevronRight,
-  Download,
-  Filter,
-} from 'lucide-react';
+import { useStore } from '@/store';
+import { useInfiniteScroll } from '@/lib/hooks/useInfiniteScroll';
+import { Star, Eye, Trash2, Ban, X, Package, Check, Info } from 'lucide-react';
+import { PageHeader, SearchInput, StatCard, PillButton, StatusBadge, EmptyState } from '@/components/admin/ui';
 
-// ---------- Types ----------
 type DbProductStatus = 'active' | 'paused' | 'removed' | 'pending';
-type ProductStatus = 'active' | 'inactive' | 'pending';
 type ProductApprovalStatus = 'approved' | 'pending_create' | 'pending_update' | 'pending_delete' | 'rejected';
 
 interface Product {
@@ -39,47 +24,39 @@ interface Product {
   createdAt: string;
 }
 
-type SortKey = 'id' | 'name' | 'hospital' | 'category' | 'discountPrice' | 'rating' | 'reviews' | 'createdAt';
-type SortDir = 'asc' | 'desc';
+const PAGE_SIZE = 20;
 
-const statusConfig: Record<ProductStatus, { label: string; className: string }> = {
-  active: { label: '활성', className: 'bg-green-100 text-green-700' },
-  inactive: { label: '비활성', className: 'bg-gray-100 text-gray-600' },
-  pending: { label: '검수대기', className: 'bg-yellow-100 text-yellow-700' },
+const approvalLabel: Record<ProductApprovalStatus, { label: string; tone: 'green' | 'orange' | 'blue' | 'red' | 'gray' }> = {
+  approved: { label: '승인완료', tone: 'green' },
+  pending_create: { label: '추가요청', tone: 'orange' },
+  pending_update: { label: '수정요청', tone: 'blue' },
+  pending_delete: { label: '삭제요청', tone: 'red' },
+  rejected: { label: '반려', tone: 'gray' },
+};
+const dbStatusLabel: Record<DbProductStatus, { label: string; tone: 'green' | 'gray' | 'orange' }> = {
+  active: { label: '활성', tone: 'green' },
+  paused: { label: '비활성', tone: 'gray' },
+  removed: { label: '삭제', tone: 'gray' },
+  pending: { label: '검수대기', tone: 'orange' },
 };
 
-const approvalConfig: Record<ProductApprovalStatus, { label: string; className: string }> = {
-  approved: { label: '승인완료', className: 'bg-green-100 text-green-700' },
-  pending_create: { label: '추가요청', className: 'bg-yellow-100 text-yellow-700' },
-  pending_update: { label: '수정요청', className: 'bg-purple-100 text-purple-700' },
-  pending_delete: { label: '삭제요청', className: 'bg-red-100 text-red-700' },
-  rejected: { label: '반려', className: 'bg-gray-100 text-gray-600' },
-};
-
-function getProductStatusChip(product: Product) {
-  if (product.approvalStatus && product.approvalStatus !== 'approved') {
-    return approvalConfig[product.approvalStatus];
-  }
-  return product.status === 'active' ? statusConfig.active : statusConfig.inactive;
+function statusOf(p: Product) {
+  if (p.approvalStatus && p.approvalStatus !== 'approved') return approvalLabel[p.approvalStatus];
+  return dbStatusLabel[p.status] ?? dbStatusLabel.paused;
 }
 
 function formatPrice(n: number) {
   return n.toLocaleString('ko-KR') + '원';
 }
 
-const PAGE_SIZE = 10;
-
 export default function AdminProductsPage() {
+  const showAlert = useStore((s) => s.showAlert);
+  const showConfirm = useStore((s) => s.showConfirm);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('전체');
-  const [sortKey, setSortKey] = useState<SortKey>('id');
-  const [sortDir, setSortDir] = useState<SortDir>('desc');
-  const [page, setPage] = useState(1);
+  const [categoryFilter, setCategoryFilter] = useState<string>('전체');
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [showBulkAction, setShowBulkAction] = useState<'deactivate' | 'delete' | null>(null);
   const [busyProductId, setBusyProductId] = useState<string | null>(null);
 
   const loadProducts = async () => {
@@ -94,92 +71,31 @@ export default function AdminProductsPage() {
     }
   };
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await fetch('/api/admin/products', { cache: 'no-store' });
-        if (!res.ok) return;
-        const data = await res.json();
-        if (!cancelled) setProducts(data.products ?? []);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  useEffect(() => { void loadProducts(); }, []);
 
   const categories = useMemo(
     () => ['전체', ...Array.from(new Set(products.map((p) => p.category).filter(Boolean)))],
     [products]
   );
 
-  // ---- Filter & Sort ----
   const filtered = useMemo(() => {
-    let list = [...products];
-    if (categoryFilter !== '전체') list = list.filter((p) => p.category === categoryFilter);
-    if (search.trim()) {
-      const q = search.trim().toLowerCase();
-      list = list.filter(
-        (p) =>
-          p.name.toLowerCase().includes(q) ||
-          p.hospital.toLowerCase().includes(q)
-      );
-    }
-    list.sort((a, b) => {
-      const av = a[sortKey];
-      const bv = b[sortKey];
-      if (typeof av === 'string' && typeof bv === 'string') return sortDir === 'asc' ? av.localeCompare(bv) : bv.localeCompare(av);
-      return sortDir === 'asc' ? (av as number) - (bv as number) : (bv as number) - (av as number);
+    const q = search.trim().toLowerCase();
+    return products.filter((p) => {
+      const matchCat = categoryFilter === '전체' || p.category === categoryFilter;
+      const matchSearch = !q || p.name.toLowerCase().includes(q) || p.hospital.toLowerCase().includes(q);
+      return matchCat && matchSearch;
     });
-    return list;
-  }, [products, search, categoryFilter, sortKey, sortDir]);
+  }, [products, search, categoryFilter]);
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const pageData = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const { visibleCount, sentinelRef } = useInfiniteScroll(filtered.length, PAGE_SIZE);
+  const pageData = filtered.slice(0, visibleCount);
 
-  // Stats
-  const totalCount = products.length;
-  const activeCount = products.filter((p) => p.status === 'active').length;
-  const inactiveCount = products.filter((p) => p.status === 'paused' || p.status === 'removed').length;
-  const pendingCount = products.filter((p) => p.approvalStatus?.startsWith('pending_')).length;
-
-  // ---- Handlers ----
-  function handleSort(key: SortKey) {
-    if (sortKey === key) {
-      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
-    } else {
-      setSortKey(key);
-      setSortDir('desc');
-    }
-    setPage(1);
-  }
-
-  function toggleSelect(id: string) {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
-  }
-
-  function toggleAll() {
-    if (pageData.every((p) => selected.has(p.id))) {
-      setSelected((prev) => {
-        const next = new Set(prev);
-        pageData.forEach((p) => next.delete(p.id));
-        return next;
-      });
-    } else {
-      setSelected((prev) => {
-        const next = new Set(prev);
-        pageData.forEach((p) => next.add(p.id));
-        return next;
-      });
-    }
-  }
+  const counts = {
+    total: products.length,
+    active: products.filter((p) => p.status === 'active').length,
+    inactive: products.filter((p) => p.status === 'paused' || p.status === 'removed').length,
+    pending: products.filter((p) => p.approvalStatus?.startsWith('pending_')).length,
+  };
 
   async function handleApproval(product: Product, action: 'approve' | 'reject') {
     setBusyProductId(product.id);
@@ -190,8 +106,8 @@ export default function AdminProductsPage() {
         body: JSON.stringify({ id: product.id, action }),
       });
       if (!res.ok) {
-        const payload = await res.json().catch(() => ({}));
-        window.alert(payload.error || '상품 요청 처리에 실패했습니다.');
+        const data = await res.json().catch(() => ({}));
+        showAlert('처리 실패', data.error || '처리에 실패했어요.');
         return;
       }
       await loadProducts();
@@ -200,293 +116,263 @@ export default function AdminProductsPage() {
     }
   }
 
-  const allPageSelected = pageData.length > 0 && pageData.every((p) => selected.has(p.id));
+  const handleSingleAction = (p: Product, action: 'deactivate' | 'activate' | 'delete') => {
+    const labels = { deactivate: '비활성화', activate: '활성화', delete: '삭제' };
+    const targetLabel = labels[action];
+    showConfirm(
+      `상품 ${targetLabel}`,
+      `"${p.name}"을(를) ${targetLabel}할까요?${action === 'delete' ? '\n되돌릴 수 없어요.' : ''}`,
+      async () => {
+        setBusyProductId(p.id);
+        try {
+          const method = action === 'delete' ? 'DELETE' : 'PATCH';
+          const res = await fetch('/api/admin/products', {
+            method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(action === 'delete' ? { id: p.id } : { id: p.id, action }),
+          });
+          if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            showAlert('처리 실패', data.error || '실패');
+            return;
+          }
+          await loadProducts();
+        } finally {
+          setBusyProductId(null);
+        }
+      },
+      { confirmText: targetLabel, cancelText: '취소' }
+    );
+  };
 
-  function SortIcon({ col }: { col: SortKey }) {
-    if (sortKey !== col) return <ChevronsUpDown size={14} className="text-gray-300" />;
-    return sortDir === 'asc' ? <ChevronUp size={14} className="text-[#8037FF]" /> : <ChevronDown size={14} className="text-[#8037FF]" />;
-  }
+  const handleBulkAction = (action: 'deactivate' | 'delete') => {
+    if (selected.size === 0) return;
+    const ids = Array.from(selected);
+    const labels = { deactivate: '비활성화', delete: '삭제' };
+    showConfirm(
+      `${labels[action]}`,
+      `선택한 ${ids.length}개 상품을 ${labels[action]}할까요?${action === 'delete' ? '\n되돌릴 수 없어요.' : ''}`,
+      async () => {
+        try {
+          const res =
+            action === 'delete'
+              ? await fetch('/api/admin/products', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids }) })
+              : await fetch('/api/admin/products', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids, action: 'deactivate' }) });
+          if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            showAlert('처리 실패', data.error || '실패');
+            return;
+          }
+          setSelected(new Set());
+          await loadProducts();
+        } catch (err) {
+          showAlert('처리 실패', err instanceof Error ? err.message : '네트워크 오류');
+        }
+      },
+      { confirmText: labels[action], cancelText: '취소' }
+    );
+  };
 
   return (
     <div className="space-y-6">
-      {/* ---------- Header ---------- */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-gray-900">상품 관리</h2>
-        <button className="flex items-center gap-2 px-4 py-2.5 bg-[#8037FF] text-white rounded-lg text-sm font-medium hover:bg-[#6D28D9] transition-colors">
-          <Plus size={16} /> 상품 등록
-        </button>
+      <PageHeader
+        title="상품 관리"
+        subtitle="병원이 등록한 상품을 승인하고 노출 상태를 관리합니다."
+        right={
+          <button
+            type="button"
+            onClick={() => showAlert('상품 등록', '상품 등록은 병원(파트너) 계정에서 진행합니다. 관리자는 승인·비활성화·삭제만 수행할 수 있어요.')}
+            className="inline-flex items-center gap-1.5 h-10 px-3.5 bg-white border border-[#E5E8EB] rounded-[10px] text-[13px] font-semibold text-[#4E5968] hover:bg-[#F9FAFB]"
+          >
+            <Info size={14} /> 상품 등록 안내
+          </button>
+        }
+      />
+
+      <div className="grid grid-cols-4 gap-3">
+        <StatCard label="전체 상품" value={counts.total} suffix="개" />
+        <StatCard label="활성" value={counts.active} suffix="개" accent="#1AB554" />
+        <StatCard label="비활성" value={counts.inactive} suffix="개" accent="#8B95A1" />
+        <StatCard label="검수대기" value={counts.pending} suffix="개" accent="#F59E0B" />
       </div>
 
-      {/* ---------- Stats ---------- */}
-      <div className="grid grid-cols-4 gap-4">
-        {[
-          { label: '전체 상품', value: totalCount.toLocaleString('ko-KR'), color: 'text-gray-900' },
-          { label: '활성 상품', value: activeCount.toLocaleString('ko-KR'), color: 'text-green-600' },
-          { label: '비활성 상품', value: inactiveCount.toLocaleString('ko-KR'), color: 'text-gray-500' },
-          { label: '검수대기', value: pendingCount.toLocaleString('ko-KR'), color: 'text-yellow-600' },
-        ].map((s) => (
-          <div key={s.label} className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
-            <p className="text-sm text-gray-500">{s.label}</p>
-            <p className={`text-2xl font-bold mt-1 ${s.color}`}>{s.value}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* ---------- Filters ---------- */}
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
-        <div className="flex items-center gap-4 flex-wrap">
-          {/* Search */}
-          <div className="relative flex-1 min-w-[280px]">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input
-              type="text"
-              placeholder="상품명 또는 병원명 검색..."
-              value={search}
-              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-              className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#8037FF] focus:ring-1 focus:ring-[#8037FF]/30"
-            />
-          </div>
-
-          {/* Category */}
-          <div className="flex items-center gap-2">
-            <Filter size={16} className="text-gray-400" />
-            <select
-              value={categoryFilter}
-              onChange={(e) => { setCategoryFilter(e.target.value); setPage(1); }}
-              className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#8037FF] bg-white"
-            >
-              {categories.map((c) => (
-                <option key={c} value={c}>{c}</option>
-              ))}
-            </select>
-          </div>
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          {categories.slice(0, 8).map((c) => {
+            const active = categoryFilter === c;
+            return (
+              <button
+                key={c}
+                onClick={() => setCategoryFilter(c)}
+                className="h-9 px-3.5 rounded-full text-[13px] font-semibold transition-colors border"
+                style={
+                  active
+                    ? { background: '#191F28', color: '#FFFFFF', borderColor: '#191F28' }
+                    : { background: '#FFFFFF', color: '#4E5968', borderColor: '#E5E8EB' }
+                }
+              >
+                {c}
+              </button>
+            );
+          })}
         </div>
+        <SearchInput value={search} onChange={setSearch} placeholder="상품명, 병원명 검색" />
       </div>
 
-      {/* ---------- Bulk Actions ---------- */}
       {selected.size > 0 && (
-        <div className="flex items-center gap-3 bg-purple-50 border border-purple-200 rounded-xl px-4 py-3">
-          <span className="text-sm text-[#8037FF] font-medium">{selected.size}개 선택됨</span>
-          <button
-            onClick={() => setShowBulkAction('deactivate')}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-sm text-gray-700 hover:bg-gray-50"
-          >
-            <Ban size={14} /> 비활성화
-          </button>
-          <button
-            onClick={() => setShowBulkAction('delete')}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-red-200 rounded-lg text-sm text-red-600 hover:bg-red-50"
-          >
-            <Trash2 size={14} /> 삭제
-          </button>
+        <div className="flex items-center justify-between bg-[#E5F1FF] border border-[#3182F6]/30 rounded-2xl px-4 py-3">
+          <span className="text-[13px] text-[#3182F6] font-semibold">{selected.size}개 선택됨</span>
+          <div className="flex items-center gap-2">
+            <PillButton tone="orange" onClick={() => handleBulkAction('deactivate')}>
+              일괄 비활성화
+            </PillButton>
+            <PillButton tone="red" onClick={() => handleBulkAction('delete')}>
+              일괄 삭제
+            </PillButton>
+          </div>
         </div>
       )}
 
-      {/* ---------- Table ---------- */}
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="bg-gray-50 text-left">
-                <th className="px-4 py-3 w-10">
-                  <input
-                    type="checkbox"
-                    checked={allPageSelected}
-                    onChange={toggleAll}
-                    className="rounded border-gray-300 text-[#8037FF] focus:ring-[#8037FF]"
-                  />
-                </th>
-                {(
-                  [
-                    ['id', '번호', 'w-16'],
-                    ['name', '상품명', 'min-w-[200px]'],
-                    ['hospital', '병원명', 'min-w-[160px]'],
-                    ['category', '카테고리', 'w-24'],
-                    ['discountPrice', '가격', 'w-36'],
-                    ['rating', '평점', 'w-20'],
-                    ['reviews', '리뷰수', 'w-20'],
-                    [null, '상태', 'w-24'],
-                    ['createdAt', '등록일', 'w-28'],
-                    [null, '관리', 'w-36'],
-                  ] as [SortKey | null, string, string][]
-                ).map(([key, label, width]) => (
-                  <th
-                    key={label}
-                    className={`px-4 py-3 text-xs font-medium text-gray-500 uppercase ${width} ${key ? 'cursor-pointer select-none hover:text-gray-700' : ''}`}
-                    onClick={() => key && handleSort(key)}
-                  >
-                    <span className="flex items-center gap-1">
-                      {label}
-                      {key && <SortIcon col={key} />}
-                    </span>
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {pageData.map((product) => {
-                const discount =
-                  product.originalPrice > 0
-                    ? Math.max(0, Math.round((1 - product.discountPrice / product.originalPrice) * 100))
-                    : 0;
-                const isPendingApproval = product.approvalStatus?.startsWith('pending_');
-                const st = getProductStatusChip(product);
-                return (
-                  <tr key={product.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-4 py-3">
-                      <input
-                        type="checkbox"
-                        checked={selected.has(product.id)}
-                        onChange={() => toggleSelect(product.id)}
-                        className="rounded border-gray-300 text-[#8037FF] focus:ring-[#8037FF]"
-                      />
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-500">{product.id}</td>
-                    <td className="px-4 py-3 text-sm font-medium text-gray-900">{product.name}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600">{product.hospital}</td>
-                    <td className="px-4 py-3">
-                      <span className="inline-block px-1.5 py-0.5 bg-purple-50 text-[#8037FF] text-xs font-medium rounded">
-                        {product.category}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex flex-col">
-                        <span className="text-sm font-semibold text-gray-900">{formatPrice(product.discountPrice)}</span>
-                        <span className="text-xs text-gray-400 line-through">{formatPrice(product.originalPrice)}</span>
-                      </div>
-                      <span className="text-xs text-red-500 font-medium">{discount}% OFF</span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="flex items-center gap-0.5 text-sm">
-                        <Star size={12} fill="#FBBF24" stroke="#FBBF24" />
-                        {product.rating}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-600">{product.reviews.toLocaleString()}</td>
-                    <td className="px-4 py-3">
-                      <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${st.className}`}>
-                        {st.label}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-500">{product.createdAt}</td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-1">
-                        {isPendingApproval && (
-                          <>
-                            <button
-                              type="button"
-                              disabled={busyProductId === product.id}
-                              onClick={() => handleApproval(product, 'approve')}
-                              className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg transition-colors disabled:opacity-40"
-                              title="승인"
-                            >
-                              <Check size={15} />
-                            </button>
-                            <button
-                              type="button"
-                              disabled={busyProductId === product.id}
-                              onClick={() => handleApproval(product, 'reject')}
-                              className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-40"
-                              title="반려"
-                            >
-                              <X size={15} />
-                            </button>
-                          </>
-                        )}
-                        <button className="p-1.5 text-gray-400 hover:text-[#8037FF] hover:bg-purple-50 rounded-lg transition-colors" title="상세">
-                          <Eye size={15} />
-                        </button>
-                        <button className="p-1.5 text-gray-400 hover:text-yellow-600 hover:bg-yellow-50 rounded-lg transition-colors" title="비활성화">
-                          <Ban size={15} />
-                        </button>
-                        <button className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="삭제">
-                          <Trash2 size={15} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-              {pageData.length === 0 && (
-                <tr>
-                  <td colSpan={10} className="px-4 py-12 text-center text-gray-400 text-sm">
-                    {loading ? '상품을 불러오는 중입니다.' : '검색 결과가 없습니다.'}
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* ---------- Pagination ---------- */}
-        <div className="flex items-center justify-between px-5 py-4 border-t border-gray-100">
-          <p className="text-sm text-gray-500">
-            총 <span className="font-medium text-gray-900">{filtered.length}</span>개 중{' '}
-            <span className="font-medium text-gray-900">{(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filtered.length)}</span>
-          </p>
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page === 1}
-              className="p-2 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              <ChevronLeft size={16} />
-            </button>
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((n) => (
+      <div className="bg-white rounded-2xl border border-[#E5E8EB] overflow-hidden">
+        {loading ? (
+          <div className="px-5 py-16 text-center text-[13px] text-[#8B95A1]">불러오는 중…</div>
+        ) : pageData.length === 0 ? (
+          <EmptyState icon={<Package size={20} className="text-[#8B95A1]" />} title="표시할 상품이 없어요" hint="검색어나 필터를 변경해 보세요." />
+        ) : (
+          <>
+            <div className="grid grid-cols-[36px_1.8fr_1.1fr_100px_140px_140px_100px_auto] gap-4 px-5 py-3 bg-[#FAFBFC] border-b border-[#F2F4F6] text-[11px] font-semibold text-[#8B95A1] uppercase tracking-wider">
               <button
-                key={n}
-                onClick={() => setPage(n)}
-                className={`w-9 h-9 rounded-lg text-sm font-medium transition-colors ${
-                  n === page ? 'bg-[#8037FF] text-white' : 'text-gray-600 hover:bg-gray-100'
-                }`}
+                onClick={() => {
+                  const allSel = pageData.every((p) => selected.has(p.id));
+                  setSelected((prev) => {
+                    const next = new Set(prev);
+                    if (allSel) pageData.forEach((p) => next.delete(p.id));
+                    else pageData.forEach((p) => next.add(p.id));
+                    return next;
+                  });
+                }}
+                className="w-5 h-5 rounded border flex items-center justify-center"
+                style={{
+                  background: pageData.every((p) => selected.has(p.id)) ? '#3182F6' : '#FFFFFF',
+                  borderColor: pageData.every((p) => selected.has(p.id)) ? '#3182F6' : '#C9CDD2',
+                }}
               >
-                {n}
+                {pageData.every((p) => selected.has(p.id)) && (
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+                    <path d="M3 8.5L6.5 12L13 4" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                )}
               </button>
-            ))}
-            <button
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={page === totalPages}
-              className="p-2 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              <ChevronRight size={16} />
-            </button>
-          </div>
+              <div>상품</div>
+              <div>병원</div>
+              <div>카테고리</div>
+              <div>가격</div>
+              <div>평점</div>
+              <div>상태</div>
+              <div className="text-right">관리</div>
+            </div>
+            {pageData.map((p, i) => {
+              const isSel = selected.has(p.id);
+              const st = statusOf(p);
+              const isPendingApproval = p.approvalStatus?.startsWith('pending_');
+              const discount = p.originalPrice > 0 ? Math.max(0, Math.round((1 - p.discountPrice / p.originalPrice) * 100)) : 0;
+              return (
+                <div
+                  key={p.id}
+                  className="grid grid-cols-[36px_1.8fr_1.1fr_100px_140px_140px_100px_auto] gap-4 items-center px-5 py-3.5 hover:bg-[#F9FAFB] transition-colors"
+                  style={{ borderBottom: i === pageData.length - 1 ? 'none' : '1px solid #F2F4F6' }}
+                >
+                  <button
+                    onClick={() => setSelected((prev) => {
+                      const next = new Set(prev);
+                      if (next.has(p.id)) next.delete(p.id); else next.add(p.id);
+                      return next;
+                    })}
+                    className="w-5 h-5 rounded border flex items-center justify-center"
+                    style={{
+                      background: isSel ? '#3182F6' : '#FFFFFF',
+                      borderColor: isSel ? '#3182F6' : '#C9CDD2',
+                    }}
+                  >
+                    {isSel && (
+                      <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+                        <path d="M3 8.5L6.5 12L13 4" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    )}
+                  </button>
+                  <div className="min-w-0">
+                    <p className="text-[14px] font-semibold text-[#191F28] truncate">{p.name}</p>
+                    <p className="text-[11px] text-[#8B95A1] mt-0.5 font-mono">{p.id.slice(0, 8)}</p>
+                  </div>
+                  <div className="text-[13px] text-[#4E5968] truncate">{p.hospital}</div>
+                  <div>
+                    <span className="inline-flex items-center h-[22px] px-2 rounded-md text-[11px] font-semibold bg-[#E5F1FF] text-[#3182F6]">
+                      {p.category}
+                    </span>
+                  </div>
+                  <div>
+                    <p className="text-[14px] font-bold text-[#191F28]">{formatPrice(p.discountPrice)}</p>
+                    {p.originalPrice > p.discountPrice && (
+                      <p className="text-[11px] text-[#8B95A1]">
+                        <span className="line-through">{formatPrice(p.originalPrice)}</span>{' '}
+                        <span className="text-[#E54848] font-semibold">{discount}%</span>
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-0.5">
+                    <Star size={11} fill="#F59E0B" stroke="#F59E0B" />
+                    <span className="text-[13px] font-semibold text-[#191F28]">{p.rating.toFixed(1)}</span>
+                    <span className="text-[11px] text-[#8B95A1] ml-1">({p.reviews})</span>
+                  </div>
+                  <div><StatusBadge tone={st.tone}>{st.label}</StatusBadge></div>
+                  <div className="flex items-center gap-1.5 justify-end">
+                    {isPendingApproval ? (
+                      <>
+                        <PillButton tone="green" disabled={busyProductId === p.id} onClick={() => handleApproval(p, 'approve')}>
+                          승인
+                        </PillButton>
+                        <PillButton tone="red" disabled={busyProductId === p.id} onClick={() => handleApproval(p, 'reject')}>
+                          반려
+                        </PillButton>
+                        <a href={`/product/${p.id}`} target="_blank" rel="noreferrer">
+                          <PillButton tone="blue">상세</PillButton>
+                        </a>
+                      </>
+                    ) : (
+                      <>
+                        <a href={`/product/${p.id}`} target="_blank" rel="noreferrer">
+                          <PillButton tone="blue">상세</PillButton>
+                        </a>
+                        <PillButton
+                          tone="orange"
+                          disabled={busyProductId === p.id}
+                          onClick={() => handleSingleAction(p, p.status === 'active' ? 'deactivate' : 'activate')}
+                        >
+                          {p.status === 'active' ? '비활성' : '활성'}
+                        </PillButton>
+                        <PillButton tone="red" disabled={busyProductId === p.id} onClick={() => handleSingleAction(p, 'delete')}>
+                          삭제
+                        </PillButton>
+                      </>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </>
+        )}
+        <div className="px-5 py-4 border-t border-[#F2F4F6]">
+          <p className="text-[12px] text-[#8B95A1] text-center">
+            전체 <span className="font-semibold text-[#191F28]">{filtered.length.toLocaleString()}</span>개 중{' '}
+            <span className="font-semibold text-[#191F28]">{Math.min(visibleCount, filtered.length)}</span>개 표시
+          </p>
+          {visibleCount < filtered.length && (
+            <div ref={sentinelRef} className="h-10 flex items-center justify-center text-[11px] text-[#8B95A1]">
+              스크롤하면 더 불러옵니다…
+            </div>
+          )}
         </div>
       </div>
-
-      {/* ---------- Bulk Action Confirmation Modal ---------- */}
-      {showBulkAction && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              {showBulkAction === 'deactivate' ? '상품 비활성화' : '상품 삭제'}
-            </h3>
-            <p className="text-sm text-gray-500 mb-6">
-              선택한 <span className="font-medium text-gray-900">{selected.size}개</span> 상품을{' '}
-              {showBulkAction === 'deactivate' ? '비활성화' : '삭제'}하시겠습니까?
-              {showBulkAction === 'delete' && (
-                <span className="block mt-1 text-red-500">이 작업은 되돌릴 수 없습니다.</span>
-              )}
-            </p>
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={() => setShowBulkAction(null)}
-                className="px-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50"
-              >
-                취소
-              </button>
-              <button
-                onClick={() => { setSelected(new Set()); setShowBulkAction(null); }}
-                className={`px-4 py-2 rounded-lg text-sm font-medium text-white ${
-                  showBulkAction === 'deactivate' ? 'bg-yellow-500 hover:bg-yellow-600' : 'bg-red-500 hover:bg-red-600'
-                }`}
-              >
-                {showBulkAction === 'deactivate' ? '비활성화' : '삭제'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

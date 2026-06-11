@@ -159,7 +159,7 @@ ${hasAspectFeedback && aspects.kindness >= 4 ? '원장님과 스태프분들의 
   };
 
   return (
-    <div className="h-[100dvh] bg-white w-full max-w-[480px] lg:max-w-[560px] mx-auto flex flex-col overflow-hidden">
+    <div className="h-[100dvh] bg-white w-full max-w-[500px] lg:max-w-[560px] mx-auto flex flex-col overflow-hidden">
       {/* Sticky header */}
       <header className="flex-shrink-0 h-12 flex items-center px-2.5 border-b border-gray-100 bg-white">
         <button onClick={() => router.back()} className="p-1 -ml-1">

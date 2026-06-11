@@ -19,7 +19,7 @@ export default function ReviewDetailPage() {
 
   if (!review) {
     return (
-      <div className="min-h-screen bg-white max-w-[480px] mx-auto">
+      <div className="min-h-screen bg-white max-w-[500px] mx-auto">
         <TopBar title="리뷰" />
         <div className="flex flex-col items-center justify-center py-20 px-2.5">
           <p className="text-sm text-gray-500 mb-4">리뷰를 찾을 수 없습니다.</p>
@@ -46,7 +46,7 @@ export default function ReviewDetailPage() {
     .slice(0, 4);
 
   return (
-    <div className="min-h-screen bg-white max-w-[480px] mx-auto pb-12 page-enter">
+    <div className="min-h-screen bg-white max-w-[500px] mx-auto pb-12 page-enter">
       <TopBar
         title="리뷰"
         rightContent={

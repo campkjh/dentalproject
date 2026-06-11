@@ -462,7 +462,7 @@ function PaymentPage() {
 
       {/* Bottom CTA (transforms on agreedFlow) */}
       <div
-        className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] bg-white z-50 lg:static lg:mt-6 lg:transform-none lg:left-auto lg:max-w-none"
+        className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[500px] bg-white z-50 lg:static lg:mt-6 lg:transform-none lg:left-auto lg:max-w-none"
         style={{
           borderTop: '1px solid #F2F3F5',
           boxShadow: '0 -4px 16px rgba(0,0,0,0.04)',

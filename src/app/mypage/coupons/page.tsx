@@ -50,7 +50,7 @@ export default function CouponsPage() {
 
   if (!isLoggedIn) {
     return (
-      <div className="min-h-screen bg-white max-w-[480px] mx-auto">
+      <div className="min-h-screen bg-white max-w-[500px] mx-auto">
         <TopBar title="쿠폰함" />
         <LoginRequired />
       </div>
@@ -62,7 +62,7 @@ export default function CouponsPage() {
   const availableCount = allCoupons.filter((c) => c.status === 'available').length;
 
   return (
-    <div className="min-h-screen bg-white max-w-[480px] mx-auto page-enter">
+    <div className="min-h-screen bg-white max-w-[500px] mx-auto page-enter">
       <TopBar title="쿠폰함" />
 
       {/* Hero — mirrors the points page: label + big number on the left */}

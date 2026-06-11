@@ -127,6 +127,7 @@ interface AppState {
   // Auth
   isLoggedIn: boolean;
   isDoctor: boolean;
+  isAdmin: boolean;
   user: User | null;
   login: (type: 'kakao' | 'apple') => void;
   logout: () => void;
@@ -187,8 +188,23 @@ interface AppState {
   showToast: (message: string) => void;
 
   // Modal
-  modal: { title: string; message: string; onConfirm: () => void } | null;
+  modal: {
+    title: string;
+    message: string;
+    onConfirm?: () => void;
+    onCancel?: () => void;
+    confirmText?: string;
+    cancelText?: string;
+    singleButton?: boolean;
+  } | null;
   showModal: (title: string, message: string, onConfirm: () => void) => void;
+  showConfirm: (
+    title: string,
+    message: string,
+    onConfirm: () => void,
+    opts?: { confirmText?: string; cancelText?: string; onCancel?: () => void }
+  ) => void;
+  showAlert: (title: string, message?: string, opts?: { confirmText?: string; onConfirm?: () => void }) => void;
   hideModal: () => void;
 }
 
@@ -288,6 +304,7 @@ export const useStore = create<AppState>((set, get) => ({
 
   isLoggedIn: false,
   isDoctor: false,
+  isAdmin: false,
   user: null,
 
   login: (type) => {
@@ -309,7 +326,7 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   logout: () => {
-    set({ isLoggedIn: false, user: null, isDoctor: false });
+    set({ isLoggedIn: false, user: null, isDoctor: false, isAdmin: false });
   },
   updateUser: (patch) => {
     set((state) => (state.user ? { user: { ...state.user, ...patch } } : {}));
@@ -573,5 +590,26 @@ export const useStore = create<AppState>((set, get) => ({
 
   modal: null,
   showModal: (title, message, onConfirm) => set({ modal: { title, message, onConfirm } }),
+  showConfirm: (title, message, onConfirm, opts) =>
+    set({
+      modal: {
+        title,
+        message,
+        onConfirm,
+        onCancel: opts?.onCancel,
+        confirmText: opts?.confirmText,
+        cancelText: opts?.cancelText,
+      },
+    }),
+  showAlert: (title, message = '', opts) =>
+    set({
+      modal: {
+        title,
+        message,
+        onConfirm: opts?.onConfirm,
+        confirmText: opts?.confirmText ?? '확인',
+        singleButton: true,
+      },
+    }),
   hideModal: () => set({ modal: null }),
 }));

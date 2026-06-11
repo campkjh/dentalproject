@@ -92,22 +92,58 @@ export async function GET() {
   return NextResponse.json({ products });
 }
 
+export async function DELETE(req: NextRequest) {
+  const adminCheck = await requireAdmin();
+  if (adminCheck.error) return adminCheck.error;
+
+  const body = await req.json().catch(() => ({}));
+  const ids: string[] = Array.isArray(body.ids)
+    ? body.ids.filter((v: unknown): v is string => typeof v === 'string')
+    : typeof body.id === 'string'
+      ? [body.id]
+      : [];
+  if (!ids.length) return NextResponse.json({ error: '삭제할 상품 ID가 필요합니다.' }, { status: 400 });
+
+  const admin = await createAdminClient();
+  const { error } = await admin.from('products').update({ status: 'removed' }).in('id', ids);
+  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+  return NextResponse.json({ ok: true, count: ids.length });
+}
+
 export async function PATCH(req: NextRequest) {
   const adminCheck = await requireAdmin();
   if (adminCheck.error) return adminCheck.error;
 
   const body = await req.json().catch(() => ({}));
   const id = typeof body.id === 'string' ? body.id : '';
-  const action = body.action === 'approve' || body.action === 'reject' ? body.action : null;
-  if (!id || !action) {
+  const idsRaw: unknown = body.ids;
+  const ids: string[] = Array.isArray(idsRaw)
+    ? idsRaw.filter((v): v is string => typeof v === 'string')
+    : id
+      ? [id]
+      : [];
+  const action = ['approve', 'reject', 'deactivate', 'activate'].includes(body.action) ? body.action : null;
+  if (!ids.length || !action) {
     return NextResponse.json({ error: '상품 ID와 처리 액션이 필요합니다.' }, { status: 400 });
   }
 
   const admin = await createAdminClient();
+
+  if (action === 'deactivate' || action === 'activate') {
+    const nextStatus = action === 'deactivate' ? 'paused' : 'active';
+    const { error } = await admin.from('products').update({ status: nextStatus }).in('id', ids);
+    if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+    return NextResponse.json({ ok: true, count: ids.length });
+  }
+
+  if (ids.length > 1) {
+    return NextResponse.json({ error: '승인/반려는 한 번에 한 건씩 처리해야 합니다.' }, { status: 400 });
+  }
+
   let { data: product, error: findError } = await admin
     .from('products')
     .select('id, status, approval_status, pending_changes')
-    .eq('id', id)
+    .eq('id', ids[0])
     .maybeSingle();
   let approvalColumnsAvailable = !findError;
 
@@ -115,7 +151,7 @@ export async function PATCH(req: NextRequest) {
     const fallback = await admin
       .from('products')
       .select('id, status')
-      .eq('id', id)
+      .eq('id', ids[0])
       .maybeSingle();
     product = fallback.data as typeof product;
     findError = fallback.error;
@@ -133,8 +169,8 @@ export async function PATCH(req: NextRequest) {
   }
 
   if (!approvalColumnsAvailable) {
-    const patch = action === 'approve' ? { status: 'active' } : { status: 'removed' };
-    const { error } = await admin.from('products').update(patch).eq('id', id);
+    const legacyPatch = action === 'approve' ? { status: 'active' } : { status: 'removed' };
+    const { error } = await admin.from('products').update(legacyPatch).eq('id', ids[0]);
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
     return NextResponse.json({ ok: true });
   }
@@ -147,7 +183,7 @@ export async function PATCH(req: NextRequest) {
         pending_changes: null,
         ...(approvalStatus === 'pending_create' ? { status: 'paused' } : {}),
       })
-      .eq('id', id);
+      .eq('id', ids[0]);
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
     return NextResponse.json({ ok: true });
   }
@@ -163,9 +199,9 @@ export async function PATCH(req: NextRequest) {
     patch.status = 'removed';
   }
 
-  let { error } = await admin.from('products').update(patch).eq('id', id);
+  let { error } = await admin.from('products').update(patch).eq('id', ids[0]);
   if (error && isMissingProductColumn(error, 'detail_image_url')) {
-    const retry = await admin.from('products').update(withoutDetailImageColumn(patch)).eq('id', id);
+    const retry = await admin.from('products').update(withoutDetailImageColumn(patch)).eq('id', ids[0]);
     error = retry.error;
   }
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });

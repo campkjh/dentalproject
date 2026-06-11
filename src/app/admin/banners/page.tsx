@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState, type ChangeEvent } from 'react';
+import { useStore } from '@/store';
 import {
   Eye,
   EyeOff,
@@ -13,6 +14,8 @@ import {
   Upload,
 } from 'lucide-react';
 import type { HomeBanner } from '@/types';
+import { PageHeader, PrimaryCTA, EmptyState } from '@/components/admin/ui';
+import { ImageUploader } from '@/components/admin/ImageUploader';
 
 type BannerForm = {
   id: string;
@@ -80,6 +83,7 @@ function formatPeriod(banner: HomeBanner) {
 }
 
 export default function AdminBannersPage() {
+  const showConfirm = useStore((s) => s.showConfirm);
   const [banners, setBanners] = useState<HomeBanner[]>([]);
   const [form, setForm] = useState<BannerForm>(emptyForm);
   const [loading, setLoading] = useState(true);
@@ -171,22 +175,23 @@ export default function AdminBannersPage() {
     }
   };
 
-  const handleDelete = async (banner: HomeBanner) => {
-    if (!window.confirm(`"${banner.title}" 배너를 삭제할까요?`)) return;
-    setError('');
-    try {
-      const res = await fetch('/api/admin/banners', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: banner.id }),
-      });
-      const payload = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(payload.error || '삭제에 실패했습니다.');
-      setBanners((current) => current.filter((item) => item.id !== banner.id));
-      if (form.id === banner.id) setForm(emptyForm);
-    } catch (err) {
-      setError((err as Error).message);
-    }
+  const handleDelete = (banner: HomeBanner) => {
+    showConfirm('배너 삭제', `"${banner.title}" 배너를 삭제할까요?`, async () => {
+      setError('');
+      try {
+        const res = await fetch('/api/admin/banners', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: banner.id }),
+        });
+        const payload = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(payload.error || '삭제에 실패했습니다.');
+        setBanners((current) => current.filter((item) => item.id !== banner.id));
+        if (form.id === banner.id) setForm(emptyForm);
+      } catch (err) {
+        setError((err as Error).message);
+      }
+    });
   };
 
   const toggleActive = async (banner: HomeBanner) => {
@@ -209,22 +214,15 @@ export default function AdminBannersPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">홈 배너 관리</h2>
-          <p className="mt-1 text-sm text-gray-500">
-            고객유저 홈 상단 슬라이드 배너를 추가, 수정, 삭제할 수 있습니다.
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={() => setForm(emptyForm)}
-          className="inline-flex items-center gap-2 rounded-lg bg-[#8037FF] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#6D28D9]"
-        >
-          <Plus size={16} />
-          새 배너
-        </button>
-      </div>
+      <PageHeader
+        title="홈 배너"
+        subtitle="고객 홈 상단 슬라이드 배너를 추가, 수정, 삭제할 수 있어요."
+        right={
+          <PrimaryCTA onClick={() => setForm(emptyForm)}>
+            새 배너
+          </PrimaryCTA>
+        }
+      />
 
       {error && (
         <div className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-medium text-red-600">
@@ -233,30 +231,27 @@ export default function AdminBannersPage() {
       )}
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
-        <section className="rounded-xl border border-gray-100 bg-white shadow-sm">
-          <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
+        <section className="rounded-2xl border border-[#E5E8EB] bg-white overflow-hidden">
+          <div className="flex items-center justify-between border-b border-[#F2F4F6] px-5 py-4">
             <div>
-              <h3 className="font-semibold text-gray-900">등록된 배너</h3>
-              <p className="text-xs text-gray-400">노출 순서가 낮을수록 먼저 보입니다.</p>
+              <h3 className="text-[15px] font-bold text-[#191F28]">등록된 배너</h3>
+              <p className="text-[12px] text-[#8B95A1] mt-0.5">노출 순서가 낮을수록 먼저 보여요.</p>
             </div>
             <button
               type="button"
               onClick={() => void loadBanners()}
-              className="inline-flex items-center gap-2 rounded-lg bg-gray-100 px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-200"
+              className="inline-flex items-center gap-1.5 h-9 px-3 rounded-[10px] bg-[#F2F4F6] text-[12px] font-semibold text-[#4E5968] hover:bg-[#E5E8EB] transition-colors"
             >
-              <RefreshCcw size={15} />
+              <RefreshCcw size={13} />
               새로고침
             </button>
           </div>
 
-          <div className="divide-y divide-gray-100">
+          <div className="divide-y divide-[#F2F4F6]">
             {loading ? (
-              <div className="px-5 py-12 text-center text-sm text-gray-400">불러오는 중...</div>
+              <div className="px-5 py-12 text-center text-[13px] text-[#8B95A1]">불러오는 중…</div>
             ) : sortedBanners.length === 0 ? (
-              <div className="px-5 py-12 text-center">
-                <ImagePlus className="mx-auto text-gray-300" size={34} />
-                <p className="mt-3 text-sm font-semibold text-gray-500">아직 등록된 배너가 없습니다.</p>
-              </div>
+              <EmptyState icon={<ImagePlus size={20} className="text-[#8B95A1]" />} title="등록된 배너가 없어요" hint='우측 상단 "새 배너"로 시작해 보세요.' />
             ) : (
               sortedBanners.map((banner) => (
                 <div key={banner.id} className="grid grid-cols-[220px_minmax(0,1fr)] gap-5 px-5 py-4">
@@ -284,10 +279,10 @@ export default function AdminBannersPage() {
                           </span>
                         </div>
                         <h4 className="mt-2 truncate text-base font-bold text-gray-900">{banner.title}</h4>
-                        {banner.subtitle && <p className="mt-1 truncate text-sm text-gray-500">{banner.subtitle}</p>}
+                        {banner.subtitle && <p className="mt-1 truncate text-[13px] text-[#8B95A1]">{banner.subtitle}</p>}
                         <p className="mt-2 text-xs text-gray-400">{formatPeriod(banner)}</p>
                         {banner.targetUrl && (
-                          <p className="mt-1 truncate text-xs text-[#8037FF]">{banner.targetUrl}</p>
+                          <p className="mt-1 truncate text-xs text-[#3182F6]">{banner.targetUrl}</p>
                         )}
                       </div>
                       <div className="flex flex-shrink-0 items-center gap-2">
@@ -302,7 +297,7 @@ export default function AdminBannersPage() {
                         <button
                           type="button"
                           onClick={() => setForm(toForm(banner))}
-                          className="rounded-lg bg-purple-50 p-2 text-[#8037FF] hover:bg-purple-100"
+                          className="rounded-lg bg-blue-50 p-2 text-[#3182F6] hover:bg-blue-100"
                           aria-label="배너 수정"
                         >
                           <Pencil size={16} />
@@ -324,153 +319,134 @@ export default function AdminBannersPage() {
           </div>
         </section>
 
-        <aside className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
+        <aside className="rounded-2xl border border-[#E5E8EB] bg-white p-6">
           <div className="mb-5 flex items-center justify-between">
             <div>
-              <h3 className="font-semibold text-gray-900">{form.id ? '배너 수정' : '배너 추가'}</h3>
-              <p className="text-xs text-gray-400">권장 사이즈 1774 x 887 이상, 2:1 비율</p>
+              <h3 className="text-[15px] font-bold text-[#191F28]">{form.id ? '배너 수정' : '배너 추가'}</h3>
+              <p className="text-[11px] text-[#8B95A1] mt-0.5">권장 사이즈 1774 × 887, 2:1 비율</p>
             </div>
             {form.id && (
-              <button type="button" onClick={() => setForm(emptyForm)} className="text-sm font-semibold text-gray-400">
-                취소
+              <button type="button" onClick={() => setForm(emptyForm)} className="text-[12px] font-semibold text-[#8B95A1] hover:text-[#4E5968]">
+                새로 만들기
               </button>
             )}
           </div>
 
           <div className="space-y-4">
-            <div className="aspect-[2/1] overflow-hidden rounded-xl bg-gray-100">
-              {form.imageUrl ? (
-                <img src={form.imageUrl} alt="배너 미리보기" className="h-full w-full object-cover" />
-              ) : (
-                <div className="flex h-full flex-col items-center justify-center text-gray-400">
-                  <ImagePlus size={34} />
-                  <span className="mt-2 text-sm font-semibold">이미지 미리보기</span>
-                </div>
-              )}
+            <div>
+              <span className="mb-1.5 block text-[12px] font-semibold text-[#4E5968]">PC/공통 배너 이미지</span>
+              <ImageUploader
+                value={form.imageUrl}
+                onChange={(url) => updateForm('imageUrl', url)}
+                folder="home-banners"
+                aspect="2/1"
+                placeholder="배너 이미지 업로드 (2:1)"
+              />
             </div>
 
-            <label className="block">
-              <span className="mb-1.5 block text-sm font-medium text-gray-700">PC/공통 배너 이미지</span>
-              <div className="flex gap-2">
-                <input
-                  value={form.imageUrl}
-                  onChange={(event) => updateForm('imageUrl', event.target.value)}
-                  placeholder="이미지 URL 또는 업로드"
-                  className="min-w-0 flex-1 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm focus:border-[#8037FF] focus:outline-none focus:ring-2 focus:ring-[#8037FF]/20"
-                />
-                <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-gray-900 px-3 py-2.5 text-sm font-bold text-white hover:bg-gray-800">
-                  <Upload size={15} />
-                  {uploadingField === 'imageUrl' ? '업로드중' : '업로드'}
-                  <input type="file" accept="image/*" className="hidden" onChange={(event) => void handleUpload(event, 'imageUrl')} />
-                </label>
-              </div>
-            </label>
-
-            <label className="block">
-              <span className="mb-1.5 block text-sm font-medium text-gray-700">모바일 전용 이미지</span>
-              <div className="flex gap-2">
-                <input
-                  value={form.mobileImageUrl}
-                  onChange={(event) => updateForm('mobileImageUrl', event.target.value)}
-                  placeholder="없으면 공통 이미지를 사용합니다"
-                  className="min-w-0 flex-1 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm focus:border-[#8037FF] focus:outline-none focus:ring-2 focus:ring-[#8037FF]/20"
-                />
-                <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-gray-100 px-3 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-200">
-                  <Upload size={15} />
-                  {uploadingField === 'mobileImageUrl' ? '업로드중' : '업로드'}
-                  <input type="file" accept="image/*" className="hidden" onChange={(event) => void handleUpload(event, 'mobileImageUrl')} />
-                </label>
-              </div>
-            </label>
+            <div>
+              <span className="mb-1.5 block text-[12px] font-semibold text-[#4E5968]">모바일 전용 이미지 (선택)</span>
+              <ImageUploader
+                value={form.mobileImageUrl}
+                onChange={(url) => updateForm('mobileImageUrl', url)}
+                folder="home-banners"
+                aspect="2/1"
+                placeholder="없으면 공통 이미지 사용"
+              />
+            </div>
 
             <div className="grid grid-cols-1 gap-4">
               <label className="block">
-                <span className="mb-1.5 block text-sm font-medium text-gray-700">제목</span>
+                <span className="mb-1.5 block text-[12px] font-semibold text-[#4E5968]">제목</span>
                 <input
                   value={form.title}
                   onChange={(event) => updateForm('title', event.target.value)}
-                  className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm focus:border-[#8037FF] focus:outline-none focus:ring-2 focus:ring-[#8037FF]/20"
+                  className="w-full h-11 border border-[#E5E8EB] bg-white px-3.5 rounded-[10px] text-[14px] text-[#191F28] focus:border-[#3182F6] focus:outline-none focus:ring-2 focus:ring-[#3182F6]/15 transition-all"
                 />
               </label>
               <label className="block">
-                <span className="mb-1.5 block text-sm font-medium text-gray-700">부제목</span>
+                <span className="mb-1.5 block text-[12px] font-semibold text-[#4E5968]">부제목</span>
                 <input
                   value={form.subtitle}
                   onChange={(event) => updateForm('subtitle', event.target.value)}
-                  className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm focus:border-[#8037FF] focus:outline-none focus:ring-2 focus:ring-[#8037FF]/20"
+                  className="w-full h-11 border border-[#E5E8EB] bg-white px-3.5 rounded-[10px] text-[14px] text-[#191F28] focus:border-[#3182F6] focus:outline-none focus:ring-2 focus:ring-[#3182F6]/15 transition-all"
                 />
               </label>
               <label className="block">
-                <span className="mb-1.5 block text-sm font-medium text-gray-700">클릭 이동 링크</span>
+                <span className="mb-1.5 block text-[12px] font-semibold text-[#4E5968]">클릭 이동 링크</span>
                 <input
                   value={form.targetUrl}
                   onChange={(event) => updateForm('targetUrl', event.target.value)}
                   placeholder="/search 또는 https://..."
-                  className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm focus:border-[#8037FF] focus:outline-none focus:ring-2 focus:ring-[#8037FF]/20"
+                  className="w-full h-11 border border-[#E5E8EB] bg-white px-3.5 rounded-[10px] text-[14px] text-[#191F28] focus:border-[#3182F6] focus:outline-none focus:ring-2 focus:ring-[#3182F6]/15 transition-all"
                 />
               </label>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <label className="block">
-                <span className="mb-1.5 block text-sm font-medium text-gray-700">뱃지</span>
+                <span className="mb-1.5 block text-[12px] font-semibold text-[#4E5968]">뱃지</span>
                 <input
                   value={form.badgeText}
                   onChange={(event) => updateForm('badgeText', event.target.value)}
                   placeholder="최대 49%"
-                  className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm focus:border-[#8037FF] focus:outline-none focus:ring-2 focus:ring-[#8037FF]/20"
+                  className="w-full h-11 border border-[#E5E8EB] bg-white px-3.5 rounded-[10px] text-[14px] text-[#191F28] focus:border-[#3182F6] focus:outline-none focus:ring-2 focus:ring-[#3182F6]/15 transition-all"
                 />
               </label>
               <label className="block">
-                <span className="mb-1.5 block text-sm font-medium text-gray-700">노출 순서</span>
+                <span className="mb-1.5 block text-[12px] font-semibold text-[#4E5968]">노출 순서</span>
                 <input
                   type="number"
                   value={form.sortOrder}
                   onChange={(event) => updateForm('sortOrder', Number(event.target.value))}
-                  className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm focus:border-[#8037FF] focus:outline-none focus:ring-2 focus:ring-[#8037FF]/20"
+                  className="w-full h-11 border border-[#E5E8EB] bg-white px-3.5 rounded-[10px] text-[14px] text-[#191F28] focus:border-[#3182F6] focus:outline-none focus:ring-2 focus:ring-[#3182F6]/15 transition-all"
                 />
               </label>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <label className="block">
-                <span className="mb-1.5 block text-sm font-medium text-gray-700">시작일</span>
+                <span className="mb-1.5 block text-[12px] font-semibold text-[#4E5968]">시작일</span>
                 <input
                   type="datetime-local"
                   value={form.startsAt}
                   onChange={(event) => updateForm('startsAt', event.target.value)}
-                  className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm focus:border-[#8037FF] focus:outline-none focus:ring-2 focus:ring-[#8037FF]/20"
+                  className="w-full h-11 border border-[#E5E8EB] bg-white px-3.5 rounded-[10px] text-[14px] text-[#191F28] focus:border-[#3182F6] focus:outline-none focus:ring-2 focus:ring-[#3182F6]/15 transition-all"
                 />
               </label>
               <label className="block">
-                <span className="mb-1.5 block text-sm font-medium text-gray-700">종료일</span>
+                <span className="mb-1.5 block text-[12px] font-semibold text-[#4E5968]">종료일</span>
                 <input
                   type="datetime-local"
                   value={form.endsAt}
                   onChange={(event) => updateForm('endsAt', event.target.value)}
-                  className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm focus:border-[#8037FF] focus:outline-none focus:ring-2 focus:ring-[#8037FF]/20"
+                  className="w-full h-11 border border-[#E5E8EB] bg-white px-3.5 rounded-[10px] text-[14px] text-[#191F28] focus:border-[#3182F6] focus:outline-none focus:ring-2 focus:ring-[#3182F6]/15 transition-all"
                 />
               </label>
             </div>
 
-            <label className="flex items-center justify-between rounded-lg bg-gray-50 px-3 py-3">
-              <span className="text-sm font-semibold text-gray-700">홈에 노출</span>
-              <input
-                type="checkbox"
-                checked={form.isActive}
-                onChange={(event) => updateForm('isActive', event.target.checked)}
-                className="h-5 w-5 rounded border-gray-300 text-[#8037FF] focus:ring-[#8037FF]"
-              />
+            <label className="flex items-center justify-between rounded-[10px] bg-[#FAFBFC] border border-[#F2F4F6] px-4 py-3">
+              <span className="text-[13px] font-semibold text-[#191F28]">홈에 노출</span>
+              <button
+                type="button"
+                onClick={() => updateForm('isActive', !form.isActive)}
+                className="relative inline-flex items-center w-12 h-7 rounded-full transition-colors"
+                style={{ background: form.isActive ? '#3182F6' : '#E5E8EB' }}
+              >
+                <span
+                  className="absolute w-5 h-5 bg-white rounded-full shadow transition-transform"
+                  style={{ left: form.isActive ? '24px' : '4px' }}
+                />
+              </button>
             </label>
 
             <button
               type="button"
               onClick={() => void handleSubmit()}
-              disabled={saving || Boolean(uploadingField)}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#8037FF] px-4 py-3 text-sm font-bold text-white hover:bg-[#6D28D9] disabled:cursor-not-allowed disabled:bg-gray-300"
+              disabled={saving}
+              className="inline-flex w-full items-center justify-center gap-2 h-12 rounded-[10px] bg-[#3182F6] text-[14px] font-semibold text-white hover:bg-[#1B64DA] disabled:opacity-50 transition-colors"
             >
-              <Save size={16} />
-              {saving ? '저장 중...' : form.id ? '수정 저장' : '배너 추가'}
+              {saving ? '저장 중…' : form.id ? '수정 저장' : '배너 추가'}
             </button>
           </div>
         </aside>

@@ -468,7 +468,7 @@ function BookingPage() {
       </div>
 
       {/* Bottom CTA bar */}
-      <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] bg-white z-50 lg:static lg:mt-6 lg:transform-none lg:left-auto lg:max-w-none">
+      <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[500px] bg-white z-50 lg:static lg:mt-6 lg:transform-none lg:left-auto lg:max-w-none">
         <div
           className="px-2.5 pt-3 pb-3"
           style={{
@@ -515,35 +515,96 @@ function BookingPage() {
 
       {/* Confirmation dialog */}
       {showConfirm && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 modal-overlay-enter">
-          <div className="bg-white rounded-2xl mx-6 w-full max-w-sm overflow-hidden modal-content-enter">
-            <div className="p-6 text-center">
-              <div className="w-14 h-14 bg-[#8037FF] rounded-full flex items-center justify-center mx-auto mb-4">
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 modal-overlay-enter"
+          onClick={() => setShowConfirm(false)}
+        >
+          <div
+            className="modal-content-enter"
+            style={{
+              width: 340,
+              borderRadius: 24,
+              backgroundColor: '#FFFFFF',
+              padding: '24px 12px 12px',
+              boxShadow: '0 18px 60px rgba(15, 23, 42, 0.18)',
+            }}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div style={{ textAlign: 'center', padding: '0 12px 18px' }}>
+              <div
+                style={{
+                  width: 56,
+                  height: 56,
+                  backgroundColor: '#8037FF',
+                  borderRadius: 9999,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  margin: '0 auto 14px',
+                }}
+              >
                 <Check size={26} strokeWidth={3} className="text-white" />
               </div>
-              <h3 className="text-lg font-bold mb-2">예약을 확정할까요?</h3>
-              <p className="text-sm text-gray-600 mb-1">
+              <h3 style={{ fontSize: 20, fontWeight: 600, color: '#2B313D', lineHeight: '26px', margin: 0 }}>
+                예약을 확정할까요?
+              </h3>
+              <p style={{ fontSize: 15, fontWeight: 500, color: '#51535C', lineHeight: '20px', margin: '6px 0 0' }}>
                 {currentYear}년 {currentMonth}월 {selectedDate}일 ({selectedDayLabel})
               </p>
-              <p className="text-lg font-bold text-[#8037FF]">{selectedTime}</p>
+              <p style={{ fontSize: 18, fontWeight: 600, color: '#8037FF', lineHeight: '24px', margin: '2px 0 0' }}>
+                {selectedTime}
+              </p>
               {product && (
-                <p className="text-[12px] text-gray-500 mt-3 line-clamp-1">
+                <p
+                  style={{
+                    fontSize: 13,
+                    color: '#8a909c',
+                    margin: '10px 0 0',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
                   {product.title}
                 </p>
               )}
             </div>
-            <div className="flex border-t border-gray-100">
+            <div style={{ display: 'flex', gap: 8 }}>
               <button
-                onClick={() => setShowConfirm(false)}
-                className="flex-1 py-3.5 text-sm font-medium text-gray-500"
-              >
-                다시 선택
-              </button>
-              <button
+                type="button"
                 onClick={handleConfirm}
-                className="flex-1 py-3.5 text-sm font-bold text-white bg-[#8037FF]"
+                style={{
+                  flex: 1,
+                  height: 48,
+                  borderRadius: 12,
+                  backgroundColor: '#8037FF',
+                  color: '#FFFFFF',
+                  fontSize: 18,
+                  fontWeight: 600,
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
+                }}
               >
                 결제하기
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowConfirm(false)}
+                style={{
+                  flex: 1,
+                  height: 48,
+                  borderRadius: 12,
+                  backgroundColor: '#F2F3F5',
+                  color: '#51535C',
+                  fontSize: 18,
+                  fontWeight: 600,
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
+                }}
+              >
+                다시 선택
               </button>
             </div>
           </div>

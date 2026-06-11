@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ChevronLeft, ChevronRight, Info, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Info } from 'lucide-react';
 import { normalizeProductImageUrl } from '@/lib/images';
 import { useMyHospitalData } from '@/lib/partner/my-hospital-cache';
 import { useReservationRealtimeRefresh } from '@/lib/realtime/reservations';
@@ -109,6 +109,7 @@ export default function PartnerReservationDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const showToast = useStore((s) => s.showToast);
+  const showConfirm = useStore((s) => s.showConfirm);
   const { authUser } = useSession();
   const {
     data: hospitalData,
@@ -123,7 +124,6 @@ export default function PartnerReservationDetailPage() {
   const [initialHadCachedReservation] = useState(() => Boolean(cachedReservation));
   const [updating, setUpdating] = useState(false);
   const [showSchedulePicker, setShowSchedulePicker] = useState(false);
-  const [showScheduleConfirm, setShowScheduleConfirm] = useState(false);
   const [draftSchedule, setDraftSchedule] = useState<Date>(() => new Date());
   const [viewDate, setViewDate] = useState<Date>(() => new Date());
 
@@ -229,27 +229,32 @@ export default function PartnerReservationDetailPage() {
     }
   };
 
-  const submitSchedule = async () => {
+  const submitSchedule = () => {
     if (!reservation || updating) return;
-    setShowScheduleConfirm(false);
-    setUpdating(true);
-    try {
-      const nextSchedule = getApiIso(draftSchedule);
-      const res = await fetch(`/api/reservations/${params.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reservationAt: nextSchedule }),
-      });
-      const payload = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(payload.error || '스케줄 변경에 실패했습니다.');
-      patchReservation((prev) => prev ? { ...prev, reservation_at: nextSchedule, schedule_history: payload.scheduleHistory ?? prev.schedule_history } : prev);
-      setShowSchedulePicker(false);
-      showToast('스케줄 변경완료');
-    } catch (error) {
-      showToast(error instanceof Error ? error.message : '스케줄 변경에 실패했습니다.');
-    } finally {
-      setUpdating(false);
-    }
+    showConfirm(
+      '정말로 스케줄을 변경 하시겠습니까?',
+      '변경된 스케줄이 고객에게 전달됩니다.',
+      async () => {
+        setUpdating(true);
+        try {
+          const nextSchedule = getApiIso(draftSchedule);
+          const res = await fetch(`/api/reservations/${params.id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ reservationAt: nextSchedule }),
+          });
+          const payload = await res.json().catch(() => ({}));
+          if (!res.ok) throw new Error(payload.error || '스케줄 변경에 실패했습니다.');
+          patchReservation((prev) => prev ? { ...prev, reservation_at: nextSchedule, schedule_history: payload.scheduleHistory ?? prev.schedule_history } : prev);
+          setShowSchedulePicker(false);
+          showToast('스케줄 변경완료');
+        } catch (error) {
+          showToast(error instanceof Error ? error.message : '스케줄 변경에 실패했습니다.');
+        } finally {
+          setUpdating(false);
+        }
+      }
+    );
   };
 
   const changeMonth = (delta: number) => {
@@ -308,7 +313,7 @@ export default function PartnerReservationDetailPage() {
               showToast('변경할 스케줄을 선택해주세요.');
               return;
             }
-            setShowScheduleConfirm(true);
+            submitSchedule();
           }}
           disabled={updating}
         >
@@ -482,24 +487,6 @@ export default function PartnerReservationDetailPage() {
 
       {renderBottomAction()}
 
-      {showScheduleConfirm && (
-        <div className="partner-cancel-dialog-backdrop">
-          <div className="partner-cancel-dialog" role="dialog" aria-modal="true">
-            <h2>정말로 스케줄을 변경 하시겠습니까?</h2>
-            <p>변경된 스케줄이 고객에게 전달됩니다.</p>
-            <div>
-              <button type="button" onClick={submitSchedule}>네</button>
-              <button type="button" onClick={() => setShowScheduleConfirm(false)}>아니요</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showScheduleConfirm && (
-        <button type="button" className="partner-cancel-dialog-close" aria-label="닫기" onClick={() => setShowScheduleConfirm(false)}>
-          <X size={24} />
-        </button>
-      )}
     </div>
   );
 }

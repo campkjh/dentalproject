@@ -8,6 +8,7 @@ import { useStore } from '@/store';
 import { createClient, hasSupabaseEnv } from '@/lib/supabase/client';
 import { EyeOff, Eye, Plus, Star } from 'lucide-react';
 import Avatar from '@/components/common/Avatar';
+import { ImageUploader } from '@/components/admin/ImageUploader';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type ReviewRow = {
@@ -297,12 +298,28 @@ export default function PartnerReviewsPage() {
               rows={4} placeholder="리뷰 내용을 입력하세요" style={{ width: '100%', border: '1.5px solid #E5E7EB', borderRadius: 10, padding: '10px 12px', fontSize: 14, resize: 'none', marginBottom: addForm.type === 'image' ? 10 : 16, boxSizing: 'border-box' }} />
 
             {addForm.type === 'image' && (
-              <>
-                <input value={addForm.beforeImage} onChange={(e) => setAddForm((f) => ({ ...f, beforeImage: e.target.value }))}
-                  placeholder="Before 이미지 URL" style={{ width: '100%', border: '1.5px solid #E5E7EB', borderRadius: 10, padding: '10px 12px', fontSize: 14, marginBottom: 8, boxSizing: 'border-box' }} />
-                <input value={addForm.afterImage} onChange={(e) => setAddForm((f) => ({ ...f, afterImage: e.target.value }))}
-                  placeholder="After 이미지 URL" style={{ width: '100%', border: '1.5px solid #E5E7EB', borderRadius: 10, padding: '10px 12px', fontSize: 14, marginBottom: 16, boxSizing: 'border-box' }} />
-              </>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
+                <div>
+                  <p style={{ fontSize: 12, fontWeight: 600, color: '#4E5968', marginBottom: 6 }}>Before</p>
+                  <ImageUploader
+                    value={addForm.beforeImage}
+                    onChange={(url) => setAddForm((f) => ({ ...f, beforeImage: url }))}
+                    folder="review-before"
+                    aspect="1/1"
+                    placeholder="Before 이미지"
+                  />
+                </div>
+                <div>
+                  <p style={{ fontSize: 12, fontWeight: 600, color: '#4E5968', marginBottom: 6 }}>After</p>
+                  <ImageUploader
+                    value={addForm.afterImage}
+                    onChange={(url) => setAddForm((f) => ({ ...f, afterImage: url }))}
+                    folder="review-after"
+                    aspect="1/1"
+                    placeholder="After 이미지"
+                  />
+                </div>
+              </div>
             )}
 
             <div style={{ display: 'flex', gap: 8 }}>

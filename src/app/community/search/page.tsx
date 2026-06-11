@@ -77,7 +77,7 @@ export default function CommunitySearchPage() {
   const hasQuery = query.trim().length > 0;
 
   return (
-    <div className="min-h-screen bg-white max-w-[480px] mx-auto">
+    <div className="min-h-screen bg-white max-w-[500px] mx-auto">
       {/* Header: back + input */}
       <div className="sticky top-0 z-30 bg-white border-b border-gray-100">
         <div className="flex items-center gap-2 px-2.5 h-12">

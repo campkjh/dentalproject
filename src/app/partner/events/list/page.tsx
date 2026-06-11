@@ -43,6 +43,7 @@ const STATUS_LABEL: Record<EventRow['status'], { text: string; tone: 'neutral' |
 export default function EventsListPage() {
   const { authUser } = useSession();
   const showToast = useStore((s) => s.showToast);
+  const showConfirm = useStore((s) => s.showConfirm);
   const [items, setItems] = useState<EventRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState('');
@@ -74,12 +75,13 @@ export default function EventsListPage() {
     [items, q]
   );
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('이 이벤트를 삭제하시겠습니까?')) return;
-    setItems((prev) => prev.filter((i) => i.id !== id));
-    const res = await fetch(`/api/my-hospital/events/${id}`, { method: 'DELETE' });
-    if (!res.ok) showToast('삭제 실패');
-    else showToast('삭제되었습니다.');
+  const handleDelete = (id: string) => {
+    showConfirm('이벤트 삭제', '이 이벤트를 삭제하시겠습니까?', async () => {
+      setItems((prev) => prev.filter((i) => i.id !== id));
+      const res = await fetch(`/api/my-hospital/events/${id}`, { method: 'DELETE' });
+      if (!res.ok) showToast('삭제 실패');
+      else showToast('삭제되었습니다.');
+    });
   };
 
   if (!authUser) {

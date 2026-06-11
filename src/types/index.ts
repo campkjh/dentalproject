@@ -13,6 +13,7 @@ export interface Product {
   likeCount: number;
   imageUrl: string;
   detailImageUrl?: string;
+  description?: string;
   tags: string[];
   category: string;
   subCategory: string;

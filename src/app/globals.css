@@ -22,6 +22,10 @@
   --color-primary-light: var(--primary-light);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  /* Consumer app is a fixed 500px mobile column on every screen.
+     Disable the lg breakpoint so all lg: desktop expansions never activate.
+     (admin uses xl:, partner uses sm/md + custom CSS — both unaffected.) */
+  --breakpoint-lg: 9999px;
 }
 
 * {
@@ -257,6 +261,239 @@ body {
   transform: translateY(-4px);
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
 }
+
+/* ===== Admin design tokens — Toss Place / Toss Business style ===== */
+.admin-card {
+  background: #FFFFFF;
+  border: 1px solid #E5E8EB;
+  border-radius: 20px;
+  transition: border-color 0.18s ease;
+}
+.admin-card-interactive { cursor: pointer; }
+.admin-card-interactive:hover { border-color: #D7DBE3; }
+.admin-stat {
+  background: #FFFFFF;
+  border: 1px solid #E5E8EB;
+  border-radius: 20px;
+  padding: 24px;
+}
+.admin-pill-active {
+  background: #FFFFFF;
+  color: #191F28;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+}
+.admin-table-row { transition: background-color 0.15s ease; }
+.admin-divider { border-color: #F2F4F6; }
+.admin-fade { animation: pageIn 0.35s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+/* Section heading inside a card */
+.admin-section-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #191F28;
+  letter-spacing: -0.01em;
+}
+.admin-section-sub {
+  font-size: 13px;
+  color: #8B95A1;
+  margin-top: 4px;
+}
+
+/* Primary CTA — Toss blue, used top-right of forms */
+.admin-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 40px;
+  padding: 0 18px;
+  border-radius: 10px;
+  background: #3182F6;
+  color: #FFFFFF;
+  font-size: 14px;
+  font-weight: 600;
+  transition: background-color 0.15s ease;
+}
+.admin-cta:hover { background: #1B64DA; }
+.admin-cta:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* Secondary CTA — outlined */
+.admin-cta-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 40px;
+  padding: 0 16px;
+  border-radius: 10px;
+  background: #FFFFFF;
+  border: 1px solid #E5E8EB;
+  color: #4E5968;
+  font-size: 14px;
+  font-weight: 600;
+  transition: background-color 0.15s ease;
+}
+.admin-cta-secondary:hover { background: #F9FAFB; }
+
+/* Pill button — inline edit ("변경") */
+.admin-pill {
+  display: inline-flex;
+  align-items: center;
+  height: 26px;
+  padding: 0 10px;
+  border-radius: 6px;
+  background: #F2F4F6;
+  color: #4E5968;
+  font-size: 12px;
+  font-weight: 600;
+  transition: background-color 0.15s ease;
+}
+.admin-pill:hover { background: #E5E8EB; }
+
+/* Input field — Toss style */
+.admin-input {
+  height: 48px;
+  padding: 0 16px;
+  border: 1px solid #E5E8EB;
+  border-radius: 12px;
+  font-size: 14px;
+  color: #191F28;
+  background: #FFFFFF;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.admin-input:focus {
+  outline: none;
+  border-color: #3182F6;
+  box-shadow: 0 0 0 3px rgba(49, 130, 246, 0.14);
+}
+
+/* "준비 중" badge */
+.admin-badge-soft {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: #F2F4F6;
+  color: #8B95A1;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* Label-value horizontal row used in detail cards (가맹점 정보 등) */
+.admin-row {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  align-items: center;
+  padding: 14px 0;
+  border-bottom: 1px solid #F2F4F6;
+  font-size: 14px;
+}
+.admin-row:last-child { border-bottom: none; }
+.admin-row-label { color: #8B95A1; font-weight: 500; }
+.admin-row-value { color: #191F28; font-weight: 500; }
+
+/* Sidebar group label (가맹점 / 내 회사 관리 / 정산 등) */
+.admin-sidebar-group {
+  font-size: 11px;
+  font-weight: 700;
+  color: #C9CDD2;
+  padding: 18px 16px 6px;
+  letter-spacing: 0.04em;
+}
+
+/* Soft hover row for tables */
+tbody tr.admin-row-hover:hover { background: #F9FAFB; }
+
+/* ===== Toss-style dropdown menu ===== */
+.admin-dropdown {
+  position: absolute;
+  z-index: 50;
+  min-width: 200px;
+  background: #FFFFFF;
+  border-radius: 16px;
+  box-shadow:
+    0 0 0 1px rgba(15, 23, 42, 0.04),
+    0 12px 32px -8px rgba(15, 23, 42, 0.12),
+    0 4px 12px -2px rgba(15, 23, 42, 0.06);
+  padding: 6px;
+  transform-origin: top left;
+  animation: dropdownIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.admin-dropdown-origin-right { transform-origin: top right; }
+.admin-dropdown-origin-bottom { transform-origin: bottom left; }
+.admin-dropdown-origin-bottom-right { transform-origin: bottom right; }
+
+@keyframes dropdownIn {
+  from { opacity: 0; transform: scale(0.92) translateY(-4px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.admin-dropdown-title {
+  padding: 10px 14px 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #B0B8C1;
+  letter-spacing: -0.01em;
+}
+
+.admin-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 14px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #191F28;
+  cursor: pointer;
+  transition: background-color 0.12s ease, color 0.12s ease;
+  user-select: none;
+  white-space: nowrap;
+}
+.admin-dropdown-item:hover { background: #F9FAFB; }
+.admin-dropdown-item-active {
+  color: #3182F6;
+  font-weight: 700;
+}
+.admin-dropdown-item-active:hover { background: #F0F6FF; }
+
+.admin-dropdown-divider {
+  height: 1px;
+  margin: 6px 8px;
+  background: #F2F4F6;
+}
+
+/* Overlay backdrop for dropdown — invisible click-catcher */
+.admin-dropdown-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 49;
+}
+
+/* ===== Premium modal animation (richer than the existing modalIn) ===== */
+.admin-modal-overlay {
+  animation: adminOverlayIn 0.2s cubic-bezier(0.22, 1, 0.36, 1) both;
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+.admin-modal-content {
+  animation: adminModalIn 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes adminOverlayIn {
+  from { opacity: 0; backdrop-filter: blur(0); }
+  to   { opacity: 1; backdrop-filter: blur(2px); }
+}
+@keyframes adminModalIn {
+  from { opacity: 0; transform: scale(0.96) translateY(8px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* Smooth hover lift for cards */
+.admin-row-hover-soft { transition: background-color 0.18s ease, transform 0.18s ease; }
+.admin-row-hover-soft:hover { background: #F9FAFB; }
+
+/* Filter chip subtle press */
+.admin-chip { transition: background-color 0.14s ease, color 0.14s ease, border-color 0.14s ease, transform 0.14s ease; }
+.admin-chip:active { transform: scale(0.97); }
 
 /* ===== Hover Glow ===== */
 .hover-glow {
@@ -735,7 +972,7 @@ body {
 
 /* ===== Toss Design System inspired mobile controls ===== */
 :root {
-  --tds-brand: #8037ff;
+  --tds-brand: #333C4A;
   --tds-text-strong: #191f28;
   --tds-text-primary: rgba(0, 12, 30, 0.8);
   --tds-text-secondary: rgba(3, 18, 40, 0.7);
@@ -817,7 +1054,7 @@ body {
 .tds-input:focus {
   border-color: var(--tds-brand);
   background: #fff;
-  box-shadow: 0 0 0 3px rgba(49, 130, 246, 0.12);
+  box-shadow: 0 0 0 3px rgba(51, 60, 74, 0.12);
 }
 
 textarea.tds-input {
@@ -844,13 +1081,13 @@ textarea.tds-input {
 }
 
 .tds-button-primary {
-  min-height: 56px;
-  border-radius: 16px;
+  min-height: 52px;
+  border-radius: 12px;
   background: var(--tds-brand);
-  padding: 2px 28px;
+  padding: 2px 24px;
   color: #fff;
-  font-size: 17px;
-  font-weight: 700;
+  font-size: 16px;
+  font-weight: 600;
   line-height: 21px;
 }
 
@@ -866,13 +1103,14 @@ textarea.tds-input {
 }
 
 .tds-button-weak {
-  min-height: 48px;
-  border-radius: 14px;
+  min-height: 52px;
+  border-radius: 12px;
   background: var(--tds-neutral-weak);
-  padding: 2px 18px;
+  padding: 2px 20px;
   color: var(--tds-text-secondary);
-  font-size: 15px;
-  font-weight: 700;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 21px;
 }
 
 .tds-bottom-cta {
@@ -3648,6 +3886,37 @@ body.partner-product-modal-open .partner-bottom-nav {
   opacity: 0.66;
 }
 
+.partner-product-description {
+  width: 100%;
+  min-height: 140px;
+  border: 1px solid #E5E8EB;
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #191F28;
+  background: #fff;
+  resize: vertical;
+  outline: none;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.partner-product-description:focus {
+  border-color: #333C4A;
+  box-shadow: 0 0 0 3px rgba(51, 60, 74, 0.1);
+}
+
+.partner-product-description::placeholder {
+  color: #B0B8C1;
+}
+
+.partner-product-description-hint {
+  display: block;
+  margin-top: 6px;
+  font-size: 12px;
+  color: #8B95A1;
+}
+
 .partner-product-form-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -4076,48 +4345,50 @@ body.partner-product-modal-open .partner-bottom-nav {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.34);
+  background: rgba(0, 0, 0, 0.4);
   padding: 24px;
 }
 
 .partner-cancel-dialog {
-  width: min(100%, 360px);
-  border-radius: 22px;
+  width: min(100%, 340px);
+  border-radius: 24px;
   background: #fff;
-  padding: 24px 20px 20px;
-  box-shadow: 0 26px 52px rgba(15, 23, 42, 0.22);
+  padding: 24px 12px 12px;
+  box-shadow: 0 18px 60px rgba(15, 23, 42, 0.18);
 }
 
 .partner-cancel-dialog h2 {
-  margin: 0;
+  margin: 0 12px;
   color: #2b313d;
-  font-size: 21px;
-  font-weight: 700;
-  line-height: 1.3;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 26px;
 }
 
 .partner-cancel-dialog p {
-  margin: 8px 0 20px;
-  color: #8f97a8;
+  margin: 4px 12px 18px;
+  color: #51535c;
   font-size: 15px;
-  font-weight: 700;
-  line-height: 1.4;
+  font-weight: 500;
+  line-height: 20px;
 }
 
 .partner-cancel-dialog div {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 12px;
+  gap: 8px;
 }
 
 .partner-cancel-dialog button {
-  height: 52px;
+  height: 48px;
   border: 0;
-  border-radius: 14px;
+  border-radius: 12px;
   background: #8037ff;
   color: #fff;
-  font-size: 17px;
-  font-weight: 700;
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
 }
 
 .partner-cancel-dialog button:last-child {
@@ -4583,7 +4854,7 @@ body.partner-product-modal-open .partner-bottom-nav {
   inset: 0;
   z-index: 80;
   width: 100%;
-  background: rgba(0, 0, 0, 0.32);
+  background: rgba(0, 0, 0, 0.4);
 }
 
 .partner-figma-alert {
@@ -4598,37 +4869,37 @@ body.partner-product-modal-open .partner-bottom-nav {
   overflow: hidden;
   border-radius: 24px;
   background: #fff;
-  padding: 18px 0 12px;
-  box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+  padding: 18px 12px 12px;
+  box-shadow: 0 18px 60px rgba(15, 23, 42, 0.18);
 }
 
 .partner-figma-alert-copy {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  padding: 12px 16px 16px;
+  gap: 4px;
+  padding: 6px 12px 14px;
 }
 
 .partner-figma-alert-copy h2 {
   margin: 0;
   color: #2b313d;
   font-size: 20px;
-  font-weight: 700;
-  line-height: 1.4;
+  font-weight: 600;
+  line-height: 26px;
 }
 
 .partner-figma-alert-copy p {
   margin: 0;
-  color: #8a909c;
-  font-size: 16px;
+  color: #51535c;
+  font-size: 15px;
   font-weight: 500;
-  line-height: 1.4;
+  line-height: 20px;
 }
 
 .partner-figma-alert-actions {
   display: flex;
   gap: 8px;
-  padding: 0 12px;
+  padding: 0;
 }
 
 .partner-figma-alert-actions button {
@@ -4642,8 +4913,10 @@ body.partner-product-modal-open .partner-bottom-nav {
   background: #8037ff;
   color: #fff;
   font-size: 18px;
-  font-weight: 700;
+  font-weight: 600;
   line-height: 1;
+  cursor: pointer;
+  font-family: inherit;
 }
 
 .partner-figma-alert-actions button + button {

@@ -2,7 +2,7 @@
 
 import { useParams } from 'next/navigation';
 import TopBar from '@/components/common/TopBar';
-import { useState, ReactNode } from 'react';
+import { useEffect, useState, ReactNode } from 'react';
 import {
   Info,
   AlertTriangle,
@@ -1259,8 +1259,27 @@ export default function TermsDetailPage() {
   const id = params.id as string;
   const meta = termsMeta[id];
   const ContentRenderer = termsRenderers[id];
+  const [override, setOverride] = useState<{ title: string; content: string; updatedAt: string } | null>(null);
 
-  if (!meta || !ContentRenderer) {
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/terms', { cache: 'no-store' });
+        if (!res.ok) return;
+        const data = await res.json();
+        const match = (data.terms ?? []).find((t: { id: string; content: string }) => t.id === id);
+        if (!cancelled && match && match.content && match.content.trim()) {
+          setOverride({ title: match.title, content: match.content, updatedAt: match.updatedAt });
+        }
+      } catch {
+        // ignore
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [id]);
+
+  if (!meta && !override) {
     return (
       <div className="min-h-screen bg-white">
         <TopBar title="약관" />
@@ -1271,15 +1290,20 @@ export default function TermsDetailPage() {
     );
   }
 
+  const title = override?.title ?? meta?.title ?? '약관';
+  const updatedLabel = override?.updatedAt
+    ? new Date(override.updatedAt).toLocaleDateString('ko-KR')
+    : meta?.updatedAt ?? '';
+
   return (
     <div className="min-h-screen bg-white page-enter">
-      <TopBar title={meta.title} />
+      <TopBar title={title} />
 
       <div className="px-5 py-6 lg:max-w-3xl lg:mx-auto lg:py-10">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-xl font-bold mb-2" style={{ color: '#2B313D' }}>
-            {meta.title}
+            {title}
           </h1>
           <div className="flex items-center gap-2">
             <span
@@ -1293,7 +1317,7 @@ export default function TermsDetailPage() {
               최신
             </span>
             <p className="text-sm" style={{ color: '#A4ABBA' }}>
-              마지막 업데이트: {meta.updatedAt}
+              마지막 업데이트: {updatedLabel}
             </p>
           </div>
         </div>
@@ -1303,7 +1327,13 @@ export default function TermsDetailPage() {
 
         {/* Content */}
         <div>
-          <ContentRenderer />
+          {override ? (
+            <div className="text-sm whitespace-pre-wrap leading-relaxed" style={{ color: '#2B313D' }}>
+              {override.content}
+            </div>
+          ) : ContentRenderer ? (
+            <ContentRenderer />
+          ) : null}
         </div>
 
         {/* Footer */}

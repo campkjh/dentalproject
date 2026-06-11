@@ -85,6 +85,7 @@ export function normalizeProduct(row: any): Product {
     likeCount: row.like_count ?? 0,
     imageUrl: resolveProductImageUrl(row.image_url, row.id),
     detailImageUrl: normalizeProductImageUrl(row.detail_image_url) ?? extractProductDetailImageUrl(row.tags),
+    description: typeof row.description === 'string' ? row.description : undefined,
     tags: getVisibleProductTags(row.tags),
     category: row.category ?? '',
     subCategory: row.sub_category ?? '',

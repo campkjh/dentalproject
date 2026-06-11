@@ -1,23 +1,11 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import {
-  Search,
-  Calendar,
-  Download,
-  Eye,
-  CheckCircle2,
-  XCircle,
-  ChevronLeft,
-  ChevronRight,
-  ChevronsUpDown,
-  ChevronUp,
-  ChevronDown,
-  Filter,
-  AlertTriangle,
-} from 'lucide-react';
+import { useInfiniteScroll } from '@/lib/hooks/useInfiniteScroll';
+import { Calendar, Download, Eye, CheckCircle2, XCircle, AlertTriangle, X, CalendarDays } from 'lucide-react';
+import { useStore } from '@/store';
+import { PageHeader, FilterChips, SearchInput, StatCard, PillButton, StatusBadge, EmptyState, SecondaryCTA } from '@/components/admin/ui';
 
-// ---------- Types ----------
 type ReservationStatus = 'pending' | 'confirmed' | 'completed' | 'cancelled';
 
 interface Reservation {
@@ -32,41 +20,41 @@ interface Reservation {
   doctor: string;
 }
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
+const statusTone: Record<ReservationStatus, 'orange' | 'blue' | 'green' | 'red'> = {
+  pending: 'orange', confirmed: 'blue', completed: 'green', cancelled: 'red',
+};
+const statusLabel: Record<ReservationStatus, string> = {
+  pending: '확인중', confirmed: '확정', completed: '완료', cancelled: '취소',
+};
+const paymentLabel: Record<'app' | 'onsite', string> = { app: '앱결제', onsite: '현장결제' };
+const paymentTone: Record<'app' | 'onsite', 'blue' | 'gray'> = { app: 'blue', onsite: 'gray' };
 
-const statusTabs: { key: ReservationStatus | 'all'; label: string }[] = [
-  { key: 'all', label: '전체' },
-  { key: 'pending', label: '예약확인중' },
-  { key: 'confirmed', label: '예약확정' },
-  { key: 'completed', label: '완료' },
-  { key: 'cancelled', label: '취소' },
+function formatAmount(n: number) { return n.toLocaleString('ko-KR') + '원'; }
+
+const PAGE_SIZE = 20;
+
+const FILTER_TABS: { value: 'all' | ReservationStatus; label: string }[] = [
+  { value: 'all', label: '전체' },
+  { value: 'pending', label: '확인중' },
+  { value: 'confirmed', label: '확정' },
+  { value: 'completed', label: '완료' },
+  { value: 'cancelled', label: '취소' },
 ];
 
-const statusConfig: Record<ReservationStatus, { label: string; className: string }> = {
-  pending: { label: '확인중', className: 'bg-yellow-100 text-yellow-700' },
-  confirmed: { label: '확정', className: 'bg-purple-100 text-purple-700' },
-  completed: { label: '완료', className: 'bg-green-100 text-green-700' },
-  cancelled: { label: '취소', className: 'bg-red-100 text-red-700' },
-};
-
-const paymentConfig: Record<string, { label: string; className: string }> = {
-  app: { label: '앱결제', className: 'bg-purple-100 text-[#8037FF]' },
-  onsite: { label: '현장결제', className: 'bg-gray-100 text-gray-600' },
-};
-
-function formatAmount(n: number) {
-  return n.toLocaleString('ko-KR') + '원';
-}
-
-type SortKey = 'id' | 'customer' | 'product' | 'hospital' | 'dateTime' | 'amount' | 'doctor';
-type SortDir = 'asc' | 'desc';
-
-const PAGE_SIZE = 10;
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 export default function AdminReservationsPage() {
-  const [statusFilter, setStatusFilter] = useState<ReservationStatus | 'all'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | ReservationStatus>('all');
   const [apiReservations, setApiReservations] = useState<Reservation[]>([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+
+  const [modal, setModal] = useState<{ type: 'confirm' | 'cancel'; reservation: Reservation } | null>(null);
+  const [detailReservation, setDetailReservation] = useState<Reservation | null>(null);
+  const [actionBusy, setActionBusy] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -97,348 +85,282 @@ export default function AdminReservationsPage() {
     })();
     return () => { cancelled = true; };
   }, []);
-  const [search, setSearch] = useState('');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [sortKey, setSortKey] = useState<SortKey>('id');
-  const [sortDir, setSortDir] = useState<SortDir>('desc');
-  const [page, setPage] = useState(1);
 
-  // Modal
-  const [modal, setModal] = useState<{ type: 'confirm' | 'cancel'; reservation: Reservation } | null>(null);
-
-  // ---- Filter & Sort ----
-  const filtered = useMemo(() => {
-    let list = [...apiReservations];
-    if (statusFilter !== 'all') list = list.filter((r) => r.status === statusFilter);
-    if (search.trim()) {
-      const q = search.trim().toLowerCase();
-      list = list.filter(
-        (r) =>
-          r.id.toLowerCase().includes(q) ||
-          r.customer.toLowerCase().includes(q) ||
-          r.product.toLowerCase().includes(q) ||
-          r.hospital.toLowerCase().includes(q)
+  async function handleModalAction() {
+    if (!modal) return;
+    setActionBusy(true);
+    setActionError(null);
+    try {
+      const nextStatus = modal.type === 'confirm' ? 'confirmed' : 'cancelled';
+      const res = await fetch(`/api/reservations/${modal.reservation.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: nextStatus }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setActionError(data?.error ?? '처리에 실패했습니다.');
+        return;
+      }
+      setApiReservations((prev) =>
+        prev.map((r) => (r.id === modal.reservation.id ? { ...r, status: nextStatus as ReservationStatus } : r))
       );
+      setModal(null);
+    } finally {
+      setActionBusy(false);
     }
-    if (startDate) list = list.filter((r) => r.dateTime >= startDate);
-    if (endDate) list = list.filter((r) => r.dateTime <= endDate + ' 23:59');
+  }
 
-    list.sort((a, b) => {
-      const av = a[sortKey];
-      const bv = b[sortKey];
-      if (typeof av === 'string' && typeof bv === 'string') return sortDir === 'asc' ? av.localeCompare(bv) : bv.localeCompare(av);
-      return sortDir === 'asc' ? (av as number) - (bv as number) : (bv as number) - (av as number);
+  function handleExport() {
+    const header = ['예약번호', '고객명', '상품', '병원', '예약일시', '금액', '결제방법', '상태', '담당의'];
+    const rows = filtered.map((r) => [
+      r.id, r.customer, r.product, r.hospital, r.dateTime, String(r.amount),
+      paymentLabel[r.paymentMethod], statusLabel[r.status], r.doctor,
+    ]);
+    const csv = [header, ...rows]
+      .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `reservations-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return apiReservations.filter((r) => {
+      const matchStatus = statusFilter === 'all' || r.status === statusFilter;
+      const matchSearch =
+        !q ||
+        r.id.toLowerCase().includes(q) ||
+        r.customer.toLowerCase().includes(q) ||
+        r.product.toLowerCase().includes(q) ||
+        r.hospital.toLowerCase().includes(q);
+      const matchStart = !startDate || r.dateTime >= startDate;
+      const matchEnd = !endDate || r.dateTime <= endDate + ' 23:59';
+      return matchStatus && matchSearch && matchStart && matchEnd;
     });
-    return list;
-  }, [apiReservations, search, statusFilter, startDate, endDate, sortKey, sortDir]);
+  }, [apiReservations, search, statusFilter, startDate, endDate]);
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const pageData = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const { visibleCount, sentinelRef } = useInfiniteScroll(filtered.length, PAGE_SIZE);
+  const pageData = filtered.slice(0, visibleCount);
 
-  // Stats
-  const statusCounts = apiReservations.reduce(
-    (acc, reservation) => {
-      acc[reservation.status] += 1;
-      return acc;
-    },
+  const counts = apiReservations.reduce(
+    (acc, r) => { acc[r.status] += 1; return acc; },
     { pending: 0, confirmed: 0, completed: 0, cancelled: 0 } as Record<ReservationStatus, number>
   );
-  const statsRow = [
-    { label: '전체', value: apiReservations.length.toLocaleString('ko-KR'), color: 'text-gray-900' },
-    { label: '확인중', value: statusCounts.pending.toLocaleString('ko-KR'), color: 'text-yellow-600' },
-    { label: '확정', value: statusCounts.confirmed.toLocaleString('ko-KR'), color: 'text-purple-600' },
-    { label: '완료', value: statusCounts.completed.toLocaleString('ko-KR'), color: 'text-green-600' },
-    { label: '취소', value: statusCounts.cancelled.toLocaleString('ko-KR'), color: 'text-red-500' },
-  ];
-
-  // ---- Handlers ----
-  function handleSort(key: SortKey) {
-    if (sortKey === key) {
-      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
-    } else {
-      setSortKey(key);
-      setSortDir('desc');
-    }
-    setPage(1);
-  }
-
-  function SortIcon({ col }: { col: SortKey }) {
-    if (sortKey !== col) return <ChevronsUpDown size={14} className="text-gray-300" />;
-    return sortDir === 'asc' ? <ChevronUp size={14} className="text-[#8037FF]" /> : <ChevronDown size={14} className="text-[#8037FF]" />;
-  }
 
   return (
     <div className="space-y-6">
-      {/* ---------- Header ---------- */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-gray-900">예약 관리</h2>
-        <button className="flex items-center gap-2 px-4 py-2.5 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
-          <Download size={16} /> 내보내기
-        </button>
+      <PageHeader
+        title="예약 관리"
+        subtitle="앱에서 들어온 예약을 조회하고 확정·취소 처리합니다."
+        right={
+          <SecondaryCTA onClick={handleExport}>
+            CSV 내보내기
+          </SecondaryCTA>
+        }
+      />
+
+      <div className="grid grid-cols-5 gap-3">
+        <StatCard label="전체" value={apiReservations.length} suffix="건" />
+        <StatCard label="확인중" value={counts.pending} suffix="건" accent="#F59E0B" />
+        <StatCard label="확정" value={counts.confirmed} suffix="건" accent="#3182F6" />
+        <StatCard label="완료" value={counts.completed} suffix="건" accent="#1AB554" />
+        <StatCard label="취소" value={counts.cancelled} suffix="건" accent="#E54848" />
       </div>
 
-      {/* ---------- Stats ---------- */}
-      <div className="grid grid-cols-5 gap-4">
-        {statsRow.map((s) => (
-          <div key={s.label} className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
-            <p className="text-sm text-gray-500">{s.label}</p>
-            <p className={`text-2xl font-bold mt-1 ${s.color}`}>{s.value}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* ---------- Status Tabs ---------- */}
-      <div className="flex gap-1 bg-gray-100 rounded-lg p-1 w-fit">
-        {statusTabs.map((tab) => (
-          <button
-            key={tab.key}
-            onClick={() => { setStatusFilter(tab.key); setPage(1); }}
-            className={`px-4 py-2 text-sm rounded-md transition-colors font-medium ${
-              statusFilter === tab.key
-                ? 'bg-white text-gray-900 shadow-sm'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {/* ---------- Filters ---------- */}
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
-        <div className="flex items-center gap-4 flex-wrap">
-          {/* Search */}
-          <div className="relative flex-1 min-w-[280px]">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <FilterChips value={statusFilter} onChange={setStatusFilter} options={FILTER_TABS} />
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 h-9 px-3 bg-white border border-[#E5E8EB] rounded-[10px]">
+            <Calendar size={14} className="text-[#8B95A1]" />
             <input
-              type="text"
-              placeholder="예약번호, 고객명, 상품명, 병원명 검색..."
-              value={search}
-              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-              className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#8037FF] focus:ring-1 focus:ring-[#8037FF]/30"
+              type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)}
+              className="h-7 text-[12px] focus:outline-none w-[110px]"
+            />
+            <span className="text-[#8B95A1] text-[12px]">~</span>
+            <input
+              type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)}
+              className="h-7 text-[12px] focus:outline-none w-[110px]"
             />
           </div>
-
-          {/* Date Range */}
-          <div className="flex items-center gap-2">
-            <Calendar size={16} className="text-gray-400" />
-            <input
-              type="date"
-              value={startDate}
-              onChange={(e) => { setStartDate(e.target.value); setPage(1); }}
-              className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#8037FF] bg-white"
-            />
-            <span className="text-gray-400 text-sm">~</span>
-            <input
-              type="date"
-              value={endDate}
-              onChange={(e) => { setEndDate(e.target.value); setPage(1); }}
-              className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#8037FF] bg-white"
-            />
-          </div>
+          <SearchInput value={search} onChange={setSearch} placeholder="예약번호, 고객, 상품" width={240} />
         </div>
       </div>
 
-      {/* ---------- Table ---------- */}
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="bg-gray-50 text-left">
-                {(
-                  [
-                    ['id', '예약번호', 'min-w-[160px]'],
-                    ['customer', '고객명', 'w-24'],
-                    ['product', '상품명', 'min-w-[200px]'],
-                    ['hospital', '병원명', 'min-w-[160px]'],
-                    ['dateTime', '예약일시', 'w-40'],
-                    ['amount', '금액', 'w-32'],
-                    [null, '결제방법', 'w-24'],
-                    [null, '상태', 'w-20'],
-                    ['doctor', '담당의사', 'w-28'],
-                    [null, '관리', 'w-36'],
-                  ] as [SortKey | null, string, string][]
-                ).map(([key, label, width]) => (
-                  <th
-                    key={label}
-                    className={`px-4 py-3 text-xs font-medium text-gray-500 uppercase ${width} ${key ? 'cursor-pointer select-none hover:text-gray-700' : ''}`}
-                    onClick={() => key && handleSort(key)}
-                  >
-                    <span className="flex items-center gap-1">
-                      {label}
-                      {key && <SortIcon col={key} />}
-                    </span>
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {pageData.map((res) => {
-                const st = statusConfig[res.status];
-                const pm = paymentConfig[res.paymentMethod];
-                return (
-                  <tr key={res.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-4 py-3 text-sm text-[#8037FF] font-medium">{res.id}</td>
-                    <td className="px-4 py-3 text-sm text-gray-900">{res.customer}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600 max-w-[220px] truncate">{res.product}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600">{res.hospital}</td>
-                    <td className="px-4 py-3 text-sm text-gray-500">{res.dateTime}</td>
-                    <td className="px-4 py-3 text-sm font-semibold text-gray-900">{formatAmount(res.amount)}</td>
-                    <td className="px-4 py-3">
-                      <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${pm.className}`}>
-                        {pm.label}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${st.className}`}>
-                        {st.label}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-600">{res.doctor}</td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-1">
-                        <button className="p-1.5 text-gray-400 hover:text-[#8037FF] hover:bg-purple-50 rounded-lg transition-colors" title="상세">
-                          <Eye size={15} />
-                        </button>
-                        {res.status === 'pending' && (
-                          <>
-                            <button
-                              onClick={() => setModal({ type: 'confirm', reservation: res })}
-                              className="p-1.5 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
-                              title="예약 확정"
-                            >
-                              <CheckCircle2 size={15} />
-                            </button>
-                            <button
-                              onClick={() => setModal({ type: 'cancel', reservation: res })}
-                              className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                              title="예약 취소"
-                            >
-                              <XCircle size={15} />
-                            </button>
-                          </>
-                        )}
-                        {res.status === 'confirmed' && (
-                          <button
-                            onClick={() => setModal({ type: 'cancel', reservation: res })}
-                            className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                            title="예약 취소"
-                          >
-                            <XCircle size={15} />
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-              {pageData.length === 0 && (
-                <tr>
-                  <td colSpan={10} className="px-4 py-12 text-center text-gray-400 text-sm">검색 결과가 없습니다.</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* ---------- Pagination ---------- */}
-        <div className="flex items-center justify-between px-5 py-4 border-t border-gray-100">
-          <p className="text-sm text-gray-500">
-            총 <span className="font-medium text-gray-900">{filtered.length}</span>개 중{' '}
-            <span className="font-medium text-gray-900">{(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filtered.length)}</span>
-          </p>
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page === 1}
-              className="p-2 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              <ChevronLeft size={16} />
-            </button>
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((n) => (
-              <button
-                key={n}
-                onClick={() => setPage(n)}
-                className={`w-9 h-9 rounded-lg text-sm font-medium transition-colors ${
-                  n === page ? 'bg-[#8037FF] text-white' : 'text-gray-600 hover:bg-gray-100'
-                }`}
+      <div className="bg-white rounded-2xl border border-[#E5E8EB] overflow-hidden">
+        {loading ? (
+          <div className="px-5 py-16 text-center text-[13px] text-[#8B95A1]">불러오는 중…</div>
+        ) : pageData.length === 0 ? (
+          <EmptyState icon={<CalendarDays size={20} className="text-[#8B95A1]" />} title="예약이 없어요" hint="필터를 변경해 보세요." />
+        ) : (
+          <>
+            <div className="grid grid-cols-[1fr_1fr_1.4fr_1.1fr_140px_120px_90px_90px_auto] gap-4 px-5 py-3 bg-[#FAFBFC] border-b border-[#F2F4F6] text-[11px] font-semibold text-[#8B95A1] uppercase tracking-wider">
+              <div>예약번호</div>
+              <div>고객</div>
+              <div>상품</div>
+              <div>병원</div>
+              <div>예약일시</div>
+              <div>금액</div>
+              <div>결제</div>
+              <div>상태</div>
+              <div className="text-right">관리</div>
+            </div>
+            {pageData.map((r, i) => (
+              <div
+                key={r.id}
+                className="grid grid-cols-[1fr_1fr_1.4fr_1.1fr_140px_120px_90px_90px_auto] gap-4 items-center px-5 py-3.5 hover:bg-[#F9FAFB] transition-colors"
+                style={{ borderBottom: i === pageData.length - 1 ? 'none' : '1px solid #F2F4F6' }}
               >
-                {n}
-              </button>
+                <div className="text-[12px] font-mono text-[#3182F6] truncate">{r.id.slice(0, 8)}</div>
+                <div className="text-[14px] font-semibold text-[#191F28] truncate">{r.customer}</div>
+                <div className="text-[13px] text-[#4E5968] truncate">{r.product}</div>
+                <div className="text-[13px] text-[#4E5968] truncate">{r.hospital}</div>
+                <div className="text-[12px] text-[#8B95A1]">{r.dateTime}</div>
+                <div className="text-[14px] font-bold text-[#191F28]">{formatAmount(r.amount)}</div>
+                <div><StatusBadge tone={paymentTone[r.paymentMethod]}>{paymentLabel[r.paymentMethod]}</StatusBadge></div>
+                <div><StatusBadge tone={statusTone[r.status]}>{statusLabel[r.status]}</StatusBadge></div>
+                <div className="flex items-center gap-1.5 justify-end">
+                  <PillButton tone="blue" onClick={() => setDetailReservation(r)}>
+                    상세
+                  </PillButton>
+                  {r.status === 'pending' && (
+                    <>
+                      <PillButton tone="green" onClick={() => setModal({ type: 'confirm', reservation: r })}>
+                        확정
+                      </PillButton>
+                      <PillButton tone="red" onClick={() => setModal({ type: 'cancel', reservation: r })}>
+                        취소
+                      </PillButton>
+                    </>
+                  )}
+                  {r.status === 'confirmed' && (
+                    <PillButton tone="red" onClick={() => setModal({ type: 'cancel', reservation: r })}>
+                      취소
+                    </PillButton>
+                  )}
+                </div>
+              </div>
             ))}
-            <button
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={page === totalPages}
-              className="p-2 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              <ChevronRight size={16} />
-            </button>
-          </div>
+          </>
+        )}
+        <div className="px-5 py-4 border-t border-[#F2F4F6]">
+          <p className="text-[12px] text-[#8B95A1] text-center">
+            전체 <span className="font-semibold text-[#191F28]">{filtered.length.toLocaleString()}</span>건 중{' '}
+            <span className="font-semibold text-[#191F28]">{Math.min(visibleCount, filtered.length)}</span>건 표시
+          </p>
+          {visibleCount < filtered.length && (
+            <div ref={sentinelRef} className="h-10 flex items-center justify-center text-[11px] text-[#8B95A1]">
+              스크롤하면 더 불러옵니다…
+            </div>
+          )}
         </div>
       </div>
 
-      {/* ---------- Confirmation Modal ---------- */}
+      {/* Confirm modal */}
       {modal && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center px-4" onClick={() => setModal(null)}>
+          <div className="bg-white rounded-3xl w-full max-w-md p-7" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center gap-3 mb-4">
-              {modal.type === 'confirm' ? (
-                <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                  <CheckCircle2 size={20} className="text-purple-600" />
-                </div>
-              ) : (
-                <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
-                  <AlertTriangle size={20} className="text-red-600" />
-                </div>
-              )}
-              <h3 className="text-lg font-semibold text-gray-900">
-                {modal.type === 'confirm' ? '예약 확정' : '예약 취소'}
+              <div
+                className="w-10 h-10 rounded-full flex items-center justify-center"
+                style={{ background: modal.type === 'confirm' ? '#E5F1FF' : '#FEECEC' }}
+              >
+                {modal.type === 'confirm'
+                  ? <CheckCircle2 size={18} className="text-[#3182F6]" />
+                  : <AlertTriangle size={18} className="text-[#E54848]" />}
+              </div>
+              <h3 className="text-[18px] font-bold text-[#191F28]">
+                {modal.type === 'confirm' ? '예약을 확정할까요?' : '예약을 취소할까요?'}
               </h3>
             </div>
 
-            <div className="bg-gray-50 rounded-lg p-4 mb-6 space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500">예약번호</span>
-                <span className="font-medium text-gray-900">{modal.reservation.id}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500">고객명</span>
-                <span className="text-gray-900">{modal.reservation.customer}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500">상품</span>
-                <span className="text-gray-900">{modal.reservation.product}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500">금액</span>
-                <span className="font-semibold text-gray-900">{formatAmount(modal.reservation.amount)}</span>
-              </div>
+            <div className="bg-[#FAFBFC] rounded-xl p-3 mb-4 border border-[#F2F4F6] space-y-1.5 text-[12px]">
+              <div className="flex justify-between"><span className="text-[#8B95A1]">예약번호</span><span className="text-[#191F28] font-mono">{modal.reservation.id.slice(0, 8)}</span></div>
+              <div className="flex justify-between"><span className="text-[#8B95A1]">고객</span><span className="text-[#191F28] font-semibold">{modal.reservation.customer}</span></div>
+              <div className="flex justify-between gap-3"><span className="text-[#8B95A1] flex-shrink-0">상품</span><span className="text-[#191F28] text-right truncate">{modal.reservation.product}</span></div>
+              <div className="flex justify-between"><span className="text-[#8B95A1]">금액</span><span className="text-[#191F28] font-bold">{formatAmount(modal.reservation.amount)}</span></div>
             </div>
 
-            <p className="text-sm text-gray-500 mb-6">
+            <p className="text-[13px] text-[#4E5968] leading-relaxed mb-5">
               {modal.type === 'confirm'
-                ? '이 예약을 확정하시겠습니까? 고객에게 확정 알림이 발송됩니다.'
-                : '이 예약을 취소하시겠습니까? 고객에게 취소 알림이 발송되며, 결제 금액이 환불됩니다.'}
+                ? '고객에게 확정 알림이 발송됩니다.'
+                : '고객에게 취소 알림이 발송되고 결제 금액이 환불 처리됩니다.'}
             </p>
 
-            <div className="flex justify-end gap-3">
+            {actionError && (
+              <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-[12px] text-red-700">
+                {actionError}
+              </div>
+            )}
+
+            <div className="flex gap-2">
               <button
-                onClick={() => setModal(null)}
-                className="px-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50"
+                onClick={() => { setModal(null); setActionError(null); }}
+                disabled={actionBusy}
+                className="flex-1 h-11 border border-[#E5E8EB] rounded-[10px] text-[14px] font-semibold text-[#4E5968] hover:bg-[#F9FAFB] disabled:opacity-50"
               >
+                취소
+              </button>
+              <button
+                onClick={handleModalAction}
+                disabled={actionBusy}
+                className="flex-1 h-11 rounded-[10px] text-[14px] font-semibold text-white disabled:opacity-50 transition-colors"
+                style={{ background: modal.type === 'confirm' ? '#3182F6' : '#E54848' }}
+              >
+                {actionBusy ? '처리 중…' : modal.type === 'confirm' ? '예약 확정' : '예약 취소'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Detail modal */}
+      {detailReservation && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center px-4" onClick={() => setDetailReservation(null)}>
+          <div className="bg-white rounded-3xl w-full max-w-md p-7" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-[18px] font-bold text-[#191F28]">예약 상세</h3>
+              <button onClick={() => setDetailReservation(null)} className="p-1 -m-1 hover:bg-gray-100 rounded">
+                <X size={18} className="text-[#8B95A1]" />
+              </button>
+            </div>
+            {[
+              ['예약번호', detailReservation.id],
+              ['고객명', detailReservation.customer],
+              ['상품', detailReservation.product],
+              ['병원', detailReservation.hospital],
+              ['담당의', detailReservation.doctor],
+              ['예약일시', detailReservation.dateTime],
+              ['결제수단', paymentLabel[detailReservation.paymentMethod]],
+              ['금액', formatAmount(detailReservation.amount)],
+              ['상태', statusLabel[detailReservation.status]],
+            ].map(([k, v], i, arr) => (
+              <div
+                key={k}
+                className="grid grid-cols-[100px_1fr] gap-3 items-center py-2.5"
+                style={{ borderBottom: i === arr.length - 1 ? 'none' : '1px solid #F2F4F6' }}
+              >
+                <span className="text-[12px] font-medium text-[#8B95A1]">{k}</span>
+                <span className="text-[13px] text-[#191F28] text-right truncate">{v}</span>
+              </div>
+            ))}
+            <div className="flex gap-2 mt-5">
+              <button onClick={() => setDetailReservation(null)} className="flex-1 h-11 border border-[#E5E8EB] rounded-[10px] text-[14px] font-semibold text-[#4E5968] hover:bg-[#F9FAFB]">
                 닫기
               </button>
-              <button
-                onClick={() => setModal(null)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium text-white ${
-                  modal.type === 'confirm'
-                    ? 'bg-purple-600 hover:bg-purple-700'
-                    : 'bg-red-500 hover:bg-red-600'
-                }`}
-              >
-                {modal.type === 'confirm' ? '예약 확정' : '예약 취소'}
-              </button>
+              {(detailReservation.status === 'pending' || detailReservation.status === 'confirmed') && (
+                <button
+                  onClick={() => { setModal({ type: 'cancel', reservation: detailReservation }); setDetailReservation(null); }}
+                  className="flex-1 h-11 bg-[#E54848] text-white rounded-[10px] text-[14px] font-semibold hover:bg-[#C03B3B]"
+                >
+                  예약 취소
+                </button>
+              )}
             </div>
           </div>
         </div>

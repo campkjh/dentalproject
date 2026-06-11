@@ -55,7 +55,7 @@ function BottomNavInner() {
         display: 'flex',
         height: 'calc(82px + env(safe-area-inset-bottom))',
         width: '100%',
-        maxWidth: 480,
+        maxWidth: 500,
         alignItems: 'flex-start',
         justifyContent: 'space-between',
         borderTop: '1px solid #F2F3F5',
