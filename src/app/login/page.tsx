@@ -20,7 +20,7 @@ function LoginInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialMode: Mode = searchParams.get('mode') === 'signup' ? 'signup' : 'login';
-  const { signInWithEmail, signUpWithEmail } = useSession();
+  const { signInWithEmail, signUpWithEmail, signInWithOAuth } = useSession();
   const [mode, setMode] = useState<Mode>(initialMode);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -30,6 +30,7 @@ function LoginInner() {
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [retryAfter, setRetryAfter] = useState(0);
+  const [socialPending, setSocialPending] = useState<'kakao' | 'apple' | null>(null);
 
   const isLoggedIn = useStore((s) => s.isLoggedIn);
   const isDoctor = useStore((s) => s.isDoctor);
@@ -88,6 +89,22 @@ function LoginInner() {
       }
     } finally {
       setPending(false);
+    }
+  };
+
+  const onSocial = async (provider: 'kakao' | 'apple') => {
+    if (socialPending || pending) return;
+    setSocialPending(provider);
+    setError(null);
+    setSuccessMsg(null);
+    try {
+      await signInWithOAuth(provider);
+      // OAuth 인증 페이지로 리다이렉트됩니다. 돌아올 때만 상태 복구.
+    } catch {
+      setError(
+        `${provider === 'kakao' ? '카카오' : 'Apple'} 로그인을 시작하지 못했습니다. 잠시 후 다시 시도해 주세요.`
+      );
+      setSocialPending(null);
     }
   };
 
@@ -230,6 +247,37 @@ function LoginInner() {
         </p>
       </form>
 
+      {/* 간편 로그인 */}
+      <div className="px-6 mt-6">
+        <div className="flex items-center gap-3 mb-4">
+          <span className="flex-1 h-px bg-gray-100" />
+          <span className="text-[11px] text-gray-400">간편 로그인</span>
+          <span className="flex-1 h-px bg-gray-100" />
+        </div>
+        <div className="flex flex-col gap-2.5">
+          <button
+            type="button"
+            onClick={() => onSocial('kakao')}
+            disabled={socialPending !== null || pending}
+            className="w-full py-3.5 rounded-xl font-bold text-[14px] btn-press flex items-center justify-center gap-2 disabled:opacity-60"
+            style={{ backgroundColor: '#FEE500', color: '#191600' }}
+          >
+            <KakaoIcon />
+            {socialPending === 'kakao' ? '카카오로 이동 중…' : `카카오로 ${isLogin ? '로그인' : '시작하기'}`}
+          </button>
+          <button
+            type="button"
+            onClick={() => onSocial('apple')}
+            disabled={socialPending !== null || pending}
+            className="w-full py-3.5 rounded-xl font-bold text-[14px] btn-press flex items-center justify-center gap-2 disabled:opacity-60"
+            style={{ backgroundColor: '#000000', color: '#ffffff' }}
+          >
+            <AppleIcon />
+            {socialPending === 'apple' ? 'Apple로 이동 중…' : `Apple로 ${isLogin ? '로그인' : '시작하기'}`}
+          </button>
+        </div>
+      </div>
+
       <div className="flex-1" />
     </div>
   );
@@ -255,6 +303,28 @@ function Field({
       />
       {right}
     </label>
+  );
+}
+
+function KakaoIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 256 256" aria-hidden="true">
+      <path
+        fill="#191600"
+        d="M128 36C70.562 36 24 72.713 24 118c0 29.279 19.466 54.97 48.748 69.477-1.593 5.494-10.237 35.34-10.583 37.685 0 0-.207 1.762.934 2.434s2.483.15 2.483.15c3.272-.457 37.876-24.755 43.863-28.964 6.064.856 12.297 1.302 18.652 1.302 57.438 0 104-36.713 104-82S185.438 36 128 36z"
+      />
+    </svg>
+  );
+}
+
+function AppleIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        fill="#ffffff"
+        d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"
+      />
+    </svg>
   );
 }
 
