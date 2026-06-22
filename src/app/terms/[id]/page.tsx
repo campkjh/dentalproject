@@ -364,7 +364,7 @@ function PrivacyContent() {
     <>
       <SectionTitle>제 1 조 (목적)</SectionTitle>
       <Paragraph>
-        본 개인정보처리방침은 <strong>키닥터</strong>(이하 &quot;회사&quot;)가 제공하는 의료정보 중개 플랫폼 서비스(이하 &quot;서비스&quot;)를 이용하는 과정에서
+        본 개인정보처리방침은 <strong>마이닥</strong>(이하 &quot;회사&quot;)가 제공하는 의료정보 중개 플랫폼 서비스(이하 &quot;서비스&quot;)를 이용하는 과정에서
         수집되는 개인정보의 처리 기준과 절차, 이용자의 권리 및 보호 방법에 대해 규정함을 목적으로 합니다.
       </Paragraph>
       <Paragraph>
@@ -375,7 +375,7 @@ function PrivacyContent() {
       <InfoBox variant="info">
         <strong>만 14세 미만 아동의 개인정보는 수집하지 않습니다.</strong>
         <br />
-        키닥터 서비스는 만 14세 미만 아동의 회원가입을 허용하지 않으며, 만 14세 미만임을 확인한 경우 즉시 해당 정보를 파기합니다.
+        마이닥 서비스는 만 14세 미만 아동의 회원가입을 허용하지 않으며, 만 14세 미만임을 확인한 경우 즉시 해당 정보를 파기합니다.
         법정대리인의 동의 없이 수집된 아동의 개인정보가 확인될 경우, 지체 없이 삭제 조치합니다.
       </InfoBox>
 
@@ -564,7 +564,7 @@ function ServiceContent() {
     <>
       <Clause number="제 1 조" title="(목적)">
         <Paragraph>
-          본 약관은 <strong>키닥터</strong>(이하 &quot;회사&quot;)가 제공하는 의료정보 중개 플랫폼 서비스(이하 &quot;서비스&quot;)의
+          본 약관은 <strong>마이닥</strong>(이하 &quot;회사&quot;)가 제공하는 의료정보 중개 플랫폼 서비스(이하 &quot;서비스&quot;)의
           이용조건 및 절차, 회사와 회원 간의 권리, 의무 및 책임사항에 대해 규정함을 목적으로 합니다.
         </Paragraph>
       </Clause>
@@ -762,7 +762,7 @@ function ThirdPartyContent() {
     <>
       <SectionTitle>제 1 조 (개인정보 제3자 제공 개요)</SectionTitle>
       <Paragraph>
-        <strong>키닥터</strong>(이하 &quot;회사&quot;)는 이용자의 개인정보를 「개인정보처리방침」에서 명시한 범위 내에서만 처리하며,
+        <strong>마이닥</strong>(이하 &quot;회사&quot;)는 이용자의 개인정보를 「개인정보처리방침」에서 명시한 범위 내에서만 처리하며,
         이용자의 사전 동의 없이 제3자에게 개인정보를 제공하지 않습니다.
       </Paragraph>
       <Paragraph>
@@ -859,7 +859,7 @@ function RefundContent() {
     <>
       <SectionTitle>제 1 조 (환불 원칙)</SectionTitle>
       <Paragraph>
-        회원이 <strong>키닥터</strong>(이하 &quot;회사&quot;) 서비스를 통해 예약한 시술에 대한 환불은 본 약관에 따릅니다.
+        회원이 <strong>마이닥</strong>(이하 &quot;회사&quot;) 서비스를 통해 예약한 시술에 대한 환불은 본 약관에 따릅니다.
         환불은 원래 결제 수단으로 처리되며, 결제 수단에 따라 처리 기간이 상이할 수 있습니다.
       </Paragraph>
       <BulletList
@@ -972,7 +972,7 @@ function WithdrawalContent() {
     <>
       <SectionTitle>회원탈퇴 절차 안내</SectionTitle>
       <Paragraph>
-        <strong>키닥터</strong> 서비스 이용을 원하지 않으시는 경우, 아래 절차에 따라 회원탈퇴를 진행하실 수 있습니다.
+        <strong>마이닥</strong> 서비스 이용을 원하지 않으시는 경우, 아래 절차에 따라 회원탈퇴를 진행하실 수 있습니다.
         회원탈퇴 전 반드시 아래 유의사항을 확인해 주세요.
       </Paragraph>
 
@@ -1098,7 +1098,7 @@ function MetaContent() {
     <>
       <SectionTitle>제 1 조 (목적)</SectionTitle>
       <Paragraph>
-        본 방침은 <strong>키닥터</strong>(이하 &quot;회사&quot;) 서비스가 Meta Platforms, Inc.(이하 &quot;Meta&quot;)의 서비스
+        본 방침은 <strong>마이닥</strong>(이하 &quot;회사&quot;) 서비스가 Meta Platforms, Inc.(이하 &quot;Meta&quot;)의 서비스
         (Facebook, Instagram 등)와 연동하여 제공하는 기능에 대한 이용 방침을 규정합니다.
       </Paragraph>
       <Paragraph>
@@ -1172,7 +1172,7 @@ function MetaContent() {
         <br /><br />
         <strong>1. 소셜 로그인 연동 해제:</strong> 마이페이지 &gt; 계정 설정 &gt; 연동 관리<br />
         <strong>2. 쿠키 차단:</strong> 브라우저 설정에서 제3자 쿠키를 차단하여 Pixel 데이터 수집 제한<br />
-        <strong>3. Meta 광고 설정:</strong> Meta 계정 설정에서 키닥터 앱의 데이터 접근 권한 해제<br />
+        <strong>3. Meta 광고 설정:</strong> Meta 계정 설정에서 마이닥 앱의 데이터 접근 권한 해제<br />
         <strong>4. 맞춤형 광고 수신 거부:</strong> Meta 광고 설정에서 관심사 기반 광고를 비활성화
       </InfoBox>
 
@@ -1196,7 +1196,7 @@ function MetaContent() {
       <BulletList
         items={[
           '연동 해제 후에도 이메일/비밀번호 또는 다른 소셜 계정으로 로그인이 가능합니다.',
-          '연동 해제 시 Meta에서 키닥터로의 데이터 접근이 중단됩니다.',
+          '연동 해제 시 Meta에서 마이닥로의 데이터 접근이 중단됩니다.',
           '이미 수집된 데이터의 삭제를 원하시면 별도로 개인정보 삭제를 요청해 주세요.',
         ]}
       />
@@ -1341,7 +1341,7 @@ export default function TermsDetailPage() {
           <p className="text-xs leading-relaxed text-center" style={{ color: '#A4ABBA' }}>
             본 약관은 {meta.updatedAt}부터 시행됩니다.
             <br />
-            &copy; 키닥터. All rights reserved.
+            &copy; 마이닥. All rights reserved.
           </p>
         </div>
       </div>

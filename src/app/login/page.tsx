@@ -122,7 +122,7 @@ function LoginInner() {
         <div className="w-20 h-20 bg-[#8037FF] rounded-2xl flex items-center justify-center mb-5 bounce-in">
           <span className="text-4xl">🦷</span>
         </div>
-        <h1 className="text-2xl font-bold text-gray-900 mb-1.5 fade-in-up">키닥터</h1>
+        <h1 className="text-2xl font-bold text-gray-900 mb-1.5 fade-in-up">마이닥</h1>
         <p className="text-[13px] text-gray-500 text-center fade-in-up-delay-1">
           쉽고 빠르게 나에게 맞는 병원을 찾아보세요
         </p>

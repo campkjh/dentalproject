@@ -62,7 +62,7 @@ export default function PartnerLoginPage() {
             <div className="w-9 h-9 rounded-[12px] bg-[#8037FF] flex items-center justify-center text-white text-[15px] font-bold">
               K
             </div>
-            <span className="text-[17px] font-bold text-[#191F28]">키닥터 파트너센터</span>
+            <span className="text-[17px] font-bold text-[#191F28]">마이닥 파트너센터</span>
           </div>
 
           <h1 className="text-[28px] leading-[37px] font-bold text-[#191F28] mb-1">로그인</h1>
@@ -153,7 +153,7 @@ export default function PartnerLoginPage() {
         </div>
 
         <p className="text-center text-[12px] text-[rgba(0,19,43,0.58)] mt-4">
-          © 2026 키닥터. All rights reserved.
+          © 2026 마이닥. All rights reserved.
         </p>
       </div>
     </div>

@@ -70,7 +70,7 @@ export default function PartnerContactPage() {
       <PartnerPanel className="overflow-hidden">
         <PartnerListRow href="tel:1644-0000" icon={<Phone size={16} />} title="전화 상담" description="평일 10:00~18:00" meta="1644-0000" />
         <PartnerListRow href="mailto:partner@kidoctor.com" icon={<Mail size={16} />} title="이메일 문의" description="24시간 접수" meta="partner@kidoctor.com" />
-        <PartnerListRow icon={<MessageSquare size={16} />} title="카카오 1:1" description="검색 후 친구추가" meta="@키닥터파트너" />
+        <PartnerListRow icon={<MessageSquare size={16} />} title="카카오 1:1" description="검색 후 친구추가" meta="@마이닥파트너" />
       </PartnerPanel>
 
       <PartnerPanel className="p-5">

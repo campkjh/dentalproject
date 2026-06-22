@@ -9,5 +9,5 @@ export const siteConfig = {
     '서울특별시 금천구 가산디지털1로 225, 11층 1123-에이-2호',
   phone: process.env.NEXT_PUBLIC_COMPANY_PHONE || '고객센터 번호 미등록',
   email: process.env.NEXT_PUBLIC_COMPANY_EMAIL || '이메일 미등록',
-  copyrightName: process.env.NEXT_PUBLIC_COPYRIGHT_NAME || '키닥터',
+  copyrightName: process.env.NEXT_PUBLIC_COPYRIGHT_NAME || '마이닥',
 };

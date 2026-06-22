@@ -33,7 +33,7 @@ export default function DesktopHeader() {
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2">
             <img src="/icons/brand-logo.svg" alt="" width={36} height={36} className="flex-shrink-0" />
-            <span className="text-xl font-bold text-[#7A71FF]">키닥터</span>
+            <span className="text-xl font-bold text-[#7A71FF]">마이닥</span>
           </Link>
 
           {/* Search Bar */}

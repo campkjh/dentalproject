@@ -39,7 +39,7 @@ export default function Footer() {
               <div className="w-8 h-8 bg-[#8037FF] rounded-lg flex items-center justify-center">
                 <span className="text-lg">🦷</span>
               </div>
-              <span className="text-xl font-bold text-white">키닥터</span>
+              <span className="text-xl font-bold text-white">마이닥</span>
             </div>
             <p className="text-sm leading-relaxed">
               내 주변 치과, 성형외과, 피부과<br />

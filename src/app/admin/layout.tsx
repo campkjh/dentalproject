@@ -119,7 +119,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 <Menu size={18} />
               </button>
               <button className="flex items-center gap-1 px-2 py-1 -ml-1 rounded-md hover:bg-gray-50 transition-colors">
-                <span className="text-[15px] font-bold tracking-tight" style={{ color: '#191F28' }}>키닥터</span>
+                <span className="text-[15px] font-bold tracking-tight" style={{ color: '#191F28' }}>마이닥</span>
                 <ChevronDown size={14} style={{ color: '#8B95A1' }} />
               </button>
             </div>

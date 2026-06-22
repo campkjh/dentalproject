@@ -73,7 +73,7 @@ export default function AppPayInfoPage() {
       <section className="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
         <h2 className="text-[14px] font-bold text-gray-900">앱결제란?</h2>
         <p className="text-[13px] text-gray-600 leading-relaxed">
-          환자가 키닥터 앱에서 직접 시술비를 결제하면, 결제일로부터 다음달 10일에 병원 계좌로 정산됩니다.
+          환자가 마이닥 앱에서 직접 시술비를 결제하면, 결제일로부터 다음달 10일에 병원 계좌로 정산됩니다.
         </p>
         <ul className="space-y-2 text-[12px] text-gray-600">
           <li>· 결제 수수료: 카드 3.3%, 계좌이체 1.1%</li>
