@@ -14,6 +14,7 @@ import {
   Maximize2,
 } from 'lucide-react';
 import FixedBar from '@/components/common/FixedBar';
+import NaverMap from '@/components/common/NaverMap';
 import Avatar from '@/components/common/Avatar';
 import ProductCard from '@/components/common/ProductCard';
 import { useStore } from '@/store';
@@ -639,13 +640,14 @@ export default function ProductDetailPage() {
           <section className="bg-white px-4 py-5">
             <h2 style={{ fontSize: 20, fontWeight: 700, color: '#2B313D', marginBottom: 12 }}>병원위치</h2>
             <div className="relative aspect-[16/10] rounded-xl overflow-hidden" style={{ border: '1px solid #E5E7EB' }}>
-              <iframe
-                src={`https://maps.google.com/maps?q=${encodeURIComponent(hospital.address)}&t=&z=16&ie=UTF8&iwloc=&output=embed`}
-                width="100%" height="100%" style={{ border: 0 }} allowFullScreen loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade" title="병원 위치"
+              <NaverMap
+                address={hospital.address}
+                lat={hospital.lat}
+                lng={hospital.lng}
+                name={hospital.name}
               />
               <button
-                onClick={() => window.open(`https://maps.google.com/?q=${encodeURIComponent(hospital.address)}`, '_blank')}
+                onClick={() => window.open(`https://map.naver.com/p?q=${encodeURIComponent(hospital.address)}`, '_blank')}
                 className="absolute top-2 right-2 w-8 h-8 bg-white rounded-md flex items-center justify-center"
                 style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.12)' }}
                 aria-label="지도 확대"

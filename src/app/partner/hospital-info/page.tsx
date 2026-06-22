@@ -6,6 +6,7 @@ import { useSession } from '@/lib/supabase/SessionProvider';
 import { useMyHospitalData } from '@/lib/partner/my-hospital-cache';
 import { useStore } from '@/store';
 import { compressImage } from '@/lib/compressImage';
+import NaverMap from '@/components/common/NaverMap';
 
 type OperatingHour = {
   day?: string | null;
@@ -22,6 +23,8 @@ type HospitalRow = {
   address?: string | null;
   address_detail?: string | null;
   location?: string | null;
+  lat?: number | null;
+  lng?: number | null;
   introduction?: string | null;
   holiday_notice?: string | null;
   tags?: string[] | null;
@@ -480,12 +483,9 @@ export default function PartnerHospitalInfoPage() {
         <EditHeader title="병원위치 수정" />
         <section className="partner-edit-content compact" style={{ gap: 16, paddingTop: 20 }}>
           {addressDraft && (
-            <iframe
-              title="지도"
-              src={`https://maps.google.com/maps?q=${encodeURIComponent(addressDraft)}&output=embed&hl=ko`}
-              style={{ width: '100%', height: 200, border: 0, borderRadius: 14 }}
-              loading="lazy"
-            />
+            <div style={{ width: '100%', height: 200, borderRadius: 14, overflow: 'hidden' }}>
+              <NaverMap address={addressDraft} name={hospital.name ?? undefined} />
+            </div>
           )}
           <div>
             <label style={{ fontSize: 13, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 6 }}>주소</label>
@@ -660,12 +660,7 @@ export default function PartnerHospitalInfoPage() {
           </h2>
           <div style={{ position: 'relative', overflow: 'hidden', borderRadius: 14, height: 180 }}>
             {address ? (
-              <iframe
-                title="병원위치 지도"
-                src={`https://maps.google.com/maps?q=${encodeURIComponent(address)}&output=embed&hl=ko`}
-                style={{ width: '100%', height: '100%', border: 0 }}
-                loading="lazy"
-              />
+              <NaverMap address={address} lat={hospital.lat} lng={hospital.lng} name={hospital.name ?? undefined} />
             ) : (
               <div style={{ width: '100%', height: '100%', background: '#F3F4F6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <span style={{ fontSize: 13, color: '#9CA3AF' }}>주소를 등록하면 지도가 표시됩니다</span>

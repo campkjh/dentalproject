@@ -4,6 +4,7 @@ import { attachScheduleHistory } from '@/lib/db/reservation-history';
 import { cancelExpiredPendingReservations, completePastConfirmedReservations } from '@/lib/db/reservation-status';
 import { extractProductDetailImageUrl, getVisibleProductTags, normalizeProductImageUrl } from '@/lib/images';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
+import { geocodeAddress } from '@/lib/naver-geocode';
 
 export const dynamic = 'force-dynamic';
 
@@ -376,6 +377,18 @@ export async function PATCH(req: NextRequest) {
   if (typeof body.imageUrl === 'string') patch.logo_url = body.imageUrl;
   if (Array.isArray(body.tags)) patch.tags = body.tags;
   if (Array.isArray(body.coverImages)) patch.cover_images = body.coverImages;
+
+  // 좌표: 수동 입력 우선, 없으면 주소가 들어올 때 자동 geocoding
+  if (typeof body.lat === 'number' && typeof body.lng === 'number') {
+    patch.lat = body.lat;
+    patch.lng = body.lng;
+  } else if (typeof patch.address === 'string' && patch.address.trim()) {
+    const coords = await geocodeAddress(patch.address);
+    if (coords) {
+      patch.lat = coords.lat;
+      patch.lng = coords.lng;
+    }
+  }
 
   if (Object.keys(patch).length === 0) return NextResponse.json({ ok: true });
 

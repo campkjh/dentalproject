@@ -57,6 +57,8 @@ export interface Hospital {
   address: string;
   addressDetail?: string;
   mapUrl?: string;
+  lat?: number;
+  lng?: number;
   doctors: Doctor[];
   rating: number;
   reviewCount: number;

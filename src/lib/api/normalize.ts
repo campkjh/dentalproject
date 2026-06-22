@@ -52,6 +52,8 @@ export function normalizeHospital(row: any): Hospital {
     address: row.address ?? '',
     addressDetail: row.address_detail ?? undefined,
     mapUrl: row.map_url ?? undefined,
+    lat: typeof row.lat === 'number' ? row.lat : undefined,
+    lng: typeof row.lng === 'number' ? row.lng : undefined,
     doctors: (row.doctors ?? []).map((d: any): Doctor => ({
       id: d.id,
       name: d.name,
