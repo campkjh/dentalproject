@@ -4,7 +4,7 @@ import LayoutShell from "@/components/common/LayoutShell";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "키닥터 - 치과·의료 플랫폼",
+  title: "마이닥 - 치과·의료 플랫폼",
   description: "내 주변 치과, 성형외과, 피부과 시술 검색 및 예약 플랫폼",
 };
 
