@@ -7228,3 +7228,11 @@ body.partner-profile-editing .partner-bottom-nav {
     font-size: 16px;
   }
 }
+
+/* 좁은 기기(너비 ≤390px)는 기본 폰트를 한 단계(16px→15px) 낮춰 텍스트를 살짝 작게.
+   rem 기반(Tailwind text-*)과 rem 기반 간격이 함께 약간 축소된다. */
+@media (max-width: 390px) {
+  html {
+    font-size: 15px;
+  }
+}
