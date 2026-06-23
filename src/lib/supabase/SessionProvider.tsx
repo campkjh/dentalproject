@@ -309,6 +309,34 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
   }, [supabase, recoverSession, syncSession]);
 
+  // 네이티브 카카오 SDK 로그인 브리지 — 안드로이드 WebView 앱이 카카오톡 앱-투-앱
+  // 로그인으로 받은 OIDC id_token을 window.onKakaoNativeLogin(idToken)으로 넘기면,
+  // 그 토큰으로 Supabase 세션을 만든다. (일반 브라우저에선 호출되지 않음.)
+  // 성공하면 onAuthStateChange(SIGNED_IN)가 세션을 동기화하고 로그인 페이지가 리다이렉트한다.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const w = window as Window & {
+      onKakaoNativeLogin?: (idToken: string) => void;
+      onKakaoNativeLoginError?: (message: string) => void;
+    };
+    w.onKakaoNativeLogin = (idToken: string) => {
+      void (async () => {
+        if (!supabase) {
+          w.onKakaoNativeLoginError?.('로그인을 사용할 수 없습니다.');
+          return;
+        }
+        const { error } = await supabase.auth.signInWithIdToken({
+          provider: 'kakao',
+          token: idToken,
+        });
+        if (error) w.onKakaoNativeLoginError?.(error.message);
+      })();
+    };
+    return () => {
+      delete w.onKakaoNativeLogin;
+    };
+  }, [supabase]);
+
   const value: Ctx = {
     session,
     authUser: session?.user ?? null,

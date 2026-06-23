@@ -97,6 +97,30 @@ function LoginInner() {
     setSocialPending(provider);
     setError(null);
     setSuccessMsg(null);
+
+    // 안드로이드 앱(WebView)에선 카카오톡 앱-투-앱 네이티브 로그인을 사용한다.
+    // window.AndroidKakao.login() → 네이티브 SDK 로그인 → onKakaoNativeLogin(id_token)
+    // → SessionProvider가 Supabase 세션 생성 → isLoggedIn 효과가 자동 리다이렉트.
+    const nativeKakao =
+      typeof window !== 'undefined'
+        ? (window as Window & { AndroidKakao?: { login?: () => void } }).AndroidKakao
+        : undefined;
+    if (provider === 'kakao' && nativeKakao?.login) {
+      (
+        window as Window & { onKakaoNativeLoginError?: (message: string) => void }
+      ).onKakaoNativeLoginError = (message: string) => {
+        setError(message || '카카오 로그인에 실패했습니다.');
+        setSocialPending(null);
+      };
+      try {
+        nativeKakao.login();
+      } catch {
+        setError('카카오 로그인을 시작하지 못했습니다.');
+        setSocialPending(null);
+      }
+      return;
+    }
+
     try {
       await signInWithOAuth(provider);
       // OAuth 인증 페이지로 리다이렉트됩니다. 돌아올 때만 상태 복구.
