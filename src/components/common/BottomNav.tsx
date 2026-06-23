@@ -87,7 +87,7 @@ function BottomNavInner() {
                 </span>
               )}
             </div>
-            <span className="whitespace-nowrap text-center text-[12px] font-bold leading-none">
+            <span className="whitespace-nowrap text-center text-[12px] font-bold leading-none max-[390px]:text-[10px]">
               {item.label}
             </span>
           </Link>
