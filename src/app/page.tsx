@@ -1239,15 +1239,15 @@ function CategoryPager() {
                 className="flex-shrink-0 w-full px-4 lg:px-6"
                 style={{ scrollSnapAlign: 'start' }}
               >
-                <div className="grid grid-cols-5 gap-y-5 gap-x-2">
+                <div className="grid grid-cols-5 gap-y-5 gap-x-2 max-[390px]:gap-x-[10px]">
                   {pageItems.map((cat) => (
                     <Link
                       key={cat.id}
                       href={`/search?category=${cat.id}`}
                       className="flex flex-col items-center gap-2 card-press"
                     >
-                      <div className="w-[64px] h-[64px] rounded-[20px] bg-[#F4F5F7] flex items-center justify-center">
-                        <img src={cat.icon} alt={cat.name} className="w-11 h-11" />
+                      <div className="w-[64px] h-[64px] rounded-[20px] bg-[#F4F5F7] flex items-center justify-center max-[390px]:w-full max-[390px]:h-auto max-[390px]:aspect-square">
+                        <img src={cat.icon} alt={cat.name} className="w-11 h-11 max-[390px]:w-[68%] max-[390px]:h-auto" />
                       </div>
                       <span className="text-[13px] text-gray-700 font-semibold text-center leading-tight">
                         {cat.name}
