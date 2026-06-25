@@ -6,6 +6,9 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "마이닥 - 치과·의료 플랫폼",
   description: "내 주변 치과, 성형외과, 피부과 시술 검색 및 예약 플랫폼",
+  verification: {
+    google: "Qyhx7JaOv4RxENTBoJFdNrbx307BVbf0PEDoDOy7aiE",
+  },
 };
 
 export const viewport: Viewport = {
