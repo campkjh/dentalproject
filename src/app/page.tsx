@@ -189,7 +189,7 @@ export default function HomePage() {
       >
         {/* Default Header (logo + icons) */}
         <div className={`flex items-center justify-between px-2.5 py-3 transition-all duration-300 ${scrolled ? 'h-0 overflow-hidden opacity-0 py-0' : 'opacity-100'}`}>
-          <img src="/icons/brand-logo.svg" alt="마이닥" width={32} height={32} className="flex-shrink-0" />
+          <img src="/icons/brand-logo.png" alt="마이닥" width={32} height={32} className="flex-shrink-0" />
           {isLoggedIn ? (
             <div className="flex items-center gap-2">
               <Link

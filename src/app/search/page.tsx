@@ -966,7 +966,7 @@ function SearchProductListItem({ product }: { product: Product }) {
               className="flex items-center gap-1"
               style={{ fontSize: 11, fontWeight: 600, color: '#7A71FF' }}
             >
-              <img src="/icons/brand-logo.svg" alt="" width={16} height={16} className="flex-shrink-0" />
+              <img src="/icons/brand-logo.png" alt="" width={16} height={16} className="flex-shrink-0" />
               인증병원
             </span>
           )}

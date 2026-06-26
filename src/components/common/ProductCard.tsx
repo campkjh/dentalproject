@@ -93,7 +93,7 @@ export default function ProductCard({ product }: { product: Product }) {
         <span style={{ fontSize: 11, fontWeight: 500, color: '#51535C', backgroundColor: '#F2F3F5', borderRadius: 4, padding: '2px 6px' }}>앱결제</span>
         {product.rating >= 4.8 && (
           <span className="flex items-center gap-1" style={{ fontSize: 11, fontWeight: 600, color: '#7A71FF' }}>
-            <img src="/icons/brand-logo.svg" alt="" width={16} height={16} className="flex-shrink-0" />
+            <img src="/icons/brand-logo.png" alt="" width={16} height={16} className="flex-shrink-0" />
             인증병원
           </span>
         )}
