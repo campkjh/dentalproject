@@ -352,7 +352,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
           w.onAppleNativeLoginError?.('로그인을 사용할 수 없습니다.');
           return;
         }
-        const { error } = await supabase.auth.signInWithIdToken({
+        const { data, error } = await supabase.auth.signInWithIdToken({
           provider: 'apple',
           token: idToken,
           ...(nonce ? { nonce } : {}),
@@ -361,10 +361,17 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
           w.onAppleNativeLoginError?.(error.message);
           return;
         }
-        // 애플 이름은 최초 인증 시에만 제공 → 있으면 메타데이터에 저장(best-effort)
+        // 애플 이름은 최초 인증 시에만 제공됨. id_token엔 이름이 없어 프로필 트리거가
+        // 빈 이름으로 행을 만든다 → 이름이 오면 auth 메타 + profiles.name 둘 다 채운다(best-effort).
         const trimmed = name?.trim();
-        if (trimmed) {
-          await supabase.auth.updateUser({ data: { name: trimmed, full_name: trimmed } });
+        const userId = data.user?.id;
+        if (trimmed && userId) {
+          try {
+            await supabase.auth.updateUser({ data: { name: trimmed, full_name: trimmed } });
+            await supabase.from('profiles').update({ name: trimmed }).eq('id', userId);
+          } catch {
+            /* 이름 저장 실패가 로그인 자체를 막지는 않는다 */
+          }
         }
       })();
     };
