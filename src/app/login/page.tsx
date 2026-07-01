@@ -98,27 +98,35 @@ function LoginInner() {
     setError(null);
     setSuccessMsg(null);
 
-    // 안드로이드 앱(WebView)에선 카카오톡 앱-투-앱 네이티브 로그인을 사용한다.
-    // window.AndroidKakao.login() → 네이티브 SDK 로그인 → onKakaoNativeLogin(id_token)
-    // → SessionProvider가 Supabase 세션 생성 → isLoggedIn 효과가 자동 리다이렉트.
-    const nativeKakao =
-      typeof window !== 'undefined'
-        ? (window as Window & { AndroidKakao?: { login?: () => void } }).AndroidKakao
-        : undefined;
-    if (provider === 'kakao' && nativeKakao?.login) {
-      (
-        window as Window & { onKakaoNativeLoginError?: (message: string) => void }
-      ).onKakaoNativeLoginError = (message: string) => {
-        setError(message || '카카오 로그인에 실패했습니다.');
-        setSocialPending(null);
+    // 네이티브 앱(WebView)에선 카카오톡 앱-투-앱 네이티브 로그인을 사용한다.
+    // - Android: window.AndroidKakao.login()
+    // - iOS:     window.webkit.messageHandlers.kakaoLogin.postMessage({})
+    // 네이티브가 로그인 후 onKakaoNativeLogin(id_token)을 호출 →
+    // SessionProvider가 Supabase 세션 생성 → isLoggedIn 효과가 자동 리다이렉트.
+    if (provider === 'kakao' && typeof window !== 'undefined') {
+      const w = window as Window & {
+        AndroidKakao?: { login?: () => void };
+        webkit?: {
+          messageHandlers?: { kakaoLogin?: { postMessage: (msg: unknown) => void } };
+        };
+        onKakaoNativeLoginError?: (message: string) => void;
       };
-      try {
-        nativeKakao.login();
-      } catch {
-        setError('카카오 로그인을 시작하지 못했습니다.');
-        setSocialPending(null);
+      const androidKakao = w.AndroidKakao;
+      const iosKakao = w.webkit?.messageHandlers?.kakaoLogin;
+      if (androidKakao?.login || iosKakao) {
+        w.onKakaoNativeLoginError = (message: string) => {
+          setError(message || '카카오 로그인에 실패했습니다.');
+          setSocialPending(null);
+        };
+        try {
+          if (androidKakao?.login) androidKakao.login();
+          else iosKakao!.postMessage({});
+        } catch {
+          setError('카카오 로그인을 시작하지 못했습니다.');
+          setSocialPending(null);
+        }
+        return;
       }
-      return;
     }
 
     try {
