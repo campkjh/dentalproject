@@ -337,6 +337,42 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     };
   }, [supabase]);
 
+  // 네이티브 애플 로그인 브리지 — iOS WebView 앱이 Sign in with Apple로 받은
+  // identity token(+nonce)을 window.onAppleNativeLogin(idToken, nonce, name?)으로 넘기면,
+  // 그 토큰으로 Supabase 세션을 만든다. 애플은 이름을 최초 1회만 주므로 있으면 저장.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const w = window as Window & {
+      onAppleNativeLogin?: (idToken: string, nonce?: string, name?: string) => void;
+      onAppleNativeLoginError?: (message: string) => void;
+    };
+    w.onAppleNativeLogin = (idToken: string, nonce?: string, name?: string) => {
+      void (async () => {
+        if (!supabase) {
+          w.onAppleNativeLoginError?.('로그인을 사용할 수 없습니다.');
+          return;
+        }
+        const { error } = await supabase.auth.signInWithIdToken({
+          provider: 'apple',
+          token: idToken,
+          ...(nonce ? { nonce } : {}),
+        });
+        if (error) {
+          w.onAppleNativeLoginError?.(error.message);
+          return;
+        }
+        // 애플 이름은 최초 인증 시에만 제공 → 있으면 메타데이터에 저장(best-effort)
+        const trimmed = name?.trim();
+        if (trimmed) {
+          await supabase.auth.updateUser({ data: { name: trimmed, full_name: trimmed } });
+        }
+      })();
+    };
+    return () => {
+      delete w.onAppleNativeLogin;
+    };
+  }, [supabase]);
+
   const value: Ctx = {
     session,
     authUser: session?.user ?? null,

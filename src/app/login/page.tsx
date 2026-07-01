@@ -129,6 +129,32 @@ function LoginInner() {
       }
     }
 
+    // iOS 앱: Apple은 네이티브 Sign in with Apple 사용.
+    // window.webkit.messageHandlers.appleLogin.postMessage({}) → 네이티브가
+    // onAppleNativeLogin(identityToken, nonce, name?)을 호출 → Supabase 세션.
+    if (provider === 'apple' && typeof window !== 'undefined') {
+      const w = window as Window & {
+        webkit?: {
+          messageHandlers?: { appleLogin?: { postMessage: (msg: unknown) => void } };
+        };
+        onAppleNativeLoginError?: (message: string) => void;
+      };
+      const iosApple = w.webkit?.messageHandlers?.appleLogin;
+      if (iosApple) {
+        w.onAppleNativeLoginError = (message: string) => {
+          if (message) setError(message); // 빈 문자열 = 사용자 취소 → 조용히 리셋
+          setSocialPending(null);
+        };
+        try {
+          iosApple.postMessage({});
+        } catch {
+          setError('Apple 로그인을 시작하지 못했습니다.');
+          setSocialPending(null);
+        }
+        return;
+      }
+    }
+
     try {
       await signInWithOAuth(provider);
       // OAuth 인증 페이지로 리다이렉트됩니다. 돌아올 때만 상태 복구.
