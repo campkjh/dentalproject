@@ -6,7 +6,7 @@ export const siteConfig = {
   postalCode: process.env.NEXT_PUBLIC_COMPANY_POSTAL_CODE || '',
   address:
     process.env.NEXT_PUBLIC_COMPANY_ADDRESS ||
-    '서울특별시 금천구 가산디지털1로 225, 11층 1123-에이-2호',
+    '서울특별시 송파구 위례서로 252',
   phone: process.env.NEXT_PUBLIC_COMPANY_PHONE || '고객센터 번호 미등록',
   email: process.env.NEXT_PUBLIC_COMPANY_EMAIL || '이메일 미등록',
   copyrightName: process.env.NEXT_PUBLIC_COPYRIGHT_NAME || '마이닥',
