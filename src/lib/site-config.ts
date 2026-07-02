@@ -1,5 +1,5 @@
 export const siteConfig = {
-  companyName: process.env.NEXT_PUBLIC_COMPANY_NAME || '(주)마이닥',
+  companyName: process.env.NEXT_PUBLIC_COMPANY_NAME || '메니디티',
   representative: process.env.NEXT_PUBLIC_COMPANY_REPRESENTATIVE || '대표자 미등록',
   businessNumber: process.env.NEXT_PUBLIC_COMPANY_BUSINESS_NUMBER || '사업자등록번호 미등록',
   mailOrderNumber: process.env.NEXT_PUBLIC_COMPANY_MAIL_ORDER_NUMBER || '통신판매업신고번호 미등록',

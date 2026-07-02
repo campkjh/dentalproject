@@ -645,7 +645,8 @@ export default function HomePage() {
           <Link href="/terms/withdrawal" className="hover:text-gray-700 underline">회원탈퇴 문의</Link>
           <Link href="/terms/meta" className="hover:text-gray-700 underline">META서비스 이용방침</Link>
         </div>
-        <p>{siteConfig.companyName}은 통신판매중개자로서 통신판매의 당사자가 아니며 개별 판매자가 제공하는 서비스에 대한 이행, 계약사항 등과 관련한 의무와 책임은 거래 당사자에게 있습니다.</p>
+        <p>{siteConfig.copyrightName}은 {siteConfig.companyName}가 운영하는 서비스입니다.</p>
+        <p>{siteConfig.companyName}은(는) 통신판매중개자로서 통신판매의 당사자가 아니며 개별 판매자가 제공하는 서비스에 대한 이행, 계약사항 등과 관련한 의무와 책임은 거래 당사자에게 있습니다.</p>
         <p className="mt-2">통신판매업신고번호 : {siteConfig.mailOrderNumber}</p>
         <p>{siteConfig.companyName}{siteConfig.postalCode ? ` | 우 ${siteConfig.postalCode}` : ''}</p>
         <p>주소 {siteConfig.address}</p>

@@ -80,6 +80,7 @@ export default function Footer() {
           </div>
           <div className="flex items-center justify-between">
             <div className="text-xs space-y-1">
+              <p>{siteConfig.copyrightName}은 {siteConfig.companyName}가 운영하는 서비스입니다.</p>
               <p>{siteConfig.companyName} | {siteConfig.representative} | {siteConfig.businessNumber}</p>
               <p>{siteConfig.address}</p>
               <p>{siteConfig.mailOrderNumber} | T {siteConfig.phone} | E {siteConfig.email}</p>
