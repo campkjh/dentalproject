@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ChevronDown, ChevronUp, ChevronLeft, Check, X } from 'lucide-react';
 import { resolveHospitalImageUrl } from '@/lib/images';
+import { requestTossPayment, generateOrderId, isTossConfigured } from '@/lib/toss';
 import { useStore } from '@/store';
 
 const agreementTerms = [
@@ -170,13 +171,42 @@ function PaymentPage() {
       paymentMethod,
     };
     const result = await addReservation(newReservation, { visitAtIso: visit.iso });
-    setSubmitting(false);
     if (result?.error) {
+      setSubmitting(false);
       showToast(result.error);
       return;
     }
+
+    const reservationId = result.id ?? '';
+
+    // 앱결제 + 결제금액 > 0 + 토스 설정됨 → 토스 결제창(카드/간편결제)을 연다.
+    // 성공 시 successUrl로 리다이렉트되고, 그 페이지에서 서버 승인(confirm)을 호출한다.
+    if (paymentMethod === '앱결제' && totalPrice > 0 && isTossConfigured()) {
+      try {
+        const origin = window.location.origin;
+        await requestTossPayment({
+          amount: totalPrice,
+          orderId: generateOrderId(),
+          orderName: product.title,
+          successUrl: `${origin}/payment/success?reservationId=${encodeURIComponent(reservationId)}&productId=${encodeURIComponent(product.id)}`,
+          failUrl: `${origin}/payment/fail`,
+          customerName: user.name,
+          customerMobilePhone: user.phone,
+        });
+        return; // 리다이렉트되므로 이 아래는 실행되지 않음
+      } catch (e) {
+        setSubmitting(false);
+        const msg = (e as { message?: string })?.message ?? '';
+        const isCancel = /취소|cancel|USER_CANCEL/i.test(msg);
+        showToast(isCancel || !msg ? '결제가 취소되었습니다.' : msg);
+        return;
+      }
+    }
+
+    // 후불결제(또는 무료/미설정) — 즉시 완료 처리
+    setSubmitting(false);
     showToast('결제가 완료되었습니다!');
-    router.push(`/payment/success?reservationId=${encodeURIComponent(result.id ?? '')}&productId=${encodeURIComponent(product.id)}`);
+    router.push(`/payment/success?reservationId=${encodeURIComponent(reservationId)}&productId=${encodeURIComponent(product.id)}`);
   };
 
   return (

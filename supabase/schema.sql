@@ -215,6 +215,10 @@ create table if not exists public.reservations (
   customer_phone     text not null,
   payment_type       text,
   payment_method     text,
+  payment_status     text check (payment_status is null or payment_status in ('ready', 'paid', 'canceled', 'failed')),
+  payment_key        text,
+  order_id           text,
+  paid_at            timestamptz,
   memo               text,
   created_at         timestamptz not null default now(),
   updated_at         timestamptz not null default now()

@@ -1,10 +1,22 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Frown } from 'lucide-react';
 
-export default function PaymentFailPage() {
+export default function PaymentFailPageWrapper() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen">로딩중...</div>}>
+      <PaymentFailPage />
+    </Suspense>
+  );
+}
+
+function PaymentFailPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  // 토스 결제창 실패 시 failUrl에 code/message가 붙는다.
+  const message = searchParams.get('message');
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
@@ -18,8 +30,8 @@ export default function PaymentFailPage() {
         <h1 className="text-xl font-bold text-gray-900 mb-2 fade-in-up">
           결제에 실패했습니다.
         </h1>
-        <p className="text-sm text-gray-500 mb-4">
-          자세한 사항은 고객센터로 연락부탁드립니다.
+        <p className="text-sm text-gray-500 mb-4 text-center whitespace-pre-line">
+          {message ? message : '자세한 사항은 고객센터로 연락부탁드립니다.'}
         </p>
 
         {/* Customer Service */}
