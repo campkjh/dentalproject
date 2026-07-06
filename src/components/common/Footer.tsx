@@ -81,9 +81,17 @@ export default function Footer() {
           <div className="flex items-center justify-between">
             <div className="text-xs space-y-1">
               <p>{siteConfig.copyrightName}은 {siteConfig.companyName}가 운영하는 서비스입니다.</p>
-              <p>{siteConfig.companyName} | {siteConfig.representative} | {siteConfig.businessNumber}</p>
-              <p>{siteConfig.address}</p>
-              <p>{siteConfig.mailOrderNumber} | T {siteConfig.phone} | E {siteConfig.email}</p>
+              <p>상호명 {siteConfig.companyName} | 대표자 {siteConfig.representative} | 사업자등록번호 {siteConfig.businessNumber}</p>
+              <p>주소 {siteConfig.address}</p>
+              <p>
+                {[
+                  siteConfig.mailOrderNumber && `통신판매업신고번호 ${siteConfig.mailOrderNumber}`,
+                  siteConfig.phone && `T ${siteConfig.phone}`,
+                  `E ${siteConfig.email}`,
+                ]
+                  .filter(Boolean)
+                  .join(' | ')}
+              </p>
             </div>
             <p className="text-xs">Copyright(c) {siteConfig.copyrightName}. All rights reserved.</p>
           </div>

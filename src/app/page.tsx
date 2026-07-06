@@ -647,12 +647,17 @@ export default function HomePage() {
         </div>
         <p>{siteConfig.copyrightName}은 {siteConfig.companyName}가 운영하는 서비스입니다.</p>
         <p>{siteConfig.companyName}은(는) 통신판매중개자로서 통신판매의 당사자가 아니며 개별 판매자가 제공하는 서비스에 대한 이행, 계약사항 등과 관련한 의무와 책임은 거래 당사자에게 있습니다.</p>
-        <p className="mt-2">통신판매업신고번호 : {siteConfig.mailOrderNumber}</p>
-        <p>{siteConfig.companyName}{siteConfig.postalCode ? ` | 우 ${siteConfig.postalCode}` : ''}</p>
-        <p>주소 {siteConfig.address}</p>
-        <p className="mt-1">T {siteConfig.phone} | E {siteConfig.email}</p>
-        <p className="mt-1">{siteConfig.representative} | {siteConfig.businessNumber}</p>
-        <p>Copyright(c) {siteConfig.copyrightName}. All right reserved.</p>
+        <p className="mt-2">상호명 {siteConfig.companyName}</p>
+        <p>대표자 {siteConfig.representative}</p>
+        <p>사업자등록번호 {siteConfig.businessNumber}</p>
+        {siteConfig.mailOrderNumber && <p>통신판매업신고번호 {siteConfig.mailOrderNumber}</p>}
+        <p>주소 {siteConfig.address}{siteConfig.postalCode ? ` (우 ${siteConfig.postalCode})` : ''}</p>
+        <p className="mt-1">
+          {[siteConfig.phone && `T ${siteConfig.phone}`, `E ${siteConfig.email}`]
+            .filter(Boolean)
+            .join(' | ')}
+        </p>
+        <p className="mt-1">Copyright(c) {siteConfig.copyrightName}. All right reserved.</p>
       </div>
 
       {showScrollTop &&
