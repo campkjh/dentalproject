@@ -5,7 +5,13 @@ import { createPortal } from 'react-dom';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ChevronDown, ChevronUp, ChevronLeft, Check, X } from 'lucide-react';
 import { resolveHospitalImageUrl } from '@/lib/images';
-import { requestTossPayment, generateOrderId, isTossConfigured } from '@/lib/toss';
+import {
+  requestTossPayment,
+  generateOrderId,
+  isTossConfigured,
+  VIRTUAL_ACCOUNT_VALID_HOURS,
+  type TossPayMethod,
+} from '@/lib/toss';
 import { useStore } from '@/store';
 
 const agreementTerms = [
@@ -44,6 +50,7 @@ function PaymentPage() {
   const coupons = user?.coupons ?? [];
   const [submitting, setSubmitting] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<'후불결제' | '앱결제'>(paymentParam === 'app' ? '앱결제' : '후불결제');
+  const [appPayMethod, setAppPayMethod] = useState<TossPayMethod>('CARD');
 
   const [showCouponSheet, setShowCouponSheet] = useState(false);
   const [selectedCouponId, setSelectedCouponId] = useState<string | null>(null);
@@ -186,6 +193,7 @@ function PaymentPage() {
       try {
         const origin = window.location.origin;
         await requestTossPayment({
+          method: appPayMethod,
           amount: totalPrice,
           orderId: generateOrderId(),
           orderName: product.title,
@@ -313,7 +321,32 @@ function PaymentPage() {
             <p className="text-xs text-gray-400 mt-2">진료 후 병원에서 직접 결제합니다.</p>
           )}
           {paymentMethod === '앱결제' && (
-            <p className="text-xs text-gray-400 mt-2">앱에서 카드결제로 미리 결제합니다.</p>
+            <>
+              <div className="flex gap-2 mt-3">
+                {([
+                  ['CARD', '카드·간편결제'],
+                  ['VIRTUAL_ACCOUNT', '무통장입금'],
+                ] as const).map(([method, label]) => (
+                  <button
+                    key={method}
+                    type="button"
+                    onClick={() => setAppPayMethod(method)}
+                    className={`flex-1 py-2.5 rounded-xl text-[13px] font-semibold border transition-colors btn-press ${
+                      appPayMethod === method
+                        ? 'border-[#8037FF] text-[#8037FF]'
+                        : 'border-gray-200 text-gray-500'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-gray-400 mt-2">
+                {appPayMethod === 'CARD'
+                  ? '앱에서 카드결제로 미리 결제합니다.'
+                  : `발급된 계좌로 ${VIRTUAL_ACCOUNT_VALID_HOURS}시간 안에 입금하면 결제가 완료됩니다.`}
+              </p>
+            </>
           )}
         </Section>
 
