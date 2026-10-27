@@ -82,8 +82,9 @@ export async function cancelExpiredPendingReservations(admin: any, options: Comp
     .select('id, hospital_id, user_id')
     .eq('status', 'pending')
     .lte('created_at', cutoffIso)
-    // 무통장입금 대기 예약은 입금 기한(웹훅 EXPIRED)으로 정리하므로 30분 자동 취소에서 제외
-    .or('payment_status.is.null,payment_status.neq.waiting_deposit')
+    // 결제 완료(paid)된 예약은 자동 취소하면 환불 없이 취소되므로 제외하고,
+    // 무통장입금 대기(waiting_deposit) 예약은 입금 기한(웹훅 EXPIRED)으로 정리하므로 제외한다.
+    .or('payment_status.is.null,payment_status.not.in.(paid,waiting_deposit)')
     .limit(options.limit ?? 500);
 
   if (options.hospitalId) query = query.eq('hospital_id', options.hospitalId);
