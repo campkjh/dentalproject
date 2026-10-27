@@ -190,7 +190,7 @@ function PaymentPage() {
           orderId: generateOrderId(),
           orderName: product.title,
           successUrl: `${origin}/payment/success?reservationId=${encodeURIComponent(reservationId)}&productId=${encodeURIComponent(product.id)}`,
-          failUrl: `${origin}/payment/fail`,
+          failUrl: `${origin}/payment/fail?reservationId=${encodeURIComponent(reservationId)}`,
           customerName: user.name,
           customerMobilePhone: user.phone,
         });
@@ -199,6 +199,19 @@ function PaymentPage() {
         setSubmitting(false);
         const msg = (e as { message?: string })?.message ?? '';
         const isCancel = /취소|cancel|USER_CANCEL/i.test(msg);
+        // 결제창을 열기 전에 만든 예약이 '결제 대기'로 남지 않도록 취소한다.
+        if (reservationId) {
+          fetch(`/api/reservations/${encodeURIComponent(reservationId)}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              status: 'cancelled',
+              cancelReason: isCancel
+                ? '결제를 취소하여 예약이 취소되었습니다.'
+                : '결제가 완료되지 않아 예약이 취소되었습니다.',
+            }),
+          }).catch(() => {});
+        }
         showToast(isCancel || !msg ? '결제가 취소되었습니다.' : msg);
         return;
       }
