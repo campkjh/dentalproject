@@ -153,7 +153,8 @@ interface AppState {
 
   // Reservations
   reservations: Reservation[];
-  updateReservationStatus: (id: string, status: Reservation['status'], cancelReason?: string) => void;
+  /** 서버 반영에 실패하면 화면 상태를 되돌리고 { error }를 돌려준다(예: 결제 취소 실패). */
+  updateReservationStatus: (id: string, status: Reservation['status'], cancelReason?: string) => Promise<{ error?: string }>;
   addReservation: (reservation: Reservation, opts?: { visitAtIso?: string }) => Promise<{ error: string | null; id?: string }>;
 
   // Posts
@@ -373,16 +374,29 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   reservations: mockReservations,
-  updateReservationStatus: (id, status, cancelReason) => {
+  updateReservationStatus: async (id, status, cancelReason) => {
+    const previous = get().reservations;
     set({
-      reservations: get().reservations.map((r) =>
+      reservations: previous.map((r) =>
         r.id === id
           ? { ...r, status, ...(cancelReason ? { cancelReason, cancelDate: new Date().toLocaleString('ko-KR') } : {}) }
           : r
       ),
     });
-    if (/^[0-9a-f]{8}-/.test(id)) {
-      void syncWrite('PATCH', `/api/reservations/${id}`, { status, cancelReason });
+    if (!/^[0-9a-f]{8}-/.test(id)) return {};
+    try {
+      const res = await fetch(`/api/reservations/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status, cancelReason }),
+      });
+      if (res.ok) return {};
+      const data = await res.json().catch(() => ({}));
+      set({ reservations: previous });
+      return { error: data?.error ?? '예약 상태를 변경하지 못했어요.' };
+    } catch {
+      set({ reservations: previous });
+      return { error: '네트워크 오류로 예약 상태를 변경하지 못했어요.' };
     }
   },
   addReservation: async (reservation, opts) => {

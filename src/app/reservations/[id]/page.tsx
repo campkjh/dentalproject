@@ -57,8 +57,12 @@ export default function ReservationDetailPage() {
   const extraCount = Math.max(0, tags.length - visibleTags.length);
 
   const handleCancel = () => {
-    showModal('예약 취소', '정말 예약을 취소하시겠습니까?', () => {
-      updateReservationStatus(reservation.id, 'cancelled');
+    showModal('예약 취소', '정말 예약을 취소하시겠습니까?\n결제한 금액은 함께 취소돼요.', async () => {
+      const { error } = await updateReservationStatus(reservation.id, 'cancelled');
+      if (error) {
+        showToast(error);
+        return;
+      }
       showToast('예약이 취소되었습니다.');
       router.push('/reservations');
     });

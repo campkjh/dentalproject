@@ -95,16 +95,16 @@ export default function HospitalHomePage() {
   const productTabIndex = ['approved', 'pending', 'rejected'].indexOf(productTab);
 
   const handleConfirm = (id: string) => {
-    showModal('예약 확정', '해당 예약을 확정하시겠습니까?', () => {
-      updateReservationStatus(id, 'confirmed');
-      showToast('예약이 확정되었습니다.');
+    showModal('예약 확정', '해당 예약을 확정하시겠습니까?', async () => {
+      const { error } = await updateReservationStatus(id, 'confirmed');
+      showToast(error ?? '예약이 확정되었습니다.');
     });
   };
 
   const handleCancel = (id: string) => {
-    showModal('예약 취소', '해당 예약을 취소하시겠습니까?', () => {
-      updateReservationStatus(id, 'cancelled', '병원측 취소');
-      showToast('예약이 취소되었습니다.');
+    showModal('예약 취소', '해당 예약을 취소하시겠습니까?\n결제한 금액은 고객에게 환불돼요.', async () => {
+      const { error } = await updateReservationStatus(id, 'cancelled', '병원측 취소');
+      showToast(error ?? '예약이 취소되었습니다.');
     });
   };
 

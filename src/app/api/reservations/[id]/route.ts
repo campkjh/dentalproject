@@ -8,6 +8,7 @@ import { cancelExpiredPendingReservations, completePastConfirmedReservations } f
 import { normalizeProductImageUrl } from '@/lib/images';
 import { broadcastReservationChange } from '@/lib/realtime/server';
 import { createAdminClient, createClient } from '@/lib/supabase/server';
+import { cancelTossPayment } from '@/lib/toss-server';
 
 export const dynamic = 'force-dynamic';
 
@@ -182,7 +183,7 @@ export async function PATCH(
   await cancelExpiredPendingReservations(admin, { reservationId: id });
   const { data: reservation, error: reservationError } = await admin
     .from('reservations')
-    .select('id, user_id, hospital_id, status, reservation_at, visit_at')
+    .select('id, user_id, hospital_id, status, reservation_at, visit_at, payment_status, payment_key, payment_method')
     .eq('id', id)
     .maybeSingle();
 
@@ -308,6 +309,31 @@ export async function PATCH(
     ?? previousSchedule;
 
   patch.updated_at = new Date().toISOString();
+
+  // 결제된(또는 가상계좌 발급된) 예약을 취소하면 토스 결제도 함께 취소한다.
+  // 토스 취소가 실패하면 예약도 취소하지 않는다(돈은 받고 예약만 취소되는 상황 방지).
+  if (
+    nextStatus === 'cancelled' &&
+    reservation.status !== 'cancelled' &&
+    reservation.payment_key &&
+    (reservation.payment_status === 'paid' || reservation.payment_status === 'waiting_deposit')
+  ) {
+    // 입금 완료된 무통장 결제는 환불받을 계좌 정보가 있어야 해서 자동 환불하지 않는다.
+    if (reservation.payment_status === 'paid' && reservation.payment_method === '가상계좌') {
+      return NextResponse.json(
+        { error: '무통장입금 결제는 환불 계좌 확인이 필요해요. 고객센터로 환불을 요청해 주세요.' },
+        { status: 409 }
+      );
+    }
+    const cancel = await cancelTossPayment(
+      reservation.payment_key,
+      (patch.cancel_reason as string | undefined) ?? '예약 취소'
+    );
+    if (!cancel.ok) {
+      return NextResponse.json({ error: `결제 취소에 실패했어요: ${cancel.message}` }, { status: 400 });
+    }
+    patch.payment_status = 'canceled';
+  }
 
   const { error, skippedColumns } = await updateReservationWithSchemaFallback(admin, id, patch);
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });

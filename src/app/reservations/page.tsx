@@ -129,9 +129,9 @@ export default function ReservationsPage() {
   );
 
   const handleCancel = (id: string) => {
-    showModal('예약 취소', '예약을 취소하시겠습니까?', () => {
-      updateReservationStatus(id, 'cancelled');
-      showToast('예약이 취소되었습니다.');
+    showModal('예약 취소', '예약을 취소하시겠습니까?\n결제한 금액은 함께 취소돼요.', async () => {
+      const { error } = await updateReservationStatus(id, 'cancelled');
+      showToast(error ?? '예약이 취소되었습니다.');
     });
   };
 
