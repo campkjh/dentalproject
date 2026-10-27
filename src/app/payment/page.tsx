@@ -86,11 +86,12 @@ function PaymentPage() {
   const userPoints = user?.points ?? 5000;
   const pointsToUse = Math.min(parseInt(pointInput || '0', 10) || 0, userPoints);
 
+  // 상품 가격은 VAT 포함가. 부가세는 별도로 더하지 않고, 포함된 금액만 안내용으로 계산한다.
   const basePrice = product.price;
-  const vatAmount = Math.round(basePrice * 0.1);
+  const vatAmount = basePrice - Math.round(basePrice / 1.1);
   const couponDiscount = selectedCoupon?.discountAmount ?? 0;
   const totalSavings = couponDiscount + pointsToUse;
-  const totalPrice = Math.max(basePrice + vatAmount - couponDiscount - pointsToUse, 0);
+  const totalPrice = Math.max(basePrice - couponDiscount - pointsToUse, 0);
   const selectedVisitLabel = dateParam && timeParam
     ? `${dateParam.replaceAll('-', '.')} ${timeParam}`
     : '예약일시 미선택';
@@ -374,8 +375,8 @@ function PaymentPage() {
         {/* Price breakdown */}
         <Section title="결제 금액">
           <div className="space-y-2">
-            <Line label="상품 금액" value={`${basePrice.toLocaleString()}원`} />
-            <Line label="부가세 VAT" value={`${vatAmount.toLocaleString()}원`} />
+            <Line label="상품 금액 (VAT 포함)" value={`${basePrice.toLocaleString()}원`} />
+            <Line label="└ 부가세 VAT (포함)" value={`${vatAmount.toLocaleString()}원`} />
             {couponDiscount > 0 && (
               <Line
                 label="쿠폰 할인"
