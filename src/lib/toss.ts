@@ -28,7 +28,13 @@ function normalizeMobile(phone?: string | null): string | undefined {
  * 성공하면 successUrl로 리다이렉트되므로 이 함수 이후 코드는 실행되지 않는다.
  * 사용자가 결제창을 닫거나 실패하면 예외를 throw 한다.
  */
+export type TossPayMethod = 'CARD' | 'VIRTUAL_ACCOUNT';
+
+/** 가상계좌 입금 기한(시간). */
+export const VIRTUAL_ACCOUNT_VALID_HOURS = 24;
+
 export async function requestTossPayment(params: {
+  method?: TossPayMethod;
   amount: number;
   orderId: string;
   orderName: string;
@@ -40,15 +46,33 @@ export async function requestTossPayment(params: {
   const tossPayments = await loadTossPayments(TOSS_CLIENT_KEY);
   const payment = tossPayments.payment({ customerKey: ANONYMOUS });
 
-  await payment.requestPayment({
-    method: 'CARD',
-    amount: { currency: 'KRW', value: params.amount },
+  const common = {
+    amount: { currency: 'KRW' as const, value: params.amount },
     orderId: params.orderId,
     orderName: params.orderName.slice(0, 100),
     successUrl: params.successUrl,
     failUrl: params.failUrl,
     customerName: params.customerName || undefined,
     customerMobilePhone: normalizeMobile(params.customerMobilePhone),
+  };
+
+  if (params.method === 'VIRTUAL_ACCOUNT') {
+    // 무통장입금: 결제창에서 은행을 고르면 가상계좌가 발급되고, 입금은 웹훅으로 확인한다.
+    await payment.requestPayment({
+      ...common,
+      method: 'VIRTUAL_ACCOUNT',
+      virtualAccount: {
+        cashReceipt: { type: '소득공제' },
+        useEscrow: false,
+        validHours: VIRTUAL_ACCOUNT_VALID_HOURS,
+      },
+    });
+    return;
+  }
+
+  await payment.requestPayment({
+    ...common,
+    method: 'CARD',
     card: {
       useEscrow: false,
       flowMode: 'DEFAULT',

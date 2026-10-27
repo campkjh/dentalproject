@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
   // 예약 조회 + 소유자/금액 검증
   const { data: reservation, error: resErr } = await sb
     .from('reservations')
-    .select('id, user_id, amount, payment_status')
+    .select('id, user_id, amount, payment_status, virtual_account')
     .eq('id', reservationId)
     .maybeSingle();
 
@@ -58,6 +58,10 @@ export async function POST(req: NextRequest) {
   // 이미 결제 완료된 예약이면 중복 승인하지 않고 성공 처리(멱등성)
   if (reservation.payment_status === 'paid') {
     return NextResponse.json({ ok: true, alreadyPaid: true });
+  }
+  // 가상계좌가 이미 발급된 예약(새로고침 등)이면 저장된 계좌 정보를 그대로 돌려준다
+  if (reservation.payment_status === 'waiting_deposit') {
+    return NextResponse.json({ ok: true, status: 'WAITING_FOR_DEPOSIT', virtualAccount: reservation.virtual_account });
   }
 
   if (reservation.amount !== amount) {
@@ -88,6 +92,38 @@ export async function POST(req: NextRequest) {
       { error: tossData?.message ?? '결제 승인에 실패했습니다.', code: tossData?.code ?? null },
       { status: 400 }
     );
+  }
+
+  // 무통장입금(가상계좌): 승인 시점에는 계좌만 발급되고 입금 전이다.
+  // 'paid'로 기록하지 않고 입금 대기로 두며, 입금 확인은 /api/payments/webhook에서 처리한다.
+  if (tossData?.status === 'WAITING_FOR_DEPOSIT') {
+    const va = tossData?.virtualAccount ?? {};
+    const virtualAccount = {
+      bankCode: va.bankCode ?? null,
+      accountNumber: va.accountNumber ?? null,
+      customerName: va.customerName ?? null,
+      dueDate: va.dueDate ?? null,
+    };
+    const { error: vaErr } = await sb
+      .from('reservations')
+      .update({
+        payment_status: 'waiting_deposit',
+        payment_key: paymentKey,
+        order_id: orderId,
+        payment_method: '가상계좌',
+        virtual_account: virtualAccount,
+      })
+      .eq('id', reservationId);
+
+    if (vaErr) {
+      console.error('[payments/confirm] 가상계좌 발급 성공했으나 예약 갱신 실패:', vaErr.message, {
+        reservationId,
+        orderId,
+        paymentKey,
+      });
+    }
+
+    return NextResponse.json({ ok: true, status: 'WAITING_FOR_DEPOSIT', virtualAccount });
   }
 
   // 승인 성공 — 예약에 결제 결과 기록
