@@ -179,7 +179,7 @@ function PaymentSuccessPage() {
             <div className="w-full rounded-xl border border-[#E4D7FF] bg-[#F7F2FF] p-4 mb-4 fade-in-up space-y-2">
               <VaRow label="은행" value={BANK_NAMES[virtualAccount.bankCode ?? ''] ?? virtualAccount.bankCode ?? '-'} />
               <VaRow label="계좌번호" value={virtualAccount.accountNumber ?? '-'} copyable />
-              <VaRow label="예금주" value={virtualAccount.customerName ?? '-'} />
+              <VaRow label="입금자명" value={virtualAccount.customerName ?? '-'} />
               <VaRow label="입금 기한" value={formatDueDate(virtualAccount.dueDate)} />
             </div>
           </>
