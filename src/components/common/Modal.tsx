@@ -84,6 +84,7 @@ export default function Modal() {
                 lineHeight: '20px',
                 fontFamily: 'inherit',
                 margin: 0,
+                whiteSpace: 'pre-line',
               }}
             >
               {modal.message}
