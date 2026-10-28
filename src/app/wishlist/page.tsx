@@ -140,7 +140,7 @@ export default function PocketPage() {
   return (
     <div
       className="min-h-screen w-full bg-white"
-      style={emptyView ? { background: 'radial-gradient(70% 28% at 6% 0%, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0) 70%), linear-gradient(180deg, #DCE9FF 0px, #E6EFFF 180px, #F2F6FF 360px, #FFFFFF 620px)' } : undefined}
+      style={emptyView ? { background: 'linear-gradient(180deg, #FFFFFF 0px, #FFFFFF 96px, #EEF4FF 170px, #E2ECFF 250px, #E8F0FF 340px, #F3F7FF 460px, #FFFFFF 680px)' } : undefined}
     >
       {/* 탭 머리 — 모바일은 프리티풀 탭 머리 표준(왼쪽 16 · 20 굵게 · 오른쪽 돋보기), PC 는 전체 헤더 아래 큰 제목 */}
       <div className="sticky top-0 z-40 flex items-center justify-between bg-white px-4 pc:hidden" style={{ height: 56 }}>
@@ -159,11 +159,11 @@ export default function PocketPage() {
       ) : (
         <>
           {/* 탭 — 상세 섹션 탭과 같은 결: 회색 트랙 위 흰 알약이 미끄러진다(빈 화면에선 트랙이 반투명 흰색) */}
-          {/* 빈 화면 — 머리(흰색)가 끝나는 곳부터 탭 아래까지 흰색 → 투명 그라데이션으로 하늘빛 바탕에 녹아든다 */}
-          <div
-            className={`sticky top-[56px] z-10 px-4 pb-3 pt-1 pc:top-[72px] pc:px-0 ${emptyView ? '' : 'bg-white'}`}
-            style={emptyView ? { background: 'linear-gradient(180deg, #FFFFFF 0%, rgba(255,255,255,0.92) 45%, rgba(255,255,255,0) 100%)' } : undefined}
+                    <div
+            className="sticky top-[56px] z-10 bg-white px-4 pb-3 pt-1 pc:top-[72px] pc:px-0"
           >
+            {/* 탭 아래 흰 그늘 — 탭 칸에서 끊기지 않고 아래로 길게 녹는다(바탕 하늘빛은 탭 아래부터 천천히 차오른다) */}
+            {emptyView && <span aria-hidden className="pointer-events-none absolute inset-x-0 top-full h-10" style={{ background: 'linear-gradient(180deg, #FFFFFF 0%, rgba(255,255,255,0.7) 45%, rgba(255,255,255,0) 100%)' }} />}
             <div className="relative flex gap-1 rounded-2xl bg-[#F2F3F5] p-1">
               <span
                 aria-hidden
@@ -205,7 +205,7 @@ export default function PocketPage() {
 
               {/* 실시간 TOP 10 인기 시술 */}
               {topProducts.length > 0 && (
-                <section className="mt-2 border-t border-[#F2F4F6] pb-10 pt-6">
+                <section className="mt-2 pb-10 pt-6">
                   <h2 className="mb-4 px-4 text-[20px] font-bold leading-[28px] tracking-[-0.4px] text-[#191F28] pc:px-0">
                     실시간 <span className="text-[#3180F7]">TOP 10</span> 인기 시술
                   </h2>
