@@ -1,13 +1,14 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { ArrowUp, ChevronLeft, Heart, MessageCircle, Trash2, X } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useStore } from '@/store';
 import Avatar from '@/components/common/Avatar';
 import { communityRelativeTime } from '@/lib/community';
 import type { Post } from '@/types';
 import CommunityPostCard from './CommunityPostCard';
+import { BackIcon, CloseIcon, EmojiBar, formatCount, ReplyArrowIcon, SendUpIcon, SortArrowsIcon, TossHeartIcon } from './StadyIcons';
 import styles from './community.module.css';
 
 interface CommunityComment {
@@ -18,9 +19,19 @@ interface CommunityComment {
   likeCount: number; liked: boolean; createdAt?: string; date: string;
 }
 
+// 스타디 댓글 정렬 — 화면에서만 다시 늘어놓는다(서버 순서 = 오래된순)
+const COMMENT_SORTS = [
+  { key: 'oldest', label: '오래된순' },
+  { key: 'newest', label: '최신순' },
+  { key: 'popular', label: '인기순' },
+] as const;
+type CommentSort = (typeof COMMENT_SORTS)[number]['key'];
+const commentTime = (c: CommunityComment) => new Date(c.createdAt || c.date).getTime() || 0;
+
 export default function CommunityDetail({ postId, commentsOnly = false, onClose, basePath = '/community' }: {
   postId: string; commentsOnly?: boolean; onClose?: () => void; basePath?: string;
 }) {
+  const router = useRouter();
   const user = useStore(s => s.user);
   const showToast = useStore(s => s.showToast);
   const showModal = useStore(s => s.showModal);
@@ -36,8 +47,12 @@ export default function CommunityDetail({ postId, commentsOnly = false, onClose,
   const [reply, setReply] = useState<CommunityComment | null>(null);
   const [sending, setSending] = useState(false);
   const [retry, setRetry] = useState(0);
-  const textarea = useRef<HTMLTextAreaElement>(null);
-  const commentHeading = useRef<HTMLHeadingElement>(null);
+  const [sort, setSort] = useState<CommentSort>('oldest');
+  const [sortOpen, setSortOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const input = useRef<HTMLInputElement>(null);
+  const composer = useRef<HTMLDivElement>(null);
+  const sentinel = useRef<HTMLDivElement>(null);
   const [commentVersion, setCommentVersion] = useState(0);
   const sendingRef = useRef(false);
   const commentLikesBusy = useRef(new Set<string>());
@@ -80,11 +95,14 @@ export default function CommunityDetail({ postId, commentsOnly = false, onClose,
       }).catch(() => {});
     return () => controller.abort();
   }, [postId, commentsOnly]);
+  // 맨 위 감시점이 가려지면 상단바 뒤 그라데이션을 켠다(패널 안 스크롤도 같은 방식으로 잡힌다)
   useEffect(() => {
-    if (!textarea.current) return;
-    textarea.current.style.height = 'auto';
-    textarea.current.style.height = `${Math.min(140, Math.max(44, textarea.current.scrollHeight))}px`;
-  }, [text]);
+    const element = sentinel.current;
+    if (!element || typeof IntersectionObserver === 'undefined') return;
+    const observer = new IntersectionObserver(([entry]) => setScrolled(!entry.isIntersecting));
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [commentsOnly]);
 
   const updatePostCommentCount = (delta: number) => {
     useStore.setState(state => ({ posts: state.posts.map(p => p.id === postId ? { ...p, commentCount: Math.max(0, p.commentCount + delta) } : p) }));
@@ -132,7 +150,7 @@ export default function CommunityDetail({ postId, commentsOnly = false, onClose,
   }
 
   function deleteComment(comment: CommunityComment) {
-    showModal('댓글 삭제', '이 댓글을 삭제하시겠습니까?', async () => {
+    showModal('댓글을 삭제할까요?', '답글도 함께 삭제되며 되돌릴 수 없어요.', async () => {
       try {
         const response = await fetch(`/api/posts/${postId}/comments`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ commentId: comment.id }) });
         const data = await response.json();
@@ -146,55 +164,127 @@ export default function CommunityDetail({ postId, commentsOnly = false, onClose,
     });
   }
 
-  function renderComment(comment: CommunityComment, isReply = false) {
-    const name = comment.isAnonymous ? `익명 ${comment.anonymousId || ''}` : comment.authorName;
-    return <div key={comment.id} className={styles.comment}>
-      <Avatar src={comment.isAnonymous ? undefined : comment.authorProfileImage} role={comment.authorIsDoctor ? 'doctor' : 'user'} seed={comment.isAnonymous ? comment.id : comment.authorId} size={isReply ? 30 : 38} className="shrink-0" />
-      <div className={styles.commentMain}>
-        <div className={styles.commentAuthor}>{name}{comment.authorIsDoctor && <small>{comment.authorTitle || '의사'}</small>}<time>{communityRelativeTime(comment)}</time></div>
-        {(comment.authorHospital || comment.authorSpecialty) && <p className={styles.commentHospital}>{[comment.authorHospital, comment.authorSpecialty].filter(Boolean).join(' · ')}</p>}
-        <p className={styles.commentText}>{comment.content}</p>
-        <div className={styles.commentActions}>
-          <button type="button" aria-label={`${name} 댓글 좋아요`} aria-pressed={comment.liked} onClick={() => likeComment(comment)}><Heart size={15} fill={comment.liked ? 'currentColor' : 'none'} />{comment.likeCount || '좋아요'}</button>
-          {!isReply && <button type="button" onClick={() => { if (!user) { showToast('로그인이 필요합니다.'); return; } setReply(comment); textarea.current?.focus(); }}><MessageCircle size={15} />답글</button>}
-          {user?.id === comment.authorId && <button type="button" title="댓글 삭제" aria-label="댓글 삭제" onClick={() => deleteComment(comment)}><Trash2 size={14} /></button>}
-        </div>
-        {!isReply && comments.filter(c => c.parentCommentId === comment.id).map(c => renderComment(c, true))}
-      </div>
-    </div>;
+  function startReply(comment: CommunityComment) {
+    if (!user) { showToast('로그인이 필요합니다.'); return; }
+    setReply(comment);
+    input.current?.focus({ preventScroll: true });
+    if (!commentsOnly) composer.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 
-  const commentList = <section className={styles.comments} aria-label="댓글 목록">
-    <h2 ref={commentHeading} tabIndex={-1}>댓글 {comments.length}</h2>
-    {commentsError ? <div className={styles.error} role="alert">{commentsError}<button type="button" onClick={loadComments}>다시 시도</button></div>
-      : commentsLoading && !comments.length ? <CommunitySkeleton count={2} />
-      : !comments.length ? <div className={styles.empty}><MessageCircle size={28} /><p>첫 댓글을 남겨보세요.</p></div>
-      : comments.filter(c => !c.parentCommentId).map(c => renderComment(c))}
-  </section>;
-  const input = <div className={styles.commentInput}>
-    {reply && <div className={styles.replyTo}><span>{reply.isAnonymous ? '익명' : reply.authorName}님에게 답글</span><button type="button" aria-label="답글 취소" onClick={() => setReply(null)}><X size={16} /></button></div>}
-    <textarea ref={textarea} aria-label={reply ? '답글 내용' : '댓글 내용'} placeholder={user ? reply ? '답글을 남겨주세요' : '댓글을 남겨주세요' : '로그인하고 이야기를 나눠보세요'} value={text} onChange={e => setText(e.target.value)} maxLength={5000} rows={1} disabled={sending} />
-    <button type="button" className={styles.sendButton} aria-label="댓글 등록" title="댓글 등록" onClick={send} disabled={!text.trim() || sending}><ArrowUp size={24} strokeWidth={2.3} /></button>
+  const roots = useMemo(() => {
+    const list = comments.filter(c => !c.parentCommentId);
+    if (sort === 'newest') return [...list].sort((a, b) => commentTime(b) - commentTime(a));
+    if (sort === 'popular') return [...list].sort((a, b) => b.likeCount - a.likeCount || commentTime(a) - commentTime(b));
+    return list;
+  }, [comments, sort]);
+
+  function renderComment(comment: CommunityComment, isReply = false): React.ReactNode {
+    const name = comment.isAnonymous ? `익명 ${comment.anonymousId || ''}`.trim() : comment.authorName;
+    const row = <div key={comment.id} className={styles.c} data-reply={isReply || undefined} data-active={reply?.id === comment.id || undefined}>
+      <Avatar src={comment.isAnonymous ? undefined : comment.authorProfileImage} role={comment.authorIsDoctor ? 'doctor' : 'user'} seed={comment.isAnonymous ? comment.id : comment.authorId} size={isReply ? 34 : 44} className={styles.cAvatar} />
+      <div className={styles.cMain}>
+        <div className={styles.cHead}>
+          <strong className={styles.cName}>{name}</strong>
+          {comment.authorIsDoctor && <span className={styles.cDoctor}>{comment.authorTitle || '의사'}</span>}
+          <span className={styles.cTime}>· {communityRelativeTime(comment)}</span>
+        </div>
+        {(comment.authorHospital || comment.authorSpecialty) && <p className={styles.cHospital}>{[comment.authorHospital, comment.authorSpecialty].filter(Boolean).join(' · ')}</p>}
+        <p className={styles.cText}>{comment.content}</p>
+        <div className={styles.cActs}>
+          <button type="button" className={styles.cLike} aria-label={`${name} 댓글 좋아요`} aria-pressed={comment.liked} onClick={() => likeComment(comment)}><TossHeartIcon filled={comment.liked} />{comment.likeCount > 0 && <span>{formatCount(comment.likeCount)}</span>}</button>
+          {!isReply && <button type="button" className={styles.cReply} onClick={() => startReply(comment)}><ReplyArrowIcon />답글 달기</button>}
+          {user?.id === comment.authorId && <button type="button" className={styles.cTextBtn} onClick={() => deleteComment(comment)}>삭제</button>}
+        </div>
+      </div>
+    </div>;
+    if (isReply) return row;
+    // 답글은 부모 댓글 바로 아래, 본문 칸 선에 맞춰 이어 붙인다(스타디)
+    return [row, ...comments.filter(c => c.parentCommentId === comment.id).map(c => renderComment(c, true))];
+  }
+
+  const sortMenu = <>
+    <button type="button" className={styles.sortButton} aria-haspopup="listbox" aria-expanded={sortOpen} onClick={() => setSortOpen(v => !v)}>{COMMENT_SORTS.find(x => x.key === sort)?.label}<SortArrowsIcon /></button>
+    {sortOpen && <>
+      <div className={styles.sortBackdrop} onClick={() => setSortOpen(false)} />
+      <div className={styles.sortMenu} data-align="left" role="listbox">{COMMENT_SORTS.map(x => <button key={x.key} type="button" role="option" aria-selected={sort === x.key} className={styles.sortItem} onClick={() => { setSortOpen(false); setSort(x.key); }}>{x.label}</button>)}</div>
+    </>}
+  </>;
+
+  const list = commentsError ? <div className={styles.error} role="alert">{commentsError}<button type="button" onClick={loadComments}>다시 시도</button></div>
+    : commentsLoading && !comments.length ? <CommunitySkeleton count={2} />
+    : !comments.length ? <div className={styles.sleep}><img src="/icons/toss/sleeping.svg" alt="" width={44} height={44} /><p>댓글이 자고있나봐요<br />깨워주세요!</p></div>
+    : <div className={styles.cList}>{roots.map(c => renderComment(c))}</div>;
+
+  const form = <form className={styles.compose} onSubmit={e => { e.preventDefault(); void send(); }}>
+    <Avatar src={user?.profileImage} seed={user?.id} role={user?.isDoctor ? 'doctor' : 'user'} size={40} />
+    <div className={styles.bar}>
+      {reply && <button type="button" className={styles.mention} onClick={() => setReply(null)} aria-label={`${reply.isAnonymous ? '익명' : reply.authorName}님 답글 취소`}>@{reply.isAnonymous ? '익명' : reply.authorName}</button>}
+      <input ref={input} className={styles.input} value={text} onChange={e => setText(e.target.value)} maxLength={5000} disabled={sending}
+        placeholder={reply ? '' : user ? '댓글로 의견을 남겨보세요' : '로그인하고 이야기를 나눠보세요'} enterKeyHint="send" aria-label={reply ? '답글 내용' : '댓글 내용'} />
+      <button type="submit" className={styles.send} disabled={!text.trim() || sending} aria-label="댓글 등록"><SendUpIcon /></button>
+    </div>
+  </form>;
+
+  // 목록에서 여는 댓글 시트(스타디 CommentModal)
+  if (commentsOnly) return <div className={styles.ccs}>
+    <div className={styles.ccsHead}>
+      <p className={styles.ccsTitle}>댓글 {comments.length}</p>
+      <button type="button" className={styles.ccsClose} onClick={onClose} aria-label="닫기"><CloseIcon size={22} stroke={2.2} /></button>
+    </div>
+    <div className={styles.ccsSort}>{sortMenu}</div>
+    <div className={styles.ccsList}>{list}</div>
+    <div className={styles.ccsDock}>
+      <EmojiBar className={styles.emojiBar} buttonClassName={styles.emojiBtn} onPick={emoji => { setText(t => t + emoji); input.current?.focus({ preventScroll: true }); }} />
+      {form}
+    </div>
   </div>;
 
-  if (commentsOnly) return <>
-    <header className={styles.sheetHeader}><button type="button" className={styles.iconButton} aria-label="닫기" onClick={onClose}><X size={20} /></button><h2>댓글</h2><span /></header>
-    <div className={styles.commentsSheet}>{commentList}</div>{input}
-  </>;
-  return <div className={styles.detail}>
-    <header className={styles.detailHeader}>
-      {onClose ? <button type="button" className={styles.iconButton} title="상세 닫기" aria-label="상세 닫기" onClick={onClose}><X size={22} /></button> : <Link className={styles.iconButton} href={basePath} aria-label="커뮤니티로 돌아가기"><ChevronLeft size={24} /></Link>}
-      <h1>게시글</h1><Link href={`${basePath}/${postId}`} aria-label="게시글 전체 보기">{onClose ? '전체 보기' : ''}</Link>
+  const inPanel = Boolean(onClose);
+  return <div className={`${styles.detail} ${inPanel ? styles.inPanel : ''}`}>
+    <div ref={sentinel} aria-hidden="true" style={{ height: 1, marginBottom: -1 }} />
+    <header className={styles.detailTopbar} data-scrolled={scrolled}>
+      {inPanel
+        ? <>
+          <h1 className={styles.detailTitle}>{post?.title ?? (postLoading ? '' : '커뮤니티')}</h1>
+          <Link className={styles.fullLink} href={`${basePath}/${postId}`}>전체 보기</Link>
+          <button type="button" className={styles.panelClose} onClick={onClose} aria-label="상세 닫기"><CloseIcon size={20} stroke={2.2} /></button>
+        </>
+        : <>
+          <button type="button" className={styles.backButton} onClick={() => { if (window.history.length > 1) router.back(); else router.push(basePath); }} aria-label="커뮤니티 목록으로 이동"><BackIcon /></button>
+          <h1 className={styles.detailTitle}>{post?.title ?? (postLoading ? '' : '커뮤니티')}</h1>
+        </>}
     </header>
-    <div className={styles.detailBody}>
-      {post ? <CommunityPostCard post={post} detail basePath={basePath} onComments={() => { commentHeading.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }); textarea.current?.focus({ preventScroll: true }); }} onDeleted={() => { if (onClose) onClose(); else window.location.assign(basePath); }} />
-        : postLoading ? <CommunitySkeleton count={1} /> : <div className={styles.empty} role="status"><p>{postError || '게시글을 찾을 수 없습니다.'}</p><button type="button" onClick={() => { setPostLoading(true); setPostError(''); setRetry(n => n + 1); }}>다시 시도</button></div>}
-      {post && commentList}
-    </div>
-    {post && input}
+    {post ? <>
+      <CommunityPostCard post={post} detail basePath={basePath} onComments={() => { composer.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }); input.current?.focus({ preventScroll: true }); }} onDeleted={() => { if (onClose) onClose(); else window.location.assign(basePath); }} />
+      <div className={styles.band} aria-hidden="true" />
+      <section className={styles.cpdComments} aria-label="댓글 목록">
+        <h2 className={styles.cTitle}>댓글 <span>{formatCount(post.commentCount)}</span></h2>
+        <div ref={composer}>{form}</div>
+        <div className={styles.commentSortWrap}>{sortMenu}</div>
+        {list}
+      </section>
+    </> : postLoading ? <DetailSkeleton /> : <div className={styles.detailState} role="status"><p>{postError || '게시글을 찾을 수 없습니다.'}</p><button type="button" onClick={() => { setPostLoading(true); setPostError(''); setRetry(n => n + 1); }}>다시 시도</button></div>}
+  </div>;
+}
+
+// 글 모양 스켈레톤(분류·시간 / 제목 / 작성자 / 본문 줄 / 사진 / 공감 줄) — 천천히 숨 쉬듯 깜빡인다
+function DetailSkeleton() {
+  const b = (style: React.CSSProperties) => <span className={styles.skBlock} style={style} />;
+  return <div className={styles.detailState} style={{ display: 'block' }} role="status" aria-busy="true" aria-label="게시글을 불러오는 중">
+    <div style={{ display: 'flex', gap: 8 }}>{b({ width: 74, height: 28, borderRadius: 999 })}{b({ width: 54, height: 14, marginTop: 7 })}</div>
+    {b({ width: '78%', height: 24, marginTop: 18 })}{b({ width: '52%', height: 24, marginTop: 8 })}
+    <div style={{ display: 'flex', gap: 8, marginTop: 18 }}>{b({ width: 28, height: 28, borderRadius: '50%' })}{b({ width: 84, height: 14, marginTop: 7 })}</div>
+    {b({ width: '100%', height: 15, marginTop: 20 })}{b({ width: '94%', height: 15, marginTop: 10 })}{b({ width: '62%', height: 15, marginTop: 10 })}
+    {b({ width: '100%', height: 180, marginTop: 20, borderRadius: 14 })}
+    <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>{b({ width: 70, height: 34, borderRadius: 999 })}{b({ width: 70, height: 34, borderRadius: 999 })}</div>
   </div>;
 }
 
 export function CommunitySkeleton({ count = 4 }: { count?: number }) {
-  return <div aria-label="게시글 불러오는 중" role="status">{Array.from({ length: count }, (_, i) => <div key={i} className={styles.skeleton}><span /><div><i /><i /><i /></div></div>)}</div>;
+  return <div aria-label="게시글 불러오는 중" role="status">{Array.from({ length: count }, (_, i) => <div key={i} className={styles.skeletonCard} aria-hidden="true">
+    <div className={styles.skeletonLine} style={{ width: '38%' }} />
+    <div className={styles.skeletonLine} style={{ width: '72%', height: 18 }} />
+    <div className={styles.skeletonLine} style={{ width: '100%' }} />
+    <div className={styles.skeletonLine} style={{ width: '58%' }} />
+  </div>)}</div>;
 }
