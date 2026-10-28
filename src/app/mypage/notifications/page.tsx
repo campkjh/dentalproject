@@ -1,9 +1,11 @@
 'use client';
 
+// 알림 설정 — 프리티풀 마이 > 알림 설정 그대로: 묶음 제목 + 카드 한 줄(제목 17 · 회색 설명 13 · 토스 스위치).
 import { useState } from 'react';
 import TopBar from '@/components/common/TopBar';
-import LoginRequired from '@/components/common/LoginRequired';
 import { useStore } from '@/store';
+import { QdBody, QdList, MySectionTitle, MY_CARD } from '@/components/detail/QdKit';
+import { Screen, TossSwitch, TossIcon, NeedLogin } from '@/components/mypage/screens/ScreenKit';
 
 type NotifKey =
   | 'reservation'
@@ -80,75 +82,45 @@ export default function NotificationSettingsPage() {
 
   const toggle = (k: NotifKey) => setValues((v) => ({ ...v, [k]: !v[k] }));
 
-  return (
-    <div className="min-h-screen bg-white max-w-[500px] mx-auto pb-12">
-      <TopBar title="알림 설정" />
+  if (!isLoggedIn) {
+    return (
+      <Screen>
+        <TopBar title="알림 설정" />
+        <NeedLogin />
+      </Screen>
+    );
+  }
 
-      {!isLoggedIn ? (
-        <LoginRequired />
-      ) : (
-        <div className="pt-2 page-enter">
-          {sections.map((section) => (
-            <div key={section.title} className="mb-5">
-              <h3 className="text-[12px] font-semibold text-gray-400 px-2.5 py-2">
-                {section.title}
-              </h3>
-              <div className="bg-white">
-                {section.items.map((item, idx) => (
-                  <div
-                    key={item.key}
-                    className={`px-2.5 py-4 ${
-                      idx < section.items.length - 1 ? 'border-b border-gray-100' : ''
-                    }`}
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-[14px] font-semibold text-gray-900">
-                          {item.label}
-                        </p>
-                        <p className="text-[12px] text-gray-500 mt-0.5 leading-snug">
-                          {item.description}
-                        </p>
-                      </div>
-                      <Switch on={values[item.key]} onToggle={() => toggle(item.key)} />
-                    </div>
+  return (
+    <Screen>
+      <TopBar title="알림 설정" sub="받고 싶은 알림만 골라 받으세요" />
+
+      <QdBody className="space-y-7 px-6 pt-1 pc:px-8">
+        {sections.map((section) => (
+          <section key={section.title}>
+            <MySectionTitle>{section.title}</MySectionTitle>
+            <QdList>
+              {section.items.map((item) => (
+                <div key={item.key} className={`${MY_CARD} flex min-h-[60px] items-center justify-between gap-3 px-[18px] py-3.5`}>
+                  <div className="min-w-0">
+                    <p className="text-[17px] font-semibold text-[#333D4B]">{item.label}</p>
+                    <p className="mt-[3px] break-keep text-[13px] leading-[1.45] text-[#8B95A1]">{item.description}</p>
                   </div>
-                ))}
-              </div>
-            </div>
-          ))}
+                  <TossSwitch on={values[item.key]} onToggle={() => toggle(item.key)} label={item.label} />
+                </div>
+              ))}
+            </QdList>
+          </section>
+        ))}
 
-          <div className="px-2.5 pt-4">
-            <p className="text-[11px] text-gray-400 leading-relaxed">
-              광고성 정보 수신 동의 시 쿠폰·이벤트 등의 혜택 알림을 받으실 수 있습니다.
-              알림 설정은 디바이스 설정보다 후순위로 적용됩니다.
-            </p>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function Switch({ on, onToggle }: { on: boolean; onToggle: () => void }) {
-  return (
-    <button
-      onClick={onToggle}
-      aria-pressed={on}
-      className="relative flex-shrink-0 w-[46px] h-[26px] rounded-full btn-press"
-      style={{
-        backgroundColor: on ? '#8037FF' : '#E5E7EB',
-        transition: 'background-color 220ms ease',
-      }}
-    >
-      <span
-        className="absolute top-[3px] w-[20px] h-[20px] rounded-full bg-white"
-        style={{
-          left: on ? 23 : 3,
-          boxShadow: '0 1px 3px rgba(0,0,0,0.15), 0 2px 6px rgba(0,0,0,0.08)',
-          transition: 'left 240ms cubic-bezier(0.22, 1, 0.36, 1)',
-        }}
-      />
-    </button>
+        <p className="flex items-start gap-2 rounded-[16px] bg-[#F7F8FA] px-4 py-3.5 text-[13px] leading-[1.6] text-[#6B7684]">
+          <TossIcon name="alarm" size={18} className="mt-px" />
+          <span className="break-keep">
+            광고성 정보 수신 동의 시 쿠폰·이벤트 등의 혜택 알림을 받으실 수 있습니다.
+            알림 설정은 디바이스 설정보다 후순위로 적용됩니다.
+          </span>
+        </p>
+      </QdBody>
+    </Screen>
   );
 }

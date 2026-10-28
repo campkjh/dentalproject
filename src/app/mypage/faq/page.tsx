@@ -1,8 +1,11 @@
 'use client';
 
-import { useState, useRef, useEffect, useLayoutEffect } from 'react';
+// 자주 묻는 질문 — 프리티풀 마이 > FAQ 그대로: 회색 트랙 위 흰 알약이 미끄러지는 분류 칩 + 질문 카드(높이 0fr→1fr 로 펼침).
+//  · '전체'는 분류별 묶음 제목과 함께 다 보여 준다. 칩 줄은 머리 아래에 붙어 따라온다.
+import { useLayoutEffect, useRef, useState, useEffect } from 'react';
 import TopBar from '@/components/common/TopBar';
-import { ChevronDown } from 'lucide-react';
+import { QdBody, MySectionTitle, MY_CARD } from '@/components/detail/QdKit';
+import { Screen, EmptyBlock, screenCss as s } from '@/components/mypage/screens/ScreenKit';
 
 const tabs = ['이용문의', '결제문의', '서비스문의', '기타문의'];
 
@@ -61,76 +64,61 @@ const faqData: Record<string, { question: string; answer: string }[]> = {
   ],
 };
 
+const CHIPS = ['전체', ...tabs];
+
 export default function FAQPage() {
-  const [activeTab, setActiveTab] = useState('이용문의');
-  const [openItems, setOpenItems] = useState<string[]>([]);
-  const [direction, setDirection] = useState<'left' | 'right'>('right');
-  const prevIdxRef = useRef(0);
-  const tabBtnRefs = useRef<(HTMLButtonElement | null)[]>([]);
-  const [indicator, setIndicator] = useState({ left: 0, width: 0 });
+  const [activeTab, setActiveTab] = useState('전체');
+  const [openId, setOpenId] = useState<string | null>(null);
+  const chipRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const [pill, setPill] = useState({ left: 0, width: 0 });
+  const activeIdx = CHIPS.indexOf(activeTab);
 
-  const activeIdx = tabs.indexOf(activeTab);
-
-  const changeTab = (t: string) => {
-    const nextIdx = tabs.indexOf(t);
-    setDirection(nextIdx >= prevIdxRef.current ? 'right' : 'left');
-    prevIdxRef.current = nextIdx;
-    setActiveTab(t);
-    setOpenItems([]);
-  };
-
+  // 흰 알약 자리 = 고른 칩 자리
   useLayoutEffect(() => {
-    const btn = tabBtnRefs.current[activeIdx];
-    if (!btn) return;
-    setIndicator({ left: btn.offsetLeft, width: btn.offsetWidth });
+    const measure = () => {
+      const btn = chipRefs.current[activeIdx];
+      if (btn) setPill({ left: btn.offsetLeft, width: btn.offsetWidth });
+    };
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
   }, [activeIdx]);
 
   useEffect(() => {
-    const onResize = () => {
-      const btn = tabBtnRefs.current[activeIdx];
-      if (!btn) return;
-      setIndicator({ left: btn.offsetLeft, width: btn.offsetWidth });
-    };
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
+    chipRefs.current[activeIdx]?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
   }, [activeIdx]);
 
-  const toggleItem = (question: string) => {
-    setOpenItems((prev) =>
-      prev.includes(question) ? prev.filter((q) => q !== question) : [...prev, question]
-    );
+  const changeTab = (t: string) => {
+    setActiveTab(t);
+    setOpenId(null);
   };
 
-  const currentFaqs = faqData[activeTab] ?? [];
+  const groups = (activeTab === '전체' ? tabs : [activeTab])
+    .map((category) => ({ category, items: faqData[category] ?? [] }))
+    .filter((g) => g.items.length > 0);
 
   return (
-    <div className="min-h-screen bg-white max-w-[500px] mx-auto page-enter">
-      <TopBar title="자주 묻는 질문" />
+    <Screen>
+      <TopBar title="자주 묻는 질문" sub="궁금한 내용을 먼저 찾아보세요" />
 
-      {/* Tabs — same pattern as 예약내역 (partner-community-categories) */}
-      <div className="partner-community-category-shell sticky top-[48px] z-30 bg-white">
-        <div className="partner-community-categories hide-scrollbar">
+      {/* 분류 칩 — 머리(56) 아래에 붙어 따라온다 */}
+      <div className="sticky top-14 z-20 bg-white px-6 pb-3 pt-1 pc:px-8">
+        <div className="relative flex gap-1 overflow-x-auto rounded-[16px] bg-[#F2F4F6] p-1 hide-scrollbar">
           <span
-            aria-hidden
-            className="partner-community-category-indicator"
-            style={{
-              width: indicator.width,
-              transform: `translateX(${indicator.left}px)`,
-              opacity: indicator.width > 0 ? 1 : 0,
-            }}
+            aria-hidden="true"
+            className={`${s.chipPill} pointer-events-none absolute bottom-1 left-0 top-1 rounded-[13px] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.08)]`}
+            style={{ width: pill.width, transform: `translateX(${pill.left}px)`, opacity: pill.width ? 1 : 0 }}
           />
-          {tabs.map((t, i) => {
-            const isActive = activeTab === t;
-            const showActive = isActive && indicator.width > 0;
+          {CHIPS.map((t, i) => {
+            const on = t === activeTab;
             return (
               <button
                 key={t}
-                ref={(el) => {
-                  tabBtnRefs.current[i] = el;
-                }}
+                ref={(el) => { chipRefs.current[i] = el; }}
                 type="button"
                 onClick={() => changeTab(t)}
-                className={showActive ? 'is-active' : undefined}
+                aria-pressed={on}
+                className={`relative flex-1 shrink-0 whitespace-nowrap rounded-[13px] px-3.5 py-2 text-[14px] transition-colors ${on ? 'font-bold text-[#191F28]' : 'font-semibold text-[#8B95A1] pc:hover:text-[#4E5968]'}`}
               >
                 {t}
               </button>
@@ -139,50 +127,49 @@ export default function FAQPage() {
         </div>
       </div>
 
-      {/* FAQ list with directional slide */}
-      <div
-        key={activeTab}
-        className={`divide-y divide-gray-100 ${
-          direction === 'right' ? 'tab-slide-right' : 'tab-slide-left'
-        }`}
-      >
-        {currentFaqs.map((faq, index) => {
-          const isOpen = openItems.includes(faq.question);
-          return (
-            <div key={index}>
-              <button
-                onClick={() => toggleItem(faq.question)}
-                className="w-full flex items-center justify-between px-2.5 py-4 hover:bg-gray-50 transition-colors text-left"
-              >
-                <div className="flex items-start gap-2 flex-1 pr-3">
-                  <span className="text-[#8037FF] font-bold text-sm mt-0.5">Q</span>
-                  <span className="text-sm font-medium text-gray-900">{faq.question}</span>
-                </div>
-                <ChevronDown
-                  size={18}
-                  className={`text-gray-400 flex-shrink-0 transition-transform duration-200 ${
-                    isOpen ? 'rotate-180' : ''
-                  }`}
-                />
-              </button>
-              {isOpen && (
-                <div className="px-2.5 pb-4">
-                  <div className="flex items-start gap-2 bg-gray-50 rounded-xl p-4">
-                    <span className="text-[#8037FF] font-bold text-sm mt-0.5">A</span>
-                    <p className="text-sm text-gray-600 leading-relaxed">{faq.answer}</p>
+      <QdBody key={activeTab} className="space-y-7 px-6 pt-2 pc:px-8">
+        {groups.map((group) => (
+          <section key={group.category}>
+            {activeTab === '전체' && <MySectionTitle>{group.category}</MySectionTitle>}
+            <div className="space-y-2.5">
+              {group.items.map((faq, i) => {
+                const id = `${group.category}-${i}`;
+                const isOpen = openId === id;
+                return (
+                  <div key={id} className={MY_CARD}>
+                    <button
+                      type="button"
+                      onClick={() => setOpenId(isOpen ? null : id)}
+                      aria-expanded={isOpen}
+                      className="flex min-h-[60px] w-full items-center justify-between gap-3 rounded-[16px] px-[18px] py-4 text-left transition-colors active:bg-[#F8F9FA] pc:hover:bg-[#FAFBFC]"
+                    >
+                      <span className={`break-keep text-[17px] font-semibold leading-snug ${isOpen ? 'text-[#191F28]' : 'text-[#333D4B]'}`}>
+                        <span className="mr-1.5 text-[#3180F7]">Q.</span>
+                        {faq.question}
+                      </span>
+                      <svg
+                        width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"
+                        className="shrink-0 transition-transform duration-300"
+                        style={{ transform: isOpen ? 'rotate(180deg)' : undefined }}
+                      >
+                        <path d="M6 9l6 6 6-6" stroke={isOpen ? '#3180F7' : '#B0B8C1'} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </button>
+                    <div className={`${s.expand} ${isOpen ? s.open : ''}`}>
+                      <div>
+                        <div className="mx-[18px] border-t border-[#F2F4F6]" />
+                        <p className="whitespace-pre-line break-keep px-[18px] pb-5 pt-3.5 text-[15px] leading-[1.75] text-[#4E5968]">{faq.answer}</p>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              )}
+                );
+              })}
             </div>
-          );
-        })}
-      </div>
+          </section>
+        ))}
 
-      {currentFaqs.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-20">
-          <p className="text-gray-500">등록된 질문이 없습니다</p>
-        </div>
-      )}
-    </div>
+        {groups.length === 0 && <EmptyBlock icon="question" title="등록된 질문이 없어요" desc="준비되는 대로 안내드릴게요." />}
+      </QdBody>
+    </Screen>
   );
 }

@@ -1,22 +1,23 @@
 'use client';
 
-import { useState } from 'react';
+// 내 리뷰 — 프리티풀 마이(퀵매칭 어법): 요약 카드 + 리뷰 카드(상품 사진·병원·시술명 머리 + 상품 상세 댓글형 리뷰 줄 그대로).
+//  · 수정/삭제는 ⋯ 툴팁 메뉴(.pop-menu). 동작은 예전처럼 아직 연결 전(메뉴만 닫힌다).
+import Link from 'next/link';
 import { useStore } from '@/store';
 import TopBar from '@/components/common/TopBar';
-import EmptyState from '@/components/common/EmptyState';
-import LoginRequired from '@/components/common/LoginRequired';
-import { Star, MoreHorizontal } from 'lucide-react';
+import { QdBody, MY_CARD } from '@/components/detail/QdKit';
+import { ReviewCommentRow, StarRating } from '@/components/detail/DetailKit';
+import { Screen, MoreMenu, EmptyBlock, NeedLogin } from '@/components/mypage/screens/ScreenKit';
 
 export default function MyReviewsPage() {
-  const { isLoggedIn, reviews } = useStore();
-  const [openMenu, setOpenMenu] = useState<string | null>(null);
+  const { isLoggedIn, reviews, products, hospitals } = useStore();
 
   if (!isLoggedIn) {
     return (
-      <div className="min-h-screen bg-white max-w-[500px] mx-auto">
+      <Screen>
         <TopBar title="내 리뷰" />
-        <LoginRequired />
-      </div>
+        <NeedLogin />
+      </Screen>
     );
   }
 
@@ -25,137 +26,92 @@ export default function MyReviewsPage() {
 
   if (userReviews.length === 0) {
     return (
-      <div className="min-h-screen bg-white max-w-[500px] mx-auto">
+      <Screen>
         <TopBar title="내 리뷰" />
-        <EmptyState icon="message" message="리뷰가 존재하지 않아요" />
-      </div>
+        <EmptyBlock icon="chat" title="아직 남긴 리뷰가 없어요" desc="시술을 받고 후기를 남기면 이곳에 모여요." />
+      </Screen>
     );
   }
 
+  const average = userReviews.reduce((sum, r) => sum + r.rating, 0) / userReviews.length;
+
   return (
-    <div className="min-h-screen bg-white max-w-[500px] mx-auto page-enter">
-      <TopBar title="내 리뷰" />
+    <Screen>
+      <TopBar title="내 리뷰" sub="내가 남긴 후기를 한곳에 모았어요" />
 
-      <div className="px-2.5 pt-3 pb-2 flex items-center justify-between">
-        <p className="text-sm text-gray-500">
-          총 <span className="text-gray-900 font-semibold">{userReviews.length}</span>개
-        </p>
-      </div>
+      <QdBody className="space-y-2.5 px-6 pt-1 pc:px-8">
+        {/* 요약 — 전체 개수 · 평균 별점 */}
+        <div className={`${MY_CARD} flex items-center justify-between px-5 py-4`}>
+          <div>
+            <p className="text-[13px] text-[#8B95A1]">남긴 리뷰</p>
+            <p className="mt-0.5 text-[24px] font-bold tabular-nums text-[#191F28]">{userReviews.length}<span className="ml-0.5 text-[17px] font-semibold">개</span></p>
+          </div>
+          <div className="text-right">
+            <p className="text-[13px] text-[#8B95A1]">평균 별점</p>
+            <div className="mt-1.5 flex items-center justify-end gap-1.5">
+              <StarRating value={Number(average.toFixed(1))} size={18} twinkle />
+              <span className="text-[20px] font-bold tabular-nums text-[#191F28]">{average.toFixed(1)}</span>
+            </div>
+          </div>
+        </div>
 
-      <div>
-        {userReviews.map((review, idx) => {
-          const hasReviewImages = Boolean(review.beforeImage || review.afterImage);
+        {userReviews.map((review) => {
+          const product = review.productId ? products.find(p => p.id === review.productId) : undefined;
+          const hospitalName = (review.hospitalId && hospitals.find(h => h.id === review.hospitalId)?.name) || product?.hospitalName;
+          const photos = [
+            ...(review.beforeImage ? [{ src: review.beforeImage, label: '전' }] : []),
+            ...(review.afterImage ? [{ src: review.afterImage, label: '후' }] : []),
+          ];
+          const head = (
+            <>
+              <span className="h-[52px] w-[52px] shrink-0 overflow-hidden rounded-[12px] bg-[#F2F4F6]">
+                {product?.imageUrl && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={product.imageUrl} alt="" loading="lazy" className="h-full w-full object-cover" />
+                )}
+              </span>
+              <span className="flex min-w-0 flex-1 flex-col gap-[3px]">
+                {hospitalName && <span className="truncate text-[13px] text-[#8B95A1]">{hospitalName}</span>}
+                <span className="line-clamp-1 text-[16px] font-semibold leading-snug text-[#191F28]">{review.treatmentName}</span>
+              </span>
+            </>
+          );
           return (
-            <article
-              key={review.id}
-              className={`px-2.5 py-5 ${
-                idx < userReviews.length - 1 ? 'border-b-8 border-gray-50' : ''
-              }`}
-            >
-              {/* Header: treatment + rating + menu */}
-              <div className="flex items-start justify-between gap-3 mb-3">
-                <div className="flex-1 min-w-0">
-                  <p className="text-[11px] text-gray-400 mb-0.5">
-                    {review.treatmentDate} 시술
-                  </p>
-                  <h3 className="text-[15px] font-bold text-gray-900 line-clamp-1 leading-snug">
-                    {review.treatmentName}
-                  </h3>
-                  <div className="flex items-center gap-0.5 mt-1">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <Star
-                        key={i}
-                        size={14}
-                        fill={i < review.rating ? '#FBBF24' : 'transparent'}
-                        stroke={i < review.rating ? '#FBBF24' : '#D1D5DB'}
-                      />
-                    ))}
-                    <span className="text-[12px] text-gray-500 ml-1 font-medium">
-                      {review.rating.toFixed(1)}
-                    </span>
-                  </div>
-                </div>
-                <div className="relative">
-                  <button
-                    onClick={() => setOpenMenu(openMenu === review.id ? null : review.id)}
-                    className="p-1 -m-1 flex-shrink-0"
-                  >
-                    <MoreHorizontal size={18} className="text-gray-400" />
-                  </button>
-                  {openMenu === review.id && (
-                    <>
-                      <div
-                        className="fixed inset-0 z-30"
-                        onClick={() => setOpenMenu(null)}
-                      />
-                      <div
-                        className="absolute right-0 top-full mt-1 z-40 bg-white rounded-xl overflow-hidden scale-in"
-                        style={{
-                          border: '1px solid #F2F3F5',
-                          boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-                          minWidth: 120,
-                        }}
-                      >
-                        <button className="block w-full px-4 py-2.5 text-left text-[13px] text-gray-700 hover:bg-gray-50">
-                          수정
-                        </button>
-                        <button className="block w-full px-4 py-2.5 text-left text-[13px] text-red-500 hover:bg-gray-50 border-t border-gray-100">
-                          삭제
-                        </button>
-                      </div>
-                    </>
-                  )}
-                </div>
+            <article key={review.id} className={`${MY_CARD} px-[18px] pb-1 pt-4`}>
+              {/* 머리 — 상품 사진 · 병원 · 시술명(누르면 상품 상세) */}
+              <div className="flex items-center gap-3 border-b border-[#F2F4F6] pb-3.5">
+                {product ? (
+                  <Link href={`/product/${product.id}`} className="flex min-w-0 flex-1 items-center gap-3 active:opacity-70">{head}</Link>
+                ) : (
+                  <div className="flex min-w-0 flex-1 items-center gap-3">{head}</div>
+                )}
+                <MoreMenu
+                  label="리뷰 메뉴"
+                  items={[
+                    { icon: '/icons/toss/pencil.svg', label: '수정하기', run: () => {} },
+                    { icon: '/icons/toss/bin.svg', label: '삭제하기', danger: true, run: () => {} },
+                  ]}
+                />
               </div>
 
-              {hasReviewImages && (
-                <div className={`grid gap-2 ${review.beforeImage && review.afterImage ? 'grid-cols-2' : 'grid-cols-1'}`}>
-                  {review.beforeImage && (
-                    <div className="relative aspect-square rounded-xl overflow-hidden bg-gray-100">
-                      <img
-                        src={review.beforeImage}
-                        alt="시술 전"
-                        className="w-full h-full object-cover"
-                      />
-                      <span className="absolute top-2 left-2 px-2 py-0.5 bg-black/60 text-white text-[10px] font-bold rounded">
-                        전
-                      </span>
-                    </div>
-                  )}
-                  {review.afterImage && (
-                    <div className="relative aspect-square rounded-xl overflow-hidden bg-gray-100">
-                      <img
-                        src={review.afterImage}
-                        alt="시술 후"
-                        className="w-full h-full object-cover"
-                      />
-                      <span className="absolute top-2 left-2 px-2 py-0.5 bg-[#8037FF] text-white text-[10px] font-bold rounded">
-                        후
-                      </span>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Content */}
-              <p className={`text-[13px] text-gray-700 leading-relaxed line-clamp-4 whitespace-pre-line ${hasReviewImages ? 'mt-3' : 'mt-0'}`}>
-                {review.content}
-              </p>
-
-              {/* Footer: hospital + cost + date */}
-              <div className="flex items-center justify-between mt-3">
-                <span className="text-[11px] text-gray-400">{review.date} 작성</span>
-                <span className="text-[12px] text-gray-500">
-                  총 <span className="font-bold text-gray-900">{review.totalCost.toLocaleString()}</span>
-                  <span className="text-[11px]">원</span>
-                </span>
-              </div>
+              {/* 본문 — 상품 상세 댓글형 리뷰 줄 그대로 */}
+              <ReviewCommentRow
+                first
+                review={{
+                  id: review.id,
+                  name: review.authorName,
+                  avatarSeed: review.authorId || review.authorName,
+                  rating: review.rating,
+                  content: review.content,
+                  photos,
+                  meta: `${review.treatmentDate} 시술 · 총 ${review.totalCost.toLocaleString()}원`,
+                  date: `${review.date} 작성`,
+                }}
+              />
             </article>
           );
         })}
-      </div>
-
-      <div className="pb-24" />
-    </div>
+      </QdBody>
+    </Screen>
   );
 }

@@ -1,12 +1,14 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+// 프로필 설정 — 프리티풀 마이 > 프로필 수정 결: 사진 원(편집 배지) · 칸마다 라벨 위·값 아래 카드(qd-card) · 관심 진료과목 타일 · 아래 회색 '회원탈퇴'.
+//  · 칸을 누르면 바텀 시트(qd-input + qd-cta 저장 / 고르기 줄). 저장·업로드·탈퇴 흐름은 예전 그대로.
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useStore } from '@/store';
 import TopBar from '@/components/common/TopBar';
-import LoginRequired from '@/components/common/LoginRequired';
 import Avatar from '@/components/common/Avatar';
-import { Camera, ChevronRight, Check, X } from 'lucide-react';
+import { QdBody, MySectionTitle, MY_CARD } from '@/components/detail/QdKit';
+import { Screen, Sheet, NeedLogin } from '@/components/mypage/screens/ScreenKit';
 
 const GENDERS = ['남성', '여성', '선택안함'];
 
@@ -44,14 +46,18 @@ export default function ProfilePage() {
   } = useStore();
 
   const [sheet, setSheet] = useState<SheetType>(null);
+  // 시트가 내려가는 동안에도 내용이 남게 마지막 종류를 기억한다
+  const [lastSheet, setLastSheet] = useState<Exclude<SheetType, null>>('name');
+  if (sheet && sheet !== lastSheet) setLastSheet(sheet);
+  const closeSheet = useCallback(() => setSheet(null), []);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
   if (!isLoggedIn) {
     return (
-      <div className="min-h-screen bg-white max-w-[500px] mx-auto">
+      <Screen>
         <TopBar title="프로필 설정" />
-        <LoginRequired />
-      </div>
+        <NeedLogin />
+      </Screen>
     );
   }
 
@@ -119,234 +125,171 @@ export default function ProfilePage() {
   ];
 
   return (
-    <div className="min-h-screen bg-white max-w-[500px] mx-auto page-enter">
-      <TopBar title="프로필 설정" />
+    <Screen>
+      <TopBar title="프로필 설정" sub="내 정보를 확인하고 바꿀 수 있어요" />
 
-      {/* Profile Avatar */}
-      <div className="bg-white pt-5 pb-4 flex flex-col items-center fade-in-up">
-        <div className="relative mb-2.5">
-          <div
-            className="w-[72px] h-[72px] rounded-full flex items-center justify-center overflow-hidden"
-            style={{ backgroundColor: '#F3F4F6' }}
-          >
-            <Avatar
-              src={user?.profileImage}
-              gender={user?.gender}
-              size={58}
-              alt={user?.name || '프로필'}
-            />
-          </div>
-          <label className={`absolute bottom-0 right-0 w-8 h-8 rounded-full flex items-center justify-center shadow-lg border-2 border-white cursor-pointer btn-press ${uploadingPhoto ? 'bg-gray-400' : 'bg-[#8037FF]'}`}>
-            {uploadingPhoto ? <span className="text-white text-[10px]">...</span> : <Camera size={14} className="text-white" />}
-            <input
-              type="file"
-              accept="image/*"
-              className="sr-only"
-              onChange={onAvatarChange}
-            />
+      <QdBody className="space-y-8 px-6 pt-1 pc:px-8">
+        {/* 사진 원 + 편집 배지 */}
+        <div className="flex flex-col items-center pt-1">
+          <label className={`relative block cursor-pointer rounded-full transition-transform active:scale-[0.97] ${uploadingPhoto ? 'pointer-events-none' : ''}`} aria-label="프로필 사진 바꾸기">
+            <span className="flex h-[96px] w-[96px] items-center justify-center overflow-hidden rounded-full bg-[#F2F4F6]">
+              <Avatar src={user?.profileImage} gender={user?.gender} size={96} alt={user?.name || '프로필'} />
+            </span>
+            {uploadingPhoto && (
+              <span className="absolute inset-0 flex items-center justify-center rounded-full bg-white/60">
+                <span className="h-6 w-6 animate-spin rounded-full border-[2.5px] border-[#3180F7] border-t-transparent" />
+              </span>
+            )}
+            <span className="absolute -bottom-0.5 -right-0.5 flex h-[34px] w-[34px] items-center justify-center rounded-full border-[2.5px] border-white bg-[#F2F4F6] shadow-[0_2px_8px_rgba(0,0,0,0.12)]">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/icons/toss/picture.svg" alt="" width={18} height={18} />
+            </span>
+            <input type="file" accept="image/*" className="sr-only" onChange={onAvatarChange} />
           </label>
+          <p className="mt-3.5 text-[20px] font-bold text-[#191F28]">{user?.name}</p>
+          <p className="mt-0.5 text-[14px] text-[#8B95A1]">{user?.loginType === 'kakao' ? '카카오' : '애플'} 계정으로 로그인했어요</p>
         </div>
-        <h2 className="text-[16px] font-semibold text-gray-900">{user?.name}</h2>
-      </div>
 
-      {/* Customer Info */}
-      <div className="mt-1 bg-white">
-        <div className="px-5 pt-4 pb-1.5">
-          <h3 className="text-[15px] font-semibold text-gray-900">고객정보</h3>
-        </div>
-        <div className="divide-y divide-gray-50">
-          {infoItems.map((item) => (
-            <button
-              key={item.label}
-              disabled={item.readonly}
-              onClick={item.onClick}
-              className="w-full flex min-h-11 items-center justify-between px-5 py-2.5 text-left disabled:cursor-default hover:bg-gray-50 disabled:hover:bg-transparent transition-colors"
-            >
-              <span className="text-[14px] font-medium text-gray-500">{item.label}</span>
-              <div className="flex min-w-0 items-center gap-1.5 pl-4">
-                <span className="truncate text-right text-[14px] font-medium text-gray-900">{item.value}</span>
-                {!item.readonly && <ChevronRight size={16} strokeWidth={1.8} className="h-4 w-4 flex-none text-gray-300" />}
-              </div>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Interested categories */}
-      <div className="h-2 bg-gray-50 mt-1" />
-      <div className="bg-white pb-4">
-        <div className="flex items-center justify-between px-5 pt-4 pb-2">
-          <h3 className="text-[15px] font-semibold text-gray-900">관심있는 진료과목</h3>
-          <span className="text-[11px] text-gray-400 font-medium">
-            {interestedCategories.length}개 선택
-          </span>
-        </div>
-        <p className="text-[12px] text-gray-500 px-5 mb-3 leading-snug">
-          관심 있는 카테고리를 선택하면 홈에서 관련 시술과 병원을 더 많이 만날 수 있어요.
-        </p>
-        <div className="px-5 grid grid-cols-4 gap-2">
-          {categories.map((cat) => {
-            const selected = interestedCategories.includes(cat.id);
-            return (
+        {/* 고객정보 — 라벨 위 · 값 아래 칸 */}
+        <section>
+          <MySectionTitle>고객정보</MySectionTitle>
+          <div className="space-y-2.5">
+            {infoItems.map((item) => (
               <button
-                key={cat.id}
-                onClick={() => toggleInterestedCategory(cat.id)}
-                className="flex flex-col items-center gap-1.5 card-press relative"
-                style={{ transition: 'transform 180ms ease' }}
+                key={item.label}
+                type="button"
+                disabled={item.readonly}
+                onClick={item.onClick}
+                className={`${MY_CARD} flex min-h-[64px] w-full items-center gap-3 px-[18px] py-3 text-left transition-colors active:bg-[#F8F9FA] disabled:cursor-default disabled:bg-[#F9FAFB] disabled:active:bg-[#F9FAFB] pc:hover:bg-[#FAFBFC] pc:disabled:hover:bg-[#F9FAFB]`}
               >
-                <div
-                  className="w-14 h-14 rounded-2xl flex items-center justify-center transition-all"
-                  style={{
-                    backgroundColor: selected ? '#F4EFFF' : '#F4F5F7',
-                    boxShadow: selected ? '0 4px 12px rgba(49,130,246,0.2)' : 'none',
-                    transform: selected ? 'scale(1.03)' : 'scale(1)',
-                  }}
-                >
-                  <img src={cat.icon} alt={cat.name} className="w-9 h-9" />
-                </div>
-                <span
-                  className="text-[12px] font-medium"
-                  style={{ color: selected ? '#8037FF' : '#4B5563' }}
-                >
-                  {cat.name}
+                <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                  <span className="text-[13px] text-[#8B95A1]">{item.label}</span>
+                  <span className={`truncate text-[17px] font-semibold ${item.readonly ? 'text-[#6B7684]' : 'text-[#191F28]'}`}>{item.value}</span>
                 </span>
-                {selected && (
-                  <span
-                    className="absolute top-0 right-0 w-5 h-5 bg-[#8037FF] rounded-full flex items-center justify-center check-pop"
-                    style={{ boxShadow: '0 2px 6px rgba(49,130,246,0.3)' }}
-                  >
-                    <Check size={11} strokeWidth={3} className="text-white" />
-                  </span>
+                {item.readonly ? (
+                  <span className="shrink-0 text-[13px] text-[#B0B8C1]">변경 불가</span>
+                ) : (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true" className="shrink-0">
+                    <path d="M9 6l6 6-6 6" stroke="#B0B8C1" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
                 )}
               </button>
-            );
-          })}
+            ))}
+          </div>
+        </section>
+
+        {/* 관심있는 진료과목 */}
+        <section>
+          <div className="flex items-baseline justify-between">
+            <MySectionTitle>관심있는 진료과목</MySectionTitle>
+            <span className="pb-2.5 pr-1 text-[13px] font-semibold text-[#3180F7]">{interestedCategories.length}개 선택</span>
+          </div>
+          <p className="-mt-1 mb-3.5 break-keep px-1 text-[14px] leading-[1.5] text-[#8B95A1]">
+            관심 있는 카테고리를 선택하면 홈에서 관련 시술과 병원을 더 많이 만날 수 있어요.
+          </p>
+          <div className="grid grid-cols-4 gap-2 pc:grid-cols-6">
+            {categories.map((cat) => {
+              const selected = interestedCategories.includes(cat.id);
+              return (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() => toggleInterestedCategory(cat.id)}
+                  aria-pressed={selected}
+                  className="relative flex flex-col items-center gap-1.5 rounded-[16px] py-2.5 transition-transform active:scale-95"
+                >
+                  <span
+                    className="flex h-14 w-14 items-center justify-center rounded-[16px] transition-all duration-200"
+                    style={{
+                      backgroundColor: selected ? '#EDF4FF' : '#F2F4F6',
+                      boxShadow: selected ? 'inset 0 0 0 1.5px #3180F7' : 'none',
+                    }}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={cat.icon} alt="" className="h-9 w-9" />
+                  </span>
+                  <span className={`text-[13px] ${selected ? 'font-semibold text-[#3180F7]' : 'text-[#4E5968]'}`}>{cat.name}</span>
+                  {selected && (
+                    <span className="check-pop absolute right-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-[#3180F7] shadow-[0_2px_6px_rgba(49,128,247,0.3)]">
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="#fff" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* 회원탈퇴 — 아래 회색 글자 */}
+        <div className="flex justify-center pb-4 pt-2">
+          <button type="button" onClick={handleWithdraw} className="rounded-[10px] px-3 py-2 text-[14px] text-[#8B95A1] underline decoration-[#D1D6DB] underline-offset-4 active:bg-[#F2F4F6]">
+            회원탈퇴
+          </button>
         </div>
-      </div>
+      </QdBody>
 
-      {/* Withdraw Button */}
-      <div className="px-5 py-6">
-        <button
-          onClick={handleWithdraw}
-          className="w-full py-3 text-sm text-gray-400 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-        >
-          회원탈퇴
-        </button>
-      </div>
-
-      {sheet && (
-        <EditSheet
-          type={sheet}
+      <Sheet open={!!sheet} title={SHEET_TITLE[lastSheet]} onClose={closeSheet}>
+        <EditSheetBody
+          key={lastSheet + String(!!sheet)}
+          type={lastSheet}
           user={user}
-          onClose={() => setSheet(null)}
           onSave={(patch) => {
             updateUser(patch);
             setSheet(null);
             showToast('저장되었습니다.');
           }}
         />
-      )}
-    </div>
+      </Sheet>
+    </Screen>
   );
 }
 
-function EditSheet({
+const SHEET_TITLE: Record<Exclude<SheetType, null>, string> = {
+  name: '이름 변경',
+  phone: '전화번호 변경',
+  gender: '성별 선택',
+  year: '출생년도 선택',
+  country: '국가 선택',
+};
+
+function EditSheetBody({
   type,
   user,
-  onClose,
   onSave,
 }: {
   type: Exclude<SheetType, null>;
   user: import('@/types').User | null;
-  onClose: () => void;
   onSave: (patch: Partial<import('@/types').User>) => void;
 }) {
-  const title = {
-    name: '이름 변경',
-    phone: '전화번호 변경',
-    gender: '성별 선택',
-    year: '출생년도 선택',
-    country: '국가 선택',
-  }[type];
-
-  useEffect(() => {
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = prev;
-    };
-  }, []);
-
-  return (
-    <div
-      className="fixed inset-0 z-[100] bg-black/40 flex items-end justify-center lg:items-center modal-overlay-enter"
-      onClick={onClose}
-    >
-      <div
-        className="bg-white w-full max-w-[500px] rounded-t-2xl lg:rounded-2xl max-h-[80vh] flex flex-col modal-content-enter"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-          <h3 className="text-[15px] font-bold text-gray-900">{title}</h3>
-          <button onClick={onClose}>
-            <X size={18} className="text-gray-400" />
-          </button>
-        </div>
-        {type === 'name' && <NameEditor name={user?.name ?? ''} onSave={(v) => onSave({ name: v })} />}
-        {type === 'phone' && <NameEditor name={user?.phone ?? ''} phone onSave={(v) => onSave({ phone: v })} />}
-        {type === 'gender' && (
-          <ListChoice
-            options={GENDERS}
-            value={user?.gender}
-            onSelect={(v) => onSave({ gender: v })}
-          />
-        )}
-        {type === 'year' && (
-          <ListChoice
-            options={YEARS}
-            value={user?.birthYear}
-            onSelect={(v) => onSave({ birthYear: v })}
-          />
-        )}
-        {type === 'country' && (
-          <ListChoice
-            options={COUNTRIES}
-            value={user?.country}
-            onSelect={(v) => onSave({ country: v })}
-          />
-        )}
-      </div>
-    </div>
-  );
+  if (type === 'name') return <NameEditor name={user?.name ?? ''} onSave={(v) => onSave({ name: v })} />;
+  if (type === 'phone') return <NameEditor name={user?.phone ?? ''} phone onSave={(v) => onSave({ phone: v })} />;
+  if (type === 'gender') return <ListChoice options={GENDERS} value={user?.gender} onSelect={(v) => onSave({ gender: v })} />;
+  if (type === 'year') return <ListChoice options={YEARS} value={user?.birthYear} onSelect={(v) => onSave({ birthYear: v })} />;
+  return <ListChoice options={COUNTRIES} value={user?.country} onSelect={(v) => onSave({ country: v })} />;
 }
 
 function NameEditor({ name, onSave, phone = false }: { name: string; onSave: (v: string) => void; phone?: boolean }) {
   const [val, setVal] = useState(name);
   const inputRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
-    inputRef.current?.focus();
+    // 시트가 올라온 뒤 포커스(올라오는 중에 키보드가 뜨면 덜컹인다)
+    const t = setTimeout(() => inputRef.current?.focus(), 320);
+    return () => clearTimeout(t);
   }, []);
+  const max = phone ? 20 : 12;
   return (
-    <div className="p-5 flex flex-col gap-3">
+    <div className="flex flex-col gap-2 pb-1">
       <input
         ref={inputRef}
         value={val}
-        onChange={(e) => setVal(e.target.value.slice(0, phone ? 20 : 12))}
+        onChange={(e) => setVal(e.target.value.slice(0, max))}
         placeholder={phone ? '전화번호 입력' : '이름 입력'}
         aria-label={phone ? '전화번호' : '이름'}
         inputMode={phone ? 'tel' : 'text'}
-        className="w-full px-4 py-3 bg-gray-50 rounded-xl text-[15px] outline-none focus:bg-[#F4EFFF]"
+        className="qd-input"
       />
-      <p className="text-[11px] text-gray-400 text-right">{val.length}/{phone ? 20 : 12}</p>
-      <button
-        disabled={!val.trim()}
-        onClick={() => onSave(val.trim())}
-        className="w-full py-3.5 rounded-xl font-bold text-[15px] btn-press"
-        style={{
-          backgroundColor: val.trim() ? '#8037FF' : '#E5E7EB',
-          color: val.trim() ? '#fff' : '#A4ABBA',
-        }}
-      >
+      <p className="pr-1 text-right text-[13px] tabular-nums text-[#B0B8C1]">{val.length}/{max}</p>
+      <button type="button" disabled={!val.trim()} onClick={() => onSave(val.trim())} className="qd-cta mt-2">
         저장
       </button>
     </div>
@@ -363,26 +306,21 @@ function ListChoice({
   onSelect: (v: string) => void;
 }) {
   return (
-    <div className="flex-1 overflow-y-auto py-2">
+    <div className="-mx-2 pb-1">
       {options.map((opt) => {
         const selected = value === opt;
         return (
           <button
             key={opt}
+            type="button"
             onClick={() => onSelect(opt)}
-            className="w-full flex items-center justify-between px-5 py-3.5 text-left hover:bg-gray-50 transition-colors"
-            style={{ backgroundColor: selected ? '#F4EFFF' : 'transparent' }}
+            aria-pressed={selected}
+            className={`flex min-h-[56px] w-full items-center justify-between rounded-[14px] px-4 text-left transition-colors active:bg-[#F2F4F6] pc:hover:bg-[#F9FAFB] ${selected ? 'bg-[#F2F7FF]' : ''}`}
           >
-            <span
-              className="text-[14px]"
-              style={{
-                color: selected ? '#8037FF' : '#2B313D',
-                fontWeight: selected ? 700 : 500,
-              }}
-            >
-              {opt}
-            </span>
-            {selected && <Check size={16} strokeWidth={3} className="text-[#8037FF]" />}
+            <span className={`text-[17px] ${selected ? 'font-semibold text-[#3180F7]' : 'text-[#333D4B]'}`}>{opt}</span>
+            {selected && (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="#3180F7" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+            )}
           </button>
         );
       })}

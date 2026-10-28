@@ -17,46 +17,37 @@ import {
   Smartphone,
 } from 'lucide-react';
 
-/* -----------------------------------------------
-   Monotone Color Tokens
-   #2B313D  - darkest text / headers
-   #51535C  - body text
-   #A4ABBA  - secondary text / captions
-   #C8CEDA  - borders / lines
-   #F2F3F5  - subtle backgrounds
-   ----------------------------------------------- */
+
+// 약관 상세 — 읽기 좋은 본문 타이포(프리티풀 마이 결).
+//  · 글자 #191F28 · 본문 #4E5968 16/1.75 · 보조 #8B95A1 · 테두리 #E5E8EB · 옅은 바탕 #F7F8FA · 강조 파랑 #3180F7.
+//  · 머리는 공통 TopBar(큰 제목 + 회색 부제 = 마지막 업데이트). 본문 조각은 아래 공용 부품으로만 그린다.
 
 /* -----------------------------------------------
-   Shared UI Components (Premium Monotone Design)
+   본문 공용 부품
    ----------------------------------------------- */
 
 type InfoBoxVariant = 'info' | 'warning' | 'tip' | 'success';
 
+const INFO_TONE: Record<InfoBoxVariant, { bg: string; fg: string }> = {
+  info: { bg: '#F2F7FF', fg: '#3180F7' },
+  warning: { bg: '#FFF4F4', fg: '#F04452' },
+  tip: { bg: '#FFF8E6', fg: '#E59A00' },
+  success: { bg: '#EFFAF4', fg: '#16A36A' },
+};
+
 function InfoBox({ variant = 'info', children }: { variant?: InfoBoxVariant; children: ReactNode }) {
   const icons: Record<InfoBoxVariant, ReactNode> = {
-    info: <Info size={16} />,
-    warning: <AlertTriangle size={16} />,
-    tip: <Lightbulb size={16} />,
-    success: <CheckCircle2 size={16} />,
+    info: <Info size={18} />,
+    warning: <AlertTriangle size={18} />,
+    tip: <Lightbulb size={18} />,
+    success: <CheckCircle2 size={18} />,
   };
+  const tone = INFO_TONE[variant];
   return (
-    <div
-      className="my-5 pl-4 pr-4 py-4"
-      style={{
-        borderLeft: '2px solid #C8CEDA',
-        backgroundColor: '#F2F3F5',
-      }}
-    >
-      <div className="flex gap-3 items-start">
-        <span
-          className="shrink-0 mt-0.5"
-          style={{ color: '#A4ABBA' }}
-        >
-          {icons[variant]}
-        </span>
-        <div className="text-sm leading-relaxed" style={{ color: '#51535C' }}>
-          {children}
-        </div>
+    <div className="my-5 rounded-[16px] px-4 py-4" style={{ backgroundColor: tone.bg }}>
+      <div className="flex items-start gap-2.5">
+        <span className="mt-[3px] shrink-0" style={{ color: tone.fg }}>{icons[variant]}</span>
+        <div className="break-keep text-[15px] leading-[1.7] text-[#4E5968] [&_strong]:font-semibold [&_strong]:text-[#191F28]">{children}</div>
       </div>
     </div>
   );
@@ -64,232 +55,109 @@ function InfoBox({ variant = 'info', children }: { variant?: InfoBoxVariant; chi
 
 function SectionTitle({ children, id }: { children: ReactNode; id?: string }) {
   return (
-    <h2
-      id={id}
-      className="flex items-center gap-3 text-[17px] font-bold mt-10 mb-4 first:mt-0"
-      style={{ color: '#2B313D' }}
-    >
-      <span
-        className="shrink-0"
-        style={{ color: '#A4ABBA', fontSize: '10px', letterSpacing: '0.05em' }}
-      >
-        --
-      </span>
+    <h2 id={id} className="mb-3 mt-11 break-keep text-[19px] font-bold leading-[1.4] tracking-[-0.4px] text-[#191F28] first:mt-0">
       {children}
     </h2>
   );
 }
 
-function DataTable({
-  headers,
-  rows,
-  caption,
-}: {
-  headers: string[];
-  rows: string[][];
-  caption?: string;
-}) {
+function DataTable({ headers, rows, caption }: { headers: string[]; rows: string[][]; caption?: string }) {
   return (
-    <div className="my-5 overflow-x-auto">
-      {caption && (
-        <div
-          className="px-2.5 py-2.5 text-xs font-semibold tracking-wide"
-          style={{
-            color: '#A4ABBA',
-            borderBottom: '1px solid #C8CEDA',
-          }}
-        >
-          {caption}
-        </div>
-      )}
-      <table className="w-full text-sm" style={{ borderCollapse: 'collapse' }}>
-        <thead>
-          <tr style={{ borderBottom: '2px solid #C8CEDA' }}>
-            {headers.map((h, i) => (
-              <th
-                key={i}
-                className="px-2.5 py-3 text-left font-semibold text-[13px]"
-                style={{ color: '#2B313D' }}
-              >
-                {h}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row, ri) => (
-            <tr key={ri} style={{ borderBottom: '1px solid #C8CEDA' }}>
-              {row.map((cell, ci) => (
-                <td
-                  key={ci}
-                  className="px-2.5 py-3 text-[13px] leading-relaxed"
-                  style={{ color: '#51535C' }}
-                >
-                  {cell}
-                </td>
+    <div className="qd-card my-5 overflow-hidden">
+      {caption && <div className="border-b border-[#F2F4F6] px-4 py-3 text-[13px] font-semibold text-[#6B7684]">{caption}</div>}
+      <div className="overflow-x-auto hide-scrollbar">
+        {/* 칸이 좁아 글자가 한두 자씩 꺾이지 않게 칸당 128 이상 — 넘치면 옆으로 민다 */}
+        <table className="w-full text-[14px]" style={{ borderCollapse: 'collapse', minWidth: `${headers.length * 128}px` }}>
+          <thead>
+            <tr className="bg-[#F7F8FA]">
+              {headers.map((h, i) => (
+                <th key={i} className="whitespace-nowrap px-4 py-3 text-left text-[13px] font-semibold text-[#4E5968]">{h}</th>
               ))}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {rows.map((row, ri) => (
+              <tr key={ri} className="border-t border-[#F2F4F6]">
+                {row.map((cell, ci) => (
+                  <td key={ci} className={`break-keep px-4 py-3 align-top leading-[1.6] ${ci === 0 ? 'font-medium text-[#191F28]' : 'text-[#4E5968]'}`}>{cell}</td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
 
-function AccordionSection({
-  title,
-  children,
-  defaultOpen = false,
-}: {
-  title: string;
-  children: ReactNode;
-  defaultOpen?: boolean;
-}) {
+function AccordionSection({ title, children, defaultOpen = false }: { title: string; children: ReactNode; defaultOpen?: boolean }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="my-4">
+    <div className="qd-card my-3">
       <button
+        type="button"
         onClick={() => setOpen(!open)}
-        className="flex items-center justify-between w-full px-0 py-3 text-left transition-colors"
-        style={{ borderBottom: '1px solid #C8CEDA' }}
+        aria-expanded={open}
+        className="flex min-h-[56px] w-full items-center justify-between gap-3 rounded-[16px] px-[18px] py-3.5 text-left transition-colors active:bg-[#F8F9FA] pc:hover:bg-[#FAFBFC]"
       >
-        <span className="text-[15px] font-semibold" style={{ color: '#2B313D' }}>
-          {title}
-        </span>
-        <ChevronDown
-          size={18}
-          className={`transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
-          style={{ color: '#A4ABBA' }}
-        />
+        <span className="text-[16px] font-semibold text-[#191F28]">{title}</span>
+        <ChevronDown size={18} className="shrink-0 transition-transform duration-300" style={{ color: open ? '#3180F7' : '#B0B8C1', transform: open ? 'rotate(180deg)' : undefined }} />
       </button>
-      {open && (
-        <div className="pt-3 pb-4" style={{ color: '#51535C' }}>
-          {children}
+      <div className="grid transition-all duration-500" style={{ gridTemplateRows: open ? '1fr' : '0fr', opacity: open ? 1 : 0, transitionTimingFunction: 'cubic-bezier(0.22, 1, 0.36, 1)' }}>
+        <div className="min-h-0 overflow-hidden">
+          <div className="mx-[18px] border-t border-[#F2F4F6] pb-3 pt-1">{children}</div>
         </div>
-      )}
+      </div>
     </div>
   );
 }
 
 function StepDiagram({ steps }: { steps: string[] }) {
   return (
-    <div className="my-6 flex flex-col gap-0">
+    <div className="my-6 flex flex-col">
       {steps.map((step, i) => (
-        <div key={i} className="flex items-start gap-4">
+        <div key={i} className="flex items-stretch gap-3.5">
           <div className="flex flex-col items-center">
-            <div
-              className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold shrink-0"
-              style={{
-                border: '2px solid #2B313D',
-                color: '#2B313D',
-                backgroundColor: 'transparent',
-              }}
-            >
-              {i + 1}
-            </div>
-            {i < steps.length - 1 && (
-              <div className="w-px h-8" style={{ backgroundColor: '#C8CEDA' }} />
-            )}
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#E8F1FE] text-[14px] font-bold text-[#3180F7]">{i + 1}</div>
+            {i < steps.length - 1 && <div className="my-1 w-px flex-1 bg-[#E5E8EB]" />}
           </div>
-          <p className="text-sm leading-relaxed pt-2" style={{ color: '#51535C' }}>
-            {step}
-          </p>
+          <p className="break-keep pb-5 pt-[5px] text-[15px] leading-[1.6] text-[#333D4B]">{step}</p>
         </div>
       ))}
     </div>
   );
 }
 
-function Clause({
-  number,
-  title,
-  children,
-  highlight = false,
-}: {
-  number: string;
-  title: string;
-  children: ReactNode;
-  highlight?: boolean;
-}) {
+function Clause({ number, title, children, highlight = false }: { number: string; title: string; children: ReactNode; highlight?: boolean }) {
   return (
-    <div
-      className={`my-6 ${highlight ? 'pl-4 py-4 pr-4' : ''}`}
-      style={
-        highlight
-          ? {
-              borderLeft: '2px solid #C8CEDA',
-              backgroundColor: '#F2F3F5',
-            }
-          : undefined
-      }
-    >
-      <h3
-        className="text-[15px] font-bold mb-3"
-        style={{ color: '#2B313D' }}
-      >
+    <div className={`my-6 ${highlight ? 'rounded-[16px] bg-[#F7F8FA] px-4 py-4' : ''}`}>
+      <h3 className="mb-2 break-keep text-[17px] font-semibold leading-[1.45] text-[#191F28]">
         {number} {title}
       </h3>
-      <div className="text-sm leading-[1.8] space-y-2" style={{ color: '#51535C' }}>
-        {children}
-      </div>
+      <div className="space-y-2 text-[16px] leading-[1.75] text-[#4E5968]">{children}</div>
     </div>
   );
 }
 
 function ContactCard() {
+  const rows = [
+    { icon: <Phone size={18} />, label: '전화 상담', value: '1588-0000 (평일 09:00~18:00)' },
+    { icon: <Mail size={18} />, label: '이메일 문의', value: 'support@kidoctor.co.kr' },
+    { icon: <Clock size={18} />, label: '운영시간', value: '평일 09:00~18:00 (공휴일 제외)' },
+  ];
   return (
-    <div
-      className="mt-10 p-6"
-      style={{
-        border: '1px solid #C8CEDA',
-      }}
-    >
-      <h3 className="text-[15px] font-bold mb-4" style={{ color: '#2B313D' }}>
-        고객센터 문의
-      </h3>
+    <div className="qd-card mt-10 px-[18px] py-5">
+      <h3 className="mb-3 text-[17px] font-bold text-[#191F28]">고객센터 문의</h3>
       <div className="space-y-3">
-        <div className="flex items-center gap-3">
-          <span
-            className="w-8 h-8 flex items-center justify-center shrink-0"
-            style={{ color: '#A4ABBA' }}
-          >
-            <Phone size={18} />
-          </span>
-          <div>
-            <p className="text-xs" style={{ color: '#A4ABBA' }}>전화 상담</p>
-            <p className="text-sm font-semibold" style={{ color: '#2B313D' }}>
-              1588-0000 (평일 09:00~18:00)
-            </p>
+        {rows.map((r) => (
+          <div key={r.label} className="flex items-center gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[#F2F4F6] text-[#6B7684]">{r.icon}</span>
+            <div className="min-w-0">
+              <p className="text-[13px] text-[#8B95A1]">{r.label}</p>
+              <p className="text-[15px] font-semibold text-[#191F28]">{r.value}</p>
+            </div>
           </div>
-        </div>
-        <div className="flex items-center gap-3">
-          <span
-            className="w-8 h-8 flex items-center justify-center shrink-0"
-            style={{ color: '#A4ABBA' }}
-          >
-            <Mail size={18} />
-          </span>
-          <div>
-            <p className="text-xs" style={{ color: '#A4ABBA' }}>이메일 문의</p>
-            <p className="text-sm font-semibold" style={{ color: '#2B313D' }}>
-              support@kidoctor.co.kr
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-3">
-          <span
-            className="w-8 h-8 flex items-center justify-center shrink-0"
-            style={{ color: '#A4ABBA' }}
-          >
-            <Clock size={18} />
-          </span>
-          <div>
-            <p className="text-xs" style={{ color: '#A4ABBA' }}>운영시간</p>
-            <p className="text-sm font-semibold" style={{ color: '#2B313D' }}>
-              평일 09:00~18:00 (공휴일 제외)
-            </p>
-          </div>
-        </div>
+        ))}
       </div>
     </div>
   );
@@ -301,31 +169,24 @@ function LinkButton({ href, children }: { href: string; children: ReactNode }) {
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="inline-flex items-center gap-1.5 text-sm font-medium my-1 hover:underline transition-colors"
-      style={{ color: '#2B313D' }}
+      className="inline-flex h-10 items-center gap-1 rounded-[12px] bg-[#F2F4F6] px-3.5 text-[14px] font-semibold text-[#333D4B] transition-colors active:bg-[#E5E8EB] pc:hover:bg-[#E5E8EB]"
     >
       {children}
-      <ArrowUpRight size={14} />
+      <ArrowUpRight size={15} className="text-[#8B95A1]" />
     </a>
   );
 }
 
 function Paragraph({ children }: { children: ReactNode }) {
-  return (
-    <p className="text-sm leading-[1.8] my-2" style={{ color: '#51535C' }}>
-      {children}
-    </p>
-  );
+  return <p className="my-2.5 break-keep text-[16px] leading-[1.75] text-[#4E5968] [&_strong]:font-semibold [&_strong]:text-[#191F28]">{children}</p>;
 }
 
 function BulletList({ items }: { items: (string | ReactNode)[] }) {
   return (
-    <ul className="space-y-1.5 my-3">
+    <ul className="my-3 space-y-2">
       {items.map((item, i) => (
-        <li key={i} className="flex gap-2 text-sm leading-relaxed" style={{ color: '#51535C' }}>
-          <span className="mt-1 shrink-0" style={{ color: '#A4ABBA' }}>
-            &bull;
-          </span>
+        <li key={i} className="flex gap-2.5 break-keep text-[16px] leading-[1.7] text-[#4E5968]">
+          <span className="mt-[11px] h-[5px] w-[5px] shrink-0 rounded-full bg-[#B0B8C1]" aria-hidden="true" />
           <span>{item}</span>
         </li>
       ))}
@@ -335,19 +196,10 @@ function BulletList({ items }: { items: (string | ReactNode)[] }) {
 
 function NumberedList({ items }: { items: (string | ReactNode)[] }) {
   return (
-    <ol className="space-y-2 my-3">
+    <ol className="my-3 space-y-2.5">
       {items.map((item, i) => (
-        <li key={i} className="flex gap-3 text-sm leading-relaxed" style={{ color: '#51535C' }}>
-          <span
-            className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold shrink-0 mt-0.5"
-            style={{
-              border: '1.5px solid #2B313D',
-              color: '#2B313D',
-              backgroundColor: 'transparent',
-            }}
-          >
-            {i + 1}
-          </span>
+        <li key={i} className="flex gap-2.5 break-keep text-[16px] leading-[1.7] text-[#4E5968]">
+          <span className="mt-[3px] flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-[#F2F4F6] text-[12px] font-bold text-[#4E5968]">{i + 1}</span>
           <span>{item}</span>
         </li>
       ))}
@@ -520,21 +372,21 @@ function PrivacyContent() {
         아래와 같이 개인정보 보호책임자를 지정하고 있습니다.
       </Paragraph>
       <div
-        className="my-5 p-5"
+        className="my-5 rounded-[16px] p-5"
         style={{
-          backgroundColor: '#F2F3F5',
-          borderBottom: '1px solid #C8CEDA',
+          backgroundColor: '#F7F8FA',
+          
         }}
       >
-        <div className="grid grid-cols-[auto,1fr] gap-x-6 gap-y-2 text-sm">
-          <span className="font-medium" style={{ color: '#A4ABBA' }}>성명</span>
-          <span className="font-semibold" style={{ color: '#2B313D' }}>홍길동</span>
-          <span className="font-medium" style={{ color: '#A4ABBA' }}>직위</span>
-          <span style={{ color: '#2B313D' }}>개인정보보호 최고책임자(CPO)</span>
-          <span className="font-medium" style={{ color: '#A4ABBA' }}>이메일</span>
-          <span style={{ color: '#2B313D' }}>privacy@kidoctor.co.kr</span>
-          <span className="font-medium" style={{ color: '#A4ABBA' }}>전화</span>
-          <span style={{ color: '#2B313D' }}>1588-0000</span>
+        <div className="grid grid-cols-[auto,1fr] gap-x-6 gap-y-2 text-[15px]">
+          <span className="font-medium" style={{ color: '#8B95A1' }}>성명</span>
+          <span className="font-semibold" style={{ color: '#191F28' }}>홍길동</span>
+          <span className="font-medium" style={{ color: '#8B95A1' }}>직위</span>
+          <span style={{ color: '#191F28' }}>개인정보보호 최고책임자(CPO)</span>
+          <span className="font-medium" style={{ color: '#8B95A1' }}>이메일</span>
+          <span style={{ color: '#191F28' }}>privacy@kidoctor.co.kr</span>
+          <span className="font-medium" style={{ color: '#8B95A1' }}>전화</span>
+          <span style={{ color: '#191F28' }}>1588-0000</span>
         </div>
       </div>
       <Paragraph>
@@ -981,37 +833,37 @@ function WithdrawalContent() {
 
       <div className="my-6 grid gap-4 sm:grid-cols-2">
         <div
-          className="p-5"
-          style={{ border: '1px solid #C8CEDA' }}
+          className="rounded-[16px] p-5"
+          style={{ border: '1.5px solid #E5E8EB' }}
         >
           <div
             className="w-10 h-10 flex items-center justify-center mb-3"
-            style={{ color: '#A4ABBA' }}
+            style={{ color: '#8B95A1' }}
           >
             <Smartphone size={22} />
           </div>
-          <h4 className="font-bold text-[15px] mb-2" style={{ color: '#2B313D' }}>
+          <h4 className="font-bold text-[15px] mb-2" style={{ color: '#191F28' }}>
             앱에서 직접 탈퇴
           </h4>
-          <p className="text-sm leading-relaxed" style={{ color: '#51535C' }}>
+          <p className="text-[15px] leading-relaxed" style={{ color: '#4E5968' }}>
             마이페이지 &gt; 내 프로필 &gt;<br />
             회원탈퇴 버튼
           </p>
         </div>
         <div
-          className="p-5"
-          style={{ border: '1px solid #C8CEDA' }}
+          className="rounded-[16px] p-5"
+          style={{ border: '1.5px solid #E5E8EB' }}
         >
           <div
             className="w-10 h-10 flex items-center justify-center mb-3"
-            style={{ color: '#A4ABBA' }}
+            style={{ color: '#8B95A1' }}
           >
             <Phone size={22} />
           </div>
-          <h4 className="font-bold text-[15px] mb-2" style={{ color: '#2B313D' }}>
+          <h4 className="font-bold text-[15px] mb-2" style={{ color: '#191F28' }}>
             고객센터를 통한 탈퇴
           </h4>
-          <p className="text-sm leading-relaxed" style={{ color: '#51535C' }}>
+          <p className="text-[15px] leading-relaxed" style={{ color: '#4E5968' }}>
             전화: 1588-0000<br />
             (평일 09:00~18:00)
           </p>
@@ -1177,7 +1029,7 @@ function MetaContent() {
       </InfoBox>
 
       <Paragraph>아래 링크에서 직접 Meta 개인정보 설정을 관리할 수 있습니다.</Paragraph>
-      <div className="flex flex-wrap gap-4 my-4">
+      <div className="my-4 flex flex-wrap gap-2">
         <LinkButton href="https://www.facebook.com/settings?tab=applications">
           Facebook 앱 설정
         </LinkButton>
@@ -1281,10 +1133,11 @@ export default function TermsDetailPage() {
 
   if (!meta && !override) {
     return (
-      <div className="min-h-screen bg-white">
+      <div className="mx-auto min-h-screen max-w-[500px] bg-white pc:max-w-[720px]">
         <TopBar title="약관" />
-        <div className="flex items-center justify-center py-20">
-          <p style={{ color: '#A4ABBA' }}>약관 정보를 찾을 수 없습니다.</p>
+        <div className="flex flex-col items-center justify-center px-6 py-20 text-center">
+          <span className="mb-4 flex h-16 w-16 items-center justify-center rounded-[20px] bg-[#F2F4F6] text-[#8B95A1]"><FileText size={30} /></span>
+          <p className="text-[17px] font-bold text-[#191F28]">약관 정보를 찾을 수 없어요</p>
         </div>
       </div>
     );
@@ -1296,54 +1149,29 @@ export default function TermsDetailPage() {
     : meta?.updatedAt ?? '';
 
   return (
-    <div className="min-h-screen bg-white page-enter">
-      <TopBar title={title} />
+    <div className="mx-auto min-h-screen max-w-[500px] bg-white pb-20 pc:max-w-[720px]" style={{ letterSpacing: '-0.02em' }}>
+      <TopBar
+        title={title}
+        sub={
+          <span className="inline-flex items-center gap-2">
+            <span className="rounded-[8px] bg-[#E8F1FE] px-2 py-[3px] text-[12px] font-semibold text-[#3180F7]">최신</span>
+            마지막 업데이트 {updatedLabel}
+          </span>
+        }
+      />
 
-      <div className="px-5 py-6 lg:max-w-3xl lg:mx-auto lg:py-10">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-xl font-bold mb-2" style={{ color: '#2B313D' }}>
-            {title}
-          </h1>
-          <div className="flex items-center gap-2">
-            <span
-              className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium"
-              style={{
-                border: '1px solid #C8CEDA',
-                color: '#51535C',
-              }}
-            >
-              <FileText size={12} />
-              최신
-            </span>
-            <p className="text-sm" style={{ color: '#A4ABBA' }}>
-              마지막 업데이트: {updatedLabel}
-            </p>
-          </div>
-        </div>
+      <div className="qd-a-item px-6 pt-2 pc:px-10" style={{ animationDelay: '.3s' }}>
+        {override ? (
+          <div className="whitespace-pre-wrap break-keep text-[16px] leading-[1.75] text-[#4E5968]">{override.content}</div>
+        ) : ContentRenderer ? (
+          <ContentRenderer />
+        ) : null}
 
-        {/* Divider */}
-        <div className="h-px mb-8" style={{ backgroundColor: '#C8CEDA' }} />
-
-        {/* Content */}
-        <div>
-          {override ? (
-            <div className="text-sm whitespace-pre-wrap leading-relaxed" style={{ color: '#2B313D' }}>
-              {override.content}
-            </div>
-          ) : ContentRenderer ? (
-            <ContentRenderer />
-          ) : null}
-        </div>
-
-        {/* Footer */}
-        <div className="mt-12 pt-6" style={{ borderTop: '1px solid #C8CEDA' }}>
-          <p className="text-xs leading-relaxed text-center" style={{ color: '#A4ABBA' }}>
-            본 약관은 {meta.updatedAt}부터 시행됩니다.
-            <br />
-            &copy; 마이닥. All rights reserved.
-          </p>
-        </div>
+        <p className="mt-12 rounded-[16px] bg-[#F7F8FA] px-4 py-4 text-center text-[13px] leading-[1.7] text-[#8B95A1]">
+          본 약관은 {meta?.updatedAt ?? updatedLabel}부터 시행됩니다.
+          <br />
+          &copy; 마이닥. All rights reserved.
+        </p>
       </div>
     </div>
   );
