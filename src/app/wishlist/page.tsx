@@ -5,7 +5,7 @@
 //  · 아래 고정 영역(모바일) / 오른쪽 요약 칸(PC) = 선택 개수 · 합계 · 큰 '예약하기'(56 · r16).
 //  · 예약은 상품 하나씩이라 — 1개 고르면 바로 /booking, 여러 개면 시트에서 먼저 예약할 상품을 고른다.
 //  · 데이터는 store 의 wishlist/toggleWishlist 그대로(이름만 화면에서 '포켓').
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowUp } from 'lucide-react';
@@ -34,20 +34,12 @@ export default function PocketPage() {
   const { isLoggedIn, products, wishlist, recentlyViewed, toggleWishlist, showConfirm, showToast } = useStore();
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>('pocket');
-  const tabBtnRefs = useRef<(HTMLButtonElement | null)[]>([]);
-  const [indicator, setIndicator] = useState({ left: 0, width: 0 });
   const activeIndex = tabKeys.indexOf(activeTab);
   // 체크 — 새로 담긴 상품은 켜진 채로 들어오게 '끈 것'만 기억한다(장바구니처럼 기본 전체 선택)
   const [unchecked, setUnchecked] = useState<Set<string>>(() => new Set());
   // × 로 빼는 줄 — 옆으로 밀리며 접힌 뒤 실제로 뺀다
   const [leaving, setLeaving] = useState<Set<string>>(() => new Set());
   const [bookSheet, setBookSheet] = useState(false);
-
-  useLayoutEffect(() => {
-    const btn = tabBtnRefs.current[activeIndex];
-    if (!btn) return;
-    setIndicator({ left: btn.offsetLeft, width: btn.offsetWidth });
-  }, [activeIndex, isLoggedIn]);
 
   const pocketProducts = useMemo(() => products.filter((p) => wishlist.includes(p.id)), [products, wishlist]);
   const recentProducts = useMemo(
@@ -73,6 +65,8 @@ export default function PocketPage() {
   // 첫 진입 = 프리티풀 탭 등장(제목↑ · 줄 ←) — 뒤로가기·30초 안 재진입은 생략
   const entrance = useTabEntrance('pocket');
   const displayed = activeTab === 'pocket' ? pocketProducts : recentProducts;
+  // 빈 화면 — 머리부터 탭까지 하늘빛 그라데이션이 끊김 없이 이어져 아래로 흰 바탕에 녹는다
+  const emptyView = isLoggedIn && displayed.length === 0;
   const enterProps = useListEntrance(displayed.map((p) => `${activeTab}:${p.id}`), entrance);
 
   useEffect(() => {
@@ -144,9 +138,12 @@ export default function PocketPage() {
   const bookLabel = selected.length > 1 ? `${selected.length}개 중 하나씩 예약하기` : '예약하기';
 
   return (
-    <div className="min-h-screen w-full bg-white">
+    <div
+      className="min-h-screen w-full bg-white"
+      style={emptyView ? { background: 'radial-gradient(70% 28% at 6% 0%, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0) 70%), linear-gradient(180deg, #DCE9FF 0px, #E6EFFF 180px, #F2F6FF 360px, #FFFFFF 620px)' } : undefined}
+    >
       {/* 탭 머리 — 모바일은 프리티풀 탭 머리 표준(왼쪽 16 · 20 굵게 · 오른쪽 돋보기), PC 는 전체 헤더 아래 큰 제목 */}
-      <div className="sticky top-0 z-40 flex items-center justify-between bg-white px-4 pc:hidden" style={{ height: 56 }}>
+      <div className={`sticky top-0 z-40 flex items-center justify-between px-4 pc:hidden ${emptyView ? 'bg-transparent' : 'bg-white'}`} style={{ height: 56 }}>
         <h1 className={`text-[20px] font-bold leading-none text-[#191F28] ${entrance ? matchStyles.enterTitle : ''}`}>포켓</h1>
         <Link href="/search" aria-label="시술 검색" className="-mr-1.5 flex h-11 w-11 items-center justify-center transition-transform active:scale-90">
           <HeaderSearchIcon />
@@ -161,38 +158,33 @@ export default function PocketPage() {
         <LoginRequired />
       ) : (
         <>
-          {/* 탭 — 밀리는 밑줄(기존 partner-community 탭 어법) */}
-          <div className="partner-community-category-shell sticky top-[56px] z-10 bg-white pc:top-[72px]">
-            <div className="partner-community-categories hide-scrollbar">
+          {/* 탭 — 상세 섹션 탭과 같은 결: 회색 트랙 위 흰 알약이 미끄러진다(빈 화면에선 트랙이 반투명 흰색) */}
+          <div className={`sticky top-[56px] z-10 px-4 pb-2 pt-1 pc:top-[72px] pc:px-0 ${emptyView ? 'bg-transparent' : 'bg-white'}`}>
+            <div className={`relative flex gap-1 rounded-2xl p-1 ${emptyView ? 'bg-white/55 backdrop-blur-md' : 'bg-[#F2F3F5]'}`}>
               <span
                 aria-hidden
-                className="partner-community-category-indicator"
+                className="absolute bottom-1 top-1 rounded-[13px] bg-white shadow-[0_1px_4px_rgba(25,31,40,0.08)] transition-all duration-500"
                 style={{
-                  width: indicator.width,
-                  transform: `translateX(${indicator.left}px)`,
-                  opacity: indicator.width > 0 ? 1 : 0,
+                  left: `calc(4px + ${activeIndex * 50}% - ${activeIndex * 4}px)`,
+                  width: 'calc(50% - 6px)',
+                  transitionTimingFunction: 'cubic-bezier(0.22, 1, 0.36, 1)',
                 }}
               />
-              {tabKeys.map((tab, i) => {
-                const showActive = activeTab === tab && indicator.width > 0;
+              {tabKeys.map((tab) => {
+                const active = activeTab === tab;
                 const label = tab === 'pocket' ? '포켓' : '최근 본';
                 const count = tab === 'pocket' ? pocketProducts.length : recentProducts.length;
                 return (
                   <button
                     key={tab}
-                    ref={(el) => {
-                      tabBtnRefs.current[i] = el;
-                    }}
                     type="button"
                     onClick={() => setActiveTab(tab)}
-                    className={showActive ? 'is-active' : undefined}
+                    aria-pressed={active}
+                    className={`relative flex flex-1 items-center justify-center gap-1 rounded-[13px] py-2.5 text-[14px] transition-colors duration-300 ${active ? 'font-bold text-[#191F28]' : 'font-semibold text-[#8B95A1]'}`}
                   >
-                    {label}{count > 0 ? ` ${count}` : ''}
-                    {tab === 'recent' && hasNew && (
-                      <span className="ml-1 inline-flex h-[14px] items-center justify-center rounded-full bg-[#F04452] px-1.5 align-middle text-[9px] font-bold leading-[14px] text-white">
-                        NEW
-                      </span>
-                    )}
+                    {label}
+                    {count > 0 && <span className={active ? 'text-[#3180F7]' : ''}>{count}</span>}
+                    {tab === 'recent' && hasNew && <span aria-label="새 항목" className="h-1.5 w-1.5 rounded-full bg-[#F04452]" />}
                   </button>
                 );
               })}
@@ -283,7 +275,7 @@ export default function PocketPage() {
                     type="button"
                     onClick={startBooking}
                     disabled={selected.length === 0}
-                    className="mt-5 flex h-14 w-full items-center justify-center rounded-[16px] bg-[#3180F7] text-[17px] font-bold tracking-[-0.2px] text-white transition hover:bg-[#2272EB] active:scale-[0.98] disabled:bg-[#D1D6DB]"
+                    className="mt-5 flex h-[54px] w-full items-center justify-center rounded-[17px] bg-[#3180F7] text-[17px] font-bold tracking-[-0.2px] text-white transition hover:bg-[#2272EB] active:scale-[0.98] disabled:bg-[#D1D6DB]"
                   >
                     {selected.length === 0 ? '상품을 골라 주세요' : bookLabel}
                   </button>
@@ -330,7 +322,7 @@ export default function PocketPage() {
               type="button"
               onClick={startBooking}
               disabled={selected.length === 0}
-              className="mt-2.5 flex h-14 w-full items-center justify-center rounded-[16px] bg-[#3180F7] text-[17px] font-bold tracking-[-0.2px] text-white transition active:scale-[0.98] active:bg-[#2272EB] disabled:bg-[#D1D6DB]"
+              className="mt-2.5 flex h-[54px] w-full items-center justify-center rounded-[17px] bg-[#3180F7] text-[17px] font-bold tracking-[-0.2px] text-white transition active:scale-[0.98] active:bg-[#2272EB] disabled:bg-[#D1D6DB]"
             >
               {selected.length === 0 ? '상품을 골라 주세요' : bookLabel}
             </button>

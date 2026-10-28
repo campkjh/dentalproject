@@ -5,9 +5,7 @@
   position: relative;
   overflow: hidden;
   padding-bottom: 40px;
-  background:
-    radial-gradient(60% 40% at 8% 4%, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0) 70%),
-    linear-gradient(180deg, #DCE9FF 0%, #E9F1FF 38%, #F5F8FF 62%, #FFFFFF 86%);
+  /* 바탕 그라데이션은 포켓 화면(머리·탭까지)이 깐다 — 여기서는 투명 */
 }
 
 .stage {
@@ -81,30 +79,19 @@
   position: relative;
   display: inline-flex;
   align-items: center;
-  height: 48px;
+  height: 54px;
   margin-top: 22px;
-  padding: 0 24px;
-  overflow: hidden;
-  border-radius: 14px;
+  padding: 0 28px;
+  border-radius: 17px;
   background: #3180F7;
   color: #fff;
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 700;
   letter-spacing: -0.3px;
   box-shadow: 0 8px 20px rgba(49, 128, 247, 0.22);
   transition: transform .15s ease, box-shadow .2s ease;
 }
 .cta:active { transform: scale(.97); box-shadow: 0 4px 12px rgba(49, 128, 247, 0.2); }
-/* 버튼 위를 가끔 지나가는 빛 */
-.cta::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(100deg, transparent 30%, rgba(255, 255, 255, 0.35) 50%, transparent 70%);
-  transform: translateX(-120%);
-  animation: peShine 4.5s ease-in-out 1.6s infinite;
-}
-
 @keyframes peCartIn { from { opacity: 0; transform: translate(36px, 10px) rotate(4deg); } to { opacity: 1; transform: none; } }
 @keyframes pePop { from { opacity: 0; transform: translateY(14px) scale(.6); } to { opacity: 1; transform: none; } }
 @keyframes peFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
@@ -113,9 +100,8 @@
 @keyframes peGlow { 0%, 100% { opacity: .85; transform: scale(1); } 50% { opacity: 1; transform: scale(1.08); } }
 @keyframes peFade { from { opacity: 0; } to { opacity: 1; } }
 @keyframes peUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
-@keyframes peShine { 0%, 70% { transform: translateX(-120%); } 100% { transform: translateX(120%); } }
 
 @media (prefers-reduced-motion: reduce) {
-  .glow, .cart, .cartShadow, .checkCoin, .glassCoin, .copy, .cta::after { animation: none !important; }
+  .glow, .cart, .cartShadow, .checkCoin, .glassCoin, .copy { animation: none !important; }
   .cart, .checkCoin, .glassCoin { translate: none; }
 }

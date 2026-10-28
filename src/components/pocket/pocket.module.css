@@ -34,7 +34,7 @@
 .title { margin: 0; font-size: 21px; font-weight: 700; line-height: 1.42; letter-spacing: -0.4px; color: #191F28; white-space: pre-line; }
 .desc { margin: 8px 0 0; font-size: 16px; line-height: 1.55; letter-spacing: -0.2px; color: #6B7684; white-space: pre-line; }
 .actions { display: flex; gap: 8px; margin-top: 24px; }
-.btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; min-width: 0; height: 56px; padding: 0 16px; border: 0; border-radius: 17px; font-size: 17px; font-weight: 600; letter-spacing: -0.2px; line-height: 1; cursor: pointer; font-family: inherit; transition: transform .1s ease, background-color .15s ease, opacity .15s ease; }
+.btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; min-width: 0; height: 54px; padding: 0 16px; border: 0; border-radius: 17px; font-size: 17px; font-weight: 600; letter-spacing: -0.2px; line-height: 1; cursor: pointer; font-family: inherit; transition: transform .1s ease, background-color .15s ease, opacity .15s ease; }
 .btn:active:not(:disabled) { transform: scale(.97); }
 .btn:disabled { opacity: .5; cursor: default; }
 .primary { background: #3180F7; color: #fff; }

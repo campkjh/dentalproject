@@ -8,7 +8,7 @@ import { useRef } from 'react';
 import Link from 'next/link';
 import styles from './pocket-empty.module.css';
 
-export default function PocketEmpty({ title, sub, href = '/', cta = '시술 둘러보기' }: { title: string; sub: string; href?: string; cta?: string }) {
+export default function PocketEmpty({ title, sub, href = '/', cta = '상품 둘러보기' }: { title: string; sub: string; href?: string; cta?: string }) {
   const ref = useRef<HTMLDivElement>(null);
 
   // 손 위치 → -1~1 값을 CSS 변수로(겹마다 다른 깊이로 옮긴다)
