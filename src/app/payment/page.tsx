@@ -14,6 +14,7 @@ import {
   type TossPayMethod,
 } from '@/lib/toss';
 import { useStore } from '@/store';
+import { markPendingPayment, clearPendingPayment, cancelAbandonedPayment } from '@/lib/pending-payment';
 
 const agreementTerms = [
   { id: 'ePayment', label: '(필수) 전자금융거래 이용약관' },
@@ -71,6 +72,16 @@ function PaymentPage() {
   const [agreedFlow, setAgreedFlow] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const agreementRef = useRef<HTMLDivElement>(null);
+
+  // 결제창에서 결제를 끝내지 않고 돌아온 경우(안드로이드 뒤로가기 등) 결제 전에 만든 예약을 정리한다.
+  useEffect(() => {
+    cancelAbandonedPayment();
+    const onPageShow = (e: PageTransitionEvent) => {
+      if (e.persisted) cancelAbandonedPayment();
+    };
+    window.addEventListener('pageshow', onPageShow);
+    return () => window.removeEventListener('pageshow', onPageShow);
+  }, []);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40);
@@ -208,6 +219,7 @@ function PaymentPage() {
     if (paymentMethod === '앱결제' && totalPrice > 0 && isTossConfigured()) {
       try {
         const origin = window.location.origin;
+        if (reservationId) markPendingPayment(reservationId);
         await requestTossPayment({
           method: appPayMethod,
           amount: totalPrice,
@@ -224,6 +236,7 @@ function PaymentPage() {
         const msg = (e as { message?: string })?.message ?? '';
         const isCancel = /취소|cancel|USER_CANCEL/i.test(msg);
         // 결제창을 열기 전에 만든 예약이 '결제 대기'로 남지 않도록 취소한다.
+        clearPendingPayment();
         if (reservationId) {
           fetch(`/api/reservations/${encodeURIComponent(reservationId)}`, {
             method: 'PATCH',
