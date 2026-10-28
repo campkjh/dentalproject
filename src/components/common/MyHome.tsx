@@ -68,7 +68,7 @@ export default function MyHome({ partner = false }: { partner?: boolean }) {
     ] : [
       { label: '예약내역', icon: 'reservations', href: '/reservations', description: '내가 예약한 시술' },
       { label: '결제·환불 내역', icon: 'payments', href: '/mypage/payments', description: '결제 · 환불 기록' },
-      { label: '찜목록', icon: 'wishlist', href: '/wishlist', description: '관심 있는 시술' },
+      { label: '포켓', icon: 'pocket', href: '/wishlist', description: '담아 둔 시술' },
       { label: '내 리뷰', icon: 'my-review', href: '/mypage/reviews', description: '내가 남긴 후기' },
     ] },
     { title: '설정', rows: [

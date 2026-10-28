@@ -3,7 +3,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Heart, Share2, ChevronLeft, ChevronRight, MoreHorizontal, X } from 'lucide-react';
+import { PocketIcon } from '@/components/icons/PocketIcon';
+import { Share2, ChevronLeft, ChevronRight, MoreHorizontal, X } from 'lucide-react';
 import NaverMap from '@/components/common/NaverMap';
 import Avatar from '@/components/common/Avatar';
 import ProductCard from '@/components/common/ProductCard';
@@ -206,8 +207,8 @@ export default function ProductDetailPage() {
           <p className="min-w-0 flex-1 truncate text-[13px] font-bold leading-tight text-[#191F28]">{product.title}</p>
         </div>
         <div className={`flex shrink-0 items-center gap-2 ${headerSolid ? '' : 'ml-auto'}`}>
-          <button type="button" aria-label={isWished ? '찜 해제' : '찜하기'} onClick={wish} className={roundBtn(headerSolid)}>
-            <Heart size={19} className={heartAnim ? 'heart-pop' : undefined} style={{ color: isWished ? '#F04452' : '#191F28' }} fill={isWished ? '#F04452' : 'none'} />
+          <button type="button" aria-label={isWished ? '포켓에서 빼기' : '포켓에 담기'} onClick={wish} className={roundBtn(headerSolid)}>
+            <PocketIcon size={21} filled={isWished} strokeWidth={1.8} className={heartAnim ? 'heart-pop' : undefined} style={{ color: isWished ? BRAND : '#191F28' }} />
           </button>
           <button type="button" aria-label="공유" onClick={share} className={roundBtn(headerSolid)}>
             <Share2 size={18} className="text-[#191F28]" />

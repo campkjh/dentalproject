@@ -359,7 +359,7 @@ export const useStore = create<AppState>((set, get) => ({
     set({
       wishlist: wasIn ? current.filter((id) => id !== productId) : [...current, productId],
     });
-    get().showToast(wasIn ? '찜목록에서 삭제되었습니다.' : '찜목록에 추가하였습니다!');
+    get().showToast(wasIn ? '포켓에서 뺐어요.' : '포켓에 담았어요!');
     void syncWrite(wasIn ? 'DELETE' : 'POST', '/api/wishlist', { productId }, () => {
       // rollback on auth/network error
       set({ wishlist: wasIn ? [...get().wishlist, productId] : get().wishlist.filter((id) => id !== productId) });

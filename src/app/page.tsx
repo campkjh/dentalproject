@@ -8,7 +8,7 @@ import { createPortal } from 'react-dom';
 import { Search, ChevronLeft, ChevronRight, ChevronDown, Star, MapPin, X, ArrowUp } from 'lucide-react';
 import ProductCard from '@/components/common/ProductCard';
 import HospitalToneCard from '@/components/common/HospitalToneCard';
-import { ReviewCommentRow } from '@/components/detail/DetailKit';
+import { Reveal, ReviewCommentRow } from '@/components/detail/DetailKit';
 import Avatar from '@/components/common/Avatar';
 import MobileHomeHeader from '@/components/common/MobileHomeHeader';
 import HomeBannerSlider from '@/components/home/HomeBannerSlider';
@@ -61,6 +61,7 @@ export default function HomePage() {
   const [animating, setAnimating] = useState(false);
   const headerRef = useRef<HTMLDivElement>(null);
   const showScrollTopRef = useRef(false);
+  const scrolledRef = useRef(false);
   const scrollTopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [currentLocation, setCurrentLocation] = useState('내 근처');
 
@@ -107,7 +108,9 @@ export default function HomePage() {
   useEffect(() => {
     const onScroll = () => {
       const scrollTop = window.scrollY || document.documentElement.scrollTop || 0;
-      const isPastHeader = scrollTop > 50;
+      // 들어갈 땐 60↑, 나올 땐 20↓ — 경계에서 왔다 갔다 하며 떨리지 않게
+      const isPastHeader = scrollTop > (scrolledRef.current ? 20 : 60);
+      scrolledRef.current = isPastHeader;
       setScrolled(isPastHeader);
 
       if (isPastHeader) {
@@ -181,20 +184,25 @@ export default function HomePage() {
   };
 
   return (
-    <div className="pb-[86px] pc:pb-16 page-enter overflow-x-clip">
-      {/* Sticky Header */}
+    <div className="pb-[86px] pc:pb-16 overflow-x-clip">
+      {/* 머리 — 화면 위에 고정(높이 64 고정 + 같은 높이 빈칸). 로고 줄 ↔ 검색 줄은 같은 칸에서 겹쳐 바뀌고,
+          카테고리 줄은 머리 아래에 겹쳐 내려온다 — 문서 높이가 안 바뀌어 스크롤이 떨리지 않는다 */}
       <div
         ref={headerRef}
-        style={{ position: 'sticky', top: 0, zIndex: 40 }}
-        className="bg-white pc:hidden transition-all duration-300"
+        className="fixed inset-x-0 top-0 z-40 mx-auto max-w-[640px] bg-white pc:hidden"
       >
+        <div className="relative h-16">
         <MobileHomeHeader hidden={scrolled} />
 
         {/* Scrolled Header — flat #F2F4F6 bar, 12px radius, no border.
             Search icon docks left; location text + chevron precede a thin
             divider and the rotating placeholder. Right edge fades to the
             bar's own bg so long placeholders don't hit the wall. */}
-        <div className={`px-2.5 transition-all duration-300 ${scrolled ? 'py-2 opacity-100' : 'h-0 overflow-hidden opacity-0 py-0'}`}>
+        <div
+          className="absolute inset-x-0 top-0 flex h-16 items-center px-2.5 transition-[opacity,transform] duration-300"
+          style={{ opacity: scrolled ? 1 : 0, transform: scrolled ? 'none' : 'translateY(8px)', pointerEvents: scrolled ? 'auto' : 'none' }}
+          aria-hidden={!scrolled}
+        >
           <button
             onClick={() => router.push('/search')}
             style={{
@@ -260,9 +268,11 @@ export default function HomePage() {
           </button>
         </div>
 
-        {/* Docked compact category bar — pill style, shrinks in with scroll */}
+        </div>
+
+        {/* Docked compact category bar — pill style, 머리 아래에 겹쳐 내려온다(흐름 밖) */}
         <div
-          className="relative"
+          className="absolute inset-x-0 top-full bg-white"
           style={{
             maxHeight: dockProgress * 52,
             opacity: Math.min(1, dockProgress * 1.6),
@@ -316,8 +326,10 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Desktop content wrapper */}
-      <div className="pc:pt-6">
+      <div className="h-16 pc:hidden" aria-hidden />
+
+      {/* Desktop content wrapper — 등장 애니메이션은 여기만(transform 이 남아 고정 머리가 밀리지 않게) */}
+      <div className="page-enter pc:pt-6">
 
         <HomeBannerSlider />
 
@@ -351,8 +363,8 @@ export default function HomePage() {
               icon="/icons/dental.svg"
               action={<MoreButton href="/search?category=dental" />}
             />
-            <div className="px-4 pc:px-0">
-              <div className="flex snap-x gap-2.5 overflow-x-auto hide-scrollbar pb-2 scroll-px-4 pc:grid pc:grid-cols-5 pc:gap-4 pc:overflow-visible pc:[&>*:nth-child(n+6)]:hidden">
+            <div className="px-[10px] pc:px-0">
+              <div className="flex snap-x gap-2.5 overflow-x-auto hide-scrollbar pb-2 scroll-px-[10px] pc:grid pc:grid-cols-5 pc:gap-4 pc:overflow-visible pc:[&>*:nth-child(n+6)]:hidden">
                 {dentalProducts.map((product) => (
                   <div key={product.id} className="w-[44vw] max-w-[200px] flex-shrink-0 snap-start pc:w-auto pc:max-w-none pc:shrink">
                     <ProductCard product={product} />
@@ -372,8 +384,8 @@ export default function HomePage() {
               icon="/icons/plastic.svg"
               action={<MoreButton href="/search?category=plastic" />}
             />
-            <div className="px-4 pc:px-0">
-              <div className="flex snap-x gap-2.5 overflow-x-auto hide-scrollbar pb-2 scroll-px-4 pc:grid pc:grid-cols-5 pc:gap-4 pc:overflow-visible pc:[&>*:nth-child(n+6)]:hidden">
+            <div className="px-[10px] pc:px-0">
+              <div className="flex snap-x gap-2.5 overflow-x-auto hide-scrollbar pb-2 scroll-px-[10px] pc:grid pc:grid-cols-5 pc:gap-4 pc:overflow-visible pc:[&>*:nth-child(n+6)]:hidden">
                 {plasticProducts.map((product) => (
                   <div key={product.id} className="w-[44vw] max-w-[200px] flex-shrink-0 snap-start pc:w-auto pc:max-w-none pc:shrink">
                     <ProductCard product={product} />
@@ -390,9 +402,9 @@ export default function HomePage() {
         {/* 나한테 꿀이되는 후기 */}
         <div className="mb-8">
           <SectionHeader title="나한테 꿀이되는 후기" subtitle="실제 방문자가 남긴 시술 경험을 살펴보세요." />
-          <div className="px-4 pc:px-0">
+          <div className="px-[10px] pc:px-0">
             {/* 프리티풀 상세의 둥실 리뷰 카드 — 흰 카드·댓글형 줄·각자 다른 속도로 떠다닌다 */}
-            <div className="-mx-4 overflow-x-auto px-4 pb-3 pt-1 hide-scrollbar pc:mx-0 pc:px-0">
+            <div className="-mx-[10px] overflow-x-auto px-[10px] pb-3 pt-1 hide-scrollbar pc:mx-0 pc:px-0">
               <div className="flex items-start gap-3" style={{ width: 'max-content' }}>
                 {reviews.slice(0, 10).map((review, i) => {
                   const relatedProduct = products.find(p => p.id === review.productId) || products.find(p => p.hospitalId === review.hospitalId);
@@ -433,8 +445,8 @@ export default function HomePage() {
             subtitle="후기가 많은 패키지부터 빠르게 비교해보세요."
             action={<MoreButton href="/search" />}
           />
-          <div className="px-4 pc:px-0">
-            <div className="flex snap-x gap-2.5 overflow-x-auto hide-scrollbar pb-2 scroll-px-4 pc:grid pc:grid-cols-5 pc:gap-4 pc:overflow-visible pc:[&>*:nth-child(n+6)]:hidden">
+          <div className="px-[10px] pc:px-0">
+            <div className="flex snap-x gap-2.5 overflow-x-auto hide-scrollbar pb-2 scroll-px-[10px] pc:grid pc:grid-cols-5 pc:gap-4 pc:overflow-visible pc:[&>*:nth-child(n+6)]:hidden">
               {weeklyPopularPackages.map((product) => (
                 <div key={product.id} className="w-[44vw] max-w-[200px] flex-shrink-0 snap-start pc:w-auto pc:max-w-none pc:shrink">
                   <ProductCard product={product} />
@@ -451,8 +463,8 @@ export default function HomePage() {
             subtitle="할인율이 좋은 시술을 골라 추천해드려요."
             action={<MoreButton href="/search" />}
           />
-          <div className="px-4 pc:px-0">
-            <div className="flex snap-x gap-2.5 overflow-x-auto hide-scrollbar pb-2 scroll-px-4 pc:grid pc:grid-cols-5 pc:gap-4 pc:overflow-visible pc:[&>*:nth-child(n+6)]:hidden">
+          <div className="px-[10px] pc:px-0">
+            <div className="flex snap-x gap-2.5 overflow-x-auto hide-scrollbar pb-2 scroll-px-[10px] pc:grid pc:grid-cols-5 pc:gap-4 pc:overflow-visible pc:[&>*:nth-child(n+6)]:hidden">
               {suggestedPackages.map((product) => (
                 <div key={product.id} className="w-[44vw] max-w-[200px] flex-shrink-0 snap-start pc:w-auto pc:max-w-none pc:shrink">
                   <ProductCard product={product} />
@@ -465,8 +477,8 @@ export default function HomePage() {
         {/* 요즘 뜨고 있는 병원 */}
         <div className="mb-8">
           <SectionHeader title="요즘 뜨고 있는 병원" subtitle="평점과 후기가 좋은 병원을 둘러보세요." />
-          <div className="px-4 pc:px-0">
-            <div className="flex snap-x gap-3 overflow-x-auto pb-2 hide-scrollbar scroll-px-4 pc:grid pc:grid-cols-3 pc:gap-4 pc:overflow-visible">
+          <div className="px-[10px] pc:px-0">
+            <div className="flex snap-x gap-3 overflow-x-auto pb-2 hide-scrollbar scroll-px-[10px] pc:grid pc:grid-cols-3 pc:gap-4 pc:overflow-visible">
               {(() => {
                 const BLOB = 'https://4ipmgcqyzk6ysqa7.public.blob.vercel-storage.com';
                 const hospitalCovers = [
@@ -506,10 +518,10 @@ export default function HomePage() {
         <div className="mb-6">
           <SectionHeader
             title="인기 상품"
-            subtitle="많이 찜하고 예약한 상품을 확인해보세요."
+            subtitle="많이 담고 예약한 상품을 확인해보세요."
             action={<MoreButton href="/search" label="전체보기" />}
           />
-          <div className="px-4 pc:px-0">
+          <div className="px-[10px] pc:px-0">
             <div className="grid grid-cols-2 pc:grid-cols-5 gap-2.5 pc:gap-4 pc:[&>*:nth-child(n+6)]:hidden stagger-children">
               {popularProducts.map((product) => (
                 <ProductCard key={product.id} product={product} index={popularProducts.indexOf(product)} />
@@ -1146,7 +1158,7 @@ function CategoryPager() {
             return (
               <div
                 key={pageIdx}
-                className="flex-shrink-0 w-full px-4 lg:px-6"
+                className="flex-shrink-0 w-full px-[10px]"
                 style={{ scrollSnapAlign: 'start' }}
               >
                 <div className="grid grid-cols-5 gap-y-5 gap-x-2 max-[390px]:gap-x-[10px]">
@@ -1210,7 +1222,7 @@ function RecentlyViewedSection({
         subtitle={hasRecent ? '최근 둘러본 상품을 이어서 확인해보세요.' : '추천으로 보여드려요.'}
         action={<MoreButton href="/wishlist" />}
       />
-      <div className="px-4 pc:px-0">
+      <div className="px-[10px] pc:px-0">
         <div className="flex gap-3 overflow-x-auto hide-scrollbar pb-2 pc:grid pc:grid-cols-5 pc:gap-4 pc:overflow-visible pc:[&>*:nth-child(n+6)]:hidden">
           {items.map((p) => (
             <div
@@ -1237,25 +1249,28 @@ function SectionHeader({
   icon?: string;
   action?: ReactNode;
 }) {
-  // 프리티풀 홈 섹션 머리 — (아이콘) 제목 18·20 + 회색 부제 14, 오른쪽 '전체보기 >'
+  // 프리티풀 홈 섹션 머리 규격 — 앞 그림 48(바탕 칸 없이) · 사이 10 · 제목 18/PC 20 semibold · 부제 14 회색 위 4 · 아래 24, 오른쪽 '전체보기 >' 13.
+  //  화면에 닿으면 아래→위로 흐리게 떠오른다(프리티풀 Reveal)
   return (
-    <div className="flex items-end justify-between gap-3 px-4 pc:px-0 mb-3">
-      <div className="flex min-w-0 items-center gap-2">
-        {icon && <img src={icon} alt="" className="h-9 w-9 shrink-0 object-contain" />}
-        <div className="min-w-0">
-          <h2 className="text-[18px] font-semibold leading-tight tracking-tight text-[#191F28] pc:text-[22px]">{title}</h2>
-          {subtitle && <p className="mt-1 text-[14px] leading-relaxed text-[#8B95A1]">{subtitle}</p>}
+    <Reveal className="mb-6 px-[10px] pc:px-0">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-2.5">
+          {icon && <img src={icon} alt="" className="h-12 w-12 shrink-0 object-contain" />}
+          <div className="min-w-0">
+            <h2 className="text-[18px] font-semibold leading-tight tracking-tight text-gray-900 pc:text-[20px]">{title}</h2>
+            {subtitle && <p className="mt-1 text-[14px] font-normal leading-relaxed text-gray-400">{subtitle}</p>}
+          </div>
         </div>
+        {action && <div className="shrink-0">{action}</div>}
       </div>
-      {action && <div className="shrink-0 pb-0.5">{action}</div>}
-    </div>
+    </Reveal>
   );
 }
 
 // 전체보기 — 회색 글자 + 꺾쇠(프리티풀 홈과 같은 모양)
 function MoreButton({ href, label = '전체보기' }: { href: string; label?: string }) {
   return (
-    <Link href={href} className="flex items-center gap-0.5 text-[13px] font-medium text-[#8B95A1] transition-colors hover:text-[#4E5968] active:opacity-60">
+    <Link href={href} className="flex items-center gap-0.5 text-[13px] font-medium text-gray-400 transition-colors duration-300 hover:text-gray-600 active:opacity-60">
       {label} <ChevronRight size={16} />
     </Link>
   );
@@ -1273,7 +1288,7 @@ function RecentTagsSection({
   return (
     <div className="mb-6">
       <SectionHeader title="최근 본 태그" />
-      <div className="px-4 pc:px-0">
+      <div className="px-[10px] pc:px-0">
         <div className="flex gap-1.5 overflow-x-auto hide-scrollbar pb-1">
           {tags.map((tag) => (
             <div

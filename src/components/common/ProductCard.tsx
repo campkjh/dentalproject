@@ -5,7 +5,8 @@
 //  글자 크기는 카드 폭 비례(cqi) — 좁은 2열 그리드에서도 견본과 같은 비율로 보인다.
 import { useState } from 'react';
 import Link from 'next/link';
-import { Heart, Star } from 'lucide-react';
+import { Star } from 'lucide-react';
+import { PocketIcon } from '@/components/icons/PocketIcon';
 import { Product } from '@/types';
 import { resolveProductImageUrl } from '@/lib/images';
 import { useImageTone } from '@/lib/image-tone';
@@ -77,7 +78,7 @@ export default function ProductCard({ product, index = 0 }: { product: Product; 
         </p>
         {(product.likeCount > 0 || product.reviewCount > 0) && (
           <p className="mt-[1cqi] flex items-center" style={{ gap: '1.6cqi', fontSize: fs(4.7, 11.5, 14.5), color: sub }}>
-            {product.likeCount > 0 && <span className="inline-flex items-center gap-[3px]"><Heart size={12} fill="currentColor" stroke="none" />{compact(product.likeCount)}명</span>}
+            {product.likeCount > 0 && <span className="inline-flex items-center gap-[3px]" title="포켓에 담은 사람"><PocketIcon size={13} filled strokeWidth={1.6} />{compact(product.likeCount)}명</span>}
             {product.likeCount > 0 && product.reviewCount > 0 && <span aria-hidden className="h-2.5 w-px" style={{ backgroundColor: sub, opacity: 0.35 }} />}
             {product.reviewCount > 0 && <span className="inline-flex items-center gap-[3px]"><Star size={12} fill="currentColor" stroke="none" />{product.rating.toFixed(1)} ({product.reviewCount})</span>}
           </p>
@@ -92,10 +93,10 @@ export default function ProductCard({ product, index = 0 }: { product: Product; 
           </div>
           <button
             type="button"
-            aria-label={isWished ? '찜 해제' : '찜하기'}
+            aria-label={isWished ? '포켓에서 빼기' : '포켓에 담기'}
             aria-pressed={isWished}
             className="flex shrink-0 items-center justify-center transition-transform active:scale-90"
-            style={{ width: fs(10, 26, 34), height: fs(10, 26, 34), color: isWished ? '#F04452' : '#fff' }}
+            style={{ width: fs(10, 26, 34), height: fs(10, 26, 34), color: isWished ? '#3180F7' : '#fff' }}
             onClick={e => {
               e.preventDefault();
               e.stopPropagation();
@@ -104,7 +105,8 @@ export default function ProductCard({ product, index = 0 }: { product: Product; 
               setTimeout(() => setPop(false), 400);
             }}
           >
-            <Heart className={pop ? 'heart-pop' : undefined} width="88%" height="88%" strokeWidth={2.2} fill={isWished ? 'currentColor' : 'none'} style={{ filter: isWished ? undefined : 'drop-shadow(0 0 .5px rgba(0,0,0,.25))' }} />
+            {/* 견본 가방 — 흰 굵은 선, 담으면 파랑으로 채움 */}
+            <PocketIcon className={pop ? 'heart-pop' : undefined} size="100%" strokeWidth={2.1} filled={isWished} style={{ filter: isWished ? undefined : 'drop-shadow(0 0 .5px rgba(0,0,0,.25))' }} />
           </button>
         </div>
       </div>

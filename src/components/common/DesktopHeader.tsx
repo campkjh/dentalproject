@@ -7,7 +7,7 @@ import { Bell, Search } from 'lucide-react';
 import { useStore } from '@/store';
 import styles from './app-ui.module.css';
 
-const items = [{ href: '/', label: '홈' }, { href: '/reservations', label: '예약내역' }, { href: '/community', label: '커뮤니티' }, { href: '/wishlist', label: '찜' }, { href: '/mypage', label: '마이' }];
+const items = [{ href: '/', label: '홈' }, { href: '/reservations', label: '예약내역' }, { href: '/community', label: '커뮤니티' }, { href: '/wishlist', label: '포켓' }, { href: '/mypage', label: '마이' }];
 
 export default function DesktopHeader() {
   const path = usePathname();

@@ -8,12 +8,12 @@
 .iconButton:hover { background: #f2f4f6; }.iconButton:active { transform: scale(.94); }
 .bottomNav { position: fixed; bottom: 0; left: 0; right: 0; z-index: 60; pointer-events: none; transition: transform .32s cubic-bezier(.22,1,.36,1); }
 .navHidden { transform: translateY(115%); }
-.navPill { width: 100%; max-width: 640px; margin: auto; padding: 0 12px env(safe-area-inset-bottom, 0px); border-radius: 24px 24px 0 0; background: #fff; box-shadow: 0 0 0 .5px #e4e4e7, 0 -2px 12px #00000008; pointer-events: auto; display: flex; height: calc(62px + env(safe-area-inset-bottom,0px)); }
-.navPill a { display: flex; flex: 1; min-width: 0; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: #4e5968; font-size: 11px; font-weight: 500; line-height: 14px; }
-.navPill a[aria-current=page] { font-weight: 600; color: #333d4b; }
+.navPill { width: 100%; max-width: 640px; margin: auto; padding: 0 12px env(safe-area-inset-bottom, 0px); border-radius: 24px 24px 0 0; background: #fff; box-shadow: 0 0 0 .5px #e4e4e7, 0 -2px 12px #00000008; pointer-events: auto; display: flex; height: calc(58px + env(safe-area-inset-bottom,0px)); }
+.navPill a { display: flex; flex: 1; min-width: 0; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: #4E5968; font-size: 11px; font-weight: 500; line-height: 13px; letter-spacing: -0.2px; }
+.navPill a[aria-current=page] { font-weight: 600; color: #4E5968; }
 .tabIcon { position: relative; width: 26px; height: 26px; transform-origin: 50% 60%; }
 .badge { position: absolute; top: -5px; right: -8px; display: grid; place-items: center; min-width: 15px; height: 15px; padding: 0 3px; border-radius: 20px; font-size: 9px; background: #3182f6; color: #fff; font-weight: 600; }
-.dot { position: absolute; top: 3px; right: 3px; width: 6px; height: 6px; background: #f04452; border-radius: 50%; }
+.dot { position: absolute; top: 0; right: -4px; width: 6px; height: 6px; background: #F04452; border-radius: 50%; }
 .desktopHeader { display: none; position: sticky; top: 0; z-index: 55; background: #fffffff5; backdrop-filter: blur(18px); }
 .desktopInner { margin: auto; max-width: 1280px; padding: 0 32px; height: 72px; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 24px; }
 .brand { display: inline-flex; align-items: center; gap: 8px; justify-self: start; font-size: 21px; font-weight: 700; color: #191f28; white-space: nowrap; }
