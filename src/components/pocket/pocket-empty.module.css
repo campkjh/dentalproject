@@ -1,0 +1,121 @@
+/* 포켓 빈 화면 — 은은한 하늘빛 그라데이션 + 장바구니·동전 둥실 + 손 따라 기울기 */
+.wrap {
+  --px: 0;
+  --py: 0;
+  position: relative;
+  overflow: hidden;
+  padding-bottom: 40px;
+  background:
+    radial-gradient(60% 40% at 8% 4%, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0) 70%),
+    linear-gradient(180deg, #DCE9FF 0%, #E9F1FF 38%, #F5F8FF 62%, #FFFFFF 86%);
+}
+
+.stage {
+  position: relative;
+  height: clamp(300px, 86vw, 400px);
+  max-width: 520px;
+  margin: 0 auto;
+}
+
+/* 왼쪽 위 흰 빛 번짐 — 아주 천천히 숨 쉬듯 */
+.glow {
+  position: absolute;
+  left: -18%;
+  top: -22%;
+  width: 62%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0) 68%);
+  filter: blur(6px);
+  animation: peGlow 7s ease-in-out infinite;
+}
+
+.layer { position: absolute; display: block; will-change: transform; }
+.layer img { display: block; width: 100%; height: auto; user-select: none; -webkit-user-drag: none; }
+
+/* 장바구니 — 오른쪽에서 미끄러져 들어온 뒤 둥실, 손 따라 가장 적게(가장 가까운 겹) */
+.cart {
+  right: 2%;
+  top: 14%;
+  width: 66%;
+  translate: calc(var(--px) * -8px) calc(var(--py) * -6px);
+  transition: translate .6s cubic-bezier(.22, 1, .36, 1);
+  animation: peCartIn .9s cubic-bezier(.22, 1, .36, 1) both, peFloat 4.6s ease-in-out .9s infinite;
+}
+/* 바닥 그림자 — 장바구니가 뜨면 옅어진다 */
+.cartShadow {
+  position: absolute;
+  right: 10%;
+  top: 84%;
+  width: 52%;
+  height: 7%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(70, 120, 230, 0.22) 0%, rgba(70, 120, 230, 0) 70%);
+  animation: peShadow 4.6s ease-in-out .9s infinite, peFade .9s ease both;
+}
+
+/* 체크 동전 — 장바구니 오른쪽 위, 톡 떠오른 뒤 살짝 흔들리며 둥실(손 따라 더 크게) */
+.checkCoin {
+  right: 4%;
+  top: 4%;
+  width: 19%;
+  translate: calc(var(--px) * -16px) calc(var(--py) * -12px);
+  transition: translate .6s cubic-bezier(.22, 1, .36, 1);
+  animation: pePop .7s cubic-bezier(.34, 1.56, .64, 1) .45s both, peBob 3.8s ease-in-out 1.15s infinite;
+}
+
+/* 유리 동전 — 왼쪽, 가장 먼 겹(손 따라 가장 크게) */
+.glassCoin {
+  left: 10%;
+  top: 30%;
+  width: 19%;
+  translate: calc(var(--px) * -22px) calc(var(--py) * -16px);
+  transition: translate .6s cubic-bezier(.22, 1, .36, 1);
+  animation: pePop .7s cubic-bezier(.34, 1.56, .64, 1) .6s both, peBob 5.2s ease-in-out 1.3s infinite reverse;
+}
+
+.copy { position: relative; margin-top: -8px; padding: 0 24px; text-align: center; animation: peUp .6s cubic-bezier(.22, .61, .36, 1) .35s both; }
+.title { margin: 0; word-break: keep-all; text-wrap: balance; font-size: 21px; font-weight: 700; line-height: 1.4; letter-spacing: -0.5px; color: #191F28; }
+.sub { margin: 8px 0 0; word-break: keep-all; text-wrap: balance; font-size: 15px; line-height: 1.6; letter-spacing: -0.2px; color: #6B7684; }
+.cta {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  height: 48px;
+  margin-top: 22px;
+  padding: 0 24px;
+  overflow: hidden;
+  border-radius: 14px;
+  background: #3180F7;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  box-shadow: 0 8px 20px rgba(49, 128, 247, 0.22);
+  transition: transform .15s ease, box-shadow .2s ease;
+}
+.cta:active { transform: scale(.97); box-shadow: 0 4px 12px rgba(49, 128, 247, 0.2); }
+/* 버튼 위를 가끔 지나가는 빛 */
+.cta::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 30%, rgba(255, 255, 255, 0.35) 50%, transparent 70%);
+  transform: translateX(-120%);
+  animation: peShine 4.5s ease-in-out 1.6s infinite;
+}
+
+@keyframes peCartIn { from { opacity: 0; transform: translate(36px, 10px) rotate(4deg); } to { opacity: 1; transform: none; } }
+@keyframes pePop { from { opacity: 0; transform: translateY(14px) scale(.6); } to { opacity: 1; transform: none; } }
+@keyframes peFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+@keyframes peBob { 0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-12px) rotate(-6deg); } }
+@keyframes peShadow { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(.86); opacity: .6; } }
+@keyframes peGlow { 0%, 100% { opacity: .85; transform: scale(1); } 50% { opacity: 1; transform: scale(1.08); } }
+@keyframes peFade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes peUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@keyframes peShine { 0%, 70% { transform: translateX(-120%); } 100% { transform: translateX(120%); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .glow, .cart, .cartShadow, .checkCoin, .glassCoin, .copy, .cta::after { animation: none !important; }
+  .cart, .checkCoin, .glassCoin { translate: none; }
+}

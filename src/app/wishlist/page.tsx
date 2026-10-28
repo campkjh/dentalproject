@@ -15,6 +15,7 @@ import LoginRequired from '@/components/common/LoginRequired';
 import ProductCard from '@/components/common/ProductCard';
 import { HeaderSearchIcon } from '@/components/icons/HeaderIcons';
 import { PocketIcon } from '@/components/icons/PocketIcon';
+import PocketEmpty from '@/components/pocket/PocketEmpty';
 import PocketRow, { CheckCircle } from '@/components/pocket/PocketRow';
 import pocketStyles from '@/components/pocket/pocket.module.css';
 import { useListEntrance, useTabEntrance } from '@/components/reservations/useTabEntrance';
@@ -200,24 +201,11 @@ export default function PocketPage() {
 
           {displayed.length === 0 ? (
             <>
-              {/* 빈 화면 — 가방 아이콘 · 안내 · 둘러보기 */}
-              <div className="flex flex-col items-center px-6 pb-10 pt-14 text-center">
-                <span className="flex h-[72px] w-[72px] items-center justify-center rounded-full bg-[#E8F3FF] text-[#3180F7]">
-                  <PocketIcon size={36} strokeWidth={1.9} />
-                </span>
-                <p className="mt-5 text-[19px] font-bold tracking-[-0.4px] text-[#191F28]">
-                  {activeTab === 'pocket' ? '아직 포켓에 담은 상품이 없어요' : '최근 본 상품이 없어요'}
-                </p>
-                <p className="mt-1.5 text-[15px] leading-[1.6] tracking-[-0.2px] text-[#8B95A1]">
-                  {activeTab === 'pocket' ? '마음에 드는 시술을 포켓에 담아 두고 한 번에 비교해 보세요' : '상품을 둘러보면 여기에 차례로 모여요'}
-                </p>
-                <Link
-                  href="/"
-                  className="mt-5 inline-flex h-[46px] items-center rounded-[12px] bg-[#E8F3FF] px-5 text-[16px] font-bold tracking-[-0.3px] text-[#3180F7] transition active:scale-[0.97] active:bg-[#DCEBFF]"
-                >
-                  시술 둘러보기
-                </Link>
-              </div>
+              {/* 빈 화면 — 사장 시안: 은은한 그라데이션 위 장바구니·동전 둥실 + 안내 · 둘러보기 */}
+              <PocketEmpty
+                title={activeTab === 'pocket' ? '아직 포켓에 담은 상품이 없어요' : '최근 본 상품이 없어요'}
+                sub={activeTab === 'pocket' ? '마음에 드는 시술을 포켓에 담아 두고 한 번에 비교해 보세요' : '상품을 둘러보면 여기에 차례로 모여요'}
+              />
 
               {/* 실시간 TOP 10 인기 시술 */}
               {topProducts.length > 0 && (
