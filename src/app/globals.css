@@ -7365,3 +7365,62 @@ body.partner-profile-editing .partner-bottom-nav {
 textarea.qd-input { height: auto; min-height: 140px; padding: 16px 18px; line-height: 1.55; resize: none; }
 @keyframes qdSlideIn { from { opacity: 0; transform: translateX(22px); } to { opacity: 1; transform: translateX(0); } }
 @media (prefers-reduced-motion: reduce) { .qd-a-item, .qd-body > * { animation: none !important; } }
+
+/* ─── 토스 말풍선(꼬리 아래) — 프리티풀 .qm-bubble* 모양·움직임 그대로, 위아래만 뒤집음(components/common/TossBubble) ─── */
+.toss-bubble {
+  position: relative; width: fit-content; max-width: 100%;
+  transform-origin: 50% 100%;
+  animation: tossBubblePop 1s linear both;
+}
+.toss-bubble-shadow, .toss-bubble-glass { animation: tossBubbleFade 1s linear both; }
+.toss-bubble-shadow {
+  position: absolute; top: 0; left: 0; right: 0; bottom: 13px; display: block; border-radius: 26px;
+  box-shadow: 0 14px 30px -12px rgba(22, 38, 72, 0.16), 0 4px 14px -6px rgba(22, 38, 72, 0.07);
+}
+/* 유리 — 위 꼬리 윤곽을 그대로 그려 뒤집는다(그라데이션도 같이 뒤집혀 꼬리 쪽이 옅은 유리) */
+.toss-bubble-glass {
+  position: absolute; inset: 0; display: block; transform: scaleY(-1);
+  background: linear-gradient(180deg,
+    rgba(250, 252, 255, 0.8) 0%, rgba(250, 252, 255, 0.8) 14%, rgba(251, 252, 255, 0.84) 21%,
+    rgba(252, 253, 255, 0.9) 27%, rgba(253, 254, 255, 0.96) 31.5%, #FEFEFE 35%, #FEFEFE 100%);
+  -webkit-backdrop-filter: blur(12px) saturate(1.2); backdrop-filter: blur(12px) saturate(1.2);
+}
+.toss-bubble-body {
+  position: relative; margin: 0 0 13px; padding: 11px 20px;
+  font-size: 14.5px; font-weight: 600; line-height: 1.42; letter-spacing: -0.3px; color: #333D4B;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  animation: tossBubbleContent 1s linear both;
+}
+@keyframes tossBubblePop {
+  0%    { transform: translateY(10px) scale(0.53, 0.16); }
+  3.3%  { transform: translateY(9.5px) scale(0.8, 0.6); }
+  6.7%  { transform: translateY(9px) scale(0.85, 0.62); }
+  8.3%  { transform: translateY(8.5px) scale(0.86, 0.66); }
+  10%   { transform: translateY(8px) scale(0.92, 0.85); }
+  13.3% { transform: translateY(6.5px) scale(0.96, 0.92); }
+  15%   { transform: translateY(5px) scale(0.99, 1); }
+  18.3% { transform: translateY(3px) scale(1.003); }
+  20%   { transform: translateY(0.7px) scale(1.01); }
+  21.7% { transform: translateY(-1.3px) scale(1.013); }
+  23.3% { transform: translateY(-3px) scale(1.013); }
+  25%   { transform: translateY(-4px) scale(1.013); }
+  31.7% { transform: translateY(-6.3px) scale(1.009); }
+  38.3% { transform: translateY(-5.7px) scale(1.004); }
+  41.7% { transform: translateY(-4.3px) scale(1.002); }
+  45%   { transform: translateY(-3.3px) scale(1); }
+  48.3% { transform: translateY(-2.3px) scale(1); }
+  51.7% { transform: translateY(-1.3px) scale(1); }
+  55%   { transform: translateY(-0.7px) scale(1); }
+  70%   { transform: translateY(-0.2px) scale(1); }
+  100%  { transform: translateY(0) scale(1); }
+}
+@keyframes tossBubbleFade {
+  0% { opacity: 0.2; } 3.3% { opacity: 0.42; } 6.7% { opacity: 0.55; } 8.3% { opacity: 0.62; } 10% { opacity: 0.72; }
+  13.3% { opacity: 0.86; } 15% { opacity: 0.95; } 18.3% { opacity: 1; } 100% { opacity: 1; }
+}
+@keyframes tossBubbleContent {
+  0% { opacity: 0; } 6.7% { opacity: 0.3; } 15% { opacity: 0.55; } 26.7% { opacity: 0.8; } 31.7% { opacity: 0.9; } 38.3% { opacity: 1; } 100% { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .toss-bubble, .toss-bubble * { animation: none !important; }
+}

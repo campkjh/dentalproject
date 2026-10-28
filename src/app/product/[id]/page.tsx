@@ -14,6 +14,7 @@ import { BRAND, Reveal, StarRating, SingleStar, SectionHead, ReviewCommentRow, E
 import { useStore } from '@/store';
 import { toneAccent, useImageTone } from '@/lib/image-tone';
 import { resolveHospitalImageUrl, resolveProductImageUrl } from '@/lib/images';
+import TossBubble from '@/components/common/TossBubble';
 
 const faqItems = [
   {
@@ -707,7 +708,7 @@ export default function ProductDetailPage() {
         />
         <div className="pointer-events-auto relative mx-auto max-w-[680px] pt-10">
           {notice && (
-            <p className="mx-auto mb-2.5 w-fit rounded-full bg-[#333D4B]/90 px-3.5 py-1.5 text-[12.5px] font-semibold text-white backdrop-blur-md">{notice}</p>
+            <TossBubble key={notice} className="mx-auto mb-1.5">{notice}</TossBubble>
           )}
           {buttons}
         </div>

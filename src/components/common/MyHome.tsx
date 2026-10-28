@@ -9,6 +9,7 @@ import { useSession } from '@/lib/supabase/SessionProvider';
 import { useMyHospitalData } from '@/lib/partner/my-hospital-cache';
 import Avatar from './Avatar';
 import { HeaderBellIcon } from '@/components/icons/HeaderIcons';
+import { isDualModeUser, writeAccountMode } from '@/lib/account-mode';
 import MyPageDetail from './MyPageDetail';
 import styles from './app-ui.module.css';
 
@@ -60,7 +61,20 @@ export default function MyHome({ partner = false }: { partner?: boolean }) {
     { label: '쿠폰함', icon: 'coupons', href: '/mypage/coupons', badge: user ? coupons : 0 },
     { label: '쪽지함', icon: 'messages', href: '/notifications', badge: unread },
   ];
+  // 의사 ↔ 고객 화면 오가기 — 정해 둔 계정만(lib/account-mode). 병원 주인이어야 의사 화면으로 갈 수 있다
+  const dual = isDualModeUser(user?.id);
+  const switchMode = () => {
+    const next = partner ? 'customer' : 'doctor';
+    writeAccountMode(next);
+    useStore.setState({ isDoctor: next === 'doctor' });
+    router.replace(next === 'doctor' ? '/partner' : '/');
+  };
   const sections: { title: string; rows: Row[]; public?: boolean }[] = [
+    ...(dual ? [{ title: '화면 전환', rows: [
+      partner
+        ? { label: '고객 화면으로', icon: 'profile', description: '마이닥 고객으로 둘러보기', action: switchMode }
+        : { label: '의사 화면으로', icon: 'profile', description: '서울대내과 관리', action: switchMode },
+    ] }] : []),
     { title: partner ? '병원 관리' : '나의 활동', rows: partner ? [
       { label: '병원 정보', icon: 'profile', href: '/partner/hospital-info', description: hospitalData?.hospital?.name },
       { label: '예약관리', icon: 'reservations', href: '/partner/reservations' },

@@ -7,6 +7,7 @@ import { createClient, hasSupabaseEnv } from './client';
 import { useStore } from '@/store';
 import { clearMyHospitalCache } from '@/lib/partner/my-hospital-cache';
 import { pickCustomerProfileAvatarBySeed } from '@/lib/customer-profile-avatars';
+import { isDualModeUser, readAccountMode } from '@/lib/account-mode';
 
 type Ctx = {
   session: Session | null;
@@ -137,6 +138,8 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     if (profileIsDoctor !== null && hasHospital !== null) {
       writeCachedHospitalAccess(userId, hasHospitalAccess);
     }
+    // 의사 ↔ 고객 화면을 오가는 계정 — 마이에서 '의사 화면으로'를 골랐을 때만 의사로, 그 전엔(기본) 지금처럼 고객으로 보인다
+    const viewAsDoctor = hasHospitalAccess && (!isDualModeUser(userId) || readAccountMode() === 'doctor');
 
     // Always set isLoggedIn=true if we have a session, regardless of profile completeness
     useStore.setState({
@@ -152,12 +155,12 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         profileImage: (p?.profile_image as string | undefined) ?? undefined,
         points: (p?.points as number | undefined) ?? 0,
         coupons: [],
-        isDoctor: hasHospitalAccess,
+        isDoctor: viewAsDoctor,
       },
-      isDoctor: hasHospitalAccess,
+      isDoctor: viewAsDoctor,
       isAdmin,
     });
-    return { hasHospitalAccess, isAdmin };
+    return { hasHospitalAccess: viewAsDoctor, isAdmin };
   }, [supabase]);
 
   const syncSession = useCallback(async (
