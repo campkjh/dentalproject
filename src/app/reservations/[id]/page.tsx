@@ -23,7 +23,7 @@ export default function ReservationDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { authUser } = useSession();
-  const { reservations, hospitals, updateReservationStatus, showModal, showToast, hydrateMe } = useStore();
+  const { reservations, hospitals, updateReservationStatus, showConfirm, showAlert, hydrateMe } = useStore();
 
   const reservation = reservations.find((r) => r.id === id);
 
@@ -57,15 +57,21 @@ export default function ReservationDetailPage() {
   const extraCount = Math.max(0, tags.length - visibleTags.length);
 
   const handleCancel = () => {
-    showModal('예약 취소', '정말 예약을 취소하시겠습니까?\n결제한 금액은 함께 취소돼요.', async () => {
-      const { error } = await updateReservationStatus(reservation.id, 'cancelled');
-      if (error) {
-        showToast(error);
-        return;
-      }
-      showToast('예약이 취소되었습니다.');
-      router.push('/reservations');
-    });
+    showConfirm(
+      '예약 취소',
+      '정말 예약을 취소하시겠습니까?\n결제한 금액은 함께 취소돼요.',
+      async () => {
+        const { error } = await updateReservationStatus(reservation.id, 'cancelled');
+        if (error) {
+          showAlert('예약을 취소하지 못했어요', error);
+          return;
+        }
+        showAlert('예약이 취소되었습니다', '앱에서 결제한 금액은 결제수단에 따라 영업일 기준 3~5일 안에 환불돼요.', {
+          onConfirm: () => router.push('/reservations'),
+        });
+      },
+      { confirmText: '예약 취소', cancelText: '닫기' }
+    );
   };
 
   const openNaverMap = () => {

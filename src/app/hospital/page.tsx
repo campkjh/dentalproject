@@ -42,7 +42,7 @@ const PRODUCT_TABS = [
 ];
 
 export default function HospitalHomePage() {
-  const { reservations, showModal, showToast, updateReservationStatus } = useStore();
+  const { reservations, showModal, showToast, showConfirm, showAlert, updateReservationStatus } = useStore();
   const [activeTab, setActiveTab] = useState('전체');
   const [productTab, setProductTab] = useState<ProductApprovalTab>('approved');
   const [products, setProducts] = useState<HospitalProduct[]>([]);
@@ -102,10 +102,16 @@ export default function HospitalHomePage() {
   };
 
   const handleCancel = (id: string) => {
-    showModal('예약 취소', '해당 예약을 취소하시겠습니까?\n결제한 금액은 고객에게 환불돼요.', async () => {
-      const { error } = await updateReservationStatus(id, 'cancelled', '병원측 취소');
-      showToast(error ?? '예약이 취소되었습니다.');
-    });
+    showConfirm(
+      '예약 취소',
+      '해당 예약을 취소하시겠습니까?\n결제한 금액은 고객에게 환불돼요.',
+      async () => {
+        const { error } = await updateReservationStatus(id, 'cancelled', '병원측 취소');
+        if (error) showAlert('예약을 취소하지 못했어요', error);
+        else showAlert('예약이 취소되었습니다');
+      },
+      { confirmText: '예약 취소', cancelText: '닫기' }
+    );
   };
 
   return (
