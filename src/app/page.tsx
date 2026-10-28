@@ -197,7 +197,7 @@ export default function HomePage() {
         <div
           aria-hidden
           className="pointer-events-none absolute inset-x-0 h-5 transition-opacity duration-300"
-          style={{ top: `calc(100% + ${dockProgress * 52}px)`, opacity: scrolled ? 1 : 0, background: 'linear-gradient(180deg, #FFFFFF 0%, rgba(255,255,255,0) 100%)' }}
+          style={{ top: `calc(100% + ${Math.max(0, dockProgress * 52 - (1 - dockProgress) * 6)}px - 1px)`, opacity: scrolled ? 1 : 0, background: 'linear-gradient(180deg, #FFFFFF 0%, rgba(255,255,255,0) 100%)' }}
         />
         <div className="relative h-16">
         <MobileHomeHeader hidden={scrolled} />
@@ -278,7 +278,8 @@ export default function HomePage() {
 
         </div>
 
-        {/* Docked compact category bar — pill style, 머리 아래에 겹쳐 내려온다(흐름 밖) */}
+        {/* Docked compact category bar — pill style, 머리 아래에 겹쳐 내려온다(흐름 밖).
+            아래 경계선은 두지 않는다 — 흰 그늘이 이 줄 바로 밑(1px 겹침)에서 이어져야 틈이 안 보인다 */}
         <div
           className="absolute inset-x-0 top-full bg-white"
           style={{
@@ -286,8 +287,6 @@ export default function HomePage() {
             opacity: Math.min(1, dockProgress * 1.6),
             transform: `translateY(${(1 - dockProgress) * -6}px)`,
             overflow: 'hidden',
-            boxShadow: dockProgress > 0.4 ? '0 1px 0 #F2F3F5' : 'none',
-            transition: 'box-shadow 320ms ease',
           }}
         >
           <div
