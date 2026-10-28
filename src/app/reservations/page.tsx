@@ -1,10 +1,9 @@
 'use client';
 
 import { useState, useMemo, useRef, useEffect, useLayoutEffect } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ChevronRight } from 'lucide-react';
-import { IconMapPin, IconCalendarMini } from '@/components/icons/AppIcons';
+import ToneListCard from '@/components/common/ToneListCard';
 import EmptyState from '@/components/common/EmptyState';
 import LoginRequired from '@/components/common/LoginRequired';
 import { useSession } from '@/lib/supabase/SessionProvider';
@@ -12,25 +11,6 @@ import { useReservationRealtimeRefresh } from '@/lib/realtime/reservations';
 import { useStore } from '@/store';
 import { Reservation } from '@/types';
 import { resolveProductImageUrl } from '@/lib/images';
-
-const statusIconSrc: Record<Reservation['status'], string> = {
-  pending: '/icons/status-pending.svg',
-  confirmed: '/icons/status-confirmed.svg',
-  completed: '/icons/status-completed.svg',
-  cancelled: '/icons/status-cancelled.svg',
-};
-
-function StatusIcon({ status, size = 16 }: { status: Reservation['status']; size?: number }) {
-  return (
-    <img
-      src={statusIconSrc[status]}
-      alt=""
-      width={size}
-      height={size}
-      style={{ display: 'inline-block' }}
-    />
-  );
-}
 
 const statusTabs = ['전체', '예약확인중', '예약확정', '완료', '취소'];
 
@@ -49,30 +29,12 @@ const statusLabel: Record<Reservation['status'], string> = {
   cancelled: '취소',
 };
 
-const statusStyle: Record<
-  Reservation['status'],
-  { text: string; bg: string; chipBg: string }
-> = {
-  pending: {
-    text: 'text-[#FFA04E]',
-    bg: 'bg-[#FFF4E6]',
-    chipBg: 'bg-[#FFF4E6]',
-  },
-  confirmed: {
-    text: 'text-[#38B369]',
-    bg: 'bg-[#E6F7EB]',
-    chipBg: 'bg-[#E6F7EB]',
-  },
-  completed: {
-    text: 'text-[#1084FD]',
-    bg: 'bg-[#E6F2FF]',
-    chipBg: 'bg-[#E6F2FF]',
-  },
-  cancelled: {
-    text: 'text-[#6B7280]',
-    bg: 'bg-[#F3F4F6]',
-    chipBg: 'bg-[#F3F4F6]',
-  },
+/** 상태 배지 점 색 */
+const statusDot: Record<Reservation['status'], string> = {
+  pending: '#FFB331',
+  confirmed: '#3DD598',
+  completed: '#4D9CFF',
+  cancelled: '#B0B8C1',
 };
 
 export default function ReservationsPage() {
@@ -145,9 +107,9 @@ export default function ReservationsPage() {
 
   return (
     <div className="pb-[86px] lg:pb-0 bg-white min-h-screen page-enter">
-      {/* Header — community-style: 22px extrabold */}
-      <div className="sticky top-0 z-40 bg-white flex items-center px-2.5 lg:hidden" style={{ height: 56 }}>
-        <h1 className="text-[22px] font-extrabold text-gray-900 leading-none">예약내역</h1>
+      {/* 탭 머리 — 프리티풀 탭 머리 표준(왼쪽 16 · 20 굵게) */}
+      <div className="sticky top-0 z-40 flex items-center bg-white px-4 lg:hidden" style={{ height: 56 }}>
+        <h1 className="text-[20px] font-bold leading-none text-[#191F28]">예약내역</h1>
       </div>
 
       {!isLoggedIn ? (
@@ -189,7 +151,7 @@ export default function ReservationsPage() {
           {/* Reservation list */}
           <div
             key={activeTab}
-            className={`px-2.5 pb-6 lg:max-w-5xl lg:mx-auto lg:px-6 lg:py-6 ${
+            className={`px-4 pb-6 lg:max-w-5xl lg:mx-auto lg:px-6 lg:py-6 ${
               direction === 'right' ? 'tab-slide-right' : 'tab-slide-left'
             }`}
           >
@@ -197,151 +159,50 @@ export default function ReservationsPage() {
               <EmptyState icon="calendar" message="내역이 존재하지 않아요" />
             ) : (
               <div className="flex flex-col gap-3 lg:grid lg:grid-cols-2 lg:gap-4 stagger-children">
-                {filtered.map((reservation) => {
-                  const style = statusStyle[reservation.status];
+                {filtered.map((reservation, index) => {
                   const isPending = reservation.status === 'pending';
                   const isCompleted = reservation.status === 'completed';
-                  const productImage = resolveProductImageUrl(
-                    reservation.productImage,
-                    reservation.productId ?? reservation.id
-                  );
-
+                  const productImage = resolveProductImageUrl(reservation.productImage, reservation.productId ?? reservation.id);
                   return (
-                    <Link
+                    <ToneListCard
                       key={reservation.id}
+                      index={index}
                       href={`/reservations/${reservation.id}`}
-                      className="block card-press"
-                    >
-                      <div
-                        className="bg-white rounded-3xl p-3.5"
-                        style={{ boxShadow: '0 1px 2px rgba(16,24,40,0.04), 0 4px 16px rgba(16,24,40,0.04)' }}
-                      >
-                        {/* Status chip + date */}
-                        <div className="flex items-center justify-between">
-                          <span
-                            className={`inline-flex items-center gap-1 pl-1 pr-2 py-0.5 rounded-full text-[11px] font-semibold ${style.chipBg} ${style.text}`}
-                          >
-                            <StatusIcon status={reservation.status} size={16} />
-                            {statusLabel[reservation.status]}
-                          </span>
-                          <span className="text-[15px] text-gray-400 font-medium">
-                            {reservation.date}
-                          </span>
-                        </div>
-
-                        {/* Product info */}
-                        <div className="flex gap-2.5 mt-2">
-                          <div className="w-[72px] h-[72px] rounded-xl bg-gray-100 overflow-hidden flex items-center justify-center flex-shrink-0">
-                            <img src={productImage} alt="" className="w-full h-full object-cover" />
-                          </div>
-                          <div className="flex-1 min-w-0 flex flex-col justify-center gap-0.5">
-                            <p className="text-[18px] font-bold text-gray-900 line-clamp-1 leading-tight">
-                              {reservation.productTitle}
-                            </p>
-                            <p className="text-[15px] text-gray-500 leading-tight">
-                              {reservation.hospitalName}
-                            </p>
-                            <div className="flex items-center gap-1 mt-0.5">
-                              <span className="flex-shrink-0"><IconMapPin size={15} /></span>
-                              <p className="text-[15px] text-gray-400 truncate leading-tight">
-                                {reservation.location}
-                              </p>
-                              {/* 결제 방식 태그 (앱결제 vs 현장결제) — text only, no icon */}
-                              {(() => {
-                                const isApp = reservation.paymentMethod === '앱결제';
-                                return (
-                                  <span
-                                    className="ml-auto flex-shrink-0 inline-flex items-center rounded-md"
-                                    style={{
-                                      fontSize: 11,
-                                      fontWeight: 600,
-                                      padding: '2px 8px',
-                                      color: isApp ? '#8037FF' : '#51535C',
-                                      backgroundColor: isApp ? '#F4EFFF' : '#F2F3F5',
-                                    }}
-                                  >
-                                    {isApp ? '앱결제' : '현장결제'}
-                                  </span>
-                                );
-                              })()}
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Meta row - visit date + amount */}
-                        <div className="mt-2 pt-2 border-t border-dashed" style={{ borderColor: '#F2F3F5' }}>
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-1.5 text-gray-500">
-                              <IconCalendarMini size={16} />
-                              <span className="text-[15px]">{reservation.reservationDate || reservation.visitDate}</span>
-                            </div>
-                            <div className="flex items-baseline gap-0.5">
-                              <span className="text-[15px] font-bold text-gray-900">
-                                {reservation.amount.toLocaleString()}
-                              </span>
-                              <span className="text-[11px] text-gray-500 font-medium">원</span>
-                            </div>
-                          </div>
-                          {reservation.scheduleHistory?.[0] && (
-                            <p className="mt-1.5 text-[11px] font-semibold text-[#8037FF] line-clamp-1">
-                              변경내역: {reservation.scheduleHistory[0].content}
-                            </p>
-                          )}
-                        </div>
-
-                        {/* Action area — 상세보기 left, 예약취소 right (48px / 18px / weight 700 / radius 12) */}
-                        {isPending && (
+                      image={productImage}
+                      name={reservation.productTitle}
+                      badge={{ label: statusLabel[reservation.status], dot: statusDot[reservation.status] }}
+                      meta={[reservation.hospitalName, reservation.reservationDate || reservation.visitDate || reservation.date].filter(Boolean)}
+                      rows={[
+                        { label: reservation.paymentMethod === '앱결제' ? '앱결제' : '현장결제', value: `${reservation.amount.toLocaleString()}원` },
+                        ...(reservation.scheduleHistory?.[0] ? [{ label: '변경내역', value: <span className="text-[13px] font-semibold">{reservation.scheduleHistory[0].content}</span> }] : []),
+                      ]}
+                      footer={
+                        isPending ? (
                           <div className="mt-3 flex gap-2">
-                            <div
-                              className="btn-press flex-1 flex items-center justify-center text-white"
-                              style={{
-                                height: 48,
-                                borderRadius: 12,
-                                backgroundColor: '#292A2E',
-                                fontSize: 18,
-                                fontWeight: 700,
-                              }}
-                            >
-                              상세보기
-                            </div>
+                            <span className="flex h-12 flex-1 items-center justify-center rounded-[14px] bg-white/70 text-[15px] font-bold text-[#333D4B]">상세보기</span>
                             <button
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                handleCancel(reservation.id);
-                              }}
-                              className="btn-press flex-1 flex items-center justify-center"
-                              style={{
-                                height: 48,
-                                borderRadius: 12,
-                                backgroundColor: '#F2F3F5',
-                                color: '#51535C',
-                                fontSize: 18,
-                                fontWeight: 700,
-                              }}
+                              type="button"
+                              onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleCancel(reservation.id); }}
+                              className="flex h-12 flex-1 items-center justify-center rounded-[14px] bg-white/70 text-[15px] font-bold text-[#F04452] transition-transform active:scale-[0.98]"
                             >
                               예약취소
                             </button>
                           </div>
-                        )}
-
-                        {isCompleted && (
+                        ) : isCompleted ? (
                           <button
+                            type="button"
                             onClick={(e) => {
                               e.preventDefault();
                               e.stopPropagation();
-                              router.push(
-                                `/mypage/reviews/write?productId=${reservation.productId ?? ''}&reservationId=${reservation.id}`
-                              );
+                              router.push(`/mypage/reviews/write?productId=${reservation.productId ?? ''}&reservationId=${reservation.id}`);
                             }}
-                            className="btn-press mt-2.5 w-full py-2.5 bg-[#8037FF] text-white rounded-xl text-[13px] font-bold flex items-center justify-center gap-1.5"
+                            className="mt-3 flex h-12 w-full items-center justify-center gap-1 rounded-[14px] bg-[#3180F7] text-[15px] font-bold text-white transition-transform active:scale-[0.98]"
                           >
-                            리뷰작성하고 500P 받기
-                            <ChevronRight size={14} />
+                            리뷰 쓰고 500P 받기 <ChevronRight size={16} />
                           </button>
-                        )}
-                      </div>
-                    </Link>
+                        ) : null
+                      }
+                    />
                   );
                 })}
               </div>
