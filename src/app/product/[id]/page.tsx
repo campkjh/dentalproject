@@ -14,7 +14,7 @@ import { BRAND, Reveal, StarRating, SingleStar, SectionHead, ReviewCommentRow, E
 import { useStore } from '@/store';
 import { toneAccent, useImageTone } from '@/lib/image-tone';
 import { resolveHospitalImageUrl, resolveProductImageUrl } from '@/lib/images';
-import TossBubble from '@/components/common/TossBubble';
+import TossBubble, { BubbleClockIcon, BubbleMoonIcon } from '@/components/common/TossBubble';
 
 const faqItems = [
   {
@@ -37,20 +37,25 @@ const faqItems = [
 
 const DAY_INDEX: Record<string, number> = { '일': 0, '월': 1, '화': 2, '수': 3, '목': 4, '금': 5, '토': 6 };
 
-/** 지금 진료 상태 한 줄(휴진·진료 전·종료) — 진료 중이면 null */
-function closedNotice(hours: { day: string; startTime?: string; endTime?: string; isClosed?: boolean }[]) {
+/** 지금 진료 상태(휴진·진료 전·종료) — 진료 중이면 null. 말풍선 제목 + 다음 진료 한 줄 */
+function closedNotice(hours: { day: string; startTime?: string; endTime?: string; isClosed?: boolean }[]): { kind: 'before' | 'off'; title: string; sub?: string } | null {
   const now = new Date();
   const today = hours.find(oh => DAY_INDEX[oh.day] === now.getDay());
   if (!today) return null;
-  if (today.isClosed) {
-    const next = hours.find(oh => DAY_INDEX[oh.day] > now.getDay() && !oh.isClosed) || hours.find(oh => !oh.isClosed);
-    return `오늘은 휴진이에요${next ? ` · ${next.day}요일 ${next.startTime}부터 진료해요` : ''}`;
-  }
+  const nextOpen = () => {
+    for (let i = 1; i <= 7; i++) {
+      const day = (now.getDay() + i) % 7;
+      const oh = hours.find(h => DAY_INDEX[h.day] === day && !h.isClosed);
+      if (oh) return `${i === 1 ? '내일' : `${oh.day}요일`} ${oh.startTime}부터 진료해요`;
+    }
+    return undefined;
+  };
+  if (today.isClosed) return { kind: 'off', title: '오늘은 휴진이에요', sub: nextOpen() };
   const t = now.getHours() * 60 + now.getMinutes();
   const [sh, sm] = (today.startTime || '09:00').split(':').map(Number);
   const [eh, em] = (today.endTime || '18:00').split(':').map(Number);
-  if (t < sh * 60 + sm) return `아직 진료 전이에요 · ${today.startTime}부터 진료해요`;
-  if (t > eh * 60 + em) return '오늘 진료가 끝났어요';
+  if (t < sh * 60 + sm) return { kind: 'before', title: '아직 진료 전이에요', sub: `오늘 ${today.startTime}부터 진료해요` };
+  if (t > eh * 60 + em) return { kind: 'off', title: '오늘 진료가 끝났어요', sub: nextOpen() };
   return null;
 }
 
@@ -708,7 +713,7 @@ export default function ProductDetailPage() {
         />
         <div className="pointer-events-auto relative mx-auto max-w-[680px] pt-10">
           {notice && (
-            <TossBubble key={notice} className="mx-auto mb-1.5">{notice}</TossBubble>
+            <TossBubble key={notice.title} className="mx-auto mb-1.5" icon={notice.kind === 'before' ? <BubbleClockIcon /> : <BubbleMoonIcon />} sub={notice.sub}>{notice.title}</TossBubble>
           )}
           {buttons}
         </div>

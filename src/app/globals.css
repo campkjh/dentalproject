@@ -7385,11 +7385,22 @@ textarea.qd-input { height: auto; min-height: 140px; padding: 16px 18px; line-he
     rgba(252, 253, 255, 0.9) 27%, rgba(253, 254, 255, 0.96) 31.5%, #FEFEFE 35%, #FEFEFE 100%);
   -webkit-backdrop-filter: blur(12px) saturate(1.2); backdrop-filter: blur(12px) saturate(1.2);
 }
-.toss-bubble-body {
-  position: relative; margin: 0 0 13px; padding: 11px 20px;
-  font-size: 14.5px; font-weight: 600; line-height: 1.42; letter-spacing: -0.3px; color: #333D4B;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  animation: tossBubbleContent 1s linear both;
+.toss-bubble-body { position: relative; margin: 0 0 13px; padding: 11px 20px; text-align: left; }
+.toss-bubble.has-icon { width: min(100%, 360px); }
+.toss-bubble.has-icon .toss-bubble-body { padding: 14px 20px 13px 62px; }
+.toss-bubble-ic { position: absolute; left: 20px; top: 50%; width: 28px; height: 28px; margin-top: -14px; display: block; animation: tossBubbleIcon 1s linear both; }
+.toss-bubble-ic svg { display: block; }
+.toss-bubble-title, .toss-bubble-sub { margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; animation: tossBubbleContent 1s linear both; }
+.toss-bubble-title { font-size: 14.5px; font-weight: 600; line-height: 1.42; letter-spacing: -0.3px; color: #333D4B; }
+.toss-bubble.has-icon .toss-bubble-title { font-size: 16px; font-weight: 700; color: #191F28; }
+.toss-bubble-sub { margin-top: 2px; font-size: 14px; font-weight: 500; line-height: 1.42; letter-spacing: -0.2px; color: #6B7684; }
+@keyframes tossBubbleIcon {
+  0% { opacity: 0; transform: scale(0.72) rotate(-10deg); }
+  15% { opacity: 0.55; transform: scale(0.9) rotate(-6deg); }
+  30% { opacity: 0.9; transform: scale(1.08) rotate(3deg); }
+  42% { opacity: 1; transform: scale(0.98) rotate(-1deg); }
+  55% { transform: scale(1) rotate(0); }
+  100% { opacity: 1; transform: none; }
 }
 @keyframes tossBubblePop {
   0%    { transform: translateY(10px) scale(0.53, 0.16); }
