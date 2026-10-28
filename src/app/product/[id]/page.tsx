@@ -571,40 +571,34 @@ export default function ProductDetailPage() {
 function ReviewMenu({ reviewId, authorName }: { reviewId: string; authorName: string }) {
   const [open, setOpen] = useState(false);
   const { showToast, showModal } = useStore();
+  const items = [
+    { icon: '/icons/toss/siren.svg', label: '신고하기', run: () => showModal('리뷰를 신고할까요?', '부적절한 리뷰는 검토 후 조치돼요.', () => showToast('리뷰를 신고했어요.')) },
+    { icon: '/icons/toss/user-blocked.svg', label: '차단하기', run: () => showModal(`${authorName}님을 차단할까요?`, '차단한 사람의 리뷰는 더 이상 보이지 않아요.', () => showToast(`${authorName}님을 차단했어요.`)) },
+  ];
 
+  // 리뷰 ⋯ — 프리티풀 툴팁 메뉴(작게→정비율로 커지고 항목은 오른쪽→왼쪽 촤라락)
   return (
-    <div className="relative">
-      <button onClick={() => setOpen(!open)} className="p-1">
-        <MoreHorizontal size={20} style={{ color: '#A4ABBA' }} />
+    <div className="relative" data-review={reviewId}>
+      <button type="button" onClick={() => setOpen(!open)} aria-label="리뷰 메뉴" className="-mr-1 -mt-0.5 flex h-7 w-7 items-center justify-center rounded-full transition-colors hover:bg-[#F2F4F6]">
+        <MoreHorizontal size={18} className="text-[#8B95A1]" />
       </button>
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-full mt-1 z-50 bg-white rounded-xl overflow-hidden scale-in" style={{ border: '1px solid #F2F3F5', boxShadow: '0 4px 20px rgba(0,0,0,0.08)', minWidth: 160 }}>
-            <button
-              onClick={() => {
-                setOpen(false);
-                showModal('리뷰를 신고하시겠습니까?', '부적절한 리뷰는 검토 후 조치됩니다.', () => {
-                  showToast('리뷰가 신고되었습니다.');
-                });
-              }}
-              className="w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors"
-              style={{ fontSize: 14, color: '#2B313D', borderBottom: '1px solid #F2F3F5' }}
-            >
-              리뷰 신고하기
-            </button>
-            <button
-              onClick={() => {
-                setOpen(false);
-                showModal(`${authorName}님을 차단하시겠습니까?`, '차단된 유저의 리뷰는 더 이상 표시되지 않습니다.', () => {
-                  showToast(`${authorName}님이 차단되었습니다.`);
-                });
-              }}
-              className="w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors"
-              style={{ fontSize: 14, color: '#EF4444' }}
-            >
-              유저 차단하기
-            </button>
+          <div className="pop-menu absolute right-0 top-8 z-50" style={{ transformOrigin: 'top right' }}>
+            {items.map((item, i) => (
+              <button
+                type="button"
+                key={item.label}
+                className="pop-menu-item"
+                style={{ animationDelay: `${0.07 + i * 0.035}s` }}
+                onClick={() => { setOpen(false); item.run(); }}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={item.icon} alt="" />
+                {item.label}
+              </button>
+            ))}
           </div>
         </>
       )}
