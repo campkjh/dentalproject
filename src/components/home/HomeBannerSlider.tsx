@@ -89,6 +89,8 @@ export default function HomeBannerSlider() {
   const settleTimer = useRef(0);
   /** 벌 사이 순간 이동 중 — 같은 장이라 제목을 다시 띄우지 않는다 */
   const jumping = useRef(false);
+  /** 손가락이 닿아 있는 동안 — 이때 순간 이동하면 손 밑에서 줄이 튄다 */
+  const touching = useRef(false);
 
   const visibleBanners = useMemo(() => banners.filter((banner) => banner.imageUrl || banner.title), [banners]);
   const count = visibleBanners.length;
@@ -146,7 +148,9 @@ export default function HomeBannerSlider() {
         className="relative flex snap-x snap-mandatory overflow-x-auto hide-scrollbar py-1"
         style={{ gap: GAP, paddingInline: `calc((100% - ${CARD_W}) / 2)` }}
         onPointerDown={() => { pausedUntil.current = Date.now() + 4000; }}
-        onTouchStart={() => { pausedUntil.current = Date.now() + 4000; }}
+        onTouchStart={() => { touching.current = true; pausedUntil.current = Date.now() + 4000; }}
+        onTouchEnd={() => { touching.current = false; pausedUntil.current = Date.now() + 4000; }}
+        onTouchCancel={() => { touching.current = false; }}
         onScroll={(e) => {
           const el = e.currentTarget;
           const center = el.scrollLeft + el.clientWidth / 2;
@@ -163,19 +167,29 @@ export default function HomeBannerSlider() {
             setSlot(best);
             setTurn(t => t + 1);
           }
-          // 멈추면 앞·뒤 벌에서 가운데 벌 같은 장으로 소리 없이 옮긴다(끝없이 도는 것처럼)
-          window.clearTimeout(settleTimer.current);
-          settleTimer.current = window.setTimeout(() => {
-            if (!loop) return;
-            const s = slotRef.current;
-            if (s < count || s >= count * 2) {
-              const mid = count + (((s % count) + count) % count);
-              slotRef.current = mid;
-              setSlot(mid);
-              jumping.current = true;
-              centerOn(mid, 'instant');
-            }
-          }, 140);
+          // 멈추면 앞·뒤 벌에서 가운데 벌 같은 장으로 소리 없이 옮긴다(끝없이 도는 것처럼).
+          //  · 폰은 관성 스크롤이 느려지며 스크롤 신호가 잠깐 끊기는데, 그때 옮기면 미끄러지던 줄이 어긋나 멈췄다(배너가 한쪽으로 치우침)
+          //    → 손을 뗐고 · 카드가 정확히 가운데에 붙어 멈춘 뒤에만 옮긴다. 아직이면 조금 뒤 다시 본다
+          const settle = () => {
+            window.clearTimeout(settleTimer.current);
+            settleTimer.current = window.setTimeout(() => {
+              if (!loop) return;
+              const track = trackRef.current;
+              const s = slotRef.current;
+              const card = track?.children[s] as HTMLElement | undefined;
+              if (!track || !card) return;
+              const off = card.offsetLeft + card.offsetWidth / 2 - (track.scrollLeft + track.clientWidth / 2);
+              if (touching.current || Math.abs(off) > 1) { settle(); return; }
+              if (s < count || s >= count * 2) {
+                const mid = count + (((s % count) + count) % count);
+                slotRef.current = mid;
+                setSlot(mid);
+                jumping.current = true;
+                centerOn(mid, 'instant');
+              }
+            }, 220);
+          };
+          settle();
         }}
       >
         {items.map((banner, i) => (
