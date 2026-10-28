@@ -8,7 +8,8 @@ import { createPortal } from 'react-dom';
 import { Search, ChevronLeft, ChevronRight, ChevronDown, X, ArrowUp } from 'lucide-react';
 import ProductCard from '@/components/common/ProductCard';
 import HospitalToneCard from '@/components/common/HospitalToneCard';
-import { Reveal, ReviewCommentRow } from '@/components/detail/DetailKit';
+import ReviewMarquee from '@/components/home/ReviewMarquee';
+import { Reveal } from '@/components/detail/DetailKit';
 import MobileHomeHeader from '@/components/common/MobileHomeHeader';
 import HomeBannerSlider from '@/components/home/HomeBannerSlider';
 import { useStore } from '@/store';
@@ -93,8 +94,6 @@ export default function HomePage() {
   const recentProducts = recentlyViewed
     .map(id => products.find(p => p.id === id))
     .filter(Boolean) as typeof products;
-  const dentalProducts = products.filter(p => p.category === 'dental').slice(0, 4);
-  const plasticProducts = products.filter(p => p.category === 'plastic').slice(0, 4);
 
   // 이번 주 인기 많은 패키지: 리뷰 많은 순
   const weeklyPopularPackages = [...products].sort((a, b) => b.reviewCount - a.reviewCount).slice(0, 8);
@@ -339,6 +338,22 @@ export default function HomePage() {
           <PcCategoryRow />
         </div>
 
+        {/* 인기 상품 */}
+        <div className="mb-6">
+          <SectionHeader
+            title="인기 상품"
+            subtitle="많이 담고 예약한 상품을 확인해보세요."
+            action={<MoreButton href="/search" label="전체보기" />}
+          />
+          <div className="px-[10px] pc:px-0">
+            <div className="grid grid-cols-2 pc:grid-cols-5 gap-2.5 pc:gap-4 pc:[&>*:nth-child(n+6)]:hidden stagger-children">
+              {popularProducts.map((product) => (
+                <ProductCard key={product.id} product={product} index={popularProducts.indexOf(product)} />
+              ))}
+            </div>
+          </div>
+        </div>
+
         {/* 최근 본 태그 */}
         <RecentTagsSection tags={recentSearches} onRemove={removeRecentSearch} />
 
@@ -351,88 +366,10 @@ export default function HomePage() {
           fallback={popularProducts}
         />
 
-        {/* 치과 섹션 */}
-        {dentalProducts.length > 0 && (
-          <div className="mb-8">
-            <SectionHeader
-              title="치과"
-              subtitle="치아미백부터 임플란트까지 인기 시술을 모았어요."
-              icon="/icons/dental.svg"
-              action={<MoreButton href="/search?category=dental" />}
-            />
-            <div className="px-[10px] pc:px-0">
-              <div className="flex snap-x gap-2.5 overflow-x-auto hide-scrollbar pb-2 scroll-px-[10px] pc:grid pc:grid-cols-5 pc:gap-4 pc:overflow-visible pc:[&>*:nth-child(n+6)]:hidden">
-                {dentalProducts.map((product) => (
-                  <div key={product.id} className="w-[44vw] max-w-[200px] flex-shrink-0 snap-start pc:w-auto pc:max-w-none pc:shrink">
-                    <ProductCard product={product} />
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* 성형외과 섹션 */}
-        {plasticProducts.length > 0 && (
-          <div className="mb-8">
-            <SectionHeader
-              title="성형외과"
-              subtitle="요즘 많이 찾는 성형·리프팅 패키지를 확인해보세요."
-              icon="/icons/plastic.svg"
-              action={<MoreButton href="/search?category=plastic" />}
-            />
-            <div className="px-[10px] pc:px-0">
-              <div className="flex snap-x gap-2.5 overflow-x-auto hide-scrollbar pb-2 scroll-px-[10px] pc:grid pc:grid-cols-5 pc:gap-4 pc:overflow-visible pc:[&>*:nth-child(n+6)]:hidden">
-                {plasticProducts.map((product) => (
-                  <div key={product.id} className="w-[44vw] max-w-[200px] flex-shrink-0 snap-start pc:w-auto pc:max-w-none pc:shrink">
-                    <ProductCard product={product} />
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* 근처 핫플레이스 알아보기 */}
-        <NearbyHotPlaces currentLocation={currentLocation} hospitals={hospitals} />
-
-        {/* 나한테 꿀이되는 후기 */}
-        <div className="mb-8">
-          <SectionHeader title="나한테 꿀이되는 후기" subtitle="실제 방문자가 남긴 시술 경험을 살펴보세요." />
-          <div className="px-[10px] pc:px-0">
-            {/* 프리티풀 상세의 둥실 리뷰 카드 — 흰 카드·댓글형 줄·각자 다른 속도로 떠다닌다 */}
-            <div className="-mx-[10px] overflow-x-auto px-[10px] pb-3 pt-1 hide-scrollbar pc:mx-0 pc:px-0">
-              <div className="flex items-start gap-3" style={{ width: 'max-content' }}>
-                {reviews.slice(0, 10).map((review, i) => {
-                  const relatedProduct = products.find(p => p.id === review.productId) || products.find(p => p.hospitalId === review.hospitalId);
-                  const photos = [review.beforeImage, review.afterImage].filter(Boolean) as string[];
-                  return (
-                    <Link
-                      key={review.id}
-                      href={relatedProduct ? `/product/${relatedProduct.id}` : `/review/${review.id}`}
-                      className="review-float block w-[248px] shrink-0 rounded-[20px] border border-[#EEF0F3] bg-white p-4 active:scale-[0.98]"
-                      style={{ marginTop: (i % 3) * 14, animation: `reviewFloat ${(4.2 + (i % 3) * 0.9).toFixed(1)}s ease-in-out ${(i * 0.35).toFixed(2)}s infinite` }}
-                    >
-                      {photos.length > 0 && (
-                        <div className="mb-3 flex gap-1 overflow-hidden rounded-[14px]">
-                          {photos.map((src, pi) => (
-                            <span key={src} className="relative h-[96px] flex-1 bg-[#F2F4F6]">
-                              <img src={src} alt="" className="h-full w-full object-cover" loading="lazy" />
-                              <span className="absolute left-1.5 top-1.5 rounded-[6px] bg-black/45 px-1.5 text-[11px] font-semibold leading-[18px] text-white">{pi === 0 && review.beforeImage ? '전' : '후'}</span>
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                      <ReviewCommentRow compact review={{ id: review.id, name: review.authorName, avatarSeed: review.authorId || review.authorName, rating: review.rating, date: review.date, content: review.content }} />
-                      <p className="mt-2.5 truncate rounded-[10px] bg-[#F7F8FA] px-2.5 py-2 text-[12.5px] font-semibold text-[#4E5968]">
-                        {review.treatmentName} · {review.totalCost.toLocaleString()}원
-                      </p>
-                    </Link>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
+        {/* 나한테 꿀이되는 후기 — 위아래 두 줄이 서로 반대로 흘러가는 캐러셀(PC 는 카드를 정비례로 크게) */}
+        <div className="mb-8 pc:-mx-8">
+          <div className="pc:px-8"><SectionHeader title="나한테 꿀이되는 후기" subtitle="실제 방문자가 남긴 시술 경험을 살펴보세요." /></div>
+          <ReviewMarquee reviews={reviews.slice(0, 12)} products={products} />
         </div>
 
         {/* 이번 주 인기 많은 패키지 */}
@@ -511,22 +448,6 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* 인기 상품 */}
-        <div className="mb-6">
-          <SectionHeader
-            title="인기 상품"
-            subtitle="많이 담고 예약한 상품을 확인해보세요."
-            action={<MoreButton href="/search" label="전체보기" />}
-          />
-          <div className="px-[10px] pc:px-0">
-            <div className="grid grid-cols-2 pc:grid-cols-5 gap-2.5 pc:gap-4 pc:[&>*:nth-child(n+6)]:hidden stagger-children">
-              {popularProducts.map((product) => (
-                <ProductCard key={product.id} product={product} index={popularProducts.indexOf(product)} />
-              ))}
-            </div>
-          </div>
-        </div>
-
       </div>{/* End desktop content wrapper */}
 
       {/* Footer */}
@@ -582,67 +503,6 @@ export default function HomePage() {
   );
 }
 
-/* ===================== 근처 핫플레이스 ===================== */
-
-const BLOB = 'https://4ipmgcqyzk6ysqa7.public.blob.vercel-storage.com';
-const HOTSPOTS = [
-  {
-    id: 'suwon',
-    name: '수원',
-    sub: '행궁동',
-    region: '수원시',
-    tags: ['#아늑한 카페'],
-    image: `${BLOB}/etc_1620284296.jpg`,
-    color: '#8037FF',
-  },
-  {
-    id: 'gangnam',
-    name: '강남',
-    sub: '',
-    region: '서울시 강남구',
-    tags: ['#놀면뭐하니'],
-    image: `${BLOB}/etc_1669967008.jpg`,
-    color: '#8037FF',
-  },
-  {
-    id: 'apgujeong',
-    name: '압구정',
-    sub: '',
-    region: '서울시 강남구',
-    tags: ['#페미아드 시그니처...'],
-    image: `${BLOB}/etc_1672388697.jpg`,
-    color: '#10B981',
-  },
-  {
-    id: 'hongdae',
-    name: '홍대',
-    sub: '합정',
-    region: '서울시 마포구',
-    tags: ['#힙한 거리'],
-    image: `${BLOB}/etc_1698051602.jpg`,
-    color: '#F59E0B',
-  },
-  {
-    id: 'jamsil',
-    name: '잠실',
-    sub: '송파',
-    region: '서울시 송파구',
-    tags: ['#석촌호수'],
-    image: `${BLOB}/etc_1721806033.jpg`,
-    color: '#EF4444',
-  },
-  {
-    id: 'yeouido',
-    name: '여의도',
-    sub: '',
-    region: '서울시 영등포구',
-    tags: ['#한강뷰'],
-    image: `${BLOB}/etc_1723509679.jpg`,
-    color: '#06B6D4',
-  },
-];
-
-/* ===================== Home Skeleton ===================== */
 function HomeSkeleton() {
   return (
     <div className="px-2.5 pc:px-0 space-y-8 mb-8">
@@ -727,107 +587,6 @@ function HomeSkeleton() {
     </div>
   );
 }
-
-function NearbyHotPlaces({
-  currentLocation,
-  hospitals,
-}: {
-  currentLocation: string;
-  hospitals: { id: string; location: string; name: string }[];
-}) {
-  const sorted = [...HOTSPOTS].sort((a, b) => {
-    const aMatch = currentLocation.includes(a.name) ? -1 : 0;
-    const bMatch = currentLocation.includes(b.name) ? -1 : 0;
-    return aMatch - bMatch;
-  });
-
-  return (
-    <div className="mb-8">
-      <SectionHeader title="근처 핫플레이스 알아보기" subtitle="나와 가까운 핫플이 어디인지 알려드려요." />
-      <div className="px-2.5 pc:px-0">
-        <div className="flex gap-5 overflow-x-auto hide-scrollbar pb-2">
-          {sorted.map((spot) => (
-            <Link
-              key={spot.id}
-              href={`/search?region=${encodeURIComponent(spot.region)}`}
-              className="flex-shrink-0 flex flex-col items-center card-press"
-              style={{ width: 140 }}
-            >
-              {/* Container: bubble overlaps image top */}
-              <div className="relative" style={{ paddingTop: 16 }}>
-                {/* Speech bubble — overlaps top of image */}
-                <div
-                  className="absolute left-1/2 z-10 flex flex-col items-center"
-                  style={{ top: 0, transform: 'translateX(-50%)', gap: 0 }}
-                >
-                  <span
-                    className="text-[13px] font-medium text-gray-800 bg-white rounded-full px-3 py-1 whitespace-nowrap max-w-[140px] truncate"
-                    style={{
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-                      marginBottom: -1,
-                    }}
-                  >
-                    {spot.tags[0]}
-                  </span>
-                  {/* Tail — flush against pill */}
-                  <div
-                    style={{
-                      width: 0,
-                      height: 0,
-                      borderLeft: '5px solid transparent',
-                      borderRight: '5px solid transparent',
-                      borderTop: '5px solid #fff',
-                      filter: 'drop-shadow(0 1px 1px rgba(0,0,0,0.04))',
-                    }}
-                  />
-                </div>
-
-                {/* Image shape with dimmed overlay + text inside */}
-                <div
-                  className="relative overflow-hidden"
-                  style={{
-                    width: 140,
-                    height: 140,
-                    aspectRatio: '1/1',
-                    borderRadius: '100px 100px 100px 12px',
-                    marginTop: 8,
-                  }}
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={spot.image}
-                    alt={spot.name}
-                    className="w-full h-full object-cover"
-                  />
-                  {/* Dim overlay */}
-                  <div
-                    className="absolute inset-0"
-                    style={{
-                      background: 'linear-gradient(to top, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.05) 60%)',
-                    }}
-                  />
-                  {/* Text inside image */}
-                  <div className="absolute bottom-3 left-3 right-3">
-                    <p className="text-[16px] font-bold text-white leading-tight">
-                      {spot.name}
-                    </p>
-                    {spot.sub && (
-                      <p className="text-[13px] font-medium text-white/80 leading-tight">
-                        {spot.sub}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </Link>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ============================== Live Questions Teaser ============================== */
 
 // PC 카테고리 — 페이지 넘김 없이 한 줄(프리티풀 PC 홈 카테고리 줄처럼 아이콘 칸 + 이름)
 function PcCategoryRow() {
