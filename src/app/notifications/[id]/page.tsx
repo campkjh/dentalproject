@@ -33,7 +33,7 @@ export default function NotificationDetailPage() {
   if (!notification) {
     return (
       <div className="min-h-screen bg-white max-w-[500px] mx-auto">
-        <TopBar title="쪽지상세" />
+        <TopBar title="쪽지" />
         <div className="flex items-center justify-center py-20">
           <p className="text-gray-500">쪽지를 찾을 수 없습니다</p>
         </div>
@@ -45,7 +45,7 @@ export default function NotificationDetailPage() {
 
   return (
     <div className="min-h-screen bg-white max-w-[500px] mx-auto">
-      <TopBar title="쪽지상세" />
+      <TopBar title="쪽지" />
 
       <div className="px-2.5 py-6">
         <span className={`inline-block text-xs font-medium px-2.5 py-1 rounded-full mb-3 ${badge.className}`}>

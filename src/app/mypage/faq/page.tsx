@@ -105,7 +105,7 @@ export default function FAQPage() {
 
   return (
     <div className="min-h-screen bg-white max-w-[500px] mx-auto page-enter">
-      <TopBar title="자주하는질문" />
+      <TopBar title="자주 묻는 질문" />
 
       {/* Tabs — same pattern as 예약내역 (partner-community-categories) */}
       <div className="partner-community-category-shell sticky top-[48px] z-30 bg-white">

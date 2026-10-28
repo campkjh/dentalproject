@@ -2,7 +2,8 @@
 
 import { useRef, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Camera, Star, X, Sparkles, ChevronLeft, Check, Stethoscope } from 'lucide-react';
+import { Camera, Star, X, Sparkles, Check, Stethoscope } from 'lucide-react';
+import TopBar from '@/components/common/TopBar';
 import { useStore } from '@/store';
 import Avatar from '@/components/common/Avatar';
 import { resolveProductImageUrl } from '@/lib/images';
@@ -160,13 +161,10 @@ ${hasAspectFeedback && aspects.kindness >= 4 ? '원장님과 스태프분들의 
 
   return (
     <div className="h-[100dvh] bg-white w-full max-w-[500px] lg:max-w-[560px] mx-auto flex flex-col overflow-hidden">
-      {/* Sticky header */}
-      <header className="flex-shrink-0 h-12 flex items-center px-2.5 border-b border-gray-100 bg-white">
-        <button onClick={() => router.back()} className="p-1 -ml-1">
-          <ChevronLeft size={22} className="text-gray-900" />
-        </button>
-        <h1 className="text-[16px] font-bold ml-1">리뷰 작성</h1>
-      </header>
+      {/* 머리 — 프리티풀 퀵매칭 어법(공통 TopBar) */}
+      <div className="flex-shrink-0">
+        <TopBar title="리뷰 작성" />
+      </div>
 
       {/* Scrollable content */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden pb-4 w-full">

@@ -1,7 +1,8 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
-import { ChevronLeft, Info } from 'lucide-react';
+import { Info } from 'lucide-react';
+import TopBar from '@/components/common/TopBar';
 import { useSession } from '@/lib/supabase/SessionProvider';
 import { useReservationRealtimeRefresh } from '@/lib/realtime/reservations';
 import { useStore } from '@/store';
@@ -36,7 +37,7 @@ export default function ReservationDetailPage() {
   if (!reservation) {
     return (
       <div className="min-h-screen bg-white max-w-[500px] mx-auto">
-        <PageHeader onBack={() => router.back()} />
+        <TopBar title="예약 정보" />
         <div className="flex items-center justify-center py-20">
           <p className="text-gray-400 text-sm">예약 정보를 찾을 수 없습니다.</p>
         </div>
@@ -83,7 +84,7 @@ export default function ReservationDetailPage() {
 
   return (
     <div className="min-h-screen bg-white max-w-[500px] mx-auto pb-12 page-enter">
-      <PageHeader onBack={() => router.back()} />
+      <TopBar title="예약 정보" />
 
       <div className="px-4 space-y-3 pb-8">
         {/* ============ Status + Product + Dates + Action ============ */}
@@ -294,17 +295,6 @@ export default function ReservationDetailPage() {
 }
 
 /* ============================== Sub-components ============================== */
-
-function PageHeader({ onBack }: { onBack: () => void }) {
-  return (
-    <header className="sticky top-0 z-40 bg-white h-14 flex items-center px-4">
-      <button onClick={onBack} className="p-1 -ml-1" aria-label="뒤로가기">
-        <ChevronLeft size={26} strokeWidth={2.4} className="text-[#2B313D]" />
-      </button>
-      <h1 className="text-[18px] font-bold ml-2 text-[#2B313D]">정보</h1>
-    </header>
-  );
-}
 
 function DataRow({ label, value }: { label: string; value: string }) {
   return (

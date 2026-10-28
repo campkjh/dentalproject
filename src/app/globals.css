@@ -7323,3 +7323,20 @@ body.partner-profile-editing .partner-bottom-nav {
   from { opacity: 0; transform: translateY(24px) scale(0.97); filter: blur(4px); }
   to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
 }
+
+/* ═══ 상세 화면 머리 = 프리티풀 퀵매칭 어법(.qd-*) — components/common/TopBar 와 짝 ═══
+   · 머리는 56 흰 줄에 40 둥근 뒤로 버튼(퀵매칭 화살표)만, 제목은 그 아래 큰 글씨 24 로 아래→위 페이드(부제 15 회색 .18s 늦게).
+   · 스크롤하면 머리 아래 가는 선 대신 흰 그라데이션 그늘(.is-scrolled). PC(1024↑)는 전체 헤더가 있어 머리 줄은 숨기고 큰 제목만 */
+.qd-header { position: sticky; top: 0; z-index: 30; display: flex; align-items: center; gap: 4px; height: 56px; padding: 0 8px; background: #fff; }
+.qd-header::after { content: ''; position: absolute; left: 0; right: 0; top: 100%; height: 14px; background: linear-gradient(#fff, rgba(255,255,255,0)); opacity: 0; transition: opacity .2s ease; pointer-events: none; }
+.qd-header.is-scrolled::after { opacity: 1; }
+.qd-back { width: 40px; height: 40px; flex: none; display: flex; align-items: center; justify-content: center; border: 0; background: none; border-radius: 20px; cursor: pointer; transition: background-color .15s, transform .15s; }
+.qd-back:active { background: #F2F4F6; transform: scale(.94); }
+.qd-titlewrap { padding: 8px 24px 22px; }
+.qd-h1 { margin: 0; font-size: 24px; font-weight: 600; line-height: 1.4; letter-spacing: -0.4px; color: #191F28; }
+.qd-sub { margin: 10px 0 0; font-size: 15px; line-height: 1.5; color: #8B95A1; }
+.qd-a-title { animation: qdFadeUp .5s cubic-bezier(.22, .61, .36, 1) both; }
+.qd-a-sub { animation: qdFadeUp .5s cubic-bezier(.22, .61, .36, 1) .18s both; }
+@keyframes qdFadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+@media (min-width: 1024px) { .qd-header:not(.in-panel) { display: none; } .qd-titlewrap { padding: 32px 0 22px; } }
+@media (prefers-reduced-motion: reduce) { .qd-a-title, .qd-a-sub { animation: none !important; } }
