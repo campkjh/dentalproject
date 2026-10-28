@@ -61,6 +61,23 @@ function BannerCard({ banner, index, active, turn }: { banner: HomeBanner; index
   );
 }
 
+/** 가운데 배너의 키 컬러가 위에서 아래로 은은하게 번지는 바탕 — 장마다 한 겹, 바뀌면 천천히 겹쳐 바뀐다 */
+function BannerWash({ banner, active }: { banner: HomeBanner; active: boolean }) {
+  const tone = useImageTone(banner.mobileImageUrl || banner.imageUrl || null, 'square');
+  if (!tone) return null;
+  return (
+    <div
+      aria-hidden
+      className="pointer-events-none absolute inset-x-0 -top-4 bottom-[-72px]"
+      style={{
+        background: `linear-gradient(180deg, color-mix(in srgb, ${tone.bg} 85%, #ffffff) 0%, color-mix(in srgb, ${tone.bg} 45%, #ffffff) 45%, rgba(255,255,255,0) 100%)`,
+        opacity: active ? 1 : 0,
+        transition: 'opacity .9s ease',
+      }}
+    />
+  );
+}
+
 export default function HomeBannerSlider() {
   const [banners, setBanners] = useState<HomeBanner[]>(defaultHomeBanners);
   /** 세 벌 이어 붙인 줄에서의 자리(가운데 벌 = count ~ 2count-1) */
@@ -123,9 +140,10 @@ export default function HomeBannerSlider() {
 
   return (
     <section aria-label="홈 배너" className="relative mb-4 pc:-mx-8">
+      {visibleBanners.map((banner, i) => <BannerWash key={banner.id} banner={banner} active={i === real} />)}
       <div
         ref={trackRef}
-        className="flex snap-x snap-mandatory overflow-x-auto hide-scrollbar py-1"
+        className="relative flex snap-x snap-mandatory overflow-x-auto hide-scrollbar py-1"
         style={{ gap: GAP, paddingInline: `calc((100% - ${CARD_W}) / 2)` }}
         onPointerDown={() => { pausedUntil.current = Date.now() + 4000; }}
         onTouchStart={() => { pausedUntil.current = Date.now() + 4000; }}

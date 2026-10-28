@@ -5,10 +5,11 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createPortal } from 'react-dom';
-import { Search, ChevronLeft, ChevronRight, ChevronDown, X, ArrowUp } from 'lucide-react';
+import { Search, ChevronDown, X, ArrowUp } from 'lucide-react';
 import ProductCard from '@/components/common/ProductCard';
 import HospitalToneCard from '@/components/common/HospitalToneCard';
 import ReviewMarquee from '@/components/home/ReviewMarquee';
+import { useImageTone } from '@/lib/image-tone';
 import { Reveal } from '@/components/detail/DetailKit';
 import MobileHomeHeader from '@/components/common/MobileHomeHeader';
 import HomeBannerSlider from '@/components/home/HomeBannerSlider';
@@ -333,7 +334,8 @@ export default function HomePage() {
 
 
         {/* Categories — 5x2 pager (swipe horizontally) */}
-        <div ref={categorySectionRef}>
+        {/* 배너 뒤 색 번짐(HomeBannerSlider BannerWash)이 아래로 흘러와도 칸은 그 위에 놓이게 */}
+        <div ref={categorySectionRef} className="relative z-[1]">
           <CategoryPager />
           <PcCategoryRow />
         </div>
@@ -582,152 +584,102 @@ function HomeSkeleton() {
   );
 }
 
+/** 카테고리 아이콘 타일 — 프리티풀 홈 카테고리 칸 그대로: 둥근 타일(60 · 모서리 20)에 그 아이콘 그림 색을 아주 옅게 깔고 아이콘 44 */
+function CategoryTile({ name, icon, href, index }: { name: string; icon: string; href: string; index: number }) {
+  const tone = useImageTone(icon, 'square');
+  // 사진 색(파스텔)을 흰색에 한 번 더 섞어 아주 옅게 — 색을 아직 못 뽑았으면 앱 회색
+  const tint = tone ? `color-mix(in srgb, ${tone.bg} 62%, #ffffff)` : '#F4F5F7';
+  return (
+    <Link
+      href={href}
+      className="group flex flex-col items-center gap-1.5"
+      style={{ animation: `fadeSlideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) ${0.12 + index * 0.03}s both` }}
+    >
+      <span
+        className="flex h-[60px] w-[60px] items-center justify-center rounded-[20px] transition-[transform,background-color] duration-300 group-active:scale-95 pc:h-16 pc:w-16 pc:rounded-[21px] pc:group-hover:-translate-y-0.5"
+        style={{ backgroundColor: tint }}
+      >
+        <img src={icon} alt="" className="h-11 w-11 object-contain pc:h-[46px] pc:w-[46px]" />
+      </span>
+      <span className="text-center text-[12px] font-medium leading-tight text-[#51535C] pc:text-[13px]">{name}</span>
+    </Link>
+  );
+}
+
+/** '전체' 칸 — 펼치면 '접기'(화살표가 돌아간다) */
+function CategoryMoreTile({ open, onToggle, index }: { open: boolean; onToggle: () => void; index: number }) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-expanded={open}
+      className="group flex flex-col items-center gap-1.5"
+      style={{ animation: `fadeSlideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) ${0.12 + index * 0.03}s both` }}
+    >
+      <span className="flex h-[60px] w-[60px] items-center justify-center rounded-[20px] bg-[#F2F4F6] transition-transform duration-300 group-active:scale-95">
+        {open ? (
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden><path d="M6 15l6-6 6 6" stroke="#4E5968" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+        ) : (
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden>
+            {[6, 12, 18].flatMap(x => [6, 12, 18].map(y => <circle key={`${x}-${y}`} cx={x} cy={y} r="1.9" fill="#4E5968" />))}
+          </svg>
+        )}
+      </span>
+      <span className="text-center text-[12px] font-medium leading-tight text-[#51535C]">{open ? '접기' : '전체'}</span>
+    </button>
+  );
+}
+
 // PC 카테고리 — 페이지 넘김 없이 한 줄(프리티풀 PC 홈 카테고리 줄처럼 아이콘 칸 + 이름)
 function PcCategoryRow() {
   const categories = useStore(s => s.categories);
   return (
     <div className="mb-10 mt-2 hidden grid-cols-[repeat(auto-fill,minmax(72px,1fr))] gap-x-2 gap-y-5 pc:grid">
-      {categories.map(cat => (
-        <Link key={cat.id} href={`/search?category=${cat.id}`} className="group flex flex-col items-center gap-2">
-          <span className="flex h-[64px] w-[64px] items-center justify-center rounded-[20px] bg-[#F4F5F7] transition-transform duration-200 group-hover:-translate-y-0.5 group-active:scale-95">
-            <img src={cat.icon} alt="" className="h-11 w-11" />
-          </span>
-          <span className="text-[13px] font-semibold leading-tight text-[#4E5968]">{cat.name}</span>
-        </Link>
+      {categories.map((cat, i) => (
+        <CategoryTile key={cat.id} name={cat.name} icon={cat.icon} href={`/search?category=${cat.id}`} index={i} />
       ))}
     </div>
   );
 }
 
+// 모바일 카테고리 — 옆으로 넘기지 않고 두 줄(9칸 + '전체')만 보이다가 '전체'를 누르면 아래로 촤라락 펼쳐진다.
+//  펼치면 '전체' 자리에 열 번째 칸이 들어가고 '접기'는 펼친 목록 맨 끝으로
 function CategoryPager() {
   const categories = useStore((s) => s.categories);
-  const pageSize = 10; // 5 cols x 2 rows
-  const totalPages = Math.ceil(categories.length / pageSize);
-  const scrollerRef = useRef<HTMLDivElement>(null);
-  const [activePage, setActivePage] = useState(0);
-
-  const handleScroll = () => {
-    const el = scrollerRef.current;
-    if (!el) return;
-    const pageIndex = Math.round(el.scrollLeft / el.clientWidth);
-    setActivePage(pageIndex);
-  };
-
-  const scrollToPage = (direction: 'prev' | 'next') => {
-    const el = scrollerRef.current;
-    if (!el) return;
-    const nextPage =
-      direction === 'prev'
-        ? Math.max(0, activePage - 1)
-        : Math.min(totalPages - 1, activePage + 1);
-
-    el.scrollTo({
-      left: nextPage * el.clientWidth,
-      behavior: 'smooth',
-    });
-    setActivePage(nextPage);
-  };
-
+  const [open, setOpen] = useState(false);
+  const FIRST = 9;
+  const hasMore = categories.length > FIRST + 1;
+  const first = categories.slice(0, hasMore ? FIRST : categories.length);
+  const tenth = hasMore ? categories[FIRST] : null;
+  const rest = hasMore ? categories.slice(FIRST + 1) : [];
   return (
-    <div className="mb-8 pc:hidden">
-      <div className="relative">
-        {totalPages > 1 && (
-          <>
-            {activePage > 0 && (
-              <button
-                type="button"
-                aria-label="이전 카테고리"
-                onClick={() => scrollToPage('prev')}
-                className="absolute left-1 lg:left-3 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full flex items-center justify-center text-gray-800 transition-all duration-200 hover:scale-105 active:scale-95"
-                style={{
-                  background: 'rgba(255, 255, 255, 0.58)',
-                  border: '1px solid rgba(255, 255, 255, 0.72)',
-                  boxShadow: '0 8px 28px rgba(17, 24, 39, 0.14)',
-                  backdropFilter: 'blur(16px) saturate(160%)',
-                  WebkitBackdropFilter: 'blur(16px) saturate(160%)',
-                }}
-              >
-                <ChevronLeft size={20} strokeWidth={2.4} />
-              </button>
-            )}
-            {activePage < totalPages - 1 && (
-              <button
-                type="button"
-                aria-label="다음 카테고리"
-                onClick={() => scrollToPage('next')}
-                className="absolute right-1 lg:right-3 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full flex items-center justify-center text-gray-800 transition-all duration-200 hover:scale-105 active:scale-95"
-                style={{
-                  background: 'rgba(255, 255, 255, 0.58)',
-                  border: '1px solid rgba(255, 255, 255, 0.72)',
-                  boxShadow: '0 8px 28px rgba(17, 24, 39, 0.14)',
-                  backdropFilter: 'blur(16px) saturate(160%)',
-                  WebkitBackdropFilter: 'blur(16px) saturate(160%)',
-                }}
-              >
-                <ChevronRight size={20} strokeWidth={2.4} />
-              </button>
-            )}
-          </>
-        )}
-
-        <div
-          ref={scrollerRef}
-          onScroll={handleScroll}
-          className="flex overflow-x-auto hide-scrollbar"
-          style={{
-            scrollSnapType: 'x mandatory',
-            WebkitOverflowScrolling: 'touch',
-          }}
-        >
-          {Array.from({ length: totalPages }).map((_, pageIdx) => {
-            const pageItems = categories.slice(pageIdx * pageSize, (pageIdx + 1) * pageSize);
-            return (
-              <div
-                key={pageIdx}
-                className="flex-shrink-0 w-full px-[10px]"
-                style={{ scrollSnapAlign: 'start' }}
-              >
-                <div className="grid grid-cols-5 gap-y-5 gap-x-2 max-[390px]:gap-x-[10px]">
-                  {pageItems.map((cat) => (
-                    <Link
-                      key={cat.id}
-                      href={`/search?category=${cat.id}`}
-                      className="flex flex-col items-center gap-2 card-press"
-                    >
-                      <div className="w-[64px] h-[64px] rounded-[20px] bg-[#F4F5F7] flex items-center justify-center max-[390px]:w-full max-[390px]:h-auto max-[390px]:aspect-square">
-                        <img src={cat.icon} alt={cat.name} className="w-11 h-11 max-[390px]:w-[68%] max-[390px]:h-auto" />
-                      </div>
-                      <span className="text-[13px] text-gray-700 font-semibold text-center leading-tight">
-                        {cat.name}
-                      </span>
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+    <div className="mb-8 px-[10px] pc:hidden">
+      <div className="grid grid-cols-5 gap-x-1 gap-y-4 py-2">
+        {first.map((cat, i) => (
+          <CategoryTile key={cat.id} name={cat.name} icon={cat.icon} href={`/search?category=${cat.id}`} index={i} />
+        ))}
+        {tenth && (open
+          ? <CategoryTile key={tenth.id} name={tenth.name} icon={tenth.icon} href={`/search?category=${tenth.id}`} index={0} />
+          : <CategoryMoreTile open={false} onToggle={() => setOpen(true)} index={FIRST} />)}
       </div>
-
-      {totalPages > 1 && (
-        <div className="flex justify-center gap-1 mt-3">
-          {Array.from({ length: totalPages }).map((_, i) => (
-            <span
-              key={i}
-              className="h-1 rounded-full transition-all duration-300"
-              style={{
-                width: i === activePage ? 28 : 10,
-                height: 3,
-                backgroundColor: i === activePage ? '#111827' : '#E5E7EB',
-              }}
-            />
-          ))}
+      {hasMore && (
+        <div className="grid transition-[grid-template-rows,opacity] duration-500" style={{ gridTemplateRows: open ? '1fr' : '0fr', opacity: open ? 1 : 0, transitionTimingFunction: 'cubic-bezier(0.22, 1, 0.36, 1)' }}>
+          <div className="overflow-hidden">
+            {/* 펼칠 때마다 다시 그려 칸이 차례로 떠오른다 */}
+            {open && (
+              <div className="grid grid-cols-5 gap-x-1 gap-y-4 pb-2 pt-2">
+                {rest.map((cat, i) => (
+                  <CategoryTile key={cat.id} name={cat.name} icon={cat.icon} href={`/search?category=${cat.id}`} index={i + 1} />
+                ))}
+                <CategoryMoreTile open onToggle={() => setOpen(false)} index={rest.length + 1} />
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>
   );
 }
-
 type ProductType = React.ComponentProps<typeof ProductCard>['product'];
 
 function RecentlyViewedSection({
