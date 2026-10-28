@@ -403,61 +403,13 @@ export default function PocketPage() {
 
 /* ============================== TopProductsCarousel ============================== */
 
+// 실시간 TOP 인기 시술 — 카드는 모두 같은 크기(가까운 카드만 키우던 효과는 뺐다)
 function TopProductsCarousel({ products }: { products: Product[] }) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const rafRef = useRef<number | null>(null);
-
-  const updateScales = () => {
-    const container = containerRef.current;
-    if (!container) return;
-    const cs = window.getComputedStyle(container);
-    const leftPad = parseFloat(cs.paddingLeft) || 0;
-    const first = container.children[0] as HTMLElement | undefined;
-    const cardWidth = first?.offsetWidth ?? 156;
-    // 왼쪽에 붙은 카드 가운데를 기준으로 멀어질수록 살짝 작게
-    const activeX = container.scrollLeft + leftPad + cardWidth / 2;
-    for (let i = 0; i < container.children.length; i++) {
-      const el = container.children[i] as HTMLElement;
-      const cardCenter = el.offsetLeft + el.offsetWidth / 2;
-      const dist = Math.abs(activeX - cardCenter);
-      const ref = el.offsetWidth + 12;
-      const t = Math.min(1, dist / ref);
-      const scale = 1.0 - t * 0.1;
-      el.style.transform = `scale(${scale})`;
-    }
-  };
-
-  const handleScroll = () => {
-    if (rafRef.current != null) return;
-    rafRef.current = requestAnimationFrame(() => {
-      rafRef.current = null;
-      updateScales();
-    });
-  };
-
-  useLayoutEffect(() => {
-    updateScales();
-    const onResize = () => updateScales();
-    window.addEventListener('resize', onResize);
-    return () => {
-      window.removeEventListener('resize', onResize);
-      if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
-    };
-  }, [products.length]);
-
   return (
-    <div
-      ref={containerRef}
-      onScroll={handleScroll}
-      className="hide-scrollbar flex snap-x snap-mandatory scroll-pl-4 gap-3 overflow-x-auto pb-6 pl-4 pr-12 pc:pl-0 pc:scroll-pl-0"
-    >
+    <div className="hide-scrollbar flex snap-x snap-mandatory scroll-pl-4 gap-3 overflow-x-auto pb-6 pl-4 pr-12 pc:pl-0 pc:scroll-pl-0">
       {products.map((product, idx) => (
-        <div
-          key={product.id}
-          className="w-[156px] flex-shrink-0 origin-left snap-start will-change-transform pc:w-[200px]"
-          style={{ transform: `scale(${idx === 0 ? 1.0 : 0.9})` }}
-        >
-          <ProductCard product={product} />
+        <div key={product.id} className="w-[156px] flex-shrink-0 snap-start pc:w-[200px]">
+          <ProductCard product={product} index={idx} />
         </div>
       ))}
     </div>
