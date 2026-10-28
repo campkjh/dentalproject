@@ -143,7 +143,7 @@ export default function PocketPage() {
       style={emptyView ? { background: 'radial-gradient(70% 28% at 6% 0%, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0) 70%), linear-gradient(180deg, #DCE9FF 0px, #E6EFFF 180px, #F2F6FF 360px, #FFFFFF 620px)' } : undefined}
     >
       {/* 탭 머리 — 모바일은 프리티풀 탭 머리 표준(왼쪽 16 · 20 굵게 · 오른쪽 돋보기), PC 는 전체 헤더 아래 큰 제목 */}
-      <div className={`sticky top-0 z-40 flex items-center justify-between px-4 pc:hidden ${emptyView ? 'bg-transparent' : 'bg-white'}`} style={{ height: 56 }}>
+      <div className="sticky top-0 z-40 flex items-center justify-between bg-white px-4 pc:hidden" style={{ height: 56 }}>
         <h1 className={`text-[20px] font-bold leading-none text-[#191F28] ${entrance ? matchStyles.enterTitle : ''}`}>포켓</h1>
         <Link href="/search" aria-label="시술 검색" className="-mr-1.5 flex h-11 w-11 items-center justify-center transition-transform active:scale-90">
           <HeaderSearchIcon />
@@ -159,8 +159,12 @@ export default function PocketPage() {
       ) : (
         <>
           {/* 탭 — 상세 섹션 탭과 같은 결: 회색 트랙 위 흰 알약이 미끄러진다(빈 화면에선 트랙이 반투명 흰색) */}
-          <div className={`sticky top-[56px] z-10 px-4 pb-2 pt-1 pc:top-[72px] pc:px-0 ${emptyView ? 'bg-transparent' : 'bg-white'}`}>
-            <div className={`relative flex gap-1 rounded-2xl p-1 ${emptyView ? 'bg-white/55 backdrop-blur-md' : 'bg-[#F2F3F5]'}`}>
+          {/* 빈 화면 — 머리(흰색)가 끝나는 곳부터 탭 아래까지 흰색 → 투명 그라데이션으로 하늘빛 바탕에 녹아든다 */}
+          <div
+            className={`sticky top-[56px] z-10 px-4 pb-3 pt-1 pc:top-[72px] pc:px-0 ${emptyView ? '' : 'bg-white'}`}
+            style={emptyView ? { background: 'linear-gradient(180deg, #FFFFFF 0%, rgba(255,255,255,0.92) 45%, rgba(255,255,255,0) 100%)' } : undefined}
+          >
+            <div className="relative flex gap-1 rounded-2xl bg-[#F2F3F5] p-1">
               <span
                 aria-hidden
                 className="absolute bottom-1 top-1 rounded-[13px] bg-white shadow-[0_1px_4px_rgba(25,31,40,0.08)] transition-all duration-500"

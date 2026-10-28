@@ -7340,3 +7340,28 @@ body.partner-profile-editing .partner-bottom-nav {
 @keyframes qdFadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
 @media (min-width: 1024px) { .qd-header:not(.in-panel) { display: none; } .qd-titlewrap { padding: 32px 0 22px; } }
 @media (prefers-reduced-motion: reduce) { .qd-a-title, .qd-a-sub { animation: none !important; } }
+
+/* 상세 화면 본문 = 프리티풀 퀵매칭 어법(.qd-body 순차 슬라이드 · .qd-card · .qd-cta · .qd-input) — components/detail/QdKit 과 짝 */
+.qd-a-item, .qd-body > * { animation: qdSlideIn .46s cubic-bezier(.22, .61, .36, 1) backwards; }
+.qd-body > :nth-child(1) { animation-delay: .3s; }
+.qd-body > :nth-child(2) { animation-delay: .37s; }
+.qd-body > :nth-child(3) { animation-delay: .44s; }
+.qd-body > :nth-child(4) { animation-delay: .51s; }
+.qd-body > :nth-child(5) { animation-delay: .58s; }
+.qd-body > :nth-child(6) { animation-delay: .65s; }
+.qd-body > :nth-child(7) { animation-delay: .72s; }
+.qd-body > :nth-child(8) { animation-delay: .79s; }
+.qd-body > :nth-child(9) { animation-delay: .86s; }
+.qd-body > :nth-child(n+10) { animation-delay: .93s; }
+.qd-card { border: 1.5px solid #E5E8EB; border-radius: 16px; background: #fff; }
+.qd-cta { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; height: 56px; border: 0; border-radius: 16px; background: #3182F6; color: #fff; font-size: 17px; font-weight: 600; cursor: pointer; transition: transform .05s, background-color .15s; font-family: inherit; }
+.qd-cta:active:not(:disabled) { transform: scale(.99); background: #2272EB; }
+.qd-cta:disabled { background: #F2F4F6; color: #B0B8C1; cursor: default; }
+.qd-cta.ghost { background: #F2F4F6; color: #4E5968; }
+.qd-cta.ghost:active:not(:disabled) { background: #E5E8EB; }
+.qd-input { width: 100%; height: 60px; padding: 0 18px; border: 1.5px solid #E5E8EB; border-radius: 16px; background: #fff; font-size: 16px; color: #191F28; outline: none; transition: border-color .15s; font-family: inherit; }
+.qd-input:focus { border-color: #3182F6; }
+.qd-input::placeholder { color: #B0B8C1; }
+textarea.qd-input { height: auto; min-height: 140px; padding: 16px 18px; line-height: 1.55; resize: none; }
+@keyframes qdSlideIn { from { opacity: 0; transform: translateX(22px); } to { opacity: 1; transform: translateX(0); } }
+@media (prefers-reduced-motion: reduce) { .qd-a-item, .qd-body > * { animation: none !important; } }

@@ -38,7 +38,12 @@
 .notification strong { font-size: 15px; color: #191f28; display: flex; gap: 7px; align-items: center; }
 .notification strong i { width: 6px; height: 6px; border-radius: 50%; background: #3182f6; }
 .notification p { color: #6b7684; font-size: 14px; line-height: 1.6; margin: 6px 0; }.notification time { color: #8b95a1; font-size: 12px; }
-.myPage { min-height: 100dvh; background: #f4f6fa; padding: calc(24px + env(safe-area-inset-top,0px)) 16px 100px; color: #191f28; letter-spacing: 0; }
+.myPage { min-height: 100dvh; background: #f4f6fa; padding: 0 16px 100px; color: #191f28; letter-spacing: 0; }
+/* 마이 탭 머리 — 화면 끝까지 흰 줄(높이 56 · 제목 20 굵게) + 아래 회색 바탕으로 이어지는 흰 그늘 */
+.myTopbar { position: sticky; top: 0; z-index: 30; display: flex; align-items: center; justify-content: space-between; height: calc(56px + env(safe-area-inset-top,0px)); margin: 0 -16px 20px; padding: env(safe-area-inset-top,0px) 6px 0 16px; background: #fff; }
+.myTopbar h1 { font-size: 20px; font-weight: 700; line-height: 1; color: #191F28; }
+.myTopbar button { display: flex; align-items: center; justify-content: center; width: 44px; height: 42px; transition: transform .15s; }
+.myTopbar button:active { transform: scale(.9); }
 .myInner { width: 100%; max-width: 680px; margin: auto; }
 .myProfile { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 28px; }
 .myProfile > div { flex: 1; min-width: 0; }
@@ -85,11 +90,11 @@
 .pullIndicator { position: fixed; z-index: 90; top: 56px; left: 50%; margin-left: -94px; min-width: 188px; padding: 6px 16px 6px 6px; display: flex; align-items: center; gap: 9px; border-radius: 30px; background: #fff; color: #51535c; box-shadow: 0 8px 24px #191f2824; font-size: 13px; font-weight: 600; pointer-events: none; }
 .pullIndicator img { border-radius: 50%; }
 @media (max-width: 359px) { .myRow { padding: 12px; gap: 9px; }.myRowLabel { font-size: 15px; }.myRowDesc { font-size: 12px; }.myProfileActions { gap: 5px; font-size: 12px; } }
-@media (min-width: 720px) { .myPage { padding: 32px 28px 100px; }.mySections { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 0 24px; }.myRowDesc { white-space: normal; }.topbar { padding-left: 24px; padding-right: 24px; } }
+@media (min-width: 720px) { .myPage { padding: 0 28px 100px; }.myTopbar { margin-left: -28px; margin-right: -28px; }.mySections { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 0 24px; }.myRowDesc { white-space: normal; }.topbar { padding-left: 24px; padding-right: 24px; } }
 @media (min-width: 1024px) {
   .desktopHeader { display: block; }.bottomNav { display: none; }.topbar { display: none; }
   /* PC — 헤더 안쪽 폭(1280 − 양옆 32)과 같은 칸에 맞춘다. 상세 칸이 없을 땐 목록이 그 폭을 다 쓴다(두 칸 섹션) */
-  .myPage { padding: 40px 32px 64px; }.myLayout { max-width: 1216px; margin: auto; }
+  .myPage { padding: 40px 32px 64px; }.myTopbar { display: none; }.myLayout { max-width: 1216px; margin: auto; }
   .myInner { max-width: none; }
   .myLayout:not([data-panel=true]) .quickGrid { grid-template-columns: repeat(8, minmax(0, 1fr)); max-width: 720px; }
   .myLayout:not([data-panel=true]) .myProfile h1, .myLogin h1 { font-size: 26px; line-height: 36px; }

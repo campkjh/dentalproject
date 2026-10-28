@@ -8,6 +8,7 @@ import { useStore } from '@/store';
 import { useSession } from '@/lib/supabase/SessionProvider';
 import { useMyHospitalData } from '@/lib/partner/my-hospital-cache';
 import Avatar from './Avatar';
+import { HeaderBellIcon } from '@/components/icons/HeaderIcons';
 import MyPageDetail from './MyPageDetail';
 import styles from './app-ui.module.css';
 
@@ -47,7 +48,6 @@ export default function MyHome({ partner = false }: { partner?: boolean }) {
       catch { showToast('로그아웃하지 못했습니다. 다시 시도해주세요.'); }
     });
   }
-  function support() { showModal('고객센터', '평일 09:00~18:00\n1588-0000으로 연결할까요?', () => { window.location.href = 'tel:1588-0000'; }); }
 
   const quick: Row[] = partner ? [
     { label: '병원 정보', icon: 'profile', href: '/partner/hospital-info' },
@@ -77,7 +77,7 @@ export default function MyHome({ partner = false }: { partner?: boolean }) {
       { label: '쪽지함', icon: 'messages', href: '/notifications', badge: unread },
     ] },
     { title: '고객지원', public: true, rows: [
-      { label: '고객센터', icon: 'customer-service', ...(partner ? { href: '/partner/contact' } : { action: support }), description: '문의하기' },
+      { label: '고객센터', icon: 'customer-service', href: partner ? '/partner/contact' : '/mypage/support', description: '문의하기' },
       { label: '자주 묻는 질문', icon: 'faq', href: '/mypage/faq' },
       { label: '공지사항', icon: 'announcements', href: '/mypage/announcements', description: '새 소식 · 업데이트' },
     ] },
@@ -93,7 +93,15 @@ export default function MyHome({ partner = false }: { partner?: boolean }) {
     {Boolean(row.badge) && <span className={styles.myRowBadge}>{row.badge}</span>}
     {row.description && <span className={styles.myRowDesc}>{row.description}</span>}
   </>;
-  return <div className={styles.myPage}><div className={styles.myLayout} data-panel={Boolean(detail)}><div className={styles.myInner}>
+  return <div className={styles.myPage}>
+    {/* 탭 머리 — 프리티풀 탭 머리 표준(왼쪽 16 · 20 굵게 · 오른쪽 종). 회색 바탕 위 흰 줄, PC 는 전체 헤더가 대신 */}
+    <div className={styles.myTopbar}>
+      <h1>마이</h1>
+      <button type="button" aria-label={unread ? '알림 (안 읽은 알림 있음)' : '알림'} onClick={() => window.dispatchEvent(new CustomEvent('dental:notifications'))}>
+        <HeaderBellIcon dot={Boolean(unread)} />
+      </button>
+    </div>
+    <div className={styles.myLayout} data-panel={Boolean(detail)}><div className={styles.myInner}>
     {user ? <header className={styles.myProfile}><div><h1>{user.name}</h1><p>{[authUser?.email, partner ? '병원 파트너' : '마이닥 회원'].filter(Boolean).join(' · ')}</p></div><nav className={styles.myProfileActions}><Link href="/mypage/profile" onClick={event => open(event, '/mypage/profile')}>설정</Link><span>|</span><button type="button" onClick={logout}>로그아웃</button></nav></header> : <div className={styles.myLogin}><h1>로그인이 필요해요</h1><button type="button" className={styles.primaryButton} onClick={() => window.dispatchEvent(new CustomEvent('dental:login'))}>로그인 / 회원가입</button></div>}
     <h2>자주 쓰는 것</h2><div className={styles.quickGrid}>{quick.map((item, index) => <Link key={item.label} href={item.href!} className={styles.quickItem} onClick={event => open(event, item.href!)} style={{ animationDelay: `${.15 + index * .04}s` }}><span><img src={`/icons/mypage/${item.icon}.svg`} alt="" />{Boolean(item.badge) && <small>{item.badge}</small>}</span><span>{item.label}</span></Link>)}</div>
     {!partner && user && <div className={styles.mySummary}><Link href="/mypage/points" onClick={e => open(e, '/mypage/points')}><span>내 포인트</span><strong>{user.points.toLocaleString()}P</strong></Link><Link href="/mypage/coupons" onClick={e => open(e, '/mypage/coupons')}><span>사용 가능한 쿠폰</span><strong>{coupons}개</strong></Link></div>}
