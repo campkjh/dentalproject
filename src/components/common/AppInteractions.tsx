@@ -2,11 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { Bell, Mail, X } from 'lucide-react';
+import { Bell, X } from 'lucide-react';
 import CommunityModal from '@/components/community/CommunityModal';
+import LoginOnboarding from '@/components/auth/LoginOnboarding';
 import { useStore } from '@/store';
-import { useSession } from '@/lib/supabase/SessionProvider';
 import styles from './app-ui.module.css';
 import communityStyles from '@/components/community/community.module.css';
 
@@ -17,7 +16,6 @@ export default function AppInteractions() {
   const notifications = useStore(s => s.notifications);
   const user = useStore(s => s.user);
   const markRead = useStore(s => s.markNotificationRead);
-  const { signInWithOAuth } = useSession();
   const showToast = useStore(s => s.showToast);
   const login = panel?.type === 'login';
   const notificationsOpen = panel?.type === 'notifications';
@@ -33,13 +31,7 @@ export default function AppInteractions() {
   }, []);
 
   return <>
-    {login && <CommunityModal label="로그인" onClose={() => setLogin(false)}><div className={styles.loginBody}>
-      <button type="button" className={styles.iconButton} style={{ alignSelf: 'flex-end' }} aria-label="로그인 닫기" onClick={() => setLogin(false)}><X size={20} /></button>
-      <div className={styles.loginBrand}><img src="/icons/brand-logo.png" width={40} height={40} alt="" className="mx-auto mb-2" />마이닥</div>
-      <button type="button" className={styles.primaryButton} style={{ background: '#fee500', color: '#191919' }} onClick={() => { void signInWithOAuth('kakao').catch(() => showToast('로그인을 시작하지 못했습니다.')); }}>카카오로 시작하기</button>
-      <Link href={`/login?next=${encodeURIComponent(pathname)}`} className={styles.secondaryButton}><Mail size={18} />이메일로 로그인</Link>
-      <button type="button" className={styles.secondaryButton} onClick={() => setLogin(false)}>취소</button>
-    </div></CommunityModal>}
+    {login && <LoginOnboarding onClose={() => setLogin(false)} />}
     {notificationsOpen && <CommunityModal label="알림" variant="right-drawer" onClose={() => setNotificationsOpen(false)}>
       <header className={communityStyles.sheetHeader}><Bell size={20} /><h2>알림</h2><button type="button" className={styles.iconButton} aria-label="알림 닫기" onClick={() => setNotificationsOpen(false)}><X size={20} /></button></header>
       <div className={styles.notificationList}>{notifications.length ? notifications.map(notification => <button type="button" key={notification.id} className={styles.notification} onClick={() => {

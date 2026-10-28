@@ -1,0 +1,326 @@
+/* 로그인 온보딩 — 토스 계열 앱 온보딩 견본. 글자 굵기 최대 700 */
+.root {
+  --ob-blue: #3180f7;
+  --ob-blue-press: #2272eb;
+  --ob-strong: #191f28;
+  --ob-weak: #6b7684;
+  --ob-border: #e5e8eb;
+  --ob-dot: #d1d6db;
+  --ob-ease: cubic-bezier(.22, 1, .36, 1);
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  background: #fff;
+  color: var(--ob-strong);
+  font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior: contain;
+  animation: obFade .26s ease both;
+}
+.root[data-leaving] { animation: obFadeOut .26s ease both; }
+
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: linear-gradient(180deg, #e8f1ff 0%, #f4f8ff 45%, #fff 70%);
+  outline: none;
+  animation: obRise .42s var(--ob-ease) both;
+}
+.root[data-leaving] .card { animation: obSink .26s ease both; }
+
+/* ── 일러스트 + 글 (장 넘김) ── */
+.stage {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: grab;
+}
+.stage:active { cursor: grabbing; }
+.track {
+  display: flex;
+  height: 100%;
+  transition: transform .52s var(--ob-ease);
+  will-change: transform;
+}
+.slide {
+  position: relative;
+  flex: 0 0 100%;
+  height: 100%;
+  overflow: hidden;
+}
+/* 그림 아래쪽은 흰색으로 빠진다 → 위에 맞춰 덮고, 글은 그 흰 자리에 */
+.art {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
+  pointer-events: none;
+  -webkit-user-drag: none;
+}
+/* 낮은 화면에서 그림 끝이 글 뒤로 내려와도 읽히게 — 글 뒤 흰 안개 */
+.slide::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 210px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, .86) 42%, #fff 100%);
+  pointer-events: none;
+}
+.copy {
+  position: absolute;
+  z-index: 1;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 0 24px 20px;
+}
+.title {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  font-size: clamp(26px, 8vw, 30px);
+  font-weight: 700;
+  line-height: 1.36;
+  letter-spacing: -.6px;
+  color: var(--ob-strong);
+  word-break: keep-all;
+}
+.titleBlue { color: var(--ob-blue); }
+.desc {
+  display: flex;
+  flex-direction: column;
+  margin: 12px 0 0;
+  font-size: clamp(15px, 4.5vw, 17px);
+  font-weight: 500;
+  line-height: 1.5;
+  letter-spacing: -.2px;
+  color: var(--ob-weak);
+  word-break: keep-all;
+}
+/* 장이 바뀌면 글이 살짝 올라오며 나타난다 */
+.copy[data-active] .title { animation: obCopy .5s var(--ob-ease) .12s both; }
+.copy[data-active] .desc { animation: obCopy .5s var(--ob-ease) .2s both; }
+
+/* ── 닫기 ── */
+.close {
+  position: absolute;
+  z-index: 3;
+  top: calc(env(safe-area-inset-top, 0px) + 10px);
+  right: 12px;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 22px;
+  background: transparent;
+  color: var(--ob-strong);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color .15s;
+}
+.close:active { background: rgba(25, 31, 40, .06); }
+
+/* ── 페이지 점 ── */
+.dots {
+  flex: none;
+  display: flex;
+  justify-content: center;
+  gap: 2px;
+  padding: 6px 0 10px;
+  background: #fff;
+}
+.dot {
+  position: relative;
+  width: 20px;
+  height: 20px;
+  border: 0;
+  padding: 0;
+  background: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.dot::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 8px;
+  height: 8px;
+  margin: -4px 0 0 -4px;
+  border-radius: 50%;
+  background: var(--ob-dot);
+  transition: background-color .3s ease, transform .3s var(--ob-ease);
+}
+.dot[data-active]::before { background: var(--ob-blue); transform: scale(1.06); }
+
+/* ── 알약 버튼 ── */
+.actions {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 6px 20px calc(env(safe-area-inset-bottom, 0px) + 16px);
+  background: #fff;
+}
+.primary,
+.secondary {
+  width: 100%;
+  height: 56px;
+  border-radius: 999px;
+  font-family: inherit;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -.3px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform .08s ease, background-color .15s ease;
+}
+.primary { border: 0; background: var(--ob-blue); color: #fff; }
+.primary:active { transform: scale(.985); background: var(--ob-blue-press); }
+.secondary { border: 1px solid var(--ob-border); background: #fff; color: var(--ob-strong); }
+.secondary:active { transform: scale(.985); background: #f9fafb; }
+
+/* ── 로그인 시트 ── */
+.sheetBackdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  align-items: flex-end;
+  background: rgba(0, 0, 0, .44);
+  animation: obFade .22s ease both;
+}
+.sheetBackdrop[data-leaving] { animation: obFadeOut .22s ease both; }
+.sheet {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px 20px calc(env(safe-area-inset-bottom, 0px) + 16px);
+  border-radius: 24px 24px 0 0;
+  background: #fff;
+  animation: obSheetUp .36s var(--ob-ease) both;
+}
+.sheetBackdrop[data-leaving] .sheet { animation: obSheetDown .22s ease both; }
+.sheetHandle {
+  align-self: center;
+  width: 36px;
+  height: 4px;
+  margin-bottom: 10px;
+  border-radius: 2px;
+  background: #e5e8eb;
+}
+.sheetTitle {
+  margin: 0 4px;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.4;
+  letter-spacing: -.4px;
+  color: var(--ob-strong);
+}
+.sheetSub {
+  margin: -4px 4px 12px;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--ob-weak);
+}
+.kakao,
+.email {
+  width: 100%;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 0;
+  border-radius: 999px;
+  font-family: inherit;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -.3px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform .08s ease, filter .15s ease, background-color .15s ease;
+}
+.kakao { background: #fee500; color: #191600; }
+.kakao:active:not(:disabled) { transform: scale(.985); filter: brightness(.97); }
+.kakao:disabled { opacity: .6; cursor: default; }
+.email { background: #f2f4f6; color: #333d4b; }
+.email:active { transform: scale(.985); background: #e5e8eb; }
+.sheetCancel {
+  align-self: center;
+  margin-top: 2px;
+  padding: 10px 16px;
+  border: 0;
+  background: none;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  color: #8b95a1;
+  cursor: pointer;
+}
+
+@keyframes obFade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes obFadeOut { from { opacity: 1; } to { opacity: 0; } }
+@keyframes obRise { from { opacity: 0; transform: translate3d(0, 40px, 0); } to { opacity: 1; transform: none; } }
+@keyframes obSink { from { opacity: 1; transform: none; } to { opacity: 0; transform: translate3d(0, 40px, 0); } }
+@keyframes obCopy { from { opacity: 0; transform: translate3d(0, 12px, 0); } to { opacity: 1; transform: none; } }
+@keyframes obSheetUp { from { transform: translate3d(0, 100%, 0); } to { transform: none; } }
+@keyframes obSheetDown { from { transform: none; } to { transform: translate3d(0, 100%, 0); } }
+
+/* ── PC: 화면 가운데 폰 비율 카드 ── */
+@media (min-width: 1024px) {
+  .root {
+    align-items: center;
+    padding: 24px;
+    background: rgba(25, 31, 40, .52);
+  }
+  .card {
+    width: min(440px, 100%);
+    height: min(880px, calc(100dvh - 48px));
+    border-radius: 28px;
+    box-shadow: 0 24px 70px rgba(17, 24, 39, .28);
+    animation-name: obPop;
+  }
+  .root[data-leaving] .card { animation-name: obPopOut; }
+  .close { top: 12px; }
+  .close:hover { background: rgba(25, 31, 40, .06); }
+  .primary:hover { background: var(--ob-blue-press); }
+  .secondary:hover { background: #f9fafb; }
+  .email:hover { background: #e5e8eb; }
+  .sheet { border-radius: 24px 24px 0 0; padding-bottom: 20px; }
+  .actions { padding-bottom: 20px; }
+}
+@keyframes obPop { from { opacity: 0; transform: scale(.96) translate3d(0, 12px, 0); } to { opacity: 1; transform: none; } }
+@keyframes obPopOut { from { opacity: 1; transform: none; } to { opacity: 0; transform: scale(.97) translate3d(0, 8px, 0); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .root,
+  .root[data-leaving],
+  .card,
+  .root[data-leaving] .card,
+  .sheetBackdrop,
+  .sheetBackdrop[data-leaving],
+  .sheet,
+  .sheetBackdrop[data-leaving] .sheet,
+  .copy[data-active] .title,
+  .copy[data-active] .desc { animation: none; }
+  .track { transition: none; }
+}

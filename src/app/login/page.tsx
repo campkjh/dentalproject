@@ -1,12 +1,28 @@
 'use client';
 
-import { Suspense, useState, useEffect } from 'react';
+import { Suspense, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Mail, Lock, User as UserIcon, Eye, EyeOff, ChevronLeft } from 'lucide-react';
+import { ChevronLeft, Eye, EyeOff } from 'lucide-react';
 import { useSession } from '@/lib/supabase/SessionProvider';
 import { useStore } from '@/store';
+import { safeNextPath, startNativeKakaoLogin } from '@/components/auth/kakao-login';
+import styles from './login.module.css';
+
+/* ─────────────────────────────────────────────────────────────
+ * 이메일 로그인·가입 — 프리티풀 이메일 로그인(퀵매칭 어법) 모양.
+ *  · 한 화면 = 한 질문(큰 제목 · 밑줄 입력 · 아래 큰 파란 버튼), 머리 = 뒤로 + 진행 막대 'N / 전체'.
+ *  · 로그인 = 이메일 → 비밀번호 / 가입 = 이름 → 이메일 → 비밀번호.
+ *  · 첫 화면 아래 = 카카오·Apple 간편 로그인.
+ *  · ?mode=signup 이면 가입부터, ?next=경로 면 로그인 뒤 그리로(관리자·파트너는 각자 화면 우선).
+ *  · 로그인·가입·간편 로그인 호출은 예전 그대로(SessionProvider).
+ * ──────────────────────────────────────────────────────────── */
 
 type Mode = 'login' | 'signup';
+type Step = 'name' | 'email' | 'password';
+
+const FLOW: Record<Mode, Step[]> = { login: ['email', 'password'], signup: ['name', 'email', 'password'] };
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+const stag = (i: number): CSSProperties => ({ animationDelay: `${0.24 + i * 0.07}s` });
 
 export default function LoginPage() {
   return (
@@ -20,8 +36,10 @@ function LoginInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialMode: Mode = searchParams.get('mode') === 'signup' ? 'signup' : 'login';
+  const nextPath = safeNextPath(searchParams.get('next'));
   const { signInWithEmail, signUpWithEmail, signInWithOAuth } = useSession();
   const [mode, setMode] = useState<Mode>(initialMode);
+  const [step, setStep] = useState<Step>(FLOW[initialMode][0]);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
@@ -31,21 +49,14 @@ function LoginInner() {
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [retryAfter, setRetryAfter] = useState(0);
   const [socialPending, setSocialPending] = useState<'kakao' | 'apple' | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const isLoggedIn = useStore((s) => s.isLoggedIn);
   const isDoctor = useStore((s) => s.isDoctor);
   const isAdmin = useStore((s) => s.isAdmin);
   useEffect(() => {
-    if (isLoggedIn) router.replace(isAdmin ? '/admin' : isDoctor ? '/partner' : '/');
-  }, [isLoggedIn, isDoctor, isAdmin, router]);
-
-  const isLogin = mode === 'login';
-  const canSubmit =
-    email.trim().length > 3 &&
-    password.length >= 6 &&
-    (isLogin || name.trim().length >= 2) &&
-    !pending &&
-    retryAfter === 0;
+    if (isLoggedIn) router.replace(isAdmin ? '/admin' : isDoctor ? '/partner' : nextPath ?? '/');
+  }, [isLoggedIn, isDoctor, isAdmin, router, nextPath]);
 
   useEffect(() => {
     if (retryAfter <= 0) return;
@@ -55,12 +66,47 @@ function LoginInner() {
     return () => window.clearInterval(id);
   }, [retryAfter]);
 
-  const onSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!canSubmit) return;
-    setPending(true);
+  // 단계마다 입력칸에 바로 커서 — 버튼 누른 그 순간 안에서 잡아야 iOS 가 키보드를 올려 준다
+  useLayoutEffect(() => {
+    inputRef.current?.focus({ preventScroll: true });
+  }, [step, mode]);
+
+  const isLogin = mode === 'login';
+  const flow = FLOW[mode];
+  const at = flow.indexOf(step) + 1;
+
+  const resetMessages = () => {
     setError(null);
     setSuccessMsg(null);
+  };
+
+  const switchMode = (to: Mode, toStep: Step = FLOW[to][0]) => {
+    setMode(to);
+    setStep(toStep);
+    setPassword('');
+    setRetryAfter(0);
+    resetMessages();
+  };
+
+  const back = () => {
+    if (pending) return;
+    resetMessages();
+    const i = flow.indexOf(step);
+    if (i > 0) { setStep(flow[i - 1]); return; }
+    // 첫 화면 — 로그인↔가입을 오갔으면 처음 화면으로, 아니면 나간다
+    if (mode !== initialMode) { switchMode(initialMode); return; }
+    if (window.history.length > 1) router.back();
+    else router.replace(nextPath ?? '/');
+  };
+
+  const canNext =
+    step === 'name' ? name.trim().length >= 2
+      : step === 'email' ? email.trim().length > 3
+        : password.length >= 6 && retryAfter === 0;
+
+  const submit = async () => {
+    setPending(true);
+    resetMessages();
     try {
       if (isLogin) {
         const { error, isDoctor, isAdmin } = await signInWithEmail(email.trim(), password);
@@ -69,7 +115,7 @@ function LoginInner() {
           if (isRateLimitError(error)) setRetryAfter(60);
           return;
         }
-        router.replace(isAdmin ? '/admin' : isDoctor ? '/partner' : '/');
+        router.replace(isAdmin ? '/admin' : isDoctor ? '/partner' : nextPath ?? '/');
       } else {
         const { error, needsConfirm } = await signUpWithEmail(
           email.trim(),
@@ -79,12 +125,14 @@ function LoginInner() {
         if (error) {
           setError(translate(error));
           if (isRateLimitError(error)) setRetryAfter(60);
+          // 이미 가입된 이메일 → 이메일 칸으로 돌려 '이 이메일로 로그인하기'를 보여 준다
+          if (translate(error) === DUPLICATE_MSG) setStep('email');
           return;
         }
         if (needsConfirm) {
           setSuccessMsg('인증 메일을 발송했습니다. 이메일을 확인해 주세요.');
         } else {
-          router.replace('/');
+          router.replace(nextPath ?? '/');
         }
       }
     } finally {
@@ -92,41 +140,38 @@ function LoginInner() {
     }
   };
 
+  const next = async () => {
+    if (pending) return;
+    resetMessages();
+    if (step === 'name') {
+      if (name.trim().length < 2) { setError('이름을 2자 이상 입력해 주세요.'); return; }
+      setStep('email');
+      return;
+    }
+    if (step === 'email') {
+      const v = email.trim();
+      if (!EMAIL_RE.test(v)) { setError('이메일 형식이 올바르지 않습니다.'); return; }
+      setEmail(v);
+      setStep('password');
+      return;
+    }
+    if (password.length < 6) { setError('비밀번호는 6자 이상이어야 합니다.'); return; }
+    if (retryAfter > 0) return;
+    await submit();
+  };
+
   const onSocial = async (provider: 'kakao' | 'apple') => {
     if (socialPending || pending) return;
     setSocialPending(provider);
-    setError(null);
-    setSuccessMsg(null);
+    resetMessages();
 
-    // 네이티브 앱(WebView)에선 카카오톡 앱-투-앱 네이티브 로그인을 사용한다.
-    // - Android: window.AndroidKakao.login()
-    // - iOS:     window.webkit.messageHandlers.kakaoLogin.postMessage({})
-    // 네이티브가 로그인 후 onKakaoNativeLogin(id_token)을 호출 →
-    // SessionProvider가 Supabase 세션 생성 → isLoggedIn 효과가 자동 리다이렉트.
-    if (provider === 'kakao' && typeof window !== 'undefined') {
-      const w = window as Window & {
-        AndroidKakao?: { login?: () => void };
-        webkit?: {
-          messageHandlers?: { kakaoLogin?: { postMessage: (msg: unknown) => void } };
-        };
-        onKakaoNativeLoginError?: (message: string) => void;
-      };
-      const androidKakao = w.AndroidKakao;
-      const iosKakao = w.webkit?.messageHandlers?.kakaoLogin;
-      if (androidKakao?.login || iosKakao) {
-        w.onKakaoNativeLoginError = (message: string) => {
-          setError(message || '카카오 로그인에 실패했습니다.');
-          setSocialPending(null);
-        };
-        try {
-          if (androidKakao?.login) androidKakao.login();
-          else iosKakao!.postMessage({});
-        } catch {
-          setError('카카오 로그인을 시작하지 못했습니다.');
-          setSocialPending(null);
-        }
-        return;
-      }
+    // 네이티브 앱(WebView) 카카오 = 카카오톡 앱-투-앱 로그인(kakao-login.ts 참고)
+    if (provider === 'kakao') {
+      const native = startNativeKakaoLogin((message) => {
+        setError(message);
+        setSocialPending(null);
+      });
+      if (native) return;
     }
 
     // iOS 앱: Apple은 네이티브 Sign in with Apple 사용.
@@ -166,203 +211,191 @@ function LoginInner() {
     }
   };
 
+  let title: ReactNode = null;
+  let sub: ReactNode = null;
+  let field: ReactNode = null;
+  let cta = '다음';
+
+  if (step === 'name') {
+    title = <>이름을<br />알려주세요</>;
+    sub = '병원 예약과 후기에 보이는 이름이에요.';
+    field = (
+      <input
+        ref={inputRef}
+        className={`${styles.input} ${styles.item}`}
+        data-error={error ? true : undefined}
+        style={stag(0)}
+        type="text"
+        value={name}
+        onChange={(e) => { setName(e.target.value.slice(0, 12)); if (error) setError(null); }}
+        placeholder="이름"
+        autoComplete="name"
+        enterKeyHint="next"
+        aria-label="이름"
+      />
+    );
+  } else if (step === 'email') {
+    title = <>이메일을<br />입력해주세요</>;
+    sub = isLogin ? '가입할 때 쓴 이메일을 입력해 주세요.' : '로그인할 때 아이디로 써요.';
+    field = (
+      <input
+        ref={inputRef}
+        className={`${styles.input} ${styles.item}`}
+        data-error={error ? true : undefined}
+        style={stag(0)}
+        type="email"
+        inputMode="email"
+        value={email}
+        onChange={(e) => { setEmail(e.target.value); if (error) setError(null); }}
+        placeholder="example@email.com"
+        autoComplete={isLogin ? 'username' : 'email'}
+        autoCapitalize="none"
+        autoCorrect="off"
+        spellCheck={false}
+        enterKeyHint="next"
+        aria-label="이메일"
+      />
+    );
+  } else {
+    title = isLogin ? <>비밀번호를<br />입력해주세요</> : <>비밀번호를<br />만들어주세요</>;
+    sub = isLogin ? email.trim() : '6자 이상으로 만들어 주세요.';
+    cta = pending
+      ? isLogin ? '로그인 중…' : '가입 처리 중…'
+      : retryAfter > 0
+        ? `잠시 후 재시도 (${retryAfter}s)`
+        : isLogin ? '로그인' : '가입하기';
+    field = (
+      <>
+        {/* 비밀번호 관리 앱이 이메일과 짝지어 저장하도록(화면엔 안 보임) */}
+        <input className={styles.sr} type="email" name="username" autoComplete="username" value={email} readOnly tabIndex={-1} aria-hidden="true" />
+        <div className={`${styles.pwField} ${styles.item}`} style={stag(0)}>
+          <input
+            ref={inputRef}
+            className={styles.input}
+            data-error={error ? true : undefined}
+            type={showPwd ? 'text' : 'password'}
+            value={password}
+            onChange={(e) => { setPassword(e.target.value); if (error) setError(null); }}
+            placeholder={isLogin ? '비밀번호' : '비밀번호 (6자 이상)'}
+            autoComplete={isLogin ? 'current-password' : 'new-password'}
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            enterKeyHint={isLogin ? 'go' : 'done'}
+            aria-label="비밀번호"
+          />
+          <button
+            type="button"
+            className={styles.eye}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => setShowPwd((s) => !s)}
+            aria-label={showPwd ? '비밀번호 숨기기' : '비밀번호 표시'}
+            aria-pressed={showPwd}
+          >
+            {showPwd ? <EyeOff size={22} /> : <Eye size={22} />}
+          </button>
+        </div>
+      </>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-white max-w-[500px] mx-auto flex flex-col">
-      {/* Back button */}
-      <div className="px-2 pt-3">
-        <button onClick={() => router.back()} className="p-1.5 -ml-0.5 rounded-full hover:bg-gray-100 transition-colors">
-          <ChevronLeft size={24} className="text-gray-700" />
-        </button>
-      </div>
-
-      {/* Logo & Title */}
-      <div className="pt-6 pb-8 flex flex-col items-center px-6">
-        <div className="w-20 h-20 bg-[#8037FF] rounded-2xl flex items-center justify-center mb-5 bounce-in">
-          <span className="text-4xl">🦷</span>
-        </div>
-        <h1 className="text-2xl font-bold text-gray-900 mb-1.5 fade-in-up">마이닥</h1>
-        <p className="text-[13px] text-gray-500 text-center fade-in-up-delay-1">
-          쉽고 빠르게 나에게 맞는 병원을 찾아보세요
-        </p>
-      </div>
-
-      {/* Mode Tabs */}
-      <div className="px-6 mb-5">
-        <div className="relative flex bg-gray-100 rounded-xl p-1">
-          <span
-            aria-hidden
-            className="absolute top-1 bottom-1 w-[calc(50%-4px)] bg-white rounded-lg shadow-sm pointer-events-none"
-            style={{
-              left: isLogin ? 4 : 'calc(50% + 0px)',
-              transition: 'left 320ms cubic-bezier(0.22, 1, 0.36, 1)',
-            }}
-          />
-          {(['login', 'signup'] as Mode[]).map((m) => (
-            <button
-              key={m}
-              onClick={() => {
-                setMode(m);
-                setError(null);
-                setSuccessMsg(null);
-                setRetryAfter(0);
-              }}
-              className="relative z-10 flex-1 py-2 text-[13px] font-bold"
-              style={{
-                color: mode === m ? '#8037FF' : '#9CA3AF',
-                transition: 'color 320ms ease',
-              }}
-            >
-              {m === 'login' ? '로그인' : '회원가입'}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Form */}
-      <form onSubmit={onSubmit} className="px-6 flex flex-col gap-3 fade-in-up-delay-2">
-        {!isLogin && (
-          <Field
-            icon={<UserIcon size={16} className="text-gray-400" />}
-            type="text"
-            placeholder="이름"
-            value={name}
-            onChange={(v) => setName(v.slice(0, 12))}
-          />
-        )}
-        <Field
-          icon={<Mail size={16} className="text-gray-400" />}
-          type="email"
-          inputMode="email"
-          autoComplete="email"
-          placeholder="이메일"
-          value={email}
-          onChange={setEmail}
-        />
-        <Field
-          icon={<Lock size={16} className="text-gray-400" />}
-          type={showPwd ? 'text' : 'password'}
-          autoComplete={isLogin ? 'current-password' : 'new-password'}
-          placeholder={isLogin ? '비밀번호' : '비밀번호 (6자 이상)'}
-          value={password}
-          onChange={setPassword}
-          right={
-            <button
-              type="button"
-              onClick={() => setShowPwd((s) => !s)}
-              className="text-gray-400 p-1"
-              aria-label={showPwd ? '비밀번호 숨기기' : '비밀번호 표시'}
-            >
-              {showPwd ? <EyeOff size={15} /> : <Eye size={15} />}
-            </button>
-          }
-        />
-
-        {error && (
-          <p className="text-[12px] text-red-500 -mt-1 fade-in-up">{error}</p>
-        )}
-        {successMsg && (
-          <div className="rounded-xl bg-[#F4EFFF] border border-[#E0D4FF] px-3.5 py-3 fade-in-up">
-            <p className="text-[12.5px] text-[#5B2BB5] font-medium leading-relaxed">
-              {successMsg}
-            </p>
+    <div className={styles.root}>
+      <form
+        className={styles.page}
+        key={`${mode}-${step}`}
+        noValidate
+        onSubmit={(e) => { e.preventDefault(); void next(); }}
+      >
+        <header className={styles.header}>
+          <button type="button" className={styles.back} onClick={back} aria-label="뒤로">
+            <ChevronLeft size={28} strokeWidth={2} />
+          </button>
+          <div
+            className={styles.progress}
+            role="progressbar"
+            aria-valuemin={1}
+            aria-valuemax={flow.length}
+            aria-valuenow={at}
+            aria-label={`전체 ${flow.length}단계 중 ${at}단계`}
+          >
+            <span className={styles.progressTrack}>
+              <span
+                className={styles.progressFill}
+                style={{ '--from': `${((at - 1) / flow.length) * 100}%`, '--to': `${(at / flow.length) * 100}%` } as CSSProperties}
+              />
+            </span>
+            <span className={styles.progressText}><b>{at}</b> / {flow.length}</span>
           </div>
-        )}
+        </header>
 
-        <button
-          type="submit"
-          disabled={!canSubmit}
-          className="mt-2 w-full py-3.5 rounded-xl font-bold text-[14px] btn-press"
-          style={{
-            backgroundColor: canSubmit ? '#8037FF' : '#E5E7EB',
-            color: canSubmit ? '#fff' : '#A4ABBA',
-            boxShadow: canSubmit ? '0 6px 16px rgba(49,130,246,0.25)' : 'none',
-            transition: 'background-color 200ms ease',
-          }}
-        >
-          {pending
-            ? isLogin ? '로그인 중…' : '가입 처리 중…'
-            : retryAfter > 0
-              ? `잠시 후 재시도 (${retryAfter}s)`
-              : isLogin ? '로그인' : '회원가입'}
-        </button>
+        <main className={styles.main}>
+          <p className={`${styles.eyebrow} ${styles.titleIn}`}>{isLogin ? '이메일로 로그인' : '이메일로 회원가입'}</p>
+          <h1 className={`${styles.h1} ${styles.titleIn}`}>{title}</h1>
+          <p className={`${styles.sub} ${styles.subIn}`}>{sub}</p>
+          {field}
 
-        {isLogin && (
-          <button
-            type="button"
-            onClick={() => setMode('signup')}
-            className="text-[12px] text-gray-500 mt-1 mx-auto"
-          >
-            아직 회원이 아니신가요? <span className="text-[#8037FF] font-bold">회원가입</span>
-          </button>
-        )}
+          {error && <p className={styles.error} role="alert">{error}</p>}
+          {successMsg && <div className={styles.success} role="status">{successMsg}</div>}
 
-        <p className="text-[11px] text-center text-gray-400 mt-2 leading-relaxed">
-          {isLogin
-            ? '로그인 시'
-            : '회원가입 시'}{' '}
-          <span className="underline">이용약관</span> 및{' '}
-          <span className="underline">개인정보처리방침</span>에 동의합니다.
-        </p>
+          {step === 'email' && !isLogin && error === DUPLICATE_MSG && (
+            <button type="button" className={`${styles.link} ${styles.item}`} style={stag(0)} onClick={() => switchMode('login', 'password')}>
+              이 이메일로 로그인하기
+            </button>
+          )}
+          {step === 'email' && isLogin && (
+            <p className={`${styles.alt} ${styles.item}`} style={stag(1)}>
+              아직 회원이 아니신가요?{' '}
+              <button type="button" className={styles.inlineLink} onClick={() => switchMode('signup')}>회원가입</button>
+            </p>
+          )}
+          {step === 'name' && (
+            <p className={`${styles.alt} ${styles.item}`} style={stag(1)}>
+              이미 계정이 있나요?{' '}
+              <button type="button" className={styles.inlineLink} onClick={() => switchMode('login')}>로그인</button>
+            </p>
+          )}
+
+          {/* 간편 로그인 — 로그인·가입 첫 화면에만 */}
+          {at === 1 && (
+            <div className={`${styles.social} ${styles.item}`} style={stag(2)}>
+              <div className={styles.divider}><span>간편 로그인</span></div>
+              <button
+                type="button"
+                onClick={() => onSocial('kakao')}
+                disabled={socialPending !== null || pending}
+                className={`${styles.socialBtn} ${styles.kakao}`}
+              >
+                <KakaoIcon />
+                {socialPending === 'kakao' ? '카카오로 이동 중…' : `카카오로 ${isLogin ? '로그인' : '시작하기'}`}
+              </button>
+              <button
+                type="button"
+                onClick={() => onSocial('apple')}
+                disabled={socialPending !== null || pending}
+                className={`${styles.socialBtn} ${styles.apple}`}
+              >
+                <AppleIcon />
+                {socialPending === 'apple' ? 'Apple로 이동 중…' : `Apple로 ${isLogin ? '로그인' : '시작하기'}`}
+              </button>
+            </div>
+          )}
+        </main>
+
+        <div className={styles.ctaWrap}>
+          {step === 'password' && (
+            <p className={styles.terms}>
+              {isLogin ? '로그인 시' : '회원가입 시'} <span>이용약관</span> 및 <span>개인정보처리방침</span>에 동의합니다.
+            </p>
+          )}
+          <button type="submit" className={styles.cta} disabled={!canNext || pending}>{cta}</button>
+        </div>
       </form>
-
-      {/* 간편 로그인 */}
-      <div className="px-6 mt-6">
-        <div className="flex items-center gap-3 mb-4">
-          <span className="flex-1 h-px bg-gray-100" />
-          <span className="text-[11px] text-gray-400">간편 로그인</span>
-          <span className="flex-1 h-px bg-gray-100" />
-        </div>
-        <div className="flex flex-col gap-2.5">
-          <button
-            type="button"
-            onClick={() => onSocial('kakao')}
-            disabled={socialPending !== null || pending}
-            className="w-full py-3.5 rounded-xl font-bold text-[14px] btn-press flex items-center justify-center gap-2 disabled:opacity-60"
-            style={{ backgroundColor: '#FEE500', color: '#191600' }}
-          >
-            <KakaoIcon />
-            {socialPending === 'kakao' ? '카카오로 이동 중…' : `카카오로 ${isLogin ? '로그인' : '시작하기'}`}
-          </button>
-          <button
-            type="button"
-            onClick={() => onSocial('apple')}
-            disabled={socialPending !== null || pending}
-            className="w-full py-3.5 rounded-xl font-bold text-[14px] btn-press flex items-center justify-center gap-2 disabled:opacity-60"
-            style={{ backgroundColor: '#000000', color: '#ffffff' }}
-          >
-            <AppleIcon />
-            {socialPending === 'apple' ? 'Apple로 이동 중…' : `Apple로 ${isLogin ? '로그인' : '시작하기'}`}
-          </button>
-        </div>
-      </div>
-
-      <div className="flex-1" />
     </div>
   );
 }
 
-function Field({
-  icon,
-  right,
-  onChange,
-  ...props
-}: Omit<React.InputHTMLAttributes<HTMLInputElement>, 'onChange'> & {
-  icon?: React.ReactNode;
-  right?: React.ReactNode;
-  onChange: (value: string) => void;
-}) {
-  return (
-    <label className="relative flex items-center bg-gray-50 rounded-xl px-3.5 h-12 focus-within:bg-[#F4EFFF] focus-within:ring-1 focus-within:ring-[#D1C2FF] transition-colors">
-      {icon && <span className="mr-2.5 flex-shrink-0">{icon}</span>}
-      <input
-        {...props}
-        onChange={(e) => onChange(e.target.value)}
-        className="flex-1 bg-transparent text-[14px] outline-none placeholder:text-gray-400"
-      />
-      {right}
-    </label>
-  );
-}
+const DUPLICATE_MSG = '이미 가입된 이메일입니다. 로그인해 주세요.';
 
 function KakaoIcon() {
   return (
