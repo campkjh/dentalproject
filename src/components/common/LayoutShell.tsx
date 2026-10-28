@@ -7,6 +7,7 @@ import PageTransition from './PageTransition';
 import styles from './app-ui.module.css';
 
 const BARE_PREFIXES = ['/partner', '/admin'];
+const PC_WIDE = ['/', '/reservations', '/wishlist'];
 
 export default function LayoutShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -18,11 +19,13 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
   }
 
   const fullWidth = pathname.startsWith('/community') || pathname === '/mypage';
+  // PC 레이아웃을 맞춘 화면 — PC 에선 헤더와 같은 폭(1280 · 양옆 32)으로 펼친다(프리티풀 main 칸과 같음)
+  const pcWide = PC_WIDE.includes(pathname);
 
   return (
     <>
       <DesktopHeader />
-      <div className={fullWidth ? styles.shell : 'max-w-[640px] lg:max-w-none mx-auto bg-white lg:bg-gray-50 w-full min-h-dvh'}>
+      <div className={fullWidth ? styles.shell : pcWide ? 'mx-auto w-full max-w-[640px] bg-white min-h-dvh pc:max-w-[1280px] pc:px-8' : 'max-w-[640px] mx-auto bg-white w-full min-h-dvh'}>
         <PageTransition>{children}</PageTransition>
       </div>
       {!fullWidth && <Footer />}

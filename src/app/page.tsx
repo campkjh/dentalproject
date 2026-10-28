@@ -181,12 +181,12 @@ export default function HomePage() {
   };
 
   return (
-    <div className="pb-[86px] lg:pb-0 page-enter overflow-x-clip">
+    <div className="pb-[86px] pc:pb-16 page-enter overflow-x-clip">
       {/* Sticky Header */}
       <div
         ref={headerRef}
         style={{ position: 'sticky', top: 0, zIndex: 40 }}
-        className="bg-white lg:hidden transition-all duration-300"
+        className="bg-white pc:hidden transition-all duration-300"
       >
         <MobileHomeHeader hidden={scrolled} />
 
@@ -317,7 +317,7 @@ export default function HomePage() {
       </div>
 
       {/* Desktop content wrapper */}
-      <div className="lg:bg-white lg:rounded-2xl lg:shadow-sm lg:my-6">
+      <div className="pc:pt-6">
 
         <HomeBannerSlider />
 
@@ -327,6 +327,7 @@ export default function HomePage() {
         {/* Categories — 5x2 pager (swipe horizontally) */}
         <div ref={categorySectionRef}>
           <CategoryPager />
+          <PcCategoryRow />
         </div>
 
         {/* 최근 본 태그 */}
@@ -350,10 +351,10 @@ export default function HomePage() {
               icon="/icons/dental.svg"
               action={<MoreButton href="/search?category=dental" />}
             />
-            <div className="px-4 lg:max-w-7xl lg:mx-auto">
-              <div className="flex snap-x gap-2.5 overflow-x-auto hide-scrollbar pb-2 scroll-px-4 lg:grid lg:grid-cols-4 lg:gap-4 lg:overflow-visible">
+            <div className="px-4 pc:px-0">
+              <div className="flex snap-x gap-2.5 overflow-x-auto hide-scrollbar pb-2 scroll-px-4 pc:grid pc:grid-cols-5 pc:gap-4 pc:overflow-visible pc:[&>*:nth-child(n+6)]:hidden">
                 {dentalProducts.map((product) => (
-                  <div key={product.id} className="w-[44vw] max-w-[200px] flex-shrink-0 snap-start lg:w-auto lg:max-w-none lg:flex-shrink">
+                  <div key={product.id} className="w-[44vw] max-w-[200px] flex-shrink-0 snap-start pc:w-auto pc:max-w-none pc:shrink">
                     <ProductCard product={product} />
                   </div>
                 ))}
@@ -371,10 +372,10 @@ export default function HomePage() {
               icon="/icons/plastic.svg"
               action={<MoreButton href="/search?category=plastic" />}
             />
-            <div className="px-4 lg:max-w-7xl lg:mx-auto">
-              <div className="flex snap-x gap-2.5 overflow-x-auto hide-scrollbar pb-2 scroll-px-4 lg:grid lg:grid-cols-4 lg:gap-4 lg:overflow-visible">
+            <div className="px-4 pc:px-0">
+              <div className="flex snap-x gap-2.5 overflow-x-auto hide-scrollbar pb-2 scroll-px-4 pc:grid pc:grid-cols-5 pc:gap-4 pc:overflow-visible pc:[&>*:nth-child(n+6)]:hidden">
                 {plasticProducts.map((product) => (
-                  <div key={product.id} className="w-[44vw] max-w-[200px] flex-shrink-0 snap-start lg:w-auto lg:max-w-none lg:flex-shrink">
+                  <div key={product.id} className="w-[44vw] max-w-[200px] flex-shrink-0 snap-start pc:w-auto pc:max-w-none pc:shrink">
                     <ProductCard product={product} />
                   </div>
                 ))}
@@ -389,9 +390,9 @@ export default function HomePage() {
         {/* 나한테 꿀이되는 후기 */}
         <div className="mb-8">
           <SectionHeader title="나한테 꿀이되는 후기" subtitle="실제 방문자가 남긴 시술 경험을 살펴보세요." />
-          <div className="px-4 lg:max-w-7xl lg:mx-auto">
+          <div className="px-4 pc:px-0">
             {/* 프리티풀 상세의 둥실 리뷰 카드 — 흰 카드·댓글형 줄·각자 다른 속도로 떠다닌다 */}
-            <div className="-mx-4 overflow-x-auto px-4 pb-3 pt-1 hide-scrollbar">
+            <div className="-mx-4 overflow-x-auto px-4 pb-3 pt-1 hide-scrollbar pc:mx-0 pc:px-0">
               <div className="flex items-start gap-3" style={{ width: 'max-content' }}>
                 {reviews.slice(0, 10).map((review, i) => {
                   const relatedProduct = products.find(p => p.id === review.productId) || products.find(p => p.hospitalId === review.hospitalId);
@@ -432,10 +433,10 @@ export default function HomePage() {
             subtitle="후기가 많은 패키지부터 빠르게 비교해보세요."
             action={<MoreButton href="/search" />}
           />
-          <div className="px-4 lg:max-w-7xl lg:mx-auto">
-            <div className="flex snap-x gap-2.5 overflow-x-auto hide-scrollbar pb-2 scroll-px-4 lg:grid lg:grid-cols-4 lg:gap-4 lg:overflow-visible">
+          <div className="px-4 pc:px-0">
+            <div className="flex snap-x gap-2.5 overflow-x-auto hide-scrollbar pb-2 scroll-px-4 pc:grid pc:grid-cols-5 pc:gap-4 pc:overflow-visible pc:[&>*:nth-child(n+6)]:hidden">
               {weeklyPopularPackages.map((product) => (
-                <div key={product.id} className="w-[44vw] max-w-[200px] flex-shrink-0 snap-start lg:w-auto lg:max-w-none lg:flex-shrink">
+                <div key={product.id} className="w-[44vw] max-w-[200px] flex-shrink-0 snap-start pc:w-auto pc:max-w-none pc:shrink">
                   <ProductCard product={product} />
                 </div>
               ))}
@@ -450,10 +451,10 @@ export default function HomePage() {
             subtitle="할인율이 좋은 시술을 골라 추천해드려요."
             action={<MoreButton href="/search" />}
           />
-          <div className="px-4 lg:max-w-7xl lg:mx-auto">
-            <div className="flex snap-x gap-2.5 overflow-x-auto hide-scrollbar pb-2 scroll-px-4 lg:grid lg:grid-cols-4 lg:gap-4 lg:overflow-visible">
+          <div className="px-4 pc:px-0">
+            <div className="flex snap-x gap-2.5 overflow-x-auto hide-scrollbar pb-2 scroll-px-4 pc:grid pc:grid-cols-5 pc:gap-4 pc:overflow-visible pc:[&>*:nth-child(n+6)]:hidden">
               {suggestedPackages.map((product) => (
-                <div key={product.id} className="w-[44vw] max-w-[200px] flex-shrink-0 snap-start lg:w-auto lg:max-w-none lg:flex-shrink">
+                <div key={product.id} className="w-[44vw] max-w-[200px] flex-shrink-0 snap-start pc:w-auto pc:max-w-none pc:shrink">
                   <ProductCard product={product} />
                 </div>
               ))}
@@ -464,8 +465,8 @@ export default function HomePage() {
         {/* 요즘 뜨고 있는 병원 */}
         <div className="mb-8">
           <SectionHeader title="요즘 뜨고 있는 병원" subtitle="평점과 후기가 좋은 병원을 둘러보세요." />
-          <div className="px-4 lg:max-w-7xl lg:mx-auto">
-            <div className="flex snap-x gap-3 overflow-x-auto pb-2 hide-scrollbar scroll-px-4">
+          <div className="px-4 pc:px-0">
+            <div className="flex snap-x gap-3 overflow-x-auto pb-2 hide-scrollbar scroll-px-4 pc:grid pc:grid-cols-3 pc:gap-4 pc:overflow-visible">
               {(() => {
                 const BLOB = 'https://4ipmgcqyzk6ysqa7.public.blob.vercel-storage.com';
                 const hospitalCovers = [
@@ -480,7 +481,7 @@ export default function HomePage() {
                   `${BLOB}/etc_1770601235.jpg`,
                 ];
                 return trendingHospitals.map((hp, hpIdx) => (
-                  <div key={hp.id} className="w-[78vw] max-w-[320px] shrink-0 snap-start">
+                  <div key={hp.id} className="w-[78vw] max-w-[320px] shrink-0 snap-start pc:w-auto pc:max-w-none">
                     <HospitalToneCard
                       index={hpIdx}
                       hospital={{
@@ -508,8 +509,8 @@ export default function HomePage() {
             subtitle="많이 찜하고 예약한 상품을 확인해보세요."
             action={<MoreButton href="/search" label="전체보기" />}
           />
-          <div className="px-4 lg:max-w-7xl lg:mx-auto">
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 lg:gap-4 stagger-children">
+          <div className="px-4 pc:px-0">
+            <div className="grid grid-cols-2 pc:grid-cols-5 gap-2.5 pc:gap-4 pc:[&>*:nth-child(n+6)]:hidden stagger-children">
               {popularProducts.map((product) => (
                 <ProductCard key={product.id} product={product} index={popularProducts.indexOf(product)} />
               ))}
@@ -520,7 +521,7 @@ export default function HomePage() {
       </div>{/* End desktop content wrapper */}
 
       {/* Footer */}
-      <div className="mt-8 px-2.5 py-6 text-xs text-gray-400 border-t border-gray-100 lg:hidden">
+      <div className="mt-8 px-2.5 py-6 text-xs text-gray-400 border-t border-gray-100 pc:hidden">
         <div className="flex flex-wrap gap-x-3 gap-y-1.5 mb-4 text-gray-500">
           <Link href="/terms/privacy" className="hover:text-gray-700 underline">개인정보처리방침</Link>
           <Link href="/terms/service" className="hover:text-gray-700 underline">서비스이용약관</Link>
@@ -635,7 +636,7 @@ const HOTSPOTS = [
 /* ===================== Home Skeleton ===================== */
 function HomeSkeleton() {
   return (
-    <div className="px-2.5 lg:px-6 lg:max-w-7xl lg:mx-auto space-y-8 mb-8">
+    <div className="px-2.5 pc:px-0 space-y-8 mb-8">
       {/* 핫플레이스 skeleton */}
       <div>
         <div className="skeleton h-5 w-48 mb-2" />
@@ -734,7 +735,7 @@ function NearbyHotPlaces({
   return (
     <div className="mb-8">
       <SectionHeader title="근처 핫플레이스 알아보기" subtitle="나와 가까운 핫플이 어디인지 알려드려요." />
-      <div className="px-2.5 lg:px-6 lg:max-w-7xl lg:mx-auto">
+      <div className="px-2.5 pc:px-0">
         <div className="flex gap-5 overflow-x-auto hide-scrollbar pb-2">
           {sorted.map((spot) => (
             <Link
@@ -1043,6 +1044,23 @@ function RollDigit({ ch }: { ch: string }) {
   );
 }
 
+// PC 카테고리 — 페이지 넘김 없이 한 줄(프리티풀 PC 홈 카테고리 줄처럼 아이콘 칸 + 이름)
+function PcCategoryRow() {
+  const categories = useStore(s => s.categories);
+  return (
+    <div className="mb-10 mt-2 hidden grid-cols-[repeat(auto-fill,minmax(72px,1fr))] gap-x-2 gap-y-5 pc:grid">
+      {categories.map(cat => (
+        <Link key={cat.id} href={`/search?category=${cat.id}`} className="group flex flex-col items-center gap-2">
+          <span className="flex h-[64px] w-[64px] items-center justify-center rounded-[20px] bg-[#F4F5F7] transition-transform duration-200 group-hover:-translate-y-0.5 group-active:scale-95">
+            <img src={cat.icon} alt="" className="h-11 w-11" />
+          </span>
+          <span className="text-[13px] font-semibold leading-tight text-[#4E5968]">{cat.name}</span>
+        </Link>
+      ))}
+    </div>
+  );
+}
+
 function CategoryPager() {
   const categories = useStore((s) => s.categories);
   const pageSize = 10; // 5 cols x 2 rows
@@ -1073,7 +1091,7 @@ function CategoryPager() {
   };
 
   return (
-    <div className="mb-8 lg:max-w-7xl lg:mx-auto">
+    <div className="mb-8 pc:hidden">
       <div className="relative">
         {totalPages > 1 && (
           <>
@@ -1192,12 +1210,12 @@ function RecentlyViewedSection({
         subtitle={hasRecent ? '최근 둘러본 상품을 이어서 확인해보세요.' : '추천으로 보여드려요.'}
         action={<MoreButton href="/wishlist" />}
       />
-      <div className="px-4 lg:max-w-7xl lg:mx-auto">
-        <div className="flex gap-3 overflow-x-auto hide-scrollbar pb-2 lg:grid lg:grid-cols-4 lg:gap-6 lg:overflow-visible">
+      <div className="px-4 pc:px-0">
+        <div className="flex gap-3 overflow-x-auto hide-scrollbar pb-2 pc:grid pc:grid-cols-5 pc:gap-4 pc:overflow-visible pc:[&>*:nth-child(n+6)]:hidden">
           {items.map((p) => (
             <div
               key={p.id}
-              className="w-[42vw] max-w-[180px] flex-shrink-0 lg:w-auto lg:max-w-none lg:flex-shrink"
+              className="w-[42vw] max-w-[180px] flex-shrink-0 pc:w-auto pc:max-w-none pc:shrink"
             >
               <ProductCard product={p} />
             </div>
@@ -1221,11 +1239,11 @@ function SectionHeader({
 }) {
   // 프리티풀 홈 섹션 머리 — (아이콘) 제목 18·20 + 회색 부제 14, 오른쪽 '전체보기 >'
   return (
-    <div className="flex items-end justify-between gap-3 px-4 lg:px-6 lg:max-w-7xl lg:mx-auto mb-3">
+    <div className="flex items-end justify-between gap-3 px-4 pc:px-0 mb-3">
       <div className="flex min-w-0 items-center gap-2">
         {icon && <img src={icon} alt="" className="h-9 w-9 shrink-0 object-contain" />}
         <div className="min-w-0">
-          <h2 className="text-[18px] font-semibold leading-tight tracking-tight text-[#191F28] lg:text-[20px]">{title}</h2>
+          <h2 className="text-[18px] font-semibold leading-tight tracking-tight text-[#191F28] pc:text-[22px]">{title}</h2>
           {subtitle && <p className="mt-1 text-[14px] leading-relaxed text-[#8B95A1]">{subtitle}</p>}
         </div>
       </div>
@@ -1255,7 +1273,7 @@ function RecentTagsSection({
   return (
     <div className="mb-6">
       <SectionHeader title="최근 본 태그" />
-      <div className="px-4 lg:max-w-7xl lg:mx-auto">
+      <div className="px-4 pc:px-0">
         <div className="flex gap-1.5 overflow-x-auto hide-scrollbar pb-1">
           {tags.map((tag) => (
             <div

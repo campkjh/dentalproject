@@ -28,6 +28,9 @@
   --breakpoint-lg: 9999px;
 }
 
+/* PC(1024↑) 전용 변형 — 옛 lg: 클래스는 꺼 둔 채로, PC 레이아웃을 새로 맞춘 화면만 pc: 로 쓴다(프리티풀처럼 헤더와 같은 1280 폭) */
+@custom-variant pc (@media (width >= 1024px));
+
 * {
   -webkit-tap-highlight-color: transparent;
 }

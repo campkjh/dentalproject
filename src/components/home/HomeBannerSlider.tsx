@@ -53,6 +53,15 @@ export default function HomeBannerSlider() {
   const [banners, setBanners] = useState<HomeBanner[]>(defaultHomeBanners);
   const [activeIndex, setActiveIndex] = useState(0);
   const touchStartX = useRef<number | null>(null);
+  // PC(1024↑)는 배너 두 장을 나란히 — 한 장씩 넘긴다(2:1 원본이 잘리지 않게)
+  const [isPc, setIsPc] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 1024px)');
+    const sync = () => setIsPc(mq.matches);
+    sync();
+    mq.addEventListener('change', sync);
+    return () => mq.removeEventListener('change', sync);
+  }, []);
 
   const visibleBanners = useMemo(
     () => banners.filter((banner) => banner.imageUrl || banner.title),
@@ -93,6 +102,9 @@ export default function HomeBannerSlider() {
 
   if (visibleBanners.length === 0) return null;
 
+  const perView = isPc && visibleBanners.length > 1 ? 2 : 1;
+  const shownIndex = Math.min(activeIndex, visibleBanners.length - perView);
+
   const go = (direction: 1 | -1) => {
     if (visibleBanners.length <= 1) return;
     setActiveIndex((current) => (current + direction + visibleBanners.length) % visibleBanners.length);
@@ -100,7 +112,7 @@ export default function HomeBannerSlider() {
 
   return (
     <section
-      className="mx-4 mb-2 lg:mx-auto lg:max-w-7xl lg:px-6"
+      className="mx-4 mb-2 pc:-mx-2 pc:mb-4"
       aria-label="홈 배너"
       onTouchStart={(event) => {
         touchStartX.current = event.touches[0]?.clientX ?? null;
@@ -114,14 +126,14 @@ export default function HomeBannerSlider() {
         go(diff < 0 ? 1 : -1);
       }}
     >
-      <div className="relative overflow-hidden rounded-[20px] bg-gray-100">
+      <div className={`relative overflow-hidden ${perView === 2 ? '' : 'rounded-[20px] bg-gray-100'}`}>
         <div
           className="flex transition-transform duration-500 ease-out"
-          style={{ transform: `translate3d(-${activeIndex * 100}%, 0, 0)` }}
+          style={{ transform: `translate3d(-${(shownIndex * 100) / perView}%, 0, 0)` }}
         >
           {visibleBanners.map((banner) => (
-            <div key={banner.id} className="h-auto min-w-full">
-              <div className="aspect-[2/1] w-full overflow-hidden lg:max-h-[420px]">
+            <div key={banner.id} className="h-auto shrink-0" style={{ width: `${100 / perView}%`, paddingRight: perView === 2 ? 8 : 0, paddingLeft: perView === 2 ? 8 : 0 }}>
+              <div className={`aspect-[2/1] w-full overflow-hidden ${perView === 2 ? 'rounded-[24px] bg-gray-100' : ''}`}>
                 <BannerFrame banner={banner} />
               </div>
             </div>

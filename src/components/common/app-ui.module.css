@@ -15,7 +15,7 @@
 .badge { position: absolute; top: -5px; right: -8px; display: grid; place-items: center; min-width: 15px; height: 15px; padding: 0 3px; border-radius: 20px; font-size: 9px; background: #3182f6; color: #fff; font-weight: 600; }
 .dot { position: absolute; top: 3px; right: 3px; width: 6px; height: 6px; background: #f04452; border-radius: 50%; }
 .desktopHeader { display: none; position: sticky; top: 0; z-index: 55; background: #fffffff5; backdrop-filter: blur(18px); }
-.desktopInner { margin: auto; max-width: 1360px; padding: 0 32px; height: 72px; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 24px; }
+.desktopInner { margin: auto; max-width: 1280px; padding: 0 32px; height: 72px; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 24px; }
 .brand { display: inline-flex; align-items: center; gap: 8px; justify-self: start; font-size: 21px; font-weight: 700; color: #191f28; white-space: nowrap; }
 .brand img { width: 30px; height: 30px; object-fit: contain; }
 .desktopNav { position: relative; display: flex; align-items: center; gap: 4px; background: #f2f3f5; padding: 4px; border-radius: 14px; }
@@ -88,7 +88,12 @@
 @media (min-width: 720px) { .myPage { padding: 32px 28px 100px; }.mySections { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 0 24px; }.myRowDesc { white-space: normal; }.topbar { padding-left: 24px; padding-right: 24px; } }
 @media (min-width: 1024px) {
   .desktopHeader { display: block; }.bottomNav { display: none; }.topbar { display: none; }
-  .myPage { padding: 32px 32px 64px; }.myLayout { max-width: 1280px; margin: auto; }
+  /* PC — 헤더 안쪽 폭(1280 − 양옆 32)과 같은 칸에 맞춘다. 상세 칸이 없을 땐 목록이 그 폭을 다 쓴다(두 칸 섹션) */
+  .myPage { padding: 40px 32px 64px; }.myLayout { max-width: 1216px; margin: auto; }
+  .myInner { max-width: none; }
+  .myLayout:not([data-panel=true]) .quickGrid { grid-template-columns: repeat(8, minmax(0, 1fr)); max-width: 720px; }
+  .myLayout:not([data-panel=true]) .myProfile h1, .myLogin h1 { font-size: 26px; line-height: 36px; }
+  .myLogin { max-width: 420px; }
   .myLayout[data-panel=true] { display: grid; grid-template-columns: 440px minmax(0,1fr); gap: 28px; }
   .myLayout[data-panel=true] .mySections { display: block; }
   .myDetailPanel { display: block; position: sticky; top: 96px; height: calc(100dvh - 120px); overflow: hidden; border-radius: 24px; background: #fff; transform: translateZ(0); }

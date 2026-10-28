@@ -17,7 +17,7 @@ export type ImageTone = {
 
 export type ToneMode = 'portrait' | 'scene' | 'square';
 
-const STORE_KEY = 'md-image-tone-v1';
+const STORE_KEY = 'md-image-tone-v2';
 const MAX_STORE = 400;
 const memory = new Map<string, ImageTone | null>();
 const pending = new Map<string, Promise<ImageTone | null>>();
@@ -225,7 +225,7 @@ function toneFromCanvas(src: string, mode: ToneMode): Promise<ImageTone | null> 
 
 /** 다른 출처 사진은 Next 이미지 최적화로 작게 받아(같은 출처) 읽는다 */
 function proxiedSrc(src: string) {
-  return `/_next/image?url=${encodeURIComponent(src)}&w=64&q=60`;
+  return `/_next/image?url=${encodeURIComponent(src)}&w=64&q=75`;
 }
 
 /** 기억해 둔 색(없으면 null) — 첫 그림에 바로 입힐 때 */

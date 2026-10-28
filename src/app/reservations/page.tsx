@@ -106,18 +106,20 @@ export default function ReservationsPage() {
   };
 
   return (
-    <div className="pb-[86px] lg:pb-0 bg-white min-h-screen page-enter">
+    <div className="pb-[86px] pc:pb-16 bg-white min-h-screen page-enter">
       {/* 탭 머리 — 프리티풀 탭 머리 표준(왼쪽 16 · 20 굵게) */}
-      <div className="sticky top-0 z-40 flex items-center bg-white px-4 lg:hidden" style={{ height: 56 }}>
+      <div className="sticky top-0 z-40 flex items-center bg-white px-4 pc:hidden" style={{ height: 56 }}>
         <h1 className="text-[20px] font-bold leading-none text-[#191F28]">예약내역</h1>
       </div>
+      {/* PC — 전체 헤더 아래 큰 제목(헤더가 둘로 보이지 않게 모바일 머리는 숨김) */}
+      <h1 className="hidden pb-4 pt-10 text-[26px] font-bold leading-tight tracking-[-0.5px] text-[#191F28] pc:block">예약내역</h1>
 
       {!isLoggedIn ? (
         <LoginRequired />
       ) : (
         <>
           {/* Sticky tabs (no docking — hero/summary removed) */}
-          <div className="partner-community-category-shell sticky top-[56px] z-[45] bg-white">
+          <div className="partner-community-category-shell sticky top-[56px] z-[45] bg-white pc:top-[72px]">
             <div ref={tabsRef} className="partner-community-categories hide-scrollbar">
               <span
                 aria-hidden
@@ -151,14 +153,14 @@ export default function ReservationsPage() {
           {/* Reservation list */}
           <div
             key={activeTab}
-            className={`px-4 pb-6 lg:max-w-5xl lg:mx-auto lg:px-6 lg:py-6 ${
+            className={`px-4 pb-6 pc:px-0 pc:py-6 ${
               direction === 'right' ? 'tab-slide-right' : 'tab-slide-left'
             }`}
           >
             {filtered.length === 0 ? (
               <EmptyState icon="calendar" message="내역이 존재하지 않아요" />
             ) : (
-              <div className="flex flex-col gap-3 lg:grid lg:grid-cols-2 lg:gap-4 stagger-children">
+              <div className="flex flex-col gap-3 pc:grid pc:grid-cols-3 pc:gap-4 stagger-children">
                 {filtered.map((reservation, index) => {
                   const isPending = reservation.status === 'pending';
                   const isCompleted = reservation.status === 'completed';

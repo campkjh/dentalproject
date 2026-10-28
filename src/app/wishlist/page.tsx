@@ -52,18 +52,19 @@ export default function WishlistPage() {
   const scrollToTop = () => window.scrollTo({ top: 0, behavior: 'smooth' });
 
   return (
-    <div className="min-h-screen bg-white max-w-[500px] mx-auto lg:max-w-7xl lg:px-6 lg:py-6">
-      {/* Header — community-style: 22px extrabold */}
-      <div className="sticky top-0 z-40 bg-white flex items-center px-2.5 lg:hidden" style={{ height: 56 }}>
-        <h1 className="text-[22px] font-extrabold text-gray-900 leading-none">찜목록</h1>
+    <div className="min-h-screen bg-white w-full mx-auto">
+      {/* 탭 머리 — 모바일은 프리티풀 탭 머리 표준(왼쪽 16 · 20 굵게), PC 는 전체 헤더 아래 큰 제목 */}
+      <div className="sticky top-0 z-40 flex items-center bg-white px-4 pc:hidden" style={{ height: 56 }}>
+        <h1 className="text-[20px] font-bold leading-none text-[#191F28]">찜목록</h1>
       </div>
+      <h1 className="hidden pb-4 pt-10 text-[26px] font-bold leading-tight tracking-[-0.5px] text-[#191F28] pc:block">찜목록</h1>
 
       {!isLoggedIn ? (
         <LoginRequired />
       ) : (
         <>
           {/* Tabs — partner-style sliding indicator */}
-          <div className="partner-community-category-shell sticky top-[56px] bg-white z-10">
+          <div className="partner-community-category-shell sticky top-[56px] bg-white z-10 pc:top-[72px]">
             <div className="partner-community-categories hide-scrollbar">
               <span
                 aria-hidden
@@ -136,9 +137,9 @@ export default function WishlistPage() {
               )}
             </>
           ) : (
-            <div key={activeTab} className="px-2.5 py-4 list-fade-slide">
+            <div key={activeTab} className="px-4 py-4 list-fade-slide pc:px-0 pc:py-6">
               <p className="text-sm text-gray-500 mb-4">총 {displayed.length}개</p>
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-6">
+              <div className="grid grid-cols-2 gap-2.5 pc:grid-cols-5 pc:gap-4">
                 {displayed.map((product) => (
                   <div key={product.id} className="relative">
                     {activeTab === 'wishlist' && (
@@ -163,13 +164,13 @@ export default function WishlistPage() {
       {showScrollTop && (
         <button
           onClick={scrollToTop}
-          className="fixed bottom-24 right-4 max-w-[500px] w-10 h-10 bg-white border border-gray-200 rounded-full shadow-lg flex items-center justify-center z-40 hover:bg-gray-50 transition-colors"
+          className="fixed bottom-24 right-4 pc:bottom-8 pc:right-8 w-10 h-10 bg-white border border-gray-200 rounded-full shadow-lg flex items-center justify-center z-40 hover:bg-gray-50 transition-colors"
         >
           <ArrowUp size={18} className="text-gray-600" />
         </button>
       )}
 
-      <div className="pb-24 lg:pb-0" />
+      <div className="pb-24 pc:pb-16" />
     </div>
   );
 }
