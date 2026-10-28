@@ -6,6 +6,8 @@ import { useEffect, useRef } from 'react';
 import { useSession } from '@/lib/supabase/SessionProvider';
 import { useStore } from '@/store';
 import { useMyHospitalData } from '@/lib/partner/my-hospital-cache';
+import appStyles from '@/components/common/app-ui.module.css';
+import { animateNavigationIcon } from '@/lib/ui-motion';
 
 const BOTTOM_NAV = [
   { label: '홈', href: '/partner', asset: 'home', match: ['/partner'] },
@@ -218,7 +220,7 @@ export default function PartnerLayout({ children }: { children: React.ReactNode 
   const gated = !isApproved && isGatedRoute(pathname);
 
   return (
-    <div className="partner-shell-bg">
+    <div className={`partner-shell-bg ${appStyles.partnerShell}`}>
       <div className="partner-phone-shell" style={hideNav ? { overflowX: 'visible' } : undefined}>
         {showManagementHeader && !gated && (
           <header className="partner-screen-title partner-management-title with-action">
@@ -247,7 +249,7 @@ export default function PartnerLayout({ children }: { children: React.ReactNode 
           </div>
         </main>
         {!hideNav && (
-          <nav className="partner-bottom-nav" aria-label="파트너 하단 내비게이션">
+          <nav className={`partner-bottom-nav ${appStyles.partnerNav}`} aria-label="파트너 하단 내비게이션">
             {BOTTOM_NAV.map((item) => {
               const active = isActive(item);
               return (
@@ -257,6 +259,7 @@ export default function PartnerLayout({ children }: { children: React.ReactNode 
                   className={active ? 'is-active' : undefined}
                   aria-current={active ? 'page' : undefined}
                   onClick={(e) => handleNavClick(e, item)}
+                  onPointerDown={(e) => animateNavigationIcon(e.currentTarget)}
                 >
                   <PartnerNavIcon asset={item.asset} />
                   <span>{item.label}</span>

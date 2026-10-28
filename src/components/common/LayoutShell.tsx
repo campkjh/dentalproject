@@ -3,6 +3,8 @@
 import { usePathname } from 'next/navigation';
 import DesktopHeader from './DesktopHeader';
 import Footer from './Footer';
+import PageTransition from './PageTransition';
+import styles from './app-ui.module.css';
 
 const BARE_PREFIXES = ['/partner', '/admin'];
 
@@ -15,13 +17,15 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
     return <>{children}</>;
   }
 
+  const fullWidth = pathname.startsWith('/community') || pathname === '/mypage';
+
   return (
     <>
       <DesktopHeader />
-      <div className="max-w-[500px] lg:max-w-none mx-auto bg-white lg:bg-gray-50 w-full min-h-dvh shadow-xl lg:shadow-none lg:pt-[112px]">
-        {children}
+      <div className={fullWidth ? styles.shell : 'max-w-[640px] lg:max-w-none mx-auto bg-white lg:bg-gray-50 w-full min-h-dvh'}>
+        <PageTransition>{children}</PageTransition>
       </div>
-      <Footer />
+      {!fullWidth && <Footer />}
     </>
   );
 }

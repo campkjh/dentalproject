@@ -5,9 +5,10 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createPortal } from 'react-dom';
-import { Search, Send, ChevronLeft, ChevronRight, ChevronDown, Star, MapPin, X, ArrowUp } from 'lucide-react';
+import { Search, ChevronLeft, ChevronRight, ChevronDown, Star, MapPin, X, ArrowUp } from 'lucide-react';
 import ProductCard from '@/components/common/ProductCard';
 import Avatar from '@/components/common/Avatar';
+import MobileHomeHeader from '@/components/common/MobileHomeHeader';
 import HomeBannerSlider from '@/components/home/HomeBannerSlider';
 import { useStore } from '@/store';
 import { resolveHospitalImageUrl } from '@/lib/images';
@@ -48,11 +49,9 @@ function detectDistrict(lat: number, lng: number): string {
 
 export default function HomePage() {
   const router = useRouter();
-  const { products, hospitals, reviews, categories, isLoggedIn, isDoctor, recentlyViewed, recentSearches, removeRecentSearch, catalogHydrated, notifications, meHydrated } = useStore();
+  const { products, hospitals, reviews, categories, isLoggedIn, isDoctor, recentlyViewed, recentSearches, removeRecentSearch, catalogHydrated } = useStore();
   // Live unread count for the 쪽지 badge — only counted once /api/me has hydrated
   // so we don't briefly render a 0 on the wrong account.
-  const unreadMessageCount =
-    isLoggedIn && meHydrated ? notifications.filter((n) => !n.isRead).length : 0;
   const [scrolled, setScrolled] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [scrollTopLeaving, setScrollTopLeaving] = useState(false);
@@ -187,74 +186,7 @@ export default function HomePage() {
         style={{ position: 'sticky', top: 0, zIndex: 40 }}
         className="bg-white lg:hidden transition-all duration-300"
       >
-        {/* Default Header (logo + icons) */}
-        <div className={`flex items-center justify-between px-2.5 py-3 transition-all duration-300 ${scrolled ? 'h-0 overflow-hidden opacity-0 py-0' : 'opacity-100'}`}>
-          <img src="/icons/brand-logo.png" alt="마이닥" width={32} height={32} className="flex-shrink-0" />
-          {isLoggedIn ? (
-            <div className="flex items-center gap-2">
-              <Link
-                href="/search"
-                className="w-10 h-10 rounded-full flex items-center justify-center text-gray-800 transition-all duration-200 active:scale-110"
-                style={{
-                  background: 'rgba(255, 255, 255, 0.56)',
-                  border: '1px solid rgba(255, 255, 255, 0.72)',
-                  boxShadow: '0 8px 24px rgba(17, 24, 39, 0.10)',
-                  backdropFilter: 'blur(16px) saturate(160%)',
-                  WebkitBackdropFilter: 'blur(16px) saturate(160%)',
-                }}
-              >
-                <Search size={20} />
-              </Link>
-              <Link
-                href="/notifications"
-                className="relative w-10 h-10 rounded-full flex items-center justify-center text-gray-800 transition-all duration-200 active:scale-110"
-                style={{
-                  background: 'rgba(255, 255, 255, 0.56)',
-                  border: '1px solid rgba(255, 255, 255, 0.72)',
-                  boxShadow: '0 8px 24px rgba(17, 24, 39, 0.10)',
-                  backdropFilter: 'blur(16px) saturate(160%)',
-                  WebkitBackdropFilter: 'blur(16px) saturate(160%)',
-                }}
-              >
-                <Send size={22} />
-                {unreadMessageCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] rounded-full min-w-[16px] h-4 flex items-center justify-center px-1">
-                    {unreadMessageCount > 99 ? '99+' : unreadMessageCount}
-                  </span>
-                )}
-              </Link>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2">
-              <Link
-                href="/login"
-                className="text-sm px-3.5 py-2 rounded-full font-semibold text-gray-900 transition-all duration-200 active:scale-105"
-                style={{
-                  background: 'rgba(255, 255, 255, 0.58)',
-                  border: '1px solid rgba(255, 255, 255, 0.74)',
-                  boxShadow: '0 8px 24px rgba(17, 24, 39, 0.10)',
-                  backdropFilter: 'blur(16px) saturate(160%)',
-                  WebkitBackdropFilter: 'blur(16px) saturate(160%)',
-                }}
-              >
-                로그인
-              </Link>
-              <Link
-                href="/search"
-                className="w-10 h-10 rounded-full flex items-center justify-center text-gray-800 transition-all duration-200 active:scale-110"
-                style={{
-                  background: 'rgba(255, 255, 255, 0.58)',
-                  border: '1px solid rgba(255, 255, 255, 0.74)',
-                  boxShadow: '0 8px 24px rgba(17, 24, 39, 0.10)',
-                  backdropFilter: 'blur(16px) saturate(160%)',
-                  WebkitBackdropFilter: 'blur(16px) saturate(160%)',
-                }}
-              >
-                <Search size={20} />
-              </Link>
-            </div>
-          )}
-        </div>
+        <MobileHomeHeader hidden={scrolled} />
 
         {/* Scrolled Header — flat #F2F4F6 bar, 12px radius, no border.
             Search icon docks left; location text + chevron precede a thin

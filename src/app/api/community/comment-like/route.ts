@@ -50,9 +50,9 @@ export async function POST(req: NextRequest) {
       liked = true;
     }
 
-    const { count } = await sb.from('comment_likes').select('*', { count: 'exact', head: true }).eq('comment_id', commentId);
+    const { data: comment } = await sb.from('comments').select('like_count').eq('id', commentId).maybeSingle();
 
-    return NextResponse.json({ liked, count: count ?? 0 });
+    return NextResponse.json({ liked, count: comment?.like_count ?? 0 });
   } catch (e: any) {
     return NextResponse.json({ error: e?.message || '서버 오류' }, { status: 500 });
   }

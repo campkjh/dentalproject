@@ -25,12 +25,13 @@ const YEARS = Array.from(
   (_, i) => String(new Date().getFullYear() - i)
 );
 
-type SheetType = 'name' | 'gender' | 'year' | 'country' | null;
+type SheetType = 'name' | 'phone' | 'gender' | 'year' | 'country' | null;
 
 export default function ProfilePage() {
   const router = useRouter();
   const {
     isLoggedIn,
+    isDoctor,
     user,
     showModal,
     hideModal,
@@ -43,6 +44,7 @@ export default function ProfilePage() {
   } = useStore();
 
   const [sheet, setSheet] = useState<SheetType>(null);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
   if (!isLoggedIn) {
     return (
@@ -71,7 +73,6 @@ export default function ProfilePage() {
     });
   };
 
-  const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
   const onAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
@@ -111,7 +112,7 @@ export default function ProfilePage() {
       value: user?.loginType === 'kakao' ? '카카오' : '애플',
       readonly: true,
     },
-    { label: '전화번호', value: user?.phone ?? '-', readonly: true },
+    { label: '전화번호', value: user?.phone ?? '-', ...(isDoctor ? { onClick: () => setSheet('phone') } : { readonly: true }) },
     { label: '성별', value: user?.gender ?? '-', onClick: () => setSheet('gender') },
     { label: '출생년도', value: user?.birthYear ?? '-', onClick: () => setSheet('year') },
     { label: '국가', value: user?.country ?? '대한민국', onClick: () => setSheet('country') },
@@ -255,13 +256,14 @@ function EditSheet({
   onClose,
   onSave,
 }: {
-  type: 'name' | 'gender' | 'year' | 'country';
+  type: Exclude<SheetType, null>;
   user: import('@/types').User | null;
   onClose: () => void;
   onSave: (patch: Partial<import('@/types').User>) => void;
 }) {
   const title = {
     name: '이름 변경',
+    phone: '전화번호 변경',
     gender: '성별 선택',
     year: '출생년도 선택',
     country: '국가 선택',
@@ -291,6 +293,7 @@ function EditSheet({
           </button>
         </div>
         {type === 'name' && <NameEditor name={user?.name ?? ''} onSave={(v) => onSave({ name: v })} />}
+        {type === 'phone' && <NameEditor name={user?.phone ?? ''} phone onSave={(v) => onSave({ phone: v })} />}
         {type === 'gender' && (
           <ListChoice
             options={GENDERS}
@@ -317,7 +320,7 @@ function EditSheet({
   );
 }
 
-function NameEditor({ name, onSave }: { name: string; onSave: (v: string) => void }) {
+function NameEditor({ name, onSave, phone = false }: { name: string; onSave: (v: string) => void; phone?: boolean }) {
   const [val, setVal] = useState(name);
   const inputRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
@@ -328,11 +331,13 @@ function NameEditor({ name, onSave }: { name: string; onSave: (v: string) => voi
       <input
         ref={inputRef}
         value={val}
-        onChange={(e) => setVal(e.target.value.slice(0, 12))}
-        placeholder="이름 입력"
+        onChange={(e) => setVal(e.target.value.slice(0, phone ? 20 : 12))}
+        placeholder={phone ? '전화번호 입력' : '이름 입력'}
+        aria-label={phone ? '전화번호' : '이름'}
+        inputMode={phone ? 'tel' : 'text'}
         className="w-full px-4 py-3 bg-gray-50 rounded-xl text-[15px] outline-none focus:bg-[#F4EFFF]"
       />
-      <p className="text-[11px] text-gray-400 text-right">{val.length}/12</p>
+      <p className="text-[11px] text-gray-400 text-right">{val.length}/{phone ? 20 : 12}</p>
       <button
         disabled={!val.trim()}
         onClick={() => onSave(val.trim())}

@@ -4,6 +4,7 @@ import Modal from './Modal';
 import Toast from './Toast';
 import BottomNav from './BottomNav';
 import { SessionProvider } from '@/lib/supabase/SessionProvider';
+import AppInteractions from './AppInteractions';
 
 export default function Providers({ children }: { children?: React.ReactNode }) {
   return (
@@ -12,6 +13,7 @@ export default function Providers({ children }: { children?: React.ReactNode }) 
       <BottomNav />
       <Modal />
       <Toast />
+      <AppInteractions />
     </SessionProvider>
   );
 }

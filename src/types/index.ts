@@ -145,6 +145,7 @@ export interface Post {
   authorName: string;
   authorTitle?: string;
   authorHospital?: string;
+  authorProfileImage?: string;
   authorId: string;
   isAnonymous?: boolean;
   anonymousId?: string;
