@@ -1,0 +1,144 @@
+/*
+ * 시술 후기 쇼케이스 — 프리티풀 비즈 '카드 3장' 장면(freetiful biz/toss/SceneMatch)의 모바일 치수 · 움직임을 옮긴 것.
+ * 상품 상세 본문 폭(375~640)이라 카드 3장은 늘 가로로 밀어 보는 줄(스냅, 다음 카드가 살짝 보이게).
+ * 카드 1 · 3 속 화면은 500×600 무대 px 을 카드 폭에 맞춰 무대째 줄인다(--s). 카드 2(언급 키워드 판)만 무대 밖 진짜 px.
+ */
+
+.root{position:relative;width:100%;color:#191F28;--gut:20px}
+.root *,.root *::before,.root *::after{box-sizing:border-box}
+
+/* 가로 줄 — 부모 옆 여백(--gut)만큼 바깥으로 넓혀 끝까지 밀리게 */
+.row{display:flex;gap:12px;margin:0 calc(var(--gut) * -1);padding:4px var(--gut) 8px;overflow-x:auto;overflow-y:hidden;
+  scroll-snap-type:x mandatory;scroll-padding-inline:var(--gut);-webkit-overflow-scrolling:touch;scrollbar-width:none;overscroll-behavior-x:contain}
+.row::-webkit-scrollbar{display:none}
+
+/* 카드 — 원본 모바일 비율(폭 ≤350 · 그림 5:6). 폭 82% 라 다음 카드 끝이 보인다 */
+.item{position:relative;flex:none;width:min(82%,320px);display:flex;flex-direction:column;gap:16px;scroll-snap-align:start;
+  opacity:0;transform:translate3d(0,48px,0)}
+.item.on{opacity:1;transform:none;transition:opacity .8s ease var(--dl,0ms),transform .8s ease var(--dl,0ms)}
+.vis{position:relative;width:100%;aspect-ratio:5/6;border-radius:28px;overflow:hidden;isolation:isolate;-webkit-mask-image:-webkit-radial-gradient(white,black)}
+.bg{position:absolute;inset:0;pointer-events:none}
+.cap{margin:0;padding:0 6px;font-size:17px;line-height:1.48;font-weight:600;letter-spacing:-.02em;color:#333D4B}
+.cap span{display:block}
+
+/* '예시 화면' 표시 — 데모 숫자를 실제 후기로 오해하지 않게 카드마다 */
+.sample{position:absolute;left:14px;top:14px;z-index:3;display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:11px;
+  background:rgba(255,255,255,.72);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.8);
+  font-size:11px;font-weight:600;line-height:1;letter-spacing:-.01em;color:#6B7684;pointer-events:none}
+
+/* 카드 바탕 — 원본 겹친 그러데이션 그대로(1 파랑 · 2 복숭아 · 3 라벤더) */
+.bg1{background:
+  radial-gradient(62% 42% at 100% 0%,#A2C0F3 0%,rgba(162,192,243,0) 100%),
+  radial-gradient(45% 30% at 55% 0%,#C3D5F1 0%,rgba(195,213,241,0) 100%),
+  radial-gradient(80% 48% at 100% 100%,#F8DCCE 0%,rgba(248,220,206,0) 100%),
+  radial-gradient(60% 34% at 0% 100%,#ECE9F6 0%,rgba(236,233,246,0) 100%),
+  radial-gradient(34% 34% at 0% 52%,#B8CCEE 0%,rgba(184,204,238,0) 100%),
+  radial-gradient(48% 26% at 0% 0%,#E1ECEE 0%,rgba(225,236,238,0) 100%),
+  radial-gradient(50% 30% at 75% 52%,#DCDCE8 0%,rgba(220,220,232,0) 100%),
+  linear-gradient(180deg,#CFDDF1 0%,#D6E0EF 38%,#E2E0EA 62%,#F1E4E0 100%)}
+.bg1Streak{position:absolute;inset:-10%;background:linear-gradient(100deg,rgba(255,255,255,0) 22%,rgba(244,246,252,.55) 30%,rgba(252,244,236,.7) 36%,rgba(255,255,255,0) 47%);filter:blur(16px);
+  -webkit-mask-image:linear-gradient(180deg,rgba(0,0,0,.35) 0%,#000 45%);mask-image:linear-gradient(180deg,rgba(0,0,0,.35) 0%,#000 45%)}
+.bg2{background:
+  radial-gradient(58% 40% at 100% 0%,#E0D3F6 0%,rgba(224,211,246,0) 100%),
+  radial-gradient(60% 42% at 0% 100%,#F6CDBB 0%,rgba(246,205,187,0) 100%),
+  radial-gradient(46% 34% at 100% 100%,#F2D9E5 0%,rgba(242,217,229,0) 100%),
+  radial-gradient(44% 30% at 0% 0%,#DCE4F5 0%,rgba(220,228,245,0) 100%),
+  linear-gradient(180deg,#EEE2EF 0%,#F3E1E4 45%,#F6E0D7 100%)}
+.bg2Blob{position:absolute;left:74%;top:70%;width:132%;height:94%;transform:translate(-50%,-50%) rotate(-8deg);border-radius:50%;
+  background:radial-gradient(ellipse at 30% 42%,#FFF7F3 0%,#FCEEE9 40%,#F9E6E0 72%,rgba(247,225,218,.75) 100%);filter:blur(7px);
+  -webkit-mask-image:linear-gradient(205deg,transparent 12%,#000 42%);mask-image:linear-gradient(205deg,transparent 12%,#000 42%)}
+.bg3{background:
+  radial-gradient(60% 46% at 100% 100%,#B7CEF8 0%,rgba(183,206,248,0) 100%),
+  radial-gradient(70% 40% at 45% 100%,#C8D6F4 0%,rgba(200,214,244,0) 100%),
+  radial-gradient(48% 36% at 12% 44%,#D3E5F1 0%,rgba(211,229,241,0) 100%),
+  radial-gradient(55% 26% at 0% 0%,#E6E7F0 0%,rgba(230,231,240,0) 100%),
+  linear-gradient(180deg,#EAE6EF 0%,#E1E6F0 32%,#D5DFF2 66%,#C6D6F5 100%)}
+.bg3Blob{position:absolute;left:85%;top:25%;width:85%;height:55%;transform:translate(-50%,-50%) rotate(12deg);border-radius:50%;
+  background:radial-gradient(ellipse at 62% 40%,#F1EAF8 0%,#EDE6F7 55%,rgba(234,228,246,.85) 100%);filter:blur(5px)}
+
+/* 무대(500×600) */
+.stage{position:absolute;left:50%;top:50%;width:500px;height:600px;margin:-300px 0 0 -250px;transform:scale(var(--s,.645));transform-origin:50% 50%;pointer-events:none}
+.panel{position:absolute;left:50px;top:90px;width:400px;height:510px;display:flex;flex-direction:column}
+
+/* 카드 1 — 방문자 만족도(굴러가는 숫자 + 막대) */
+.p1{border-radius:36px;padding:44px 0 0 40px;gap:6px;
+  background:radial-gradient(71.44% 97.84% at 30.17% 2.16%,rgba(255,255,255,.9) 0,rgba(255,255,255,.6) 100%);
+  -webkit-mask-image:radial-gradient(125% 110.09% at 8.9% 9.3%,#000 46.88%,rgba(0,0,0,.5) 74.64%,transparent 100%);
+  mask-image:radial-gradient(125% 110.09% at 8.9% 9.3%,#000 46.88%,rgba(0,0,0,.5) 74.64%,transparent 100%)}
+.d1Label{font-size:16px;font-weight:500;line-height:19.2px;color:rgba(107,118,132,.55);letter-spacing:-.01em}
+.d1Rate{height:24px}
+.d1Num{position:relative;display:inline-flex;align-items:flex-start;font-size:24px;font-weight:700;line-height:24px;color:#191F28;letter-spacing:-.01em}
+.d1Ck{position:absolute;left:calc(100% + 6px);top:-1px;opacity:0;transform:scale(.6);transition:opacity .15s,transform .25s cubic-bezier(.2,.8,.3,1.3)}
+.d1Ck.on{opacity:1;transform:none}
+.odo{display:inline-flex;font-variant-numeric:tabular-nums}
+.dg{position:relative;display:inline-block;overflow:hidden;height:24px}
+.dgSz{visibility:hidden}
+.dgA{position:absolute;left:0;top:0}
+.dgIn{animation:dgIn .2s cubic-bezier(.2,.7,.3,1) both}
+.dgOut{animation:dgOut .2s cubic-bezier(.2,.7,.3,1) both}
+@keyframes dgIn{from{transform:translateY(calc(var(--d) * 100%));opacity:0}to{transform:none;opacity:1}}
+@keyframes dgOut{from{transform:none;opacity:1}to{transform:translateY(calc(var(--d) * -100%));opacity:0}}
+.d1List{display:flex;flex-direction:column;gap:10px;margin-top:32px}
+.d1Row{position:relative;width:360px;height:60px;border-radius:16px;padding:14px 15px;overflow:hidden}
+.d1Bar{position:absolute;left:0;top:0;bottom:0;width:0;border-radius:16px;background:#fff;animation:2.6s linear infinite both;animation-play-state:paused}
+.d1List.run .d1Bar{animation-play-state:running}
+.d1Bar0{animation-name:bar0}.d1Bar1{animation-name:bar1}.d1Bar2{animation-name:bar2}.d1Bar3{animation-name:bar3}.d1Bar4{animation-name:bar4}
+.d1List.on .d1Bar{animation:none;width:90%}
+@keyframes bar0{0%,0.00%{width:0}16.15%,88.46%{width:90%}99.62%,100%{width:0}}
+@keyframes bar1{0%,6.15%{width:0}22.31%,88.46%{width:80%}99.62%,100%{width:0}}
+@keyframes bar2{0%,12.31%{width:0}28.46%,88.46%{width:70%}99.62%,100%{width:0}}
+@keyframes bar3{0%,18.46%{width:0}34.62%,88.46%{width:60%}99.62%,100%{width:0}}
+@keyframes bar4{0%,24.62%{width:0}40.77%,88.46%{width:50%}99.62%,100%{width:0}}
+.d1In{position:relative;display:flex;align-items:center;height:100%;gap:10px;opacity:0;transform:translate3d(24px,0,0);
+  transition:opacity .17s ease,transform 0s linear .17s}
+.d1List.on .d1In{opacity:1;transform:none;transition:opacity .35s cubic-bezier(.16,1,.3,1),transform .35s cubic-bezier(.16,1,.3,1)}
+.d1Ic{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:10px;flex:none}
+.d1Name{font-size:19px;font-weight:600;color:#191F28;letter-spacing:-.02em;white-space:nowrap}
+.d1Score{font-size:19px;font-weight:600;color:#3180F7;letter-spacing:-.01em}
+
+/* 카드 2 — 언급 키워드 판. 흰 유리 판 + 판(제 폭을 재서 칩을 놓으므로 무대 밖) */
+.orb{position:absolute;inset:0;pointer-events:none}
+.orbp{position:absolute;left:6%;right:6%;top:5%;bottom:0;border-radius:28px 28px 0 0;pointer-events:none;
+  background:radial-gradient(90% 70% at 50% 34%,rgba(255,255,255,.96) 0,rgba(255,255,255,.9) 55%,rgba(255,255,255,.66) 100%);
+  -webkit-mask-image:linear-gradient(180deg,#000 62%,rgba(0,0,0,.55) 84%,transparent 100%);mask-image:linear-gradient(180deg,#000 62%,rgba(0,0,0,.55) 84%,transparent 100%)}
+.orbw{position:absolute;left:50%;top:calc(5% + 8px);width:min(calc(88% - 16px),calc(110.7% - 89px));transform:translateX(-50%);pointer-events:none}
+/* 화면 밖이면 판의 끝없는 움직임을 멈춤 — 판은 inline animation 축약형이라 !important 라야 이긴다 */
+.orbw.paused [style*="kwo"]{animation-play-state:paused!important}
+
+/* 카드 3 — 시술 리포트(돌기 → 점수 배지, 5.0 은 '최고') */
+.p3{border-radius:32px;padding:36px 32px 0;gap:8px;
+  background:radial-gradient(66.37% 90.27% at 65% 9.73%,rgba(255,255,255,.9) 0,rgba(255,255,255,.6) 100%);
+  -webkit-mask-image:radial-gradient(110% 75% at 62.4% 24.4%,#000 73.5%,transparent 100%);
+  mask-image:radial-gradient(110% 75% at 62.4% 24.4%,#000 73.5%,transparent 100%)}
+.d3Status{height:19px;font-size:16px;font-weight:500;line-height:19px;color:rgba(107,118,132,.55);letter-spacing:-.01em}
+.d3Done{display:inline-flex;align-items:center;gap:5px}
+.d3Title{font-size:24px;font-weight:700;line-height:24px;color:#191F28;letter-spacing:-.02em}
+.d3List{display:flex;flex-direction:column;gap:8px;margin-top:8px;overflow:hidden}
+.d3Row{display:flex;align-items:center;justify-content:space-between;height:60px;flex:none;padding:0 14px;border-radius:16px;
+  background:rgba(255,255,255,.4);border:1px solid rgba(255,255,255,.6);transition:background-color .28s ease-in-out,border-color .28s ease-in-out}
+.p3.on .d3Row.best{background:rgb(234,242,254);border-color:#3180F7;transition-duration:.29s}
+.d3Left{display:flex;align-items:center;gap:8px}
+.d3Ic{flex:none}
+.d3Label{font-size:19px;font-weight:600;color:rgba(25,31,40,.89);letter-spacing:-.02em;white-space:nowrap}
+.p3.on .d3Label{color:#191F28}
+.spin{flex:none;animation:spin .9s steps(8) infinite;animation-play-state:paused}
+.p3.run .spin{animation-play-state:running}
+@keyframes spin{to{transform:rotate(360deg)}}
+.d3Badge{flex:none;font-size:14px;font-weight:600;line-height:1;padding:4px 8px;border-radius:13px;background:rgba(7,25,76,.05);color:#4E5968;
+  animation:badge .285s cubic-bezier(.22,.61,.36,1) both}
+.d3Badge.best{background:rgba(49,128,247,.16);color:#1B64DA}
+@keyframes badge{from{opacity:0;transform:translate3d(32px,0,0)}to{opacity:1;transform:none}}
+
+/* 아래 안내 + 버튼 */
+.foot{display:flex;flex-direction:column;align-items:center;gap:18px;margin-top:28px;text-align:center}
+.msg{margin:0;font-size:17px;font-weight:700;line-height:1.5;letter-spacing:-.02em;color:#191F28}
+.msg span{display:block}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-width:220px;height:48px;padding:0 22px;border-radius:13px;
+  background:#fff;border:1px solid #E5E8EB;color:#191F28;font-size:15px;font-weight:700;letter-spacing:-.02em;text-decoration:none;cursor:pointer;
+  transition:background-color .15s ease,transform .15s ease}
+.btn:active{background:#F7F8FA;transform:scale(.98)}
+.btn:focus-visible{outline:2px solid #3180F7;outline-offset:3px}
+
+/* 줄인 움직임 — 완성 상태로 멈춤 */
+.still *,.still *::before,.still *::after{transition:none!important;animation:none!important}
+.still .dgOut{display:none}

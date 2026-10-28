@@ -57,6 +57,15 @@ export function StarRating({ value, size = 14, twinkle = false }: { value: numbe
   );
 }
 
+/** 별 하나(채움) — 상품 상세 위 '★ 4.9 (41)' 줄 */
+export function SingleStar({ size = 17 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 40 40" fill="none" aria-hidden shapeRendering="geometricPrecision" style={{ display: 'block', flexShrink: 0 }}>
+      <path d={STAR_PATH} fill="#FFCD00" />
+    </svg>
+  );
+}
+
 export function IconTile({ src, size = 26, icon = 24, className = '' }: { src: string; size?: number; icon?: number; className?: string }) {
   return (
     <span className={`flex shrink-0 items-center justify-center ${className}`} style={{ width: size, height: size }}>

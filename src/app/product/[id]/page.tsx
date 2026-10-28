@@ -4,11 +4,12 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { PocketIcon } from '@/components/icons/PocketIcon';
-import { Share2, ChevronLeft, ChevronRight, MoreHorizontal, X } from 'lucide-react';
+import { Share2, ChevronLeft, ChevronRight, ChevronDown, MoreHorizontal, X } from 'lucide-react';
 import NaverMap from '@/components/common/NaverMap';
 import Avatar from '@/components/common/Avatar';
 import ProductCard from '@/components/common/ProductCard';
-import { BRAND, Reveal, StarRating, SectionHead, IconTile, FloatingReviewCards, ReviewCommentRow, ExpandRow, type ReviewRowData } from '@/components/detail/DetailKit';
+import ReviewShowcase from '@/components/product/ReviewShowcase';
+import { BRAND, Reveal, StarRating, SingleStar, SectionHead, IconTile, ReviewCommentRow, ExpandRow, type ReviewRowData } from '@/components/detail/DetailKit';
 import { useStore } from '@/store';
 import { resolveHospitalImageUrl, resolveProductImageUrl } from '@/lib/images';
 
@@ -50,11 +51,32 @@ function closedNotice(hours: { day: string; startTime?: string; endTime?: string
   return null;
 }
 
+/** 후기 작성 적립(api/reviews 가 주는 500P) — 상품 상세 '최대 N P 적립' 줄 */
+const REVIEW_POINT = 500;
+
+/** 옵션 정보 체크 줄 — 데이터로 확인되는 것만(가격은 VAT 포함가, 앱결제·후기 적립은 모든 상품 공통) */
+const OPTION_CHECKS = [
+  { label: 'VAT', value: '포함' },
+  { label: '앱결제', value: '가능' },
+  { label: '후기 작성 시', value: `${REVIEW_POINT}P 적립` },
+];
+
+/** 적립 줄 앞 동전 두 개(노랑 뒤 · 주황 P 앞) — 견본 아이콘 */
+function PointCoin() {
+  return (
+    <svg width="34" height="24" viewBox="0 0 34 24" aria-hidden className="shrink-0">
+      <circle cx="11" cy="12" r="10" fill="#FFD66B" />
+      <circle cx="21" cy="12" r="10" fill="#F2652E" stroke="#fff" strokeWidth="1.5" />
+      <path d="M18 7.5h3.6a2.9 2.9 0 0 1 0 5.8H19.6V16.5" stroke="#fff" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 type SectionId = 'desc' | 'info' | 'reviews';
 const SECTION_TABS: { id: SectionId; label: string }[] = [
-  { id: 'desc', label: '상품 설명' },
+  { id: 'desc', label: '상품 정보' },
   { id: 'info', label: '병원 정보' },
-  { id: 'reviews', label: '리뷰' },
+  { id: 'reviews', label: '시술 후기' },
 ];
 /** 고정 머리(60) + 섹션 탭(52) */
 const STICKY_OFFSET = 116;
@@ -65,12 +87,13 @@ const STICKY_OFFSET = 116;
 export default function ProductDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const { products, hospitals, reviews, wishlist, toggleWishlist, addRecentlyViewed, showToast, user } = useStore();
+  const { products, hospitals, reviews, categories, wishlist, toggleWishlist, addRecentlyViewed, showToast, user } = useStore();
   const [activeImage, setActiveImage] = useState(0);
   const [headerSolid, setHeaderSolid] = useState(false);
   const [activeSection, setActiveSection] = useState<SectionId>('desc');
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
   const [heartAnim, setHeartAnim] = useState(false);
+  const [pointOpen, setPointOpen] = useState(false);
   const [imageModal, setImageModal] = useState<string | null>(null);
   const galleryRef = useRef<HTMLDivElement>(null);
   const sectionRefs = { desc: useRef<HTMLDivElement>(null), info: useRef<HTMLDivElement>(null), reviews: useRef<HTMLDivElement>(null) };
@@ -139,6 +162,16 @@ export default function ProductDetailPage() {
     meta: [r.treatmentName, r.totalCost ? `${r.totalCost.toLocaleString()}원` : '', r.treatmentDate].filter(Boolean).join(' · '),
     photos: [r.beforeImage ? { src: r.beforeImage, label: '전' } : null, r.afterImage ? { src: r.afterImage, label: '후' } : null].filter(Boolean) as { src: string; label: string }[],
   }));
+  // 옵션 줄 — 옵션이 없으면 상품 자체가 옵션 1. 옵션 정가는 상품 할인율로 되짚는다(정가가 따로 없어서)
+  const baseDiscount = product.discount ?? (product.originalPrice && product.originalPrice > product.price ? Math.round((1 - product.price / product.originalPrice) * 100) : 0);
+  const optionRows = (product.options && product.options.length > 0 ? product.options : [{ id: 'base', name: product.title, price: product.price }]).map(o => {
+    const original = o.id === 'base' && product.originalPrice ? product.originalPrice : baseDiscount > 0 ? Math.round(o.price / (1 - baseDiscount / 100) / 100) * 100 : o.price;
+    return { ...o, original, discount: original > o.price ? baseDiscount : 0 };
+  });
+  const tagChips = product.tags.map(t => t.replace(/^#/, '').trim()).filter(Boolean);
+  const categoryName = categories.find(c => c.id === product.category)?.name;
+  // 옵션 속성 줄 — 첫 칸(진료과)만 파랑, 나머지는 태그
+  const optionAttrs = [categoryName, ...tagChips].filter(Boolean).slice(0, 5) as string[];
   const todayHours = hospital?.operatingHours.find(oh => DAY_INDEX[oh.day] === new Date().getDay());
   const infoRows = hospital ? [
     { icon: '/icons/pro-detail/notice.svg', label: '위치', value: hospital.location || hospital.address.split(' ').slice(0, 2).join(' ') },
@@ -261,8 +294,8 @@ export default function ProductDetailPage() {
             )}
           </div>
 
-          {/* ─── 이름 · 가격 · 별점 ─── */}
-          <div className="bg-white px-5 py-6">
+          {/* ─── 이름 · 별점 · 옵션 1 · 가격 · 적립 — 사장 견본(강남언니 상세 위 칸) 그대로, 선은 가는 회색 줄 ─── */}
+          <div className="bg-white px-5 pb-2 pt-6">
             <Reveal>
               <div className="mb-1.5 flex items-center justify-between gap-3">
                 <Link href={`/hospital/detail/${product.hospitalId}`} className="min-w-0 truncate text-[14px] font-semibold text-[#6B7684]">
@@ -276,51 +309,71 @@ export default function ProductDetailPage() {
                   </span>
                 )}
               </div>
-              <h1 className="break-keep text-[20px] font-bold leading-[1.4] text-[#191F28]">{product.title}</h1>
-              <div className="mt-3">
-                {product.originalPrice && product.originalPrice > product.price && (
-                  <p className="text-[14px] text-[#B0B8C1] line-through">{product.originalPrice.toLocaleString()}원</p>
-                )}
-                <p className="flex items-baseline gap-1.5 font-bold tracking-[-0.5px]">
-                  {(product.discount ?? 0) > 0 && <span className="text-[24px] text-[#F04452]">{product.discount}%</span>}
-                  <span className="text-[24px] text-[#191F28]">{product.price.toLocaleString()}원</span>
-                  <span className="ml-0.5 text-[13px] font-medium text-[#8B95A1]">VAT 포함</span>
-                </p>
-              </div>
-              {product.tags.length > 0 && (
-                <div className="mb-1 mt-3 flex flex-wrap gap-1.5">
-                  {product.tags.map(t => (
-                    <span key={t} className="rounded-full bg-[#F2F4F6] px-2.5 py-1 text-[13px] font-semibold text-[#4E5968]">{t}</span>
+              <h1 className="break-keep text-[20px] font-medium leading-[1.45] tracking-[-0.3px] text-[#191F28]">{product.title}</h1>
+              <button type="button" onClick={() => scrollToSection('reviews')} className="mt-2.5 flex items-center gap-1 text-[15px] text-[#191F28]">
+                <SingleStar size={19} />
+                <span className="ml-0.5">{rating.toFixed(1)}</span>
+                <span className="text-[#6B7684]">(<span className="underline underline-offset-2">{reviewCount}</span>)</span>
+              </button>
+              {tagChips.length > 0 && (
+                <div className="mt-3 flex flex-wrap gap-1.5">
+                  {tagChips.map(t => (
+                    <span key={t} className="rounded-full bg-[#F2F4F6] px-2.5 py-1 text-[13px] font-semibold text-[#4E5968]">#{t}</span>
                   ))}
                 </div>
               )}
             </Reveal>
 
-            <Reveal delay={100}>
-              <div className="mb-1 mt-3 flex items-center gap-2">
-                <StarRating value={Number(rating.toFixed(1))} size={16} twinkle />
-                <span className="text-[18px] font-bold text-[#191F28]">{rating.toFixed(1)}</span>
-                <span className="text-[13px] text-[#8B95A1]">({reviewCount})</span>
-              </div>
-              <FloatingReviewCards reviews={reviewRows} />
-            </Reveal>
-
-            {product.options && product.options.length > 0 && (
-              <Reveal delay={150}>
-                <div className="mt-4 pt-4">
-                  <SectionHead title="옵션" icon="/icons/pro-detail/check.svg" size="sm" className="mb-1.5" />
-                  <ul className="divide-y divide-[#F2F4F6]">
-                    {product.options.map(o => (
-                      <li key={o.id} className="flex items-center justify-between gap-3 py-2.5">
-                        <span className="text-[14px] font-semibold text-[#333D4B]">{o.name}</span>
-                        <span className="shrink-0 text-[14px] font-bold text-[#191F28]">{o.price.toLocaleString()}원</span>
-                      </li>
-                    ))}
-                  </ul>
+            <Reveal delay={80}>
+              {/* 옵션 1 + 전체보기 */}
+              <div className="mt-6 flex items-center gap-3 border-t border-[#F2F4F6] py-5">
+                <div className="min-w-0 flex-1">
+                  <p className="text-[14px] text-[#6B7684]">옵션 1</p>
+                  <p className="mt-1 truncate text-[17px] font-medium text-[#191F28]">{optionRows[0].name}</p>
+                  {optionAttrs.length > 0 && <p className="mt-1 truncate text-[14px] text-[#6B7684]">{optionAttrs.join(', ')}</p>}
                 </div>
-              </Reveal>
-            )}
+                <button
+                  type="button"
+                  onClick={() => scrollToSection('desc')}
+                  className="shrink-0 rounded-[12px] border border-[#D1D6DB] px-3.5 py-2.5 text-[14px] font-semibold text-[#191F28] transition-colors active:bg-[#F7F8FA]"
+                >
+                  전체보기
+                </button>
+              </div>
+
+              {/* 가격 */}
+              <div className="border-t border-[#F2F4F6] py-5">
+                {optionRows[0].original > optionRows[0].price && (
+                  <p className="text-[14px] text-[#8B95A1]"><span className="line-through">{optionRows[0].original.toLocaleString()}원</span> (VAT 포함)</p>
+                )}
+                <p className="mt-0.5 flex items-baseline gap-2 font-bold tracking-[-0.5px]">
+                  {optionRows[0].discount > 0 && <span className="text-[26px] text-[#F04452]">{optionRows[0].discount}%</span>}
+                  <span className="text-[26px] text-[#191F28]">{optionRows[0].price.toLocaleString()}원</span>
+                  {!(optionRows[0].original > optionRows[0].price) && <span className="text-[13px] font-medium text-[#8B95A1]">VAT 포함</span>}
+                </p>
+              </div>
+
+              {/* 적립 — 펼치면 적립 방법 */}
+              <div className="border-t border-[#F2F4F6]">
+                <button type="button" onClick={() => setPointOpen(v => !v)} aria-expanded={pointOpen} className="flex w-full items-center gap-2 py-5 text-left">
+                  <PointCoin />
+                  <span className="flex-1 text-[16px] font-semibold text-[#191F28]">최대 <span className="text-[#F04452]">{REVIEW_POINT.toLocaleString()}P</span> 적립</span>
+                  <ChevronDown size={22} className="shrink-0 text-[#4E5968] transition-transform duration-300" style={{ transform: pointOpen ? 'rotate(180deg)' : undefined }} />
+                </button>
+                <div className="grid transition-all duration-500" style={{ gridTemplateRows: pointOpen ? '1fr' : '0fr', opacity: pointOpen ? 1 : 0, transitionTimingFunction: 'cubic-bezier(0.22, 1, 0.36, 1)' }}>
+                  <div className="overflow-hidden">
+                    <div className="mb-5 flex items-center justify-between rounded-[14px] bg-[#F7F8FA] px-4 py-3.5 text-[14px]">
+                      <span className="text-[#4E5968]">시술 후 후기 작성</span>
+                      <span className="font-bold text-[#191F28]">{REVIEW_POINT.toLocaleString()}P</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </Reveal>
           </div>
+
+          {/* 칸 나눔 — 회색 띠 */}
+          <div className="h-2.5 bg-[#F2F4F6]" />
 
           {/* ─── 섹션 탭 — 회색 트랙 + 흰 알약이 미끄러진다 ─── */}
           <div className="sticky top-[60px] z-30 min-[1024px]:top-[72px] mt-4 bg-white px-4 pb-2 pt-1">
@@ -348,6 +401,52 @@ export default function ProductDetailPage() {
 
           {/* ─── 상품 설명 ─── */}
           <div ref={sectionRefs.desc} className="bg-white px-5 py-6">
+            {/* ─── 옵션 정보 — 사장 견본 그대로: 체크 줄 · 파란 안내 띠 · 번호 붙은 옵션 칸 ─── */}
+            <Reveal>
+              <h2 className="text-[22px] font-bold leading-tight text-[#191F28]">옵션 정보</h2>
+              <ul className="mt-5 space-y-3">
+                {OPTION_CHECKS.map(c => (
+                  <li key={c.label} className="flex items-center gap-3 text-[17px] text-[#191F28]">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden className="shrink-0"><path d="M4.5 12.5l5 5 10-11" stroke="#4E5968" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                    <span>{c.label}</span><b className="font-bold">{c.value}</b>
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-5 rounded-[12px] bg-[#EEF4FF] px-4 py-3.5 text-[14px] leading-[1.5] text-[#1B4FA8]">시술에 대한 정보는 참고 사항이며, 병원 방문 시 개인의 상태에 따라 달라질 수 있어요.</p>
+            </Reveal>
+            <div className="mt-5 space-y-4">
+              {optionRows.map((o, i) => (
+                <Reveal key={o.id} delay={i * 60}>
+                  <div className="rounded-[16px] border border-[#E5E8EB] px-5 py-5">
+                    <p className="flex gap-4 text-[17px] text-[#191F28]">
+                      <span className="w-4 shrink-0 font-semibold text-[#8B95A1]">{i + 1}</span>
+                      <span className="min-w-0 break-keep">{o.name}</span>
+                    </p>
+                    {optionAttrs.length > 0 && (
+                      <p className="mt-4 flex flex-wrap items-center gap-x-1.5 gap-y-1 pl-8 text-[15px]">
+                        {optionAttrs.map((attr, ai) => (
+                          <span key={attr} className="flex items-center gap-1.5">
+                            {ai > 0 && <span className="text-[#C9CED6]">/</span>}
+                            <span className={ai === 0 ? 'text-[#1B4FA8]' : 'text-[#4E5968]'}>{attr}</span>
+                          </span>
+                        ))}
+                      </p>
+                    )}
+                    <div className="mt-5 text-right">
+                      {o.original > o.price && (
+                        <p className="text-[14px] text-[#8B95A1]"><span className="line-through">{o.original.toLocaleString()}원</span> (VAT 포함)</p>
+                      )}
+                      <p className="mt-0.5 text-[20px] font-bold tracking-[-0.4px]">
+                        {o.discount > 0 && <span className="mr-1.5 text-[#F04452]">{o.discount}%</span>}
+                        <span className="text-[#333D4B]">{o.price.toLocaleString()}원</span>
+                      </p>
+                    </div>
+                  </div>
+                </Reveal>
+              ))}
+            </div>
+
+            <div className="mt-10" />
             <Reveal>
               <SectionHead title="상품 설명" icon="/icons/pro-detail/document.svg" className="mb-4" />
             </Reveal>
@@ -474,21 +573,25 @@ export default function ProductDetailPage() {
             )}
           </div>
 
-          {/* ─── 리뷰 ─── */}
+          {/* ─── 시술 후기 — 로그인해야 자세한 후기를 보여 준다(사장 견본). 로그인 전·후기 없음 = 프리티풀 비즈 '카드 3장' 예시 장면 ─── */}
           <div ref={sectionRefs.reviews} className="bg-white px-5 py-6">
-            <SectionHead title="리뷰" icon="/icons/pro-detail/eyes.svg" className="mb-4" />
-            <div className="mb-3 flex items-center gap-2">
-              <StarRating value={Number(rating.toFixed(1))} size={20} />
-              <span className="text-[24px] font-bold text-[#191F28]">{rating.toFixed(1)}</span>
-              <span className="text-[14px] text-[#8B95A1]">({reviewCount})</span>
-            </div>
-            <h3 className="mb-1 mt-5 text-[16px] font-bold text-[#191F28]">전체 리뷰 {reviewCount}건</h3>
-            {reviewRows.length > 0 ? (
-              reviewRows.map((r, i) => (
-                <ReviewCommentRow key={r.id} review={r} first={i === 0} menu={<ReviewMenu reviewId={r.id} authorName={r.name} />} />
-              ))
+            <h2 className="mb-5 text-[22px] font-bold leading-tight text-[#191F28]">시술 후기</h2>
+            {!user ? (
+              <ReviewShowcase mode="login" onLogin={() => window.dispatchEvent(new Event('dental:login'))} />
+            ) : reviewRows.length === 0 ? (
+              <ReviewShowcase mode="empty" writeHref={`/mypage/reviews/write?productId=${product.id}`} />
             ) : (
-              <p className="py-8 text-center text-[14px] text-[#8B95A1]">아직 작성된 리뷰가 없어요.</p>
+              <>
+                <div className="mb-3 flex items-center gap-2">
+                  <StarRating value={Number(rating.toFixed(1))} size={20} />
+                  <span className="text-[24px] font-bold text-[#191F28]">{rating.toFixed(1)}</span>
+                  <span className="text-[14px] text-[#8B95A1]">({reviewCount})</span>
+                </div>
+                <h3 className="mb-1 mt-5 text-[16px] font-bold text-[#191F28]">전체 후기 {reviewCount}건</h3>
+                {reviewRows.map((r, i) => (
+                  <ReviewCommentRow key={r.id} review={r} first={i === 0} menu={<ReviewMenu reviewId={r.id} authorName={r.name} />} />
+                ))}
+              </>
             )}
           </div>
 
