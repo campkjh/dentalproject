@@ -158,7 +158,8 @@ export default function ProductDetailPage() {
   };
   const scrollToSection = (id: SectionId) => {
     const el = sectionRefs[id].current;
-    if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - STICKY_OFFSET + 2, behavior: 'smooth' });
+    const offset = STICKY_OFFSET + (window.innerWidth >= 1024 ? 12 : 0);
+    if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - offset + 2, behavior: 'smooth' });
   };
   const cardStep = () => {
     const el = galleryRef.current;
@@ -191,7 +192,7 @@ export default function ProductDetailPage() {
     <div className="min-h-screen bg-white" style={{ paddingBottom: 'max(calc(env(safe-area-inset-bottom, 0px) + 112px), 128px)' }}>
       {/* ─── 머리 — 떠 있는 둥근 버튼 → 스크롤하면 썸네일 + 제목 흰 머리 ─── */}
       <div
-        className={`fixed left-0 right-0 top-0 z-40 flex items-center gap-2 transition-all duration-300 lg:hidden ${headerSolid ? 'h-[60px] bg-white px-3' : 'justify-between px-4 pb-3 pt-3'}`}
+        className={`fixed left-0 right-0 top-0 z-40 flex items-center gap-2 transition-all duration-300 min-[1024px]:hidden ${headerSolid ? 'h-[60px] bg-white px-3' : 'justify-between px-4 pb-3 pt-3'}`}
       >
         <button type="button" aria-label="뒤로" onClick={() => router.back()} className={roundBtn(headerSolid)}>
           <ChevronLeft size={22} className="text-[#191F28]" />
@@ -214,10 +215,10 @@ export default function ProductDetailPage() {
         </div>
       </div>
 
-      <div className="lg:mx-auto lg:grid lg:max-w-[1216px] lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-10 lg:px-8 lg:pt-8">
+      <div>
         <div className="min-w-0">
           {/* ─── 사진 넘기기 — 왼쪽 정렬 + 옆 사진 살짝 보임 + 넘기면 작아짐 ─── */}
-          <div className="overflow-hidden pt-[74px] lg:pt-0">
+          <div className="overflow-hidden pt-[74px] min-[1024px]:pt-6">
             <div
               ref={galleryRef}
               onScroll={e => {
@@ -225,7 +226,7 @@ export default function ProductDetailPage() {
                 const clamped = Math.max(0, Math.min(images.length - 1, idx));
                 if (clamped !== activeImage) setActiveImage(clamped);
               }}
-              className="flex snap-x snap-mandatory gap-3 overflow-x-auto px-[18px] hide-scrollbar lg:px-0"
+              className="flex snap-x snap-mandatory gap-3 overflow-x-auto px-[18px] hide-scrollbar"
               style={{ scrollPaddingLeft: 18 }}
             >
               {images.map((src, i) => (
@@ -260,7 +261,7 @@ export default function ProductDetailPage() {
           </div>
 
           {/* ─── 이름 · 가격 · 별점 ─── */}
-          <div className="bg-white px-5 py-6 lg:px-0">
+          <div className="bg-white px-5 py-6">
             <Reveal>
               <div className="mb-1.5 flex items-center justify-between gap-3">
                 <Link href={`/hospital/detail/${product.hospitalId}`} className="min-w-0 truncate text-[14px] font-semibold text-[#6B7684]">
@@ -321,7 +322,7 @@ export default function ProductDetailPage() {
           </div>
 
           {/* ─── 섹션 탭 — 회색 트랙 + 흰 알약이 미끄러진다 ─── */}
-          <div className="sticky top-[60px] z-30 mt-4 bg-white px-4 pb-2 pt-1 lg:top-[72px] lg:px-0">
+          <div className="sticky top-[60px] z-30 min-[1024px]:top-[72px] mt-4 bg-white px-4 pb-2 pt-1">
             <div className="relative flex gap-1 rounded-2xl bg-[#F2F3F5] p-1">
               <span
                 className="absolute bottom-1 top-1 rounded-[13px] bg-white shadow-sm transition-all duration-500"
@@ -345,7 +346,7 @@ export default function ProductDetailPage() {
           </div>
 
           {/* ─── 상품 설명 ─── */}
-          <div ref={sectionRefs.desc} className="bg-white px-5 py-6 lg:px-0">
+          <div ref={sectionRefs.desc} className="bg-white px-5 py-6">
             <Reveal>
               <SectionHead title="상품 설명" icon="/icons/pro-detail/document.svg" className="mb-4" />
             </Reveal>
@@ -364,7 +365,7 @@ export default function ProductDetailPage() {
 
           {/* ─── 다른 상품 ─── */}
           {alsoViewed.length > 0 && (
-            <div className="px-4 pb-4 pt-8 lg:px-0">
+            <div className="px-4 pb-4 pt-8">
               <Reveal>
                 <h3 className="mb-4 text-[20px] font-bold leading-tight text-[#191F28]">
                   {sameHospital.length > 0 ? <>이 병원의 다른<br />상품을 살펴보세요</> : <>마이닥의 다른<br />인기 상품을 살펴보세요</>}
@@ -381,7 +382,7 @@ export default function ProductDetailPage() {
           )}
 
           {/* ─── 병원 정보 ─── */}
-          <div ref={sectionRefs.info} className="bg-white px-5 py-6 lg:px-0">
+          <div ref={sectionRefs.info} className="bg-white px-5 py-6">
             <SectionHead title="병원 정보" icon="/icons/pro-detail/certification.svg" className="mb-5" />
             {hospital ? (
               <>
@@ -473,7 +474,7 @@ export default function ProductDetailPage() {
           </div>
 
           {/* ─── 리뷰 ─── */}
-          <div ref={sectionRefs.reviews} className="bg-white px-5 py-6 lg:px-0">
+          <div ref={sectionRefs.reviews} className="bg-white px-5 py-6">
             <SectionHead title="리뷰" icon="/icons/pro-detail/eyes.svg" className="mb-4" />
             <div className="mb-3 flex items-center gap-2">
               <StarRating value={Number(rating.toFixed(1))} size={20} />
@@ -491,7 +492,7 @@ export default function ProductDetailPage() {
           </div>
 
           {/* ─── 자주 묻는 질문 ─── */}
-          <div className="bg-white px-5 py-6 lg:px-0">
+          <div className="bg-white px-5 py-6">
             <SectionHead title="자주 묻는 질문" icon="/icons/pro-detail/bulb.svg" className="mb-1" />
             {faqItems.map((faq, i) => (
               <ExpandRow key={faq.question} label={faq.question} open={expandedFaq === i} onToggle={() => setExpandedFaq(expandedFaq === i ? null : i)}>
@@ -501,39 +502,11 @@ export default function ProductDetailPage() {
           </div>
         </div>
 
-        {/* ─── PC 오른쪽 붙박이 칸 ─── */}
-        <aside className="hidden lg:block">
-          <div className="sticky top-[96px] rounded-[24px] border border-[#EEF0F3] bg-white p-6">
-            <p className="truncate text-[14px] font-semibold text-[#6B7684]">{product.hospitalName}</p>
-            <p className="mt-1 break-keep text-[20px] font-bold leading-[1.4] text-[#191F28]">{product.title}</p>
-            <div className="mt-2 flex items-center gap-1.5">
-              <StarRating value={Number(rating.toFixed(1))} size={14} />
-              <span className="text-[14px] font-bold text-[#191F28]">{rating.toFixed(1)}</span>
-              <span className="text-[13px] text-[#8B95A1]">({reviewCount})</span>
-            </div>
-            <p className="mt-4 flex items-baseline gap-1.5 font-bold tracking-[-0.5px]">
-              {(product.discount ?? 0) > 0 && <span className="text-[24px] text-[#F04452]">{product.discount}%</span>}
-              <span className="text-[24px] text-[#191F28]">{product.price.toLocaleString()}원</span>
-            </p>
-            {notice && <p className="mt-3 rounded-[12px] bg-[#F2F4F6] px-3 py-2.5 text-[13px] font-semibold text-[#4E5968]">{notice}</p>}
-            <div className="mt-5 flex flex-col gap-2">
-              {buttons}
-              <div className="flex gap-2">
-                <button type="button" onClick={wish} className="flex h-11 flex-1 items-center justify-center gap-1.5 rounded-xl bg-[#F9FAFB] text-[14px] font-semibold text-[#4E5968] active:scale-[0.98]">
-                  <Heart size={16} style={{ color: isWished ? '#F04452' : '#4E5968' }} fill={isWished ? '#F04452' : 'none'} />찜하기
-                </button>
-                <button type="button" onClick={share} className="flex h-11 flex-1 items-center justify-center gap-1.5 rounded-xl bg-[#F9FAFB] text-[14px] font-semibold text-[#4E5968] active:scale-[0.98]">
-                  <Share2 size={15} />공유하기
-                </button>
-              </div>
-            </div>
-          </div>
-        </aside>
       </div>
 
       {/* ─── 바닥 버튼 — 흐림 띠 위에 떠 있다 ─── */}
       <div
-        className="pointer-events-none fixed bottom-0 left-0 right-0 z-40 lg:hidden"
+        className="pointer-events-none fixed bottom-0 left-0 right-0 z-40"
         style={{ paddingLeft: 16, paddingRight: 16, paddingBottom: 'max(calc(env(safe-area-inset-bottom, 0px) + 12px), 20px)' }}
       >
         <div

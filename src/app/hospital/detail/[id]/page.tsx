@@ -136,7 +136,8 @@ export default function HospitalDetailPage() {
   };
   const scrollToSection = (id: SectionId) => {
     const el = sectionRefs[id].current;
-    if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - STICKY_OFFSET + 2, behavior: 'smooth' });
+    const offset = STICKY_OFFSET + (window.innerWidth >= 1024 ? 12 : 0);
+    if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - offset + 2, behavior: 'smooth' });
   };
   const cardStep = () => {
     const el = galleryRef.current;
@@ -146,9 +147,9 @@ export default function HospitalDetailPage() {
   const roundBtn = (solid: boolean) => `flex h-9 w-9 shrink-0 items-center justify-center transition-all active:scale-90 ${solid ? 'text-[#191F28]' : 'rounded-full bg-white/90 shadow-sm backdrop-blur-md'}`;
 
   return (
-    <div className="min-h-screen bg-white pb-[110px] lg:pb-16">
+    <div className="min-h-screen bg-white pb-[110px]">
       {/* ─── 머리 — 떠 있는 둥근 버튼 → 스크롤하면 로고 + 이름 흰 머리 ─── */}
-      <div className={`fixed left-0 right-0 top-0 z-40 flex items-center gap-2 transition-all duration-300 lg:hidden ${headerSolid ? 'h-[60px] bg-white px-3' : 'justify-between px-4 pb-3 pt-3'}`}>
+      <div className={`fixed left-0 right-0 top-0 z-40 flex items-center gap-2 transition-all duration-300 min-[1024px]:hidden ${headerSolid ? 'h-[60px] bg-white px-3' : 'justify-between px-4 pb-3 pt-3'}`}>
         <button type="button" aria-label="뒤로" onClick={() => router.back()} className={roundBtn(headerSolid)}>
           <ChevronLeft size={22} className="text-[#191F28]" />
         </button>
@@ -165,9 +166,9 @@ export default function HospitalDetailPage() {
         </button>
       </div>
 
-      <div className="lg:mx-auto lg:max-w-[880px] lg:px-8 lg:pt-8">
+      <div>
         {/* ─── 사진 넘기기 ─── */}
-        <div className="overflow-hidden pt-[74px] lg:pt-0">
+        <div className="overflow-hidden pt-[74px] min-[1024px]:pt-6">
           {coverImages.length > 0 ? (
             <>
               <div
@@ -177,7 +178,7 @@ export default function HospitalDetailPage() {
                   const clamped = Math.max(0, Math.min(coverImages.length - 1, idx));
                   if (clamped !== activeImage) setActiveImage(clamped);
                 }}
-                className="flex snap-x snap-mandatory gap-3 overflow-x-auto px-[18px] hide-scrollbar lg:px-0"
+                className="flex snap-x snap-mandatory gap-3 overflow-x-auto px-[18px] hide-scrollbar"
                 style={{ scrollPaddingLeft: 18 }}
               >
                 {coverImages.map((src, i) => (
@@ -211,12 +212,12 @@ export default function HospitalDetailPage() {
               )}
             </>
           ) : (
-            <div className="mx-[18px] aspect-[4/3] w-[min(84vw,520px)] rounded-[44px] bg-[#F2F4F6] lg:mx-0" />
+            <div className="mx-[18px] aspect-[4/3] w-[min(84vw,520px)] rounded-[44px] bg-[#F2F4F6]" />
           )}
         </div>
 
         {/* ─── 이름 · 별점 · 정보 줄 ─── */}
-        <div className="bg-white px-5 py-6 lg:px-0">
+        <div className="bg-white px-5 py-6">
           <Reveal>
             <div className="flex items-center gap-3">
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -256,7 +257,7 @@ export default function HospitalDetailPage() {
         </div>
 
         {/* ─── 섹션 탭 ─── */}
-        <div className="sticky top-[60px] z-30 bg-white px-4 pb-2 pt-1 lg:top-[72px] lg:px-0">
+        <div className="sticky top-[60px] z-30 min-[1024px]:top-[72px] bg-white px-4 pb-2 pt-1">
           <div className="relative flex gap-1 rounded-2xl bg-[#F2F3F5] p-1">
             <span
               className="absolute bottom-1 top-1 rounded-[13px] bg-white shadow-sm transition-all duration-500"
@@ -280,7 +281,7 @@ export default function HospitalDetailPage() {
         </div>
 
         {/* ─── 병원 소개 ─── */}
-        <div ref={sectionRefs.intro} className="bg-white px-5 py-6 lg:px-0">
+        <div ref={sectionRefs.intro} className="bg-white px-5 py-6">
           <SectionHead title="병원 소개" icon="/icons/pro-detail/sparkle.svg" className="mb-4" />
           {hospital.introduction ? (
             <p className="whitespace-pre-line text-[16px] leading-[1.7] text-[#333D4B]">{hospital.introduction}</p>
@@ -308,7 +309,7 @@ export default function HospitalDetailPage() {
 
         {/* ─── 상품 ─── */}
         {hospitalProducts.length > 0 && (
-          <div className="px-4 pb-4 pt-6 lg:px-0">
+          <div className="px-4 pb-4 pt-6">
             <Reveal>
               <h3 className="mb-4 text-[20px] font-bold leading-tight text-[#191F28]">{hospital.name}의<br />상품을 살펴보세요</h3>
             </Reveal>
@@ -323,7 +324,7 @@ export default function HospitalDetailPage() {
         )}
 
         {/* ─── 의료진 ─── */}
-        <div ref={sectionRefs.doctors} className="bg-white px-5 py-6 lg:px-0">
+        <div ref={sectionRefs.doctors} className="bg-white px-5 py-6">
           <SectionHead title="의료진" icon="/icons/pro-detail/person.svg" className="mb-2" />
           {hospital.doctors.length > 0 ? (
             <div className="divide-y divide-[#F2F4F6]">
@@ -344,7 +345,7 @@ export default function HospitalDetailPage() {
         </div>
 
         {/* ─── 진료 시간 ─── */}
-        <div ref={sectionRefs.hours} className="bg-white px-5 py-6 lg:px-0">
+        <div ref={sectionRefs.hours} className="bg-white px-5 py-6">
           <SectionHead title="진료 시간" icon="/icons/pro-detail/clock.svg" className="mb-2" />
           {hospital.holidayNotice && <p className="mb-2 text-[13px] font-semibold text-[#F04452]">{hospital.holidayNotice}</p>}
           <ul className="divide-y divide-[#F2F4F6]">
@@ -366,7 +367,7 @@ export default function HospitalDetailPage() {
         </div>
 
         {/* ─── 리뷰 ─── */}
-        <div ref={sectionRefs.reviews} className="bg-white px-5 py-6 lg:px-0">
+        <div ref={sectionRefs.reviews} className="bg-white px-5 py-6">
           <SectionHead title="리뷰" icon="/icons/pro-detail/eyes.svg" className="mb-4" />
           <div className="mb-3 flex items-center gap-2">
             <StarRating value={Number(rating.toFixed(1))} size={20} />
