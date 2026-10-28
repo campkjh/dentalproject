@@ -87,7 +87,14 @@ export default function BottomNav() {
     document.addEventListener('scroll', scroll, { passive: true, capture: true });
     return () => document.removeEventListener('scroll', scroll, true);
   }, [path]);
-  if (!items.some(item => item.href === path)) return null;
+  // 하단 탭이 숨었는지 문서에 표시 — 탭 바로 위에 붙은 고정 영역(포켓 예약하기 등)이 같이 내려가게
+  const shown = items.some(item => item.href === path);
+  useEffect(() => {
+    const root = document.documentElement;
+    root.toggleAttribute('data-nav-hidden', shown && !visible);
+    return () => root.removeAttribute('data-nav-hidden');
+  }, [shown, visible]);
+  if (!shown) return null;
   return <nav aria-label="주요 메뉴" className={`${styles.bottomNav} ${!visible ? styles.navHidden : ''}`}><div className={styles.navPill}>
     {items.map(({ href, label, Icon }) => {
       const active = path === href;
