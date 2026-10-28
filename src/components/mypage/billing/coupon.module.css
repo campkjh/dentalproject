@@ -1,0 +1,37 @@
+/* 쿠폰 카드 — 티켓 모양(본문 | 점선 | 그루터기, 점선 위아래에 반원 홈) */
+.ticket {
+  position: relative;
+  display: flex;
+  min-height: 132px;
+  border-radius: 20px;
+  background: #F2F7FF;
+  overflow: hidden;
+}
+.ticket.off { background: #F7F8FA; }
+
+.stub {
+  position: relative;
+  display: flex;
+  width: 76px;
+  flex: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-left: 1.5px dashed rgba(49, 128, 247, 0.28);
+}
+.off .stub { border-left-color: #E5E8EB; }
+
+/* 반원 홈 — 바탕(흰)과 같은 색 원을 점선 위아래 끝에 */
+.stub::before,
+.stub::after {
+  content: '';
+  position: absolute;
+  left: -10px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+}
+.stub::before { top: -9px; }
+.stub::after { bottom: -9px; }

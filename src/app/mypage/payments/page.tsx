@@ -1,242 +1,165 @@
 'use client';
 
-import { useState, useRef, useEffect, useLayoutEffect, useMemo } from 'react';
-import Link from 'next/link';
+// 결제·환불 내역 — 프리티풀 마이 '구매·결제내역' 어법 그대로.
+//  · 머리 = TopBar(뒤로) + 큰 제목 ⌄ 거르기(탭 대신). 고르면 제목이 그 이름으로('결제·환불 내역 ⌄' → '취소 내역 ⌄').
+//  · 칸 = 사진 색 카드(ToneListCard = 프리티풀 PaymentToneCard): 상품 사진 · 상태 유리 배지 · 결제일 | 병원 · 금액 줄 · 방문 일정/결제 방식.
+//  · 거르기를 바꾸면 목록 칸이 오른쪽→왼쪽 순차 슬라이드(QdBody, key 로 다시 재생).
+import { useMemo, useState } from 'react';
 import TopBar from '@/components/common/TopBar';
-import { useStore } from '@/store';
-import EmptyState from '@/components/common/EmptyState';
 import LoginRequired from '@/components/common/LoginRequired';
-import { IconMapPin, IconCalendarMini } from '@/components/icons/AppIcons';
+import ToneListCard, { type ToneListRow } from '@/components/common/ToneListCard';
+import { QdBody } from '@/components/detail/QdKit';
+import type { TitleFilterOption } from '@/components/reservations/TitleFilterMenu';
+import { BillingEmpty, BillingHeader, TossIcon, formatKDay } from '@/components/mypage/billing/BillingKit';
+import { useStore } from '@/store';
 import { Reservation } from '@/types';
 import { resolveProductImageUrl } from '@/lib/images';
 
-const statusIconSrc: Record<Reservation['status'], string> = {
-  pending: '/icons/status-pending.svg',
-  confirmed: '/icons/status-confirmed.svg',
-  completed: '/icons/status-completed.svg',
-  cancelled: '/icons/status-cancelled.svg',
+type Status = Reservation['status'];
+type FilterKey = 'all' | 'paid' | 'pending' | 'cancelled';
+
+/** 거르기 → 상태 묶음(예전 탭 '결제완료/결제대기/취소' 그대로) */
+const filterToStatus: Record<FilterKey, Status[] | null> = {
+  all: null,
+  paid: ['confirmed', 'completed'],
+  pending: ['pending'],
+  cancelled: ['cancelled'],
 };
 
-function StatusIcon({ status, size = 16 }: { status: Reservation['status']; size?: number }) {
-  return (
-    <img
-      src={statusIconSrc[status]}
-      alt=""
-      width={size}
-      height={size}
-      style={{ display: 'inline-block' }}
-    />
-  );
-}
+const FILTERS: { key: FilterKey; label: string; title: string; icon: string }[] = [
+  { key: 'all', label: '전체', title: '결제·환불 내역', icon: 'list' },
+  { key: 'paid', label: '결제완료', title: '결제완료 내역', icon: 'pay-card' },
+  { key: 'pending', label: '결제대기', title: '결제대기 내역', icon: 'clock' },
+  { key: 'cancelled', label: '취소·환불', title: '취소 내역', icon: 'coin' },
+];
 
-const paymentTabs = ['전체', '결제완료', '결제대기', '취소'];
-
-const tabToStatus: Record<string, Reservation['status'][] | null> = {
-  '전체': null,
-  '결제완료': ['confirmed', 'completed'],
-  '결제대기': ['pending'],
-  '취소': ['cancelled'],
-};
-
-const statusLabel: Record<Reservation['status'], string> = {
+const statusLabel: Record<Status, string> = {
   pending: '결제대기',
   confirmed: '결제완료',
   completed: '이용완료',
   cancelled: '취소됨',
 };
 
-const statusStyle: Record<
-  Reservation['status'],
-  { text: string; chipBg: string }
-> = {
-  pending: { text: 'text-[#FFA04E]', chipBg: 'bg-[#FFF4E6]' },
-  confirmed: { text: 'text-[#38B369]', chipBg: 'bg-[#E6F7EB]' },
-  completed: { text: 'text-[#1084FD]', chipBg: 'bg-[#E6F2FF]' },
-  cancelled: { text: 'text-[#6B7280]', chipBg: 'bg-[#F3F4F6]' },
+/** 유리 배지 색 점 — 대기=주황 · 결제=파랑 · 이용완료=초록 · 취소=빨강 */
+const statusDot: Record<Status, string> = {
+  pending: '#FFB331',
+  confirmed: '#3182F6',
+  completed: '#12B76A',
+  cancelled: '#F04452',
 };
+
+function CalendarMini() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true" className="shrink-0">
+      <rect x="3.5" y="5" width="17" height="15.5" rx="3" stroke="currentColor" strokeWidth="2" />
+      <path d="M3.5 10h17M8 3v4M16 3v4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
 
 export default function PaymentsPage() {
   const { isLoggedIn, reservations } = useStore();
-  const [activeTab, setActiveTab] = useState('전체');
-  const [direction, setDirection] = useState<'left' | 'right'>('right');
-  const prevIdxRef = useRef(0);
-  const tabsRef = useRef<HTMLDivElement>(null);
-  const tabBtnRefs = useRef<(HTMLButtonElement | null)[]>([]);
-  const [indicator, setIndicator] = useState({ left: 0, width: 0 });
+  const [filter, setFilter] = useState<FilterKey>('all');
 
-  const activeIdx = paymentTabs.indexOf(activeTab);
-
-  const changeTab = (t: string) => {
-    const nextIdx = paymentTabs.indexOf(t);
-    setDirection(nextIdx >= prevIdxRef.current ? 'right' : 'left');
-    prevIdxRef.current = nextIdx;
-    setActiveTab(t);
-  };
-
-  useLayoutEffect(() => {
-    const btn = tabBtnRefs.current[activeIdx];
-    if (!btn) return;
-    setIndicator({ left: btn.offsetLeft, width: btn.offsetWidth });
-  }, [activeIdx]);
-
-  useEffect(() => {
-    const onResize = () => {
-      const btn = tabBtnRefs.current[activeIdx];
-      if (!btn) return;
-      setIndicator({ left: btn.offsetLeft, width: btn.offsetWidth });
-    };
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
-  }, [activeIdx]);
+  const counts = useMemo(() => {
+    const c: Record<FilterKey, number> = { all: reservations.length, paid: 0, pending: 0, cancelled: 0 };
+    reservations.forEach((r) => {
+      (Object.keys(filterToStatus) as FilterKey[]).forEach((k) => {
+        const target = filterToStatus[k];
+        if (target && target.includes(r.status)) c[k] += 1;
+      });
+    });
+    return c;
+  }, [reservations]);
 
   const filtered = useMemo(() => {
-    const target = tabToStatus[activeTab];
+    const target = filterToStatus[filter];
     if (!target) return reservations;
     return reservations.filter((r) => target.includes(r.status));
-  }, [activeTab, reservations]);
+  }, [filter, reservations]);
+
+  if (!isLoggedIn) {
+    return (
+      <div className="mx-auto min-h-screen max-w-[600px] bg-white pb-[86px] pc:pb-16">
+        <TopBar title="결제·환불 내역" />
+        <LoginRequired />
+      </div>
+    );
+  }
+
+  const options: TitleFilterOption<FilterKey>[] = FILTERS.map((f) => ({
+    key: f.key,
+    label: f.label,
+    title: f.title,
+    icon: <TossIcon name={f.icon} />,
+    count: counts[f.key],
+  }));
+  const current = FILTERS.find((f) => f.key === filter) || FILTERS[0];
 
   return (
-    <div className="pb-[86px] lg:pb-0 bg-white min-h-screen page-enter">
-      <TopBar title="결제내역" />
+    <div className="mx-auto min-h-screen max-w-[600px] bg-white pb-[86px] pc:pb-16" style={{ letterSpacing: '-0.02em' }}>
+      <BillingHeader<FilterKey>
+        value={filter}
+        options={options}
+        onChange={setFilter}
+        sub={reservations.length > 0 ? `결제 ${counts.paid}건 · 대기 ${counts.pending}건 · 취소 ${counts.cancelled}건` : undefined}
+      />
 
-      {!isLoggedIn ? (
-        <LoginRequired />
+      {filtered.length === 0 ? (
+        filter === 'all' ? (
+          <BillingEmpty
+            icon="pay-card"
+            title="아직 결제한 내역이 없어요"
+            desc="시술을 예약하고 결제하면 이곳에 모여요"
+            cta={{ href: '/', label: '시술 둘러보기' }}
+          />
+        ) : (
+          <BillingEmpty icon={current.icon} title={`${current.label} 내역이 없어요`} desc="다른 내역은 제목 ⌄ 를 눌러 고를 수 있어요" />
+        )
       ) : (
-        <>
-          {/* Sticky tabs */}
-          <div className="partner-community-category-shell sticky top-[56px] z-[45] bg-white">
-            <div ref={tabsRef} className="partner-community-categories hide-scrollbar">
-              <span
-                aria-hidden
-                className="partner-community-category-indicator"
-                style={{
-                  width: indicator.width,
-                  transform: `translateX(${indicator.left}px)`,
-                  opacity: indicator.width > 0 ? 1 : 0,
-                }}
-              />
-              {paymentTabs.map((tab, i) => {
-                const isActive = activeTab === tab;
-                const showActive = isActive && indicator.width > 0;
-                return (
-                  <button
-                    key={tab}
-                    ref={(el) => {
-                      tabBtnRefs.current[i] = el;
-                    }}
-                    type="button"
-                    onClick={() => changeTab(tab)}
-                    className={showActive ? 'is-active' : undefined}
-                  >
-                    {tab}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Payment list */}
-          <div
-            key={activeTab}
-            className={`px-2.5 pb-6 lg:max-w-5xl lg:mx-auto lg:px-6 lg:py-6 ${
-              direction === 'right' ? 'tab-slide-right' : 'tab-slide-left'
-            }`}
-          >
-            {filtered.length === 0 ? (
-              <EmptyState icon="payment" message="결제정보가 존재하지 않아요" />
-            ) : (
-              <div className="flex flex-col gap-3 lg:grid lg:grid-cols-2 lg:gap-4 stagger-children">
-                {filtered.map((payment) => {
-                  const style = statusStyle[payment.status];
-                  const productImage = resolveProductImageUrl(
-                    payment.productImage,
-                    payment.productId ?? payment.id
-                  );
-                  return (
-                    <Link
-                      key={payment.id}
-                      href={`/reservations/${payment.id}`}
-                      className="block card-press"
+        <QdBody key={filter} className="space-y-3 px-5 pc:px-0">
+          {filtered.map((payment, i) => {
+            const productImage = resolveProductImageUrl(payment.productImage, payment.productId ?? payment.id);
+            const isApp = payment.paymentMethod === '앱결제';
+            const paidOn = formatKDay(payment.date);
+            const visitRaw = payment.reservationDate || payment.visitDate;
+            // 방문 일정은 칸이 좁아 연도를 뺀다('10.30 (금) 오전 11:00')
+            const visit = formatKDay(visitRaw, true).replace(/^\d{4}\./, '');
+            const rows: ToneListRow[] = [{ label: '결제금액', value: `${payment.amount.toLocaleString()}원` }];
+            if (payment.status === 'cancelled') {
+              rows.push({ label: '취소 금액', value: `${payment.amount.toLocaleString()}원`, tone: 'danger' });
+            }
+            return (
+              <ToneListCard
+                key={payment.id}
+                index={i}
+                href={`/reservations/${payment.id}`}
+                image={productImage}
+                name={payment.productTitle || '시술 상품'}
+                badge={{ label: statusLabel[payment.status], dot: statusDot[payment.status] }}
+                meta={[
+                  ...(paidOn ? [<span key="d" className="inline-flex items-center gap-1"><CalendarMini />{paidOn}</span>] : []),
+                  payment.hospitalName || '병원',
+                ]}
+                rows={rows}
+                footer={
+                  <div className="mt-2.5 flex items-center justify-between gap-3 px-0.5">
+                    <span className="min-w-0 truncate text-[13px] tracking-[-0.2px] text-[#6B7684]">
+                      {visit ? `방문 ${visit}` : payment.location}
+                    </span>
+                    {/* 결제 방식 — 앱결제=보라 · 현장결제=회색(예전 태그 색 그대로) */}
+                    <span
+                      className="shrink-0 rounded-[6px] px-[7px] py-0.5 text-[12px] font-semibold"
+                      style={{ color: isApp ? '#8037FF' : '#51535C', backgroundColor: isApp ? '#F4EFFF' : 'rgba(255,255,255,.7)' }}
                     >
-                      <div
-                        className="bg-white rounded-3xl p-3.5"
-                        style={{ boxShadow: '0 1px 2px rgba(16,24,40,0.04), 0 4px 16px rgba(16,24,40,0.04)' }}
-                      >
-                        {/* Status chip + date */}
-                        <div className="flex items-center justify-between">
-                          <span
-                            className={`inline-flex items-center gap-1 pl-1 pr-2 py-0.5 rounded-full text-[11px] font-semibold ${style.chipBg} ${style.text}`}
-                          >
-                            <StatusIcon status={payment.status} size={16} />
-                            {statusLabel[payment.status]}
-                          </span>
-                          <span className="text-[15px] text-gray-400 font-medium">
-                            {payment.date}
-                          </span>
-                        </div>
-
-                        {/* Product info */}
-                        <div className="flex gap-2.5 mt-2">
-                          <div className="w-[72px] h-[72px] rounded-xl bg-gray-100 overflow-hidden flex items-center justify-center flex-shrink-0">
-                            <img src={productImage} alt="" className="w-full h-full object-cover" />
-                          </div>
-                          <div className="flex-1 min-w-0 flex flex-col justify-center gap-0.5">
-                            <p className="text-[18px] font-bold text-gray-900 line-clamp-1 leading-tight">
-                              {payment.productTitle}
-                            </p>
-                            <p className="text-[15px] text-gray-500 leading-tight">
-                              {payment.hospitalName}
-                            </p>
-                            <div className="flex items-center gap-1 mt-0.5">
-                              <span className="flex-shrink-0"><IconMapPin size={15} /></span>
-                              <p className="text-[15px] text-gray-400 truncate leading-tight">
-                                {payment.location}
-                              </p>
-                              {/* 결제 방식 태그 (앱결제 vs 현장결제) — text only, no icon */}
-                              {(() => {
-                                const isApp = payment.paymentMethod === '앱결제';
-                                return (
-                                  <span
-                                    className="ml-auto flex-shrink-0 inline-flex items-center rounded-md"
-                                    style={{
-                                      fontSize: 11,
-                                      fontWeight: 600,
-                                      padding: '2px 8px',
-                                      color: isApp ? '#8037FF' : '#51535C',
-                                      backgroundColor: isApp ? '#F4EFFF' : '#F2F3F5',
-                                    }}
-                                  >
-                                    {isApp ? '앱결제' : '현장결제'}
-                                  </span>
-                                );
-                              })()}
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Meta row */}
-                        <div className="mt-2 pt-2 border-t border-dashed" style={{ borderColor: '#F2F3F5' }}>
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-1.5 text-gray-500">
-                              <IconCalendarMini size={16} />
-                              <span className="text-[15px]">{payment.reservationDate || payment.visitDate}</span>
-                            </div>
-                            <div className="flex items-baseline gap-0.5">
-                              <span className="text-[15px] font-bold text-gray-900">
-                                {payment.amount.toLocaleString()}
-                              </span>
-                              <span className="text-[11px] text-gray-500 font-medium">원</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </Link>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </>
+                      {isApp ? '앱결제' : '현장결제'}
+                    </span>
+                  </div>
+                }
+              />
+            );
+          })}
+        </QdBody>
       )}
     </div>
   );

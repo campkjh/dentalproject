@@ -1,155 +1,76 @@
 'use client';
 
-import { useState, useRef, useEffect, useLayoutEffect } from 'react';
-import { useStore } from '@/store';
+// 쿠폰함 — 프리티풀 마이 어법.
+//  · 머리 = TopBar(뒤로) + 큰 제목 ⌄ 거르기(탭 대신): '쿠폰함(사용 가능) / 사용한 쿠폰 / 기간 지난 쿠폰'.
+//  · 칸 = 티켓 모양 쿠폰 카드(CouponCard): 할인값 크게 · 이름 · 조건(설명) · 기한(D-day) · 오른쪽 그루터기에 사용 가능 여부.
+import { useMemo, useState } from 'react';
 import TopBar from '@/components/common/TopBar';
-import EmptyState from '@/components/common/EmptyState';
 import LoginRequired from '@/components/common/LoginRequired';
+import { QdBody } from '@/components/detail/QdKit';
+import type { TitleFilterOption } from '@/components/reservations/TitleFilterMenu';
+import { BillingEmpty, BillingHeader, TossIcon } from '@/components/mypage/billing/BillingKit';
+import CouponCard from '@/components/mypage/billing/CouponCard';
+import { useStore } from '@/store';
+import type { Coupon } from '@/types';
 
-const tabs = ['사용가능', '사용완료', '기간만료'] as const;
-type Tab = (typeof tabs)[number];
+type FilterKey = Coupon['status'];
 
-const statusMap: Record<Tab, 'available' | 'used' | 'expired'> = {
-  '사용가능': 'available',
-  '사용완료': 'used',
-  '기간만료': 'expired',
-};
+const FILTERS: { key: FilterKey; label: string; title: string; icon: string; empty: string }[] = [
+  { key: 'available', label: '사용 가능', title: '쿠폰함', icon: 'gift', empty: '지금 쓸 수 있는 쿠폰이 없어요' },
+  { key: 'used', label: '사용 완료', title: '사용한 쿠폰', icon: 'check-circle', empty: '사용한 쿠폰이 없어요' },
+  { key: 'expired', label: '기간 만료', title: '기간 지난 쿠폰', icon: 'clock', empty: '기간이 지난 쿠폰이 없어요' },
+];
 
 export default function CouponsPage() {
   const { isLoggedIn, user } = useStore();
-  const [activeTab, setActiveTab] = useState<Tab>('사용가능');
-  const [direction, setDirection] = useState<'left' | 'right'>('right');
-  const prevIdxRef = useRef(0);
-  const tabBtnRefs = useRef<(HTMLButtonElement | null)[]>([]);
-  const [indicator, setIndicator] = useState({ left: 0, width: 0 });
+  const [filter, setFilter] = useState<FilterKey>('available');
 
-  const activeIdx = tabs.indexOf(activeTab);
-
-  const changeTab = (t: Tab) => {
-    const nextIdx = tabs.indexOf(t);
-    setDirection(nextIdx >= prevIdxRef.current ? 'right' : 'left');
-    prevIdxRef.current = nextIdx;
-    setActiveTab(t);
-  };
-
-  useLayoutEffect(() => {
-    const btn = tabBtnRefs.current[activeIdx];
-    if (!btn) return;
-    setIndicator({ left: btn.offsetLeft, width: btn.offsetWidth });
-  }, [activeIdx]);
-
-  useEffect(() => {
-    const onResize = () => {
-      const btn = tabBtnRefs.current[activeIdx];
-      if (!btn) return;
-      setIndicator({ left: btn.offsetLeft, width: btn.offsetWidth });
-    };
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
-  }, [activeIdx]);
+  const allCoupons = useMemo(() => user?.coupons ?? [], [user?.coupons]);
+  const counts = useMemo(() => {
+    const c: Record<FilterKey, number> = { available: 0, used: 0, expired: 0 };
+    allCoupons.forEach((x) => { c[x.status] = (c[x.status] || 0) + 1; });
+    return c;
+  }, [allCoupons]);
 
   if (!isLoggedIn) {
     return (
-      <div className="min-h-screen bg-white max-w-[500px] mx-auto">
+      <div className="mx-auto min-h-screen max-w-[600px] bg-white pb-[86px] pc:pb-16">
         <TopBar title="쿠폰함" />
         <LoginRequired />
       </div>
     );
   }
 
-  const allCoupons = user?.coupons ?? [];
-  const filteredCoupons = allCoupons.filter((c) => c.status === statusMap[activeTab]);
-  const availableCount = allCoupons.filter((c) => c.status === 'available').length;
+  const filtered = allCoupons.filter((c) => c.status === filter);
+  const options: TitleFilterOption<FilterKey>[] = FILTERS.map((f) => ({
+    key: f.key,
+    label: f.label,
+    title: f.title,
+    icon: <TossIcon name={f.icon} />,
+    count: counts[f.key],
+  }));
+  const current = FILTERS.find((f) => f.key === filter) || FILTERS[0];
 
   return (
-    <div className="min-h-screen bg-white max-w-[500px] mx-auto page-enter">
-      <TopBar title="쿠폰함" />
+    <div className="mx-auto min-h-screen max-w-[600px] bg-white pb-[86px] pc:pb-16" style={{ letterSpacing: '-0.02em' }}>
+      <BillingHeader<FilterKey>
+        value={filter}
+        options={options}
+        onChange={setFilter}
+        sub={filter === 'available' ? `지금 쓸 수 있는 쿠폰 ${counts.available}장` : undefined}
+      />
 
-      {/* Hero — mirrors the points page: label + big number on the left */}
-      <div className="px-5 pt-6 pb-7 fade-in-up">
-        <p className="text-[14px] text-[#6B7280]">보유중인 쿠폰</p>
-        <p className="mt-1 text-[34px] font-extrabold text-[#2B313D] leading-none">
-          {availableCount}장
-        </p>
-      </div>
-
-      {/* Tabs */}
-      <div className="relative">
-        <div className="flex justify-around border-b border-gray-100 px-2">
-          {tabs.map((t, i) => {
-            const isActive = activeTab === t;
-            return (
-              <button
-                key={t}
-                ref={(el) => {
-                  tabBtnRefs.current[i] = el;
-                }}
-                type="button"
-                onClick={() => changeTab(t)}
-                className="flex-1 py-3.5 text-center relative"
-                style={{ transition: 'color 240ms ease' }}
-              >
-                <span
-                  className={`text-[15px] font-bold ${
-                    isActive ? 'text-[#2B313D]' : 'text-[#D1D5DB]'
-                  }`}
-                >
-                  {t}
-                </span>
-              </button>
-            );
-          })}
-          <span
-            aria-hidden
-            className="absolute bottom-0 h-[2px] bg-[#2B313D] pointer-events-none"
-            style={{
-              left: indicator.left,
-              width: indicator.width,
-              transition:
-                'left 320ms cubic-bezier(0.22, 1, 0.36, 1), width 320ms cubic-bezier(0.22, 1, 0.36, 1)',
-            }}
-          />
-        </div>
-      </div>
-
-      {/* List */}
-      <div
-        key={activeTab}
-        className={`${direction === 'right' ? 'tab-slide-right' : 'tab-slide-left'}`}
-      >
-        {filteredCoupons.length === 0 ? (
-          <EmptyState icon="coupon" message="쿠폰이 없어요" />
-        ) : (
-          <div className="bg-white divide-y divide-gray-50">
-            {filteredCoupons.map((coupon) => {
-              const isAvailable = coupon.status === 'available';
-              return (
-                <div
-                  key={coupon.id}
-                  className="px-5 py-4 flex items-center justify-between"
-                  style={{ opacity: isAvailable ? 1 : 0.6 }}
-                >
-                  <div className="min-w-0 flex-1 pr-3">
-                    <p className="text-[15px] font-medium text-[#2B313D] line-clamp-1">
-                      {coupon.name}
-                    </p>
-                    <p className="text-[12px] text-[#A4ABBA] mt-1">
-                      {coupon.expiryDate ? `${coupon.expiryDate}까지` : ''}
-                    </p>
-                  </div>
-                  <span
-                    className={`text-[15px] font-bold flex-shrink-0 ${
-                      isAvailable ? 'text-[#8037FF]' : 'text-[#6B7280]'
-                    }`}
-                  >
-                    {coupon.discountAmount.toLocaleString()}원
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
+      {filtered.length === 0 ? (
+        <BillingEmpty
+          icon={current.icon}
+          title={current.empty}
+          desc={filter === 'available' ? '쿠폰을 받으면 결제할 때 바로 쓸 수 있어요' : undefined}
+        />
+      ) : (
+        <QdBody key={filter} className="space-y-3 px-5 pc:px-0">
+          {filtered.map((coupon) => <CouponCard key={coupon.id} coupon={coupon} />)}
+        </QdBody>
+      )}
     </div>
   );
 }
