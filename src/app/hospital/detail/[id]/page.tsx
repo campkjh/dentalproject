@@ -144,14 +144,15 @@ export default function HospitalDetailPage() {
     return el ? Math.min(el.clientWidth * 0.84, 520) + 12 : 1;
   };
   const activeIdx = SECTION_TABS.findIndex(t => t.id === activeSection);
-  const roundBtn = (solid: boolean) => `flex h-9 w-9 shrink-0 items-center justify-center transition-all active:scale-90 ${solid ? 'text-[#191F28]' : 'rounded-full bg-white/90 shadow-sm backdrop-blur-md'}`;
+  // 머리 버튼 — 그림자 없이(사장 지시), 아이콘은 크게
+  const roundBtn = (solid: boolean) => `flex h-11 w-11 shrink-0 items-center justify-center transition-all active:scale-90 ${solid ? 'text-[#191F28]' : 'rounded-full bg-white/90 backdrop-blur-md'}`;
 
   return (
     <div className="min-h-screen bg-white pb-[110px]">
       {/* ─── 머리 — 떠 있는 둥근 버튼 → 스크롤하면 로고 + 이름 흰 머리 ─── */}
       <div className={`fixed left-0 right-0 top-0 z-40 flex items-center gap-2 transition-all duration-300 min-[1024px]:hidden ${headerSolid ? 'h-[60px] bg-white px-3' : 'justify-between px-4 pb-3 pt-3'}`}>
         <button type="button" aria-label="뒤로" onClick={() => router.back()} className={roundBtn(headerSolid)}>
-          <ChevronLeft size={22} className="text-[#191F28]" />
+          <ChevronLeft size={28} strokeWidth={2.2} className="text-[#191F28]" />
         </button>
         <div
           className={`flex min-w-0 flex-1 items-center gap-2.5 transition-all duration-300 ${headerSolid ? 'opacity-100' : 'pointer-events-none opacity-0'}`}
@@ -162,7 +163,7 @@ export default function HospitalDetailPage() {
           <p className="min-w-0 flex-1 truncate text-[13px] font-bold leading-tight text-[#191F28]">{hospital.name}</p>
         </div>
         <button type="button" aria-label="공유" onClick={share} className={`${roundBtn(headerSolid)} ${headerSolid ? '' : 'ml-auto'}`}>
-          <Share2 size={18} className="text-[#191F28]" />
+          <Share2 size={23} strokeWidth={2} className="text-[#191F28]" />
         </button>
       </div>
 

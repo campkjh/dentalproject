@@ -9,7 +9,7 @@ import { Star } from 'lucide-react';
 import { PocketIcon } from '@/components/icons/PocketIcon';
 import { Product } from '@/types';
 import { resolveProductImageUrl } from '@/lib/images';
-import { useImageTone } from '@/lib/image-tone';
+import { toneAccent, useImageTone } from '@/lib/image-tone';
 import { useStore } from '@/store';
 
 /** 사진 아래쪽을 카드 색으로 녹인다 */
@@ -30,6 +30,8 @@ export default function ProductCard({ product, index = 0 }: { product: Product; 
   const image = resolveProductImageUrl(product.imageUrl, product.id);
   const tone = useImageTone(image, 'square');
   const sub = tone?.sub || '#6B7684';
+  // 담은 가방 색 = 이 상품 사진 색(카드 바탕과 같은 색상을 진하게) — 색이 아직 없으면 회색
+  const pocketColor = toneAccent(tone) || '#6B7684';
   const chips = ['앱결제', ...(product.rating >= 4.8 ? ['인증병원'] : [])];
   const badge = product.likeCount >= 10 ? '프라임' : (product.discount ?? 0) >= 30 ? '특가' : null;
 
@@ -96,7 +98,7 @@ export default function ProductCard({ product, index = 0 }: { product: Product; 
             aria-label={isWished ? '포켓에서 빼기' : '포켓에 담기'}
             aria-pressed={isWished}
             className="flex shrink-0 items-center justify-center transition-transform active:scale-90"
-            style={{ width: fs(10, 26, 34), height: fs(10, 26, 34), color: isWished ? '#3180F7' : '#fff' }}
+            style={{ width: fs(10, 26, 34), height: fs(10, 26, 34), color: isWished ? pocketColor : '#fff' }}
             onClick={e => {
               e.preventDefault();
               e.stopPropagation();
@@ -105,7 +107,7 @@ export default function ProductCard({ product, index = 0 }: { product: Product; 
               setTimeout(() => setPop(false), 400);
             }}
           >
-            {/* 견본 가방 — 흰 굵은 선, 담으면 파랑으로 채움 */}
+            {/* 견본 가방 — 흰 굵은 선, 담으면 상품 사진 색으로 채움 */}
             <PocketIcon className={pop ? 'heart-pop' : undefined} size="100%" strokeWidth={2.1} filled={isWished} style={{ filter: isWished ? undefined : 'drop-shadow(0 0 .5px rgba(0,0,0,.25))' }} />
           </button>
         </div>

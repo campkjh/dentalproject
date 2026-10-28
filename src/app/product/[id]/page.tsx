@@ -9,8 +9,10 @@ import NaverMap from '@/components/common/NaverMap';
 import Avatar from '@/components/common/Avatar';
 import ProductCard from '@/components/common/ProductCard';
 import ReviewShowcase from '@/components/product/ReviewShowcase';
+import ReviewSummaryCard, { useReviewSummary } from '@/components/product/ReviewSummaryCard';
 import { BRAND, Reveal, StarRating, SingleStar, SectionHead, ReviewCommentRow, ExpandRow, type ReviewRowData } from '@/components/detail/DetailKit';
 import { useStore } from '@/store';
+import { toneAccent, useImageTone } from '@/lib/image-tone';
 import { resolveHospitalImageUrl, resolveProductImageUrl } from '@/lib/images';
 
 const faqItems = [
@@ -99,19 +101,6 @@ function IntroText({ text }: { text: string }) {
   );
 }
 
-/** 지금 진료 상태 알약 */
-function openStateOf(hours: { day: string; startTime?: string; endTime?: string; isClosed?: boolean }[]) {
-  const now = new Date();
-  const today = hours.find(oh => DAY_INDEX[oh.day] === now.getDay());
-  if (!today || today.isClosed) return { label: '오늘 휴진', color: '#6B7684', bg: '#F2F4F6' };
-  const t = now.getHours() * 60 + now.getMinutes();
-  const [sh, sm] = (today.startTime || '09:00').split(':').map(Number);
-  const [eh, em] = (today.endTime || '18:00').split(':').map(Number);
-  if (t < sh * 60 + sm) return { label: `진료 전 · ${today.startTime} 시작`, color: '#6B7684', bg: '#F2F4F6' };
-  if (t > eh * 60 + em) return { label: '오늘 진료 종료', color: '#6B7684', bg: '#F2F4F6' };
-  return { label: `진료 중 · ${today.endTime}까지`, color: '#03A35F', bg: '#E5F7EE' };
-}
-
 type SectionId = 'desc' | 'info' | 'reviews';
 const SECTION_TABS: { id: SectionId; label: string }[] = [
   { id: 'desc', label: '상품 정보' },
@@ -139,6 +128,11 @@ export default function ProductDetailPage() {
   const sectionRefs = { desc: useRef<HTMLDivElement>(null), info: useRef<HTMLDivElement>(null), reviews: useRef<HTMLDivElement>(null) };
 
   const product = products.find(p => p.id === params.id);
+  // 후기 요약(실제 후기 2건 이상일 때만) — 프리티풀 스타일 소개 카드
+  const reviewSummary = useReviewSummary(product?.id, reviews.filter(r => r.productId === product?.id).length);
+  // 담은 가방 색 = 대표 사진 색(카드와 같은 계산)
+  const productTone = useImageTone(product ? resolveProductImageUrl(product.imageUrl, product.id) : null, 'square');
+  const pocketColor = toneAccent(productTone) || '#6B7684';
   const hospital = hospitals.find(h => h.id === product?.hospitalId);
   const productReviews = reviews.filter(r => r.productId === product?.id);
 
@@ -212,7 +206,6 @@ export default function ProductDetailPage() {
   const categoryName = categories.find(c => c.id === product.category)?.name;
   // 옵션 속성 줄 — 첫 칸(진료과)만 파랑, 나머지는 태그
   const optionAttrs = [categoryName, ...tagChips].filter(Boolean).slice(0, 5) as string[];
-  const openState = hospital ? openStateOf(hospital.operatingHours) : { label: '', color: '', bg: '' };
 
   const share = () => {
     if (navigator.share) navigator.share({ title: product.title, url: window.location.href }).catch(() => {});
@@ -234,7 +227,8 @@ export default function ProductDetailPage() {
     return el ? Math.min(el.clientWidth * 0.78, 420) + 12 : 1;
   };
   const activeIdx = SECTION_TABS.findIndex(t => t.id === activeSection);
-  const roundBtn = (solid: boolean) => `flex h-9 w-9 shrink-0 items-center justify-center transition-all active:scale-90 ${solid ? 'text-[#191F28]' : 'rounded-full bg-white/90 shadow-sm backdrop-blur-md'}`;
+  // 머리 버튼 — 그림자 없이(사장 지시), 아이콘은 크게
+  const roundBtn = (solid: boolean) => `flex h-11 w-11 shrink-0 items-center justify-center transition-all active:scale-90 ${solid ? 'text-[#191F28]' : 'rounded-full bg-white/90 backdrop-blur-md'}`;
 
   const buttons = (
     <div className="flex items-center gap-2">
@@ -248,7 +242,7 @@ export default function ProductDetailPage() {
       <button
         type="button"
         onClick={() => router.push(`/booking?productId=${product.id}&payment=app`)}
-        className="flex h-14 flex-[1.6] items-center justify-center rounded-2xl text-[16.5px] font-bold text-white transition-all active:scale-[0.99]"
+        className="flex h-14 flex-1 items-center justify-center rounded-2xl text-[16.5px] font-bold text-white transition-all active:scale-[0.99]"
         style={{ backgroundColor: BRAND }}
       >
         앱결제로 예약하기
@@ -263,7 +257,7 @@ export default function ProductDetailPage() {
         className={`fixed left-0 right-0 top-0 z-40 flex items-center gap-2 transition-all duration-300 min-[1024px]:hidden ${headerSolid ? 'h-[60px] bg-white px-3' : 'justify-between px-4 pb-3 pt-3'}`}
       >
         <button type="button" aria-label="뒤로" onClick={() => router.back()} className={roundBtn(headerSolid)}>
-          <ChevronLeft size={22} className="text-[#191F28]" />
+          <ChevronLeft size={28} strokeWidth={2.2} className="text-[#191F28]" />
         </button>
         <div
           className={`flex min-w-0 flex-1 items-center gap-2.5 transition-all duration-300 ${headerSolid ? 'opacity-100' : 'pointer-events-none opacity-0'}`}
@@ -275,10 +269,10 @@ export default function ProductDetailPage() {
         </div>
         <div className={`flex shrink-0 items-center gap-2 ${headerSolid ? '' : 'ml-auto'}`}>
           <button type="button" aria-label={isWished ? '포켓에서 빼기' : '포켓에 담기'} onClick={wish} className={roundBtn(headerSolid)}>
-            <PocketIcon size={21} filled={isWished} strokeWidth={1.8} className={heartAnim ? 'heart-pop' : undefined} style={{ color: isWished ? BRAND : '#191F28' }} />
+            <PocketIcon size={26} filled={isWished} strokeWidth={1.9} className={heartAnim ? 'heart-pop' : undefined} style={{ color: isWished ? pocketColor : '#191F28' }} />
           </button>
           <button type="button" aria-label="공유" onClick={share} className={roundBtn(headerSolid)}>
-            <Share2 size={18} className="text-[#191F28]" />
+            <Share2 size={23} strokeWidth={2} className="text-[#191F28]" />
           </button>
         </div>
       </div>
@@ -507,7 +501,7 @@ export default function ProductDetailPage() {
               </Reveal>
               <div className="flex snap-x gap-3 overflow-x-auto pr-4 hide-scrollbar">
                 {alsoViewed.map((p, i) => (
-                  <div key={p.id} className="w-[150px] shrink-0 snap-start">
+                  <div key={p.id} className="w-[44vw] max-w-[220px] shrink-0 snap-start">
                     <ProductCard product={p} index={i} />
                   </div>
                 ))}
@@ -611,53 +605,59 @@ export default function ProductDetailPage() {
             )}
           </div>
 
-          {/* ─── 진료 시간 — 지금 상태 알약 + 요일 표(오늘 줄 파란 바탕) + 휴진 안내 띠 ─── */}
+          {/* ─── 진료 시간 — 오늘 줄을 위에 크게, 아래는 요일별 두 칸 줄(가는 선). 상태 알약은 두지 않는다 ─── */}
           {hospital && (
             <>
               <div className="h-2.5 bg-[#F2F4F6]" />
               <div className="bg-white px-5 py-7">
-                <div className="flex items-center justify-between gap-3">
-                  <h2 className="text-[22px] font-bold leading-tight text-[#191F28]">진료 시간</h2>
-                  <span className="rounded-full px-3 py-1.5 text-[13px] font-bold" style={{ color: openState.color, backgroundColor: openState.bg }}>
-                    {openState.label}
-                  </span>
-                </div>
+                <h2 className="text-[22px] font-bold leading-tight text-[#191F28]">진료 시간</h2>
                 <Reveal>
-                  <div className="mt-5 overflow-hidden rounded-[16px] border border-[#E5E8EB]">
+                  {(() => {
+                    const todayDay = WEEK_ORDER.find(d => DAY_INDEX[d] === new Date().getDay())!;
+                    const t = hospital.operatingHours.find(o => o.day === todayDay);
+                    const closed = !t || t.isClosed;
+                    return (
+                      <div className="mt-5 rounded-[16px] bg-[#F7F8FA] px-5 py-4">
+                        <div>
+                          <p className="text-[13px] font-semibold text-[#8B95A1]">오늘 · {todayDay}요일</p>
+                          <p className="mt-1 text-[22px] font-bold tracking-[-0.4px] text-[#191F28]">{closed ? '휴진' : `${t!.startTime} – ${t!.endTime}`}</p>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                  <dl className="mt-4">
                     {WEEK_ORDER.map((day, i) => {
                       const oh = hospital.operatingHours.find(o => o.day === day);
                       const today = DAY_INDEX[day] === new Date().getDay();
                       const closed = !oh || oh.isClosed;
                       return (
-                        <div
-                          key={day}
-                          className={`flex items-center justify-between px-4 py-3.5 text-[15px] ${i > 0 ? 'border-t border-[#F2F4F6]' : ''}`}
-                          style={today ? { backgroundColor: '#F2F6FC' } : undefined}
-                        >
-                          <span className={`flex items-center gap-2 ${today ? 'font-bold text-[#1B4FA8]' : day === '일' ? 'text-[#F04452]' : 'text-[#4E5968]'}`}>
+                        <div key={day} className={`flex items-center justify-between py-3 text-[15px] ${i > 0 ? 'border-t border-[#F2F4F6]' : ''}`}>
+                          <dt className={today ? 'font-semibold text-[#191F28]' : day === '일' || day === '토' ? 'text-[#8B95A1]' : 'text-[#6B7684]'}>
                             {day}요일
-                            {today && <span className="rounded-[6px] bg-[#3180F7] px-1.5 py-0.5 text-[11px] font-bold text-white">오늘</span>}
-                          </span>
-                          <span className={closed ? 'text-[#B0B8C1]' : today ? 'font-bold text-[#1B4FA8]' : 'text-[#191F28]'}>
-                            {closed ? '휴진' : `${oh!.startTime} ~ ${oh!.endTime}`}
-                          </span>
+                          </dt>
+                          <dd className={`tabular-nums ${closed ? 'text-[#B0B8C1]' : today ? 'font-semibold text-[#191F28]' : 'text-[#333D4B]'}`}>
+                            {closed ? '휴진' : `${oh!.startTime} – ${oh!.endTime}`}
+                          </dd>
                         </div>
                       );
                     })}
-                  </div>
+                  </dl>
                   {hospital.holidayNotice && (
-                    <p className="mt-3 rounded-[12px] bg-[#EEF4FF] px-4 py-3.5 text-[14px] leading-[1.5] text-[#1B4FA8]">{hospital.holidayNotice}</p>
+                    <p className="mt-3 flex items-start gap-2 rounded-[12px] bg-[#F7F8FA] px-4 py-3 text-[14px] leading-[1.5] text-[#4E5968]">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden className="mt-0.5 shrink-0"><circle cx="12" cy="12" r="9" stroke="#8B95A1" strokeWidth="1.8" /><path d="M12 8v5M12 16.5v.01" stroke="#8B95A1" strokeWidth="1.8" strokeLinecap="round" /></svg>
+                      {hospital.holidayNotice.replace(/^\*/, '')}
+                    </p>
                   )}
-                  <p className="mt-3 text-[13px] leading-[1.5] text-[#8B95A1]">진료 시간은 병원 사정에 따라 바뀔 수 있어요. 방문 전 병원에 확인해 주세요.</p>
+                  <p className="mt-3 text-[13px] leading-[1.5] text-[#B0B8C1]">진료 시간은 병원 사정에 따라 바뀔 수 있어요.</p>
                 </Reveal>
               </div>
             </>
           )}
-
           <div className="h-2.5 bg-[#F2F4F6]" />
           {/* ─── 시술 후기 — 로그인해야 자세한 후기를 보여 준다(사장 견본). 로그인 전·후기 없음 = 프리티풀 비즈 '카드 3장' 예시 장면 ─── */}
           <div ref={sectionRefs.reviews} className="bg-white px-5 py-6">
             <h2 className="mb-5 text-[22px] font-bold leading-tight text-[#191F28]">시술 후기</h2>
+            <ReviewSummaryCard summary={reviewSummary.value} loading={reviewSummary.loading} className="mb-5" />
             {!user ? (
               <ReviewShowcase mode="login" onLogin={() => window.dispatchEvent(new Event('dental:login'))} />
             ) : reviewRows.length === 0 ? (

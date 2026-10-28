@@ -342,8 +342,6 @@ export default function HomePage() {
         <div className="mb-6">
           <SectionHeader
             title="인기 상품"
-            subtitle="많이 담고 예약한 상품을 확인해보세요."
-            action={<MoreButton href="/search" label="전체보기" />}
           />
           <div className="px-[10px] pc:px-0">
             <div className="grid grid-cols-2 pc:grid-cols-5 gap-2.5 pc:gap-4 pc:[&>*:nth-child(n+6)]:hidden stagger-children">
@@ -368,7 +366,7 @@ export default function HomePage() {
 
         {/* 나한테 꿀이되는 후기 — 위아래 두 줄이 서로 반대로 흘러가는 캐러셀(PC 는 카드를 정비례로 크게) */}
         <div className="mb-8 pc:-mx-8">
-          <div className="pc:px-8"><SectionHeader title="나한테 꿀이되는 후기" subtitle="실제 방문자가 남긴 시술 경험을 살펴보세요." /></div>
+          <div className="pc:px-8"><SectionHeader title="나한테 꿀이되는 후기" /></div>
           <ReviewMarquee reviews={reviews.slice(0, 12)} products={products} />
         </div>
 
@@ -376,8 +374,6 @@ export default function HomePage() {
         <div className="mb-8">
           <SectionHeader
             title="이번 주 인기 많은 패키지"
-            subtitle="후기가 많은 패키지부터 빠르게 비교해보세요."
-            action={<MoreButton href="/search" />}
           />
           <div className="px-[10px] pc:px-0">
             <div className="flex snap-x gap-2.5 overflow-x-auto hide-scrollbar pb-2 scroll-px-[10px] pc:grid pc:grid-cols-5 pc:gap-4 pc:overflow-visible pc:[&>*:nth-child(n+6)]:hidden">
@@ -394,8 +390,6 @@ export default function HomePage() {
         <div className="mb-8">
           <SectionHeader
             title="이런 패키지는 어때요?"
-            subtitle="할인율이 좋은 시술을 골라 추천해드려요."
-            action={<MoreButton href="/search" />}
           />
           <div className="px-[10px] pc:px-0">
             <div className="flex snap-x gap-2.5 overflow-x-auto hide-scrollbar pb-2 scroll-px-[10px] pc:grid pc:grid-cols-5 pc:gap-4 pc:overflow-visible pc:[&>*:nth-child(n+6)]:hidden">
@@ -410,7 +404,7 @@ export default function HomePage() {
 
         {/* 요즘 뜨고 있는 병원 */}
         <div className="mb-8">
-          <SectionHeader title="요즘 뜨고 있는 병원" subtitle="평점과 후기가 좋은 병원을 둘러보세요." />
+          <SectionHeader title="요즘 뜨고 있는 병원" />
           <div className="px-[10px] pc:px-0">
             <div className="flex snap-x gap-3 overflow-x-auto pb-2 hide-scrollbar scroll-px-[10px] pc:grid pc:grid-cols-3 pc:gap-4 pc:overflow-visible">
               {(() => {
@@ -751,8 +745,6 @@ function RecentlyViewedSection({
     <div className="mb-8">
       <SectionHeader
         title="최근 본 상품"
-        subtitle={hasRecent ? '최근 둘러본 상품을 이어서 확인해보세요.' : '추천으로 보여드려요.'}
-        action={<MoreButton href="/wishlist" />}
       />
       <div className="px-[10px] pc:px-0">
         <div className="flex gap-3 overflow-x-auto hide-scrollbar pb-2 pc:grid pc:grid-cols-5 pc:gap-4 pc:overflow-visible pc:[&>*:nth-child(n+6)]:hidden">
@@ -796,15 +788,6 @@ function SectionHeader({
         {action && <div className="shrink-0">{action}</div>}
       </div>
     </Reveal>
-  );
-}
-
-// 전체보기 — 회색 글자 + 꺾쇠(프리티풀 홈과 같은 모양)
-function MoreButton({ href, label = '전체보기' }: { href: string; label?: string }) {
-  return (
-    <Link href={href} className="flex items-center gap-0.5 text-[13px] font-medium text-gray-400 transition-colors duration-300 hover:text-gray-600 active:opacity-60">
-      {label} <ChevronRight size={16} />
-    </Link>
   );
 }
 
