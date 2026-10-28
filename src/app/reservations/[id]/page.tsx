@@ -23,7 +23,7 @@ export default function ReservationDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { authUser } = useSession();
-  const { reservations, hospitals, updateReservationStatus, showConfirm, showAlert, hydrateMe } = useStore();
+  const { reservations, hospitals, updateReservationStatus, showConfirm, showAlert, showToast, hydrateMe } = useStore();
 
   const reservation = reservations.find((r) => r.id === id);
 
@@ -61,6 +61,8 @@ export default function ReservationDetailPage() {
       '예약 취소',
       '정말 예약을 취소하시겠습니까?\n결제한 금액은 함께 취소돼요.',
       async () => {
+        // 결제 취소까지 몇 초 걸리므로 처리 중임을 바로 알린다
+        showToast('예약을 취소하고 있어요…');
         const { error } = await updateReservationStatus(reservation.id, 'cancelled');
         if (error) {
           showAlert('예약을 취소하지 못했어요', error);

@@ -78,7 +78,7 @@ const statusStyle: Record<
 export default function ReservationsPage() {
   const router = useRouter();
   const { authUser } = useSession();
-  const { isLoggedIn, reservations, showConfirm, showAlert, updateReservationStatus, hydrateMe } = useStore();
+  const { isLoggedIn, reservations, showConfirm, showAlert, showToast, updateReservationStatus, hydrateMe } = useStore();
   const [activeTab, setActiveTab] = useState('전체');
   const prevIndexRef = useRef(0);
   const [direction, setDirection] = useState<'left' | 'right'>('right');
@@ -133,6 +133,8 @@ export default function ReservationsPage() {
       '예약 취소',
       '예약을 취소하시겠습니까?\n결제한 금액은 함께 취소돼요.',
       async () => {
+        // 결제 취소까지 몇 초 걸리므로 처리 중임을 바로 알린다
+        showToast('예약을 취소하고 있어요…');
         const { error } = await updateReservationStatus(id, 'cancelled');
         if (error) showAlert('예약을 취소하지 못했어요', error);
         else showAlert('예약이 취소되었습니다', '앱에서 결제한 금액은 결제수단에 따라 영업일 기준 3~5일 안에 환불돼요.');

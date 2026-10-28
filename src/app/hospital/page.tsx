@@ -106,6 +106,8 @@ export default function HospitalHomePage() {
       '예약 취소',
       '해당 예약을 취소하시겠습니까?\n결제한 금액은 고객에게 환불돼요.',
       async () => {
+        // 결제 취소까지 몇 초 걸리므로 처리 중임을 바로 알린다
+        showToast('예약을 취소하고 있어요…');
         const { error } = await updateReservationStatus(id, 'cancelled', '병원측 취소');
         if (error) showAlert('예약을 취소하지 못했어요', error);
         else showAlert('예약이 취소되었습니다');
