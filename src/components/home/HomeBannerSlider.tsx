@@ -68,7 +68,7 @@ function BannerWash({ banner, active }: { banner: HomeBanner; active: boolean })
   return (
     <div
       aria-hidden
-      className="pointer-events-none absolute inset-x-0 -top-4 bottom-[-72px]"
+      className="pointer-events-none absolute inset-x-0 top-[calc(-80px-env(safe-area-inset-top))] bottom-[-72px] pc:-top-6"
       style={{
         background: `linear-gradient(180deg, color-mix(in srgb, ${tone.bg} 85%, #ffffff) 0%, color-mix(in srgb, ${tone.bg} 45%, #ffffff) 45%, rgba(255,255,255,0) 100%)`,
         opacity: active ? 1 : 0,

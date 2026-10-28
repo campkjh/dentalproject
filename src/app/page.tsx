@@ -188,8 +188,17 @@ export default function HomePage() {
           카테고리 줄은 머리 아래에 겹쳐 내려온다 — 문서 높이가 안 바뀌어 스크롤이 떨리지 않는다 */}
       <div
         ref={headerRef}
-        className="fixed inset-x-0 top-0 z-40 mx-auto max-w-[640px] bg-white pc:hidden"
+        className="fixed inset-x-0 top-0 z-40 mx-auto max-w-[640px] pt-[env(safe-area-inset-top)] pc:hidden"
       >
+        {/* 머리 바탕 — 맨 위에선 안전영역부터 머리 끝까지 흰색→투명 그라데이션(배너 색 번짐이 비쳐 보이게),
+            내리면 흰색으로 채워지고 그 아래로 흰 그늘이 자연스럽게 이어진다 */}
+        <div aria-hidden className="pointer-events-none absolute inset-0" style={{ background: 'linear-gradient(180deg, #FFFFFF 0%, rgba(255,255,255,0.88) 55%, rgba(255,255,255,0) 100%)' }} />
+        <div aria-hidden className="pointer-events-none absolute inset-0 bg-white transition-opacity duration-300" style={{ opacity: scrolled ? 1 : 0 }} />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 h-5 transition-opacity duration-300"
+          style={{ top: `calc(100% + ${dockProgress * 52}px)`, opacity: scrolled ? 1 : 0, background: 'linear-gradient(180deg, #FFFFFF 0%, rgba(255,255,255,0) 100%)' }}
+        />
         <div className="relative h-16">
         <MobileHomeHeader hidden={scrolled} />
 
@@ -325,7 +334,7 @@ export default function HomePage() {
         </div>
       </div>
 
-      <div className="h-16 pc:hidden" aria-hidden />
+      <div className="h-[calc(64px+env(safe-area-inset-top))] pc:hidden" aria-hidden />
 
       {/* Desktop content wrapper — 등장 애니메이션은 여기만(transform 이 남아 고정 머리가 밀리지 않게) */}
       <div className="page-enter pc:pt-6">
