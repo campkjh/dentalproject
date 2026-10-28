@@ -1,22 +1,13 @@
 'use client';
 
-import { useState, useEffect, useRef, useLayoutEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import {
-  Heart,
-  Share2,
-  Star,
-  ChevronDown,
-  ChevronUp,
-  ChevronLeft,
-  MoreHorizontal,
-  Maximize2,
-} from 'lucide-react';
-import FixedBar from '@/components/common/FixedBar';
+import { Heart, Share2, ChevronLeft, ChevronRight, MoreHorizontal, X } from 'lucide-react';
 import NaverMap from '@/components/common/NaverMap';
 import Avatar from '@/components/common/Avatar';
 import ProductCard from '@/components/common/ProductCard';
+import { BRAND, Reveal, StarRating, SectionHead, IconTile, FloatingReviewCards, ReviewCommentRow, ExpandRow, type ReviewRowData } from '@/components/detail/DetailKit';
 import { useStore } from '@/store';
 import { resolveHospitalImageUrl, resolveProductImageUrl } from '@/lib/images';
 
@@ -39,894 +30,540 @@ const faqItems = [
   },
 ];
 
-function hasReviewImages(review: { beforeImage?: string; afterImage?: string }) {
-  return Boolean(review.beforeImage || review.afterImage);
+const DAY_INDEX: Record<string, number> = { '일': 0, '월': 1, '화': 2, '수': 3, '목': 4, '금': 5, '토': 6 };
+
+/** 지금 진료 상태 한 줄(휴진·진료 전·종료) — 진료 중이면 null */
+function closedNotice(hours: { day: string; startTime?: string; endTime?: string; isClosed?: boolean }[]) {
+  const now = new Date();
+  const today = hours.find(oh => DAY_INDEX[oh.day] === now.getDay());
+  if (!today) return null;
+  if (today.isClosed) {
+    const next = hours.find(oh => DAY_INDEX[oh.day] > now.getDay() && !oh.isClosed) || hours.find(oh => !oh.isClosed);
+    return `오늘은 휴진이에요${next ? ` · ${next.day}요일 ${next.startTime}부터 진료해요` : ''}`;
+  }
+  const t = now.getHours() * 60 + now.getMinutes();
+  const [sh, sm] = (today.startTime || '09:00').split(':').map(Number);
+  const [eh, em] = (today.endTime || '18:00').split(':').map(Number);
+  if (t < sh * 60 + sm) return `아직 진료 전이에요 · ${today.startTime}부터 진료해요`;
+  if (t > eh * 60 + em) return '오늘 진료가 끝났어요';
+  return null;
 }
 
-function ReviewImagePair({
-  beforeImage,
-  afterImage,
-  size = 'compact',
-}: {
-  beforeImage?: string;
-  afterImage?: string;
-  size?: 'compact' | 'large';
-}) {
-  const both = Boolean(beforeImage && afterImage);
-  const labelSize = size === 'large' ? 14 : 11;
-  const labelBox = size === 'large' ? { width: 36, height: 28, padding: '4px 14px' } : { width: 28, height: 20, padding: '3px 10px' };
+type SectionId = 'desc' | 'info' | 'reviews';
+const SECTION_TABS: { id: SectionId; label: string }[] = [
+  { id: 'desc', label: '상품 설명' },
+  { id: 'info', label: '병원 정보' },
+  { id: 'reviews', label: '리뷰' },
+];
+/** 고정 머리(60) + 섹션 탭(52) */
+const STICKY_OFFSET = 116;
 
-  if (!beforeImage && !afterImage) return null;
-
-  return (
-    <div className="flex" style={{ gap: 0 }}>
-      {beforeImage && (
-        <div
-          className="flex-1 aspect-square relative overflow-hidden"
-          style={{
-            borderTopLeftRadius: 12,
-            borderBottomLeftRadius: 12,
-            borderTopRightRadius: both ? 0 : 12,
-            borderBottomRightRadius: both ? 0 : 12,
-          }}
-        >
-          <img src={beforeImage} alt="시술 전" className="h-full w-full object-cover" />
-          <span
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              fontSize: labelSize,
-              fontWeight: 600,
-              color: '#fff',
-              backgroundColor: '#8037FF',
-              borderTopLeftRadius: 12,
-              borderBottomRightRadius: 12,
-              lineHeight: size === 'large' ? '14px' : '11px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              ...labelBox,
-            }}
-          >
-            전
-          </span>
-        </div>
-      )}
-      {afterImage && (
-        <div
-          className="flex-1 aspect-square relative overflow-hidden"
-          style={{
-            borderTopRightRadius: 12,
-            borderBottomRightRadius: 12,
-            borderTopLeftRadius: both ? 0 : 12,
-            borderBottomLeftRadius: both ? 0 : 12,
-          }}
-        >
-          <img src={afterImage} alt="시술 후" className="h-full w-full object-cover" />
-          <span
-            style={{
-              position: 'absolute',
-              top: 0,
-              right: 0,
-              fontSize: labelSize,
-              fontWeight: 600,
-              color: '#fff',
-              backgroundColor: '#2B313D',
-              borderTopRightRadius: 12,
-              borderBottomLeftRadius: 12,
-              lineHeight: size === 'large' ? '14px' : '11px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              ...labelBox,
-            }}
-          >
-            후
-          </span>
-        </div>
-      )}
-    </div>
-  );
-}
-
+// 상품 상세 — 프리티풀 사회자 상세(pros/[id]) 결 그대로:
+//  둥근 떠 있는 머리 → 스크롤하면 썸네일+제목 흰 머리 · 왼쪽 정렬 사진 넘기기(44 라운드, 옆 사진 작게) · 반짝 별점 + 둥실 리뷰 카드 ·
+//  회색 트랙 흰 알약 섹션 탭(스크롤 따라 이동) · 아이콘 섹션 머리 · 댓글형 리뷰 · 0fr→1fr FAQ · 흐림 바닥 버튼.
 export default function ProductDetailPage() {
   const params = useParams();
   const router = useRouter();
   const { products, hospitals, reviews, wishlist, toggleWishlist, addRecentlyViewed, showToast, user } = useStore();
-  const tabs = ['상품설명', '병원정보', '리뷰'];
-  const [activeTab, setActiveTab] = useState('상품설명');
-  const [tabDirection, setTabDirection] = useState<'left' | 'right'>('right');
-  const prevTabIdxRef = useRef(0);
-  const tabBtnRefs = useRef<(HTMLButtonElement | null)[]>([]);
-  const [tabIndicator, setTabIndicator] = useState({ left: 0, width: 0 });
-  const activeTabIdx = tabs.indexOf(activeTab);
-
-  const changeTab = (t: string) => {
-    const nextIdx = tabs.indexOf(t);
-    setTabDirection(nextIdx >= prevTabIdxRef.current ? 'right' : 'left');
-    prevTabIdxRef.current = nextIdx;
-    setActiveTab(t);
-  };
-
-  useLayoutEffect(() => {
-    const btn = tabBtnRefs.current[activeTabIdx];
-    if (!btn) return;
-    setTabIndicator({ left: btn.offsetLeft, width: btn.offsetWidth });
-  }, [activeTabIdx]);
-
-  useEffect(() => {
-    const onResize = () => {
-      const btn = tabBtnRefs.current[activeTabIdx];
-      if (!btn) return;
-      setTabIndicator({ left: btn.offsetLeft, width: btn.offsetWidth });
-    };
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
-  }, [activeTabIdx]);
-
+  const [activeImage, setActiveImage] = useState(0);
+  const [headerSolid, setHeaderSolid] = useState(false);
+  const [activeSection, setActiveSection] = useState<SectionId>('desc');
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
   const [heartAnim, setHeartAnim] = useState(false);
-  const [showScrollTop, setShowScrollTop] = useState(false);
-  const [heroOutOfView, setHeroOutOfView] = useState(false);
-  const reviewSectionRef = useRef<HTMLDivElement>(null);
-  const heroRef = useRef<HTMLDivElement>(null);
-  // Reviews carousel — scale-down siblings as you scroll. Leftmost (snapped)
-  // card stays at 1.0; cards to the right shrink toward 0.9 with distance.
-  const reviewsCarouselRef = useRef<HTMLDivElement>(null);
-  const reviewsRafRef = useRef<number | null>(null);
+  const [imageModal, setImageModal] = useState<string | null>(null);
+  const galleryRef = useRef<HTMLDivElement>(null);
+  const sectionRefs = { desc: useRef<HTMLDivElement>(null), info: useRef<HTMLDivElement>(null), reviews: useRef<HTMLDivElement>(null) };
 
-  const updateReviewScales = () => {
-    const container = reviewsCarouselRef.current;
-    if (!container) return;
-    const cs = window.getComputedStyle(container);
-    const leftPad = parseFloat(cs.paddingLeft) || 0;
-    const first = container.children[0] as HTMLElement | undefined;
-    const cardWidth = first?.offsetWidth ?? 288;
-    const activeX = container.scrollLeft + leftPad + cardWidth / 2;
-    for (let i = 0; i < container.children.length; i++) {
-      const el = container.children[i] as HTMLElement;
-      const cardCenter = el.offsetLeft + el.offsetWidth / 2;
-      const dist = Math.abs(activeX - cardCenter);
-      const refWidth = el.offsetWidth + 6; // 6px gap between cards
-      const t = Math.min(1, dist / refWidth);
-      const scale = 1.0 - t * 0.1; // 1.0 → 0.9 with distance
-      el.style.transform = `scale(${scale})`;
-    }
-  };
-
-  const handleReviewsScroll = () => {
-    if (reviewsRafRef.current != null) return;
-    reviewsRafRef.current = requestAnimationFrame(() => {
-      reviewsRafRef.current = null;
-      updateReviewScales();
-    });
-  };
-
-  useEffect(() => {
-    const handleScroll = () => {
-      if (reviewSectionRef.current) {
-        const rect = reviewSectionRef.current.getBoundingClientRect();
-        setShowScrollTop(rect.bottom < 0);
-      }
-      // Hero out-of-view: when the hero image's bottom edge passes under the header
-      // (~48px), swap the header to compact mode (thumb + title).
-      if (heroRef.current) {
-        const r = heroRef.current.getBoundingClientRect();
-        setHeroOutOfView(r.bottom < 48);
-      }
-    };
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  const product = products.find((p) => p.id === params.id);
+  const product = products.find(p => p.id === params.id);
+  const hospital = hospitals.find(h => h.id === product?.hospitalId);
+  const productReviews = reviews.filter(r => r.productId === product?.id);
 
   useEffect(() => {
     if (product) addRecentlyViewed(product.id);
   }, [product, addRecentlyViewed]);
 
-  const hospital = hospitals.find((h) => h.id === product?.hospitalId);
-
-  const productReviews = reviews.filter((r) => r.productId === product?.id);
-  const productReviewCount = productReviews.length;
-
-  // Set initial review-card scales after mount + listen for resizes
-  useLayoutEffect(() => {
-    updateReviewScales();
-    const onResize = () => updateReviewScales();
-    window.addEventListener('resize', onResize);
-    return () => {
-      window.removeEventListener('resize', onResize);
-      if (reviewsRafRef.current != null) cancelAnimationFrame(reviewsRafRef.current);
+  useEffect(() => {
+    const onScroll = () => {
+      setHeaderSolid(window.scrollY > 280);
+      let current: SectionId = 'desc';
+      for (const tab of SECTION_TABS) {
+        const el = sectionRefs[tab.id].current;
+        if (el && el.getBoundingClientRect().top - STICKY_OFFSET - 8 <= 0) current = tab.id;
+      }
+      setActiveSection(current);
     };
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [productReviews.length]);
-
-  const hospitalProducts = products.filter((p) => p.hospitalId === product?.hospitalId && p.id !== product?.id);
-
-  const isWished = product ? wishlist.includes(product.id) : false;
+  }, []);
 
   if (!product) {
+    // 첫 진입(목록이 아직 안 왔을 때)엔 '없음' 대신 뼈대
+    if (products.length === 0) {
+      return (
+        <div className="min-h-screen bg-white px-[18px] pt-[74px]">
+          <div className="aspect-square w-[min(78vw,420px)] animate-pulse rounded-[44px] bg-[#F2F4F6]" />
+          <div className="mt-8 h-4 w-28 animate-pulse rounded-full bg-[#F2F4F6]" />
+          <div className="mt-3 h-6 w-56 animate-pulse rounded-full bg-[#F2F4F6]" />
+          <div className="mt-4 h-7 w-40 animate-pulse rounded-full bg-[#F2F4F6]" />
+        </div>
+      );
+    }
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
-        <p className="text-gray-500">상품을 찾을 수 없습니다.</p>
+        <p className="text-[15px] text-[#8B95A1]">상품을 찾을 수 없어요.</p>
       </div>
     );
   }
 
-  const avgRating = productReviews.length > 0
-    ? (productReviews.reduce((sum, r) => sum + r.rating, 0) / productReviews.length).toFixed(1)
-    : product.rating.toFixed(1);
+  const reviewCount = productReviews.length;
+  const rating = reviewCount > 0 ? productReviews.reduce((s, r) => s + r.rating, 0) / reviewCount : product.rating;
   const productImageUrl = resolveProductImageUrl(product.imageUrl, product.id);
-  const detailImageUrl = resolveProductImageUrl(product.detailImageUrl || product.imageUrl, product.id);
+  const detailImageUrl = product.detailImageUrl ? resolveProductImageUrl(product.detailImageUrl, product.id) : null;
   const hospitalImageUrl = hospital ? resolveHospitalImageUrl(hospital) : undefined;
+  const images = Array.from(new Set([productImageUrl, ...(detailImageUrl ? [detailImageUrl] : []), ...(hospital?.coverImages || [])])).slice(0, 8);
+  const isWished = wishlist.includes(product.id);
+  const verified = product.rating >= 4.8;
+  const notice = hospital ? closedNotice(hospital.operatingHours) : null;
+  const sameHospital = products.filter(p => p.hospitalId === product.hospitalId && p.id !== product.id);
+  const alsoViewed = (sameHospital.length > 0 ? sameHospital : products.filter(p => p.category === product.category && p.id !== product.id)).slice(0, 10);
+  const reviewRows: ReviewRowData[] = productReviews.map(r => ({
+    id: r.id,
+    name: r.authorName,
+    avatarSeed: r.authorId || r.authorName,
+    rating: r.rating,
+    date: r.date,
+    content: r.content,
+    meta: [r.treatmentName, r.totalCost ? `${r.totalCost.toLocaleString()}원` : '', r.treatmentDate].filter(Boolean).join(' · '),
+    photos: [r.beforeImage ? { src: r.beforeImage, label: '전' } : null, r.afterImage ? { src: r.afterImage, label: '후' } : null].filter(Boolean) as { src: string; label: string }[],
+  }));
+  const todayHours = hospital?.operatingHours.find(oh => DAY_INDEX[oh.day] === new Date().getDay());
+  const infoRows = hospital ? [
+    { icon: '/icons/pro-detail/notice.svg', label: '위치', value: hospital.location || hospital.address.split(' ').slice(0, 2).join(' ') },
+    { icon: '/icons/pro-detail/clock.svg', label: '오늘 진료', value: !todayHours ? '-' : todayHours.isClosed ? '휴진' : `${todayHours.startTime}~${todayHours.endTime}` },
+    { icon: '/icons/pro-detail/person.svg', label: '의료진', value: `${hospital.doctors.length}명` },
+    ...(hospital.phone ? [{ icon: '/icons/pro-detail/chat.svg', label: '전화', value: hospital.phone }] : []),
+  ] : [];
+
+  const share = () => {
+    if (navigator.share) navigator.share({ title: product.title, url: window.location.href }).catch(() => {});
+    else { navigator.clipboard.writeText(window.location.href); showToast('링크가 복사되었어요.'); }
+  };
+  const wish = () => {
+    if (!user) { window.dispatchEvent(new Event('dental:login')); return; }
+    toggleWishlist(product.id);
+    setHeartAnim(true);
+    setTimeout(() => setHeartAnim(false), 400);
+  };
+  const scrollToSection = (id: SectionId) => {
+    const el = sectionRefs[id].current;
+    if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - STICKY_OFFSET + 2, behavior: 'smooth' });
+  };
+  const cardStep = () => {
+    const el = galleryRef.current;
+    return el ? Math.min(el.clientWidth * 0.78, 420) + 12 : 1;
+  };
+  const activeIdx = SECTION_TABS.findIndex(t => t.id === activeSection);
+  const roundBtn = (solid: boolean) => `flex h-9 w-9 shrink-0 items-center justify-center transition-all active:scale-90 ${solid ? 'text-[#191F28]' : 'rounded-full bg-white/90 shadow-sm backdrop-blur-md'}`;
+
+  const buttons = (
+    <div className="flex items-center gap-2">
+      <button
+        type="button"
+        onClick={() => router.push(`/booking?productId=${product.id}`)}
+        className="flex h-14 flex-1 items-center justify-center rounded-2xl bg-[#F2F4F6] text-[16.5px] font-bold text-[#333D4B] transition-all active:scale-[0.99]"
+      >
+        예약하기
+      </button>
+      <button
+        type="button"
+        onClick={() => router.push(`/booking?productId=${product.id}&payment=app`)}
+        className="flex h-14 flex-[1.6] items-center justify-center rounded-2xl text-[16.5px] font-bold text-white transition-all active:scale-[0.99]"
+        style={{ backgroundColor: BRAND }}
+      >
+        앱결제로 예약하기
+      </button>
+    </div>
+  );
 
   return (
-    <div className="bg-white min-h-screen page-enter" style={{ paddingTop: 48, paddingBottom: 72 }}>
-
-      {/* Fixed Header — morphs into a compact "thumb + title" bar once hero
-          scrolls off-screen. Heart/Share stay docked right; back arrow stays
-          docked left; thumb+title is positioned absolutely so the collapsed
-          layout doesn't shift. */}
-      <FixedBar position="top" className="lg:hidden">
-        <div
-          className="relative flex items-center px-2.5"
-          style={{
-            height: heroOutOfView ? 64 : 48,
-            backgroundColor: heroOutOfView ? '#fff' : 'rgba(255,255,255,0.9)',
-            backdropFilter: heroOutOfView ? 'none' : 'blur(12px)',
-            WebkitBackdropFilter: heroOutOfView ? 'none' : 'blur(12px)',
-            borderBottom: heroOutOfView ? '1px solid #F2F3F5' : 'none',
-            transition:
-              'height 280ms cubic-bezier(0.22, 1, 0.36, 1), background-color 220ms ease-out, border-color 220ms ease-out',
-          }}
-        >
-          {/* Back arrow — always visible, docked left */}
-          <button onClick={() => router.back()} className="p-1 -ml-1 z-10 flex-shrink-0">
-            <ChevronLeft size={24} style={{ color: '#2B313D' }} />
-          </button>
-
-          {/* Thumb + title — fades in when hero is out of view */}
-          <div
-            className="absolute flex items-center gap-2.5 min-w-0"
-            style={{
-              left: 48,
-              right: 92,
-              top: '50%',
-              transform: heroOutOfView ? 'translateY(-50%)' : 'translateY(calc(-50% + 6px))',
-              opacity: heroOutOfView ? 1 : 0,
-              pointerEvents: heroOutOfView ? 'auto' : 'none',
-              transition:
-                'opacity 240ms ease-out, transform 280ms cubic-bezier(0.22, 1, 0.36, 1)',
-            }}
-          >
-            <div className="w-11 h-11 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
-              <img src={productImageUrl} alt="" className="w-full h-full object-cover" />
-            </div>
-            <p className="text-[15px] font-bold text-[#2B313D] truncate leading-tight">
-              {product.title}
-            </p>
-          </div>
-
-          {/* Heart + Share — always visible, docked right */}
-          <div className="ml-auto flex items-center gap-3 z-10 flex-shrink-0">
-            {user && <button
-              onClick={() => { toggleWishlist(product.id); setHeartAnim(true); setTimeout(() => setHeartAnim(false), 400); }}
-            >
-              <Heart
-                size={22}
-                className={`${isWished ? 'text-red-500' : ''} ${heartAnim ? 'heart-pop' : ''}`}
-                style={{ color: isWished ? '#EF4444' : '#2B313D' }}
-                fill={isWished ? '#EF4444' : 'none'}
-              />
-            </button>}
-            <button onClick={() => { if (navigator.share) { navigator.share({ title: product.title, url: window.location.href }); } else { navigator.clipboard.writeText(window.location.href); showToast('링크가 복사되었습니다.'); } }}>
-              <Share2 size={22} style={{ color: '#2B313D' }} />
-            </button>
-          </div>
-        </div>
-      </FixedBar>
-
-      <div className="lg:max-w-7xl lg:mx-auto lg:grid lg:grid-cols-5 lg:gap-8 lg:py-8 lg:px-6">
-      {/* Product Image Area */}
-      <div ref={heroRef} className="relative lg:col-span-2 lg:sticky lg:top-20 lg:self-start">
-        <div className="aspect-[4/3] bg-gradient-to-br from-purple-100 to-purple-100 flex items-center justify-center overflow-hidden lg:rounded-2xl">
-          <img src={productImageUrl} alt={product.title} className="h-full w-full object-cover" />
-        </div>
-      </div>
-
-      {/* Info Section */}
-      <div className="lg:col-span-3 fade-in-up">
-
-      {/* Product Info - open layout, no wrapping */}
-      <div className="bg-white px-2.5 pt-5 pb-4">
-        <Link href={`/hospital/detail/${product.hospitalId}`} style={{ fontSize: 13, color: '#A4ABBA' }} className="hover:underline">{product.hospitalName}</Link>
-        <h1 style={{ fontSize: 20, fontWeight: 600, color: '#2B313D', lineHeight: '28px', marginTop: 4 }}>{product.title}</h1>
-        <div className="flex items-center gap-1.5 mt-2">
-          <Star size={15} fill="#FBBF24" stroke="#FBBF24" />
-          <span style={{ fontSize: 14, fontWeight: 600, color: '#2B313D' }}>{avgRating}</span>
-          <span style={{ fontSize: 13, color: '#A4ABBA' }}>({productReviewCount})</span>
-        </div>
-
-        {/* Pricing - bigger, open */}
-        <div className="mt-4">
-          {product.originalPrice && (
-            <p style={{ fontSize: 14, color: '#A4ABBA', textDecoration: 'line-through' }}>
-              {product.originalPrice.toLocaleString()}원
-            </p>
-          )}
-          <div className="flex items-baseline gap-2 mt-0.5">
-            {product.discount && (
-              <span style={{ fontSize: 24, fontWeight: 600, color: '#8037FF' }}>{product.discount}%</span>
-            )}
-            <span style={{ fontSize: 24, fontWeight: 600, color: '#2B313D' }}>{product.price.toLocaleString()}원</span>
-            <span style={{ fontSize: 12, color: '#A4ABBA' }}>VAT포함</span>
-          </div>
-        </div>
-
-        {/* Tags - flat, no box */}
-        <div className="flex flex-wrap gap-1.5 mt-4">
-          {product.tags.map((tag) => (
-            <span key={tag} style={{ backgroundColor: '#F2F3F5', borderRadius: 8, fontSize: 12, fontWeight: 500, color: '#51535C' }} className="px-2.5 py-1">
-              {tag}
-            </span>
-          ))}
-        </div>
-      </div>
-
-      {/* Divider */}
-      <div style={{ height: 8, backgroundColor: '#F2F3F5' }} />
-
-      {/* Product Options - separated section */}
-      {product.options && product.options.length > 0 && (
-        <>
-          <div className="bg-white px-2.5 py-4">
-            <h3 style={{ fontSize: 20, fontWeight: 600, color: '#2B313D', marginBottom: 12 }}>옵션 선택</h3>
-            {product.options.map((option, idx) => (
-              <div
-                key={option.id}
-                className="flex items-center justify-between py-3"
-                style={{ borderBottom: idx < product.options!.length - 1 ? '1px solid #F2F3F5' : 'none' }}
-              >
-                <span style={{ fontSize: 14, color: '#51535C' }}>{option.name}</span>
-                <span style={{ fontSize: 14, fontWeight: 600, color: '#2B313D' }}>{option.price.toLocaleString()}원</span>
-              </div>
-            ))}
-          </div>
-          <div style={{ height: 8, backgroundColor: '#F2F3F5' }} />
-        </>
-      )}
-
-      {/* Customer Reviews Summary - open */}
-      <div ref={reviewSectionRef} className="bg-white px-2.5 py-4">
-        <div className="flex items-center justify-between mb-4">
-          <h2 style={{ fontSize: 22, fontWeight: 600, color: '#2B313D' }}>고객후기모음</h2>
-          <span className="text-base text-gray-400">{productReviews.length}건</span>
-        </div>
-        {/* Rating summary with progress bars */}
-        {productReviews.length > 0 && (() => {
-          const counts = [0, 0, 0, 0, 0];
-          productReviews.forEach(r => { const idx = Math.min(Math.max(Math.round(r.rating) - 1, 0), 4); counts[idx]++; });
-          const total = productReviews.length;
-          return (
-            <div className="flex gap-5 mb-4" style={{ padding: '16px', backgroundColor: '#F9F9FB', borderRadius: 12 }}>
-              {/* Left: score + stars */}
-              <div className="flex flex-col items-center justify-center" style={{ minWidth: 80 }}>
-                <span style={{ fontSize: 38, fontWeight: 700, color: '#2B313D', lineHeight: 1 }}>{avgRating}</span>
-                <div className="flex gap-0.5 mt-2">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} size={14} fill={i < Math.round(Number(avgRating)) ? '#FBBF24' : '#E5E7EB'} stroke={i < Math.round(Number(avgRating)) ? '#FBBF24' : '#E5E7EB'} />
-                  ))}
-                </div>
-              </div>
-              {/* Right: progress bars */}
-              <div className="flex-1 flex flex-col justify-center gap-1.5">
-                {[5, 4, 3, 2, 1].map(star => {
-                  const count = counts[star - 1];
-                  const pct = total > 0 ? (count / total) * 100 : 0;
-                  return (
-                    <div key={star} className="flex items-center gap-2">
-                      <span style={{ fontSize: 14, fontWeight: 500, color: '#A4ABBA', width: 16, textAlign: 'right' }}>{star}</span>
-                      <div className="flex-1 h-2 rounded-full" style={{ backgroundColor: '#E5E7EB' }}>
-                        <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: '#FBBF24', transition: 'width 0.3s ease' }} />
-                      </div>
-                      <span style={{ fontSize: 13, fontWeight: 500, color: '#A4ABBA', width: 36, textAlign: 'right' }}>{Math.round(pct)}%</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        })()}
-        {productReviews.length > 0 && (
-          <div
-            ref={reviewsCarouselRef}
-            onScroll={handleReviewsScroll}
-            className="flex overflow-x-auto hide-scrollbar pb-2"
-            style={{ gap: 6, scrollSnapType: 'x mandatory' }}
-          >
-            {productReviews.map((review, idx) => {
-              const withImages = hasReviewImages(review);
-              return (
-                <Link
-                  key={review.id}
-                  href={`/review/${review.id}`}
-                  className="flex-shrink-0 flex flex-col card-press origin-left will-change-transform"
-                  style={{
-                    width: 288,
-                    minHeight: withImages ? 358 : 192,
-                    borderRadius: 20,
-                    backgroundColor: '#F6F6F6',
-                    padding: 12,
-                    overflow: 'hidden',
-                    scrollSnapAlign: 'start',
-                    transform: `scale(${idx === 0 ? 1.0 : 0.9})`,
-                  }}
-                >
-                  {withImages && (
-                    <ReviewImagePair beforeImage={review.beforeImage} afterImage={review.afterImage} />
-                  )}
-                  {/* 시술비용 + 시술시기 태그 */}
-                  <div className="flex gap-1" style={{ marginTop: withImages ? 8 : 0 }}>
-                    <span style={{ fontSize: 12, fontWeight: 600, color: '#2B313D', backgroundColor: 'rgba(200,206,218,0.2)', borderRadius: 6, padding: '2px 6px' }}>{review.totalCost.toLocaleString()}원</span>
-                    <span style={{ fontSize: 12, fontWeight: 600, color: '#2B313D', backgroundColor: 'rgba(200,206,218,0.2)', borderRadius: 6, padding: '2px 6px' }}>{review.treatmentDate}</span>
-                  </div>
-                  {/* 시술명 */}
-                  <p style={{ fontSize: 15, fontWeight: 600, color: '#2B313D', marginTop: 6 }} className="truncate">{review.treatmentName}</p>
-                  {/* 날짜 */}
-                  <p style={{ fontSize: 13, color: '#A4ABBA', marginTop: 2 }}>{review.date}</p>
-                  {/* 별점 */}
-                  <div className="flex items-center gap-1" style={{ marginTop: 4 }}>
-                    <div className="flex">
-                      {[...Array(5)].map((_, i) => (
-                        <Star key={i} width={14} height={14} fill={i < review.rating ? '#FBBF24' : '#E5E7EB'} stroke={i < review.rating ? '#FBBF24' : '#E5E7EB'} />
-                      ))}
-                    </div>
-                    <span style={{ fontSize: 15, fontWeight: 600, color: '#2B313D' }}>{review.rating.toFixed(1)}</span>
-                  </div>
-                  {/* 후기 */}
-                  <p style={{ fontSize: 14, color: '#51535C', lineHeight: '19px', marginTop: 6, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: withImages ? 3 : 5, WebkitBoxOrient: 'vertical' as const }}>{review.content}</p>
-                </Link>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      <div style={{ height: 8, backgroundColor: '#F2F3F5' }} />
-
-      {/* Tabs with sliding underline indicator */}
-      <div style={{ position: 'sticky', top: 48, zIndex: 30 }} className="bg-white lg:static">
-        <div className="relative flex border-b border-gray-100">
-          {tabs.map((t, i) => {
-            const isActive = activeTab === t;
-            return (
-              <button
-                key={t}
-                ref={(el) => {
-                  tabBtnRefs.current[i] = el;
-                }}
-                onClick={() => changeTab(t)}
-                className="flex-1 py-3 text-[18px] font-semibold"
-                style={{
-                  color: isActive ? '#2B313D' : '#A4ABBA',
-                  transition: 'color 320ms cubic-bezier(0.22, 1, 0.36, 1)',
-                }}
-              >
-                {t}
-              </button>
-            );
-          })}
-          <span
-            aria-hidden
-            className="absolute bottom-0 h-[2px] bg-[#2B313D] pointer-events-none"
-            style={{
-              left: tabIndicator.left,
-              width: tabIndicator.width,
-              transition:
-                'left 380ms cubic-bezier(0.22, 1, 0.36, 1), width 380ms cubic-bezier(0.22, 1, 0.36, 1)',
-            }}
-          />
-        </div>
-      </div>
-
-      {/* Tab Content - open layout */}
+    <div className="min-h-screen bg-white" style={{ paddingBottom: 'max(calc(env(safe-area-inset-bottom, 0px) + 112px), 128px)' }}>
+      {/* ─── 머리 — 떠 있는 둥근 버튼 → 스크롤하면 썸네일 + 제목 흰 머리 ─── */}
       <div
-        key={activeTab}
-        className={tabDirection === 'right' ? 'tab-slide-right' : 'tab-slide-left'}
+        className={`fixed left-0 right-0 top-0 z-40 flex items-center gap-2 transition-all duration-300 lg:hidden ${headerSolid ? 'h-[60px] bg-white px-3' : 'justify-between px-4 pb-3 pt-3'}`}
       >
-      {activeTab === '상품설명' && (
-        <div className="bg-white">
-          <div className="aspect-[4/3] bg-gradient-to-br from-purple-50 to-purple-50 flex items-center justify-center overflow-hidden">
-            <img src={detailImageUrl} alt={`${product.title} 상세 이미지`} className="h-full w-full object-cover" />
-          </div>
-          {product.description && product.description.trim().length > 0 && (
-            <div className="px-5 py-5">
-              <p className="text-[15px] leading-[1.7] text-[#191F28] whitespace-pre-wrap break-words">
-                {product.description}
-              </p>
-            </div>
-          )}
+        <button type="button" aria-label="뒤로" onClick={() => router.back()} className={roundBtn(headerSolid)}>
+          <ChevronLeft size={22} className="text-[#191F28]" />
+        </button>
+        <div
+          className={`flex min-w-0 flex-1 items-center gap-2.5 transition-all duration-300 ${headerSolid ? 'opacity-100' : 'pointer-events-none opacity-0'}`}
+          style={{ transform: headerSolid ? 'translateY(0)' : 'translateY(6px)' }}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={productImageUrl} alt="" className="h-10 w-10 shrink-0 rounded-xl object-cover" />
+          <p className="min-w-0 flex-1 truncate text-[13px] font-bold leading-tight text-[#191F28]">{product.title}</p>
         </div>
-      )}
+        <div className={`flex shrink-0 items-center gap-2 ${headerSolid ? '' : 'ml-auto'}`}>
+          <button type="button" aria-label={isWished ? '찜 해제' : '찜하기'} onClick={wish} className={roundBtn(headerSolid)}>
+            <Heart size={19} className={heartAnim ? 'heart-pop' : undefined} style={{ color: isWished ? '#F04452' : '#191F28' }} fill={isWished ? '#F04452' : 'none'} />
+          </button>
+          <button type="button" aria-label="공유" onClick={share} className={roundBtn(headerSolid)}>
+            <Share2 size={18} className="text-[#191F28]" />
+          </button>
+        </div>
+      </div>
 
-      {activeTab === '병원정보' && hospital && (
-        <div>
-          {/* Hospital cover image carousel — native scroll snap + counter pill */}
-          {hospital.coverImages && hospital.coverImages.length > 0 && (
-            <HospitalCoverSlider images={hospital.coverImages} />
-          )}
-
-          <div style={{ height: 8, backgroundColor: '#F2F3F5' }} />
-
-          {/* 병원정보 */}
-          <section className="bg-white px-4 py-5">
-            <h2 style={{ fontSize: 20, fontWeight: 700, color: '#2B313D', marginBottom: 16 }}>병원정보</h2>
-            <div className="flex items-start gap-3">
-              <div className="w-[68px] h-[68px] rounded-xl overflow-hidden flex-shrink-0 flex items-center justify-center" style={{ backgroundColor: '#F4F5F7' }}>
-                <img src={hospitalImageUrl} alt={hospital.name} className="w-full h-full object-cover" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <h3 style={{ fontSize: 17, fontWeight: 700, color: '#2B313D', lineHeight: '24px' }}>{hospital.name}</h3>
-                <p style={{ fontSize: 14, color: '#51535C', marginTop: 2 }} className="line-clamp-1">{hospital.address}</p>
-                {hospital.tags && hospital.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 mt-2.5">
-                    {hospital.tags.slice(0, 3).map((tag) => (
-                      <span
-                        key={tag}
-                        className="inline-flex items-center"
-                        style={{ backgroundColor: '#F2F3F5', borderRadius: 6, fontSize: 13, color: '#51535C', padding: '3px 10px' }}
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                    {hospital.tags.length > 3 && (
-                      <span
-                        className="inline-flex items-center"
-                        style={{ backgroundColor: '#F2F3F5', borderRadius: 6, fontSize: 13, color: '#A4ABBA', padding: '3px 10px' }}
-                      >
-                        +{hospital.tags.length - 3}
-                      </span>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-            <button
-              onClick={() => window.open(`https://map.naver.com/p?q=${encodeURIComponent(hospital.address || hospital.name)}`, '_blank')}
-              className="btn-press w-full flex items-center justify-center gap-2 mt-4"
-              style={{ height: 48, borderRadius: 12, backgroundColor: '#F4F5F7', fontSize: 16, fontWeight: 700, color: '#2B313D' }}
+      <div className="lg:mx-auto lg:grid lg:max-w-[1216px] lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-10 lg:px-8 lg:pt-8">
+        <div className="min-w-0">
+          {/* ─── 사진 넘기기 — 왼쪽 정렬 + 옆 사진 살짝 보임 + 넘기면 작아짐 ─── */}
+          <div className="overflow-hidden pt-[74px] lg:pt-0">
+            <div
+              ref={galleryRef}
+              onScroll={e => {
+                const idx = Math.round(e.currentTarget.scrollLeft / cardStep());
+                const clamped = Math.max(0, Math.min(images.length - 1, idx));
+                if (clamped !== activeImage) setActiveImage(clamped);
+              }}
+              className="flex snap-x snap-mandatory gap-3 overflow-x-auto px-[18px] hide-scrollbar lg:px-0"
+              style={{ scrollPaddingLeft: 18 }}
             >
-              <img src="/icons/naver-map.png" alt="" width={22} height={22} className="flex-shrink-0" />
-              찾아가는길
-            </button>
-          </section>
-
-          {/* 병원소개 */}
-          {hospital.introduction && (
-            <>
-              <div style={{ height: 8, backgroundColor: '#F2F3F5' }} />
-              <section className="bg-white px-4 py-5">
-                <h2 style={{ fontSize: 20, fontWeight: 700, color: '#2B313D', marginBottom: 12 }}>병원소개</h2>
-                <p style={{ fontSize: 15, color: '#51535C', lineHeight: '24px', whiteSpace: 'pre-line' }}>
-                  {hospital.introduction}
-                </p>
-              </section>
-            </>
-          )}
-
-          {/* 운영일 및 시간 */}
-          <div style={{ height: 8, backgroundColor: '#F2F3F5' }} />
-          <section className="bg-white px-4 py-5">
-            <h2 style={{ fontSize: 20, fontWeight: 700, color: '#2B313D', marginBottom: 12 }}>운영일 및 시간</h2>
-            {hospital.holidayNotice && (
-              <p style={{ fontSize: 14, color: '#EF4444', marginBottom: 10 }}>*{hospital.holidayNotice}</p>
-            )}
-            <div className="space-y-2">
-              {hospital.operatingHours.map((oh) => (
-                <div key={oh.day} className="flex items-baseline" style={{ gap: 28 }}>
-                  <span style={{ fontSize: 15, fontWeight: 500, color: '#2B313D', width: 16 }}>{oh.day}</span>
-                  <span style={{ fontSize: 15, color: oh.isClosed ? '#A4ABBA' : '#51535C' }}>
-                    {oh.isClosed ? '휴진' : `${oh.startTime}~${oh.endTime}`}
-                  </span>
-                </div>
+              {images.map((src, i) => (
+                <button
+                  type="button"
+                  key={src}
+                  onClick={() => setImageModal(src)}
+                  className="relative shrink-0 snap-start overflow-hidden rounded-[44px] bg-[#F2F4F6] transition-transform duration-300 ease-out"
+                  style={{ width: 'min(78vw, 420px)', aspectRatio: '1 / 1', transform: `scale(${i === activeImage ? 1 : 0.9})` }}
+                >
+                  {Math.abs(i - activeImage) <= 1 ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={src} alt={product.title} className="h-full w-full object-cover" loading={i === 0 ? 'eager' : 'lazy'} />
+                  ) : null}
+                </button>
               ))}
             </div>
-          </section>
-
-          {/* 병원위치 */}
-          <div style={{ height: 8, backgroundColor: '#F2F3F5' }} />
-          <section className="bg-white px-4 py-5">
-            <h2 style={{ fontSize: 20, fontWeight: 700, color: '#2B313D', marginBottom: 12 }}>병원위치</h2>
-            <div className="relative aspect-[16/10] rounded-xl overflow-hidden" style={{ border: '1px solid #E5E7EB' }}>
-              <NaverMap
-                address={hospital.address}
-                lat={hospital.lat}
-                lng={hospital.lng}
-                name={hospital.name}
-              />
-              <button
-                onClick={() => window.open(`https://map.naver.com/p?q=${encodeURIComponent(hospital.address)}`, '_blank')}
-                className="absolute top-2 right-2 w-8 h-8 bg-white rounded-md flex items-center justify-center"
-                style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.12)' }}
-                aria-label="지도 확대"
-              >
-                <Maximize2 size={14} className="text-gray-700" />
-              </button>
-            </div>
-            <p style={{ fontSize: 15, color: '#2B313D', marginTop: 12, lineHeight: '22px' }}>{hospital.address}</p>
-            {hospital.addressDetail && (
-              <p style={{ fontSize: 15, color: '#51535C', marginTop: 6, lineHeight: '22px', whiteSpace: 'pre-line' }}>
-                {hospital.addressDetail}
-              </p>
+            {images.length > 1 && (
+              <div className="mt-3 flex justify-center gap-1.5">
+                {images.map((src, i) => (
+                  <button
+                    type="button"
+                    key={src}
+                    aria-label={`${i + 1}번째 사진`}
+                    onClick={() => galleryRef.current?.scrollTo({ left: i * cardStep(), behavior: 'smooth' })}
+                    className="rounded-full transition-colors duration-300"
+                    style={{ width: 6, height: 6, backgroundColor: i === activeImage ? '#191F28' : '#D5DAE0' }}
+                  />
+                ))}
+              </div>
             )}
-          </section>
+          </div>
 
-          {/* 의사정보 */}
-          {hospital.doctors && hospital.doctors.length > 0 && (
-            <>
-              <div style={{ height: 8, backgroundColor: '#F2F3F5' }} />
-              <section className="bg-white px-4 py-5">
-                <h2 style={{ fontSize: 20, fontWeight: 700, color: '#2B313D', marginBottom: 16 }}>의사정보</h2>
-                <div className="space-y-4">
-                  {hospital.doctors.map((doctor) => (
-                    <Link
-                      key={doctor.id}
-                      href={`/doctor/${doctor.id}`}
-                      className="flex items-center gap-3 hover:opacity-80 transition-opacity"
-                    >
-                      <Avatar
-                        src={doctor.profileImage}
-                        role="doctor"
-                        seed={doctor.name}
-                        size={56}
-                        alt={doctor.name}
-                        className="flex-shrink-0"
-                      />
-                      <div className="min-w-0">
-                        <p style={{ fontSize: 16, fontWeight: 700, color: '#2B313D' }}>
-                          {doctor.name} {doctor.isOwner ? '대표원장' : doctor.title || '원장'}
-                        </p>
-                        {doctor.specialty && (
-                          <p style={{ fontSize: 14, color: '#51535C', marginTop: 2 }}>
-                            {doctor.specialty}
-                          </p>
-                        )}
-                        <p style={{ fontSize: 13, color: '#A4ABBA', marginTop: 2 }}>{hospital.name}</p>
-                      </div>
-                    </Link>
+          {/* ─── 이름 · 가격 · 별점 ─── */}
+          <div className="bg-white px-5 py-6 lg:px-0">
+            <Reveal>
+              <div className="mb-1.5 flex items-center justify-between gap-3">
+                <Link href={`/hospital/detail/${product.hospitalId}`} className="min-w-0 truncate text-[14px] font-semibold text-[#6B7684]">
+                  {product.hospitalName}
+                </Link>
+                {verified && (
+                  <span className="flex shrink-0 items-center gap-1 rounded-full bg-[#F2F4F6] px-2.5 py-1 text-[11px] font-bold text-[#4E5968]">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src="/icons/brand-logo.png" alt="" width={14} height={14} className="shrink-0" />
+                    인증 병원
+                  </span>
+                )}
+              </div>
+              <h1 className="break-keep text-[20px] font-bold leading-[1.4] text-[#191F28]">{product.title}</h1>
+              <div className="mt-3">
+                {product.originalPrice && product.originalPrice > product.price && (
+                  <p className="text-[14px] text-[#B0B8C1] line-through">{product.originalPrice.toLocaleString()}원</p>
+                )}
+                <p className="flex items-baseline gap-1.5 font-bold tracking-[-0.5px]">
+                  {(product.discount ?? 0) > 0 && <span className="text-[24px] text-[#F04452]">{product.discount}%</span>}
+                  <span className="text-[24px] text-[#191F28]">{product.price.toLocaleString()}원</span>
+                  <span className="ml-0.5 text-[13px] font-medium text-[#8B95A1]">VAT 포함</span>
+                </p>
+              </div>
+              {product.tags.length > 0 && (
+                <div className="mb-1 mt-3 flex flex-wrap gap-1.5">
+                  {product.tags.map(t => (
+                    <span key={t} className="rounded-full bg-[#F2F4F6] px-2.5 py-1 text-[13px] font-semibold text-[#4E5968]">{t}</span>
                   ))}
                 </div>
-              </section>
-            </>
-          )}
+              )}
+            </Reveal>
 
-          {/* 이 병원에 더많은 상품 — horizontal-scrolling ProductCards */}
-          {hospitalProducts.length > 0 && (
-            <>
-              <div style={{ height: 8, backgroundColor: '#F2F3F5' }} />
-              <section className="bg-white pt-5 pb-6">
-                <h2 className="px-4" style={{ fontSize: 20, fontWeight: 700, color: '#2B313D', marginBottom: 14 }}>
-                  이 병원에 더많은 상품
-                </h2>
-                <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-1 px-4">
-                  {hospitalProducts.map((hp) => (
-                    <div key={hp.id} className="w-[140px] flex-shrink-0">
-                      <ProductCard product={hp} />
-                    </div>
-                  ))}
+            <Reveal delay={100}>
+              <div className="mb-1 mt-3 flex items-center gap-2">
+                <StarRating value={Number(rating.toFixed(1))} size={16} twinkle />
+                <span className="text-[18px] font-bold text-[#191F28]">{rating.toFixed(1)}</span>
+                <span className="text-[13px] text-[#8B95A1]">({reviewCount})</span>
+              </div>
+              <FloatingReviewCards reviews={reviewRows} />
+            </Reveal>
+
+            {product.options && product.options.length > 0 && (
+              <Reveal delay={150}>
+                <div className="mt-4 pt-4">
+                  <SectionHead title="옵션" icon="/icons/pro-detail/check.svg" size="sm" className="mb-1.5" />
+                  <ul className="divide-y divide-[#F2F4F6]">
+                    {product.options.map(o => (
+                      <li key={o.id} className="flex items-center justify-between gap-3 py-2.5">
+                        <span className="text-[14px] font-semibold text-[#333D4B]">{o.name}</span>
+                        <span className="shrink-0 text-[14px] font-bold text-[#191F28]">{o.price.toLocaleString()}원</span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-              </section>
-            </>
-          )}
-        </div>
-      )}
+              </Reveal>
+            )}
+          </div>
 
-      {activeTab === '병원정보' && !hospital && (
-        <div className="bg-white py-10 text-center" style={{ fontSize: 14, color: '#A4ABBA' }}>병원 정보가 없습니다.</div>
-      )}
-
-      {activeTab === '리뷰' && (
-        <div className="bg-white">
-          {productReviews.length > 0 ? (
-            <div>
-              {productReviews.map((review, idx) => {
-                const withImages = hasReviewImages(review);
-                return (
-                <div key={review.id} className="px-2.5 py-5" style={{ borderBottom: idx < productReviews.length - 1 ? '8px solid #F2F3F5' : 'none' }}>
-
-                  {/* 닉네임 + 메뉴 */}
-                  <div className="flex items-center justify-between">
-                    <p style={{ fontSize: 16, fontWeight: 600, color: '#2B313D' }}>{review.authorName}</p>
-                    <ReviewMenu reviewId={review.id} authorName={review.authorName} />
-                  </div>
-
-                  {/* 날짜 */}
-                  <p style={{ fontSize: 14, color: '#A4ABBA', marginTop: 2 }}>{review.date}</p>
-
-                  {/* 별점 */}
-                  <div className="flex items-center gap-2" style={{ marginTop: 10 }}>
-                    <div className="flex items-center gap-0.5">
-                      {[...Array(5)].map((_, i) => (
-                        <Star key={i} width={24} height={24} fill={i < review.rating ? '#FBBF24' : '#E5E7EB'} stroke={i < review.rating ? '#FBBF24' : '#E5E7EB'} />
-                      ))}
-                    </div>
-                    <span style={{ fontSize: 20, fontWeight: 600, color: '#2B313D' }}>{review.rating.toFixed(1)}</span>
-                  </div>
-
-                  {withImages && (
-                    <div style={{ marginTop: 14 }}>
-                      <ReviewImagePair beforeImage={review.beforeImage} afterImage={review.afterImage} size="large" />
-                    </div>
-                  )}
-
-                  {/* 시술명 */}
-                  <p style={{ fontSize: 18, fontWeight: 600, color: '#2B313D', marginTop: 14 }}>{review.treatmentName}</p>
-
-                  {/* 시술전체비용 */}
-                  <div className="flex items-center justify-between" style={{ marginTop: 10 }}>
-                    <span style={{ fontSize: 14, color: '#A4ABBA' }}>시술전체비용</span>
-                    <span style={{ fontSize: 12, fontWeight: 600, color: '#2B313D', backgroundColor: 'rgba(200,206,218,0.2)', borderRadius: 8, padding: '4px 10px' }}>{review.totalCost.toLocaleString()}원</span>
-                  </div>
-
-                  {/* 시술받은시기 */}
-                  <div className="flex items-center justify-between" style={{ marginTop: 6 }}>
-                    <span style={{ fontSize: 14, color: '#A4ABBA' }}>시술받은시기</span>
-                    <span style={{ fontSize: 12, fontWeight: 600, color: '#2B313D', backgroundColor: 'rgba(200,206,218,0.2)', borderRadius: 8, padding: '4px 10px' }}>{review.treatmentDate}</span>
-                  </div>
-
-                  {/* 후기 내용 - 더보기 */}
-                  <ReviewContent content={review.content} />
-
-                </div>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="py-10 text-center" style={{ fontSize: 14, color: '#A4ABBA' }}>아직 작성된 리뷰가 없습니다.</div>
-          )}
-        </div>
-      )}
-      </div>{/* End tab content wrapper */}
-
-      <div style={{ height: 8, backgroundColor: '#F2F3F5' }} />
-
-      {/* FAQ Section - flat */}
-      <div className="bg-white px-2.5 py-5">
-        <h2 style={{ fontSize: 20, fontWeight: 700, color: '#2B313D', marginBottom: 12 }}>자주묻는질문</h2>
-        {faqItems.map((faq, index) => (
-          <div key={index} style={{ marginBottom: 4 }}>
-            <button
-              onClick={() => setExpandedFaq(expandedFaq === index ? null : index)}
-              className="w-full flex items-center justify-between text-left"
-              style={{ padding: '12px 8px', borderRadius: 12, transition: 'background-color 0.15s ease', backgroundColor: expandedFaq === index ? '#F6F6F6' : 'transparent' }}
-              onMouseDown={(e) => (e.currentTarget.style.backgroundColor = '#F0F0F0')}
-              onMouseUp={(e) => (e.currentTarget.style.backgroundColor = expandedFaq === index ? '#F6F6F6' : 'transparent')}
-              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = expandedFaq === index ? '#F6F6F6' : 'transparent')}
-            >
-              <span style={{ fontSize: 16, fontWeight: 600, color: '#2B313D', flex: 1 }}>{faq.question}</span>
-              <ChevronDown
-                size={18}
+          {/* ─── 섹션 탭 — 회색 트랙 + 흰 알약이 미끄러진다 ─── */}
+          <div className="sticky top-[60px] z-30 mt-4 bg-white px-4 pb-2 pt-1 lg:top-[72px] lg:px-0">
+            <div className="relative flex gap-1 rounded-2xl bg-[#F2F3F5] p-1">
+              <span
+                className="absolute bottom-1 top-1 rounded-[13px] bg-white shadow-sm transition-all duration-500"
                 style={{
-                  color: '#A4ABBA', flexShrink: 0,
-                  transform: expandedFaq === index ? 'rotate(180deg)' : 'rotate(0deg)',
-                  transition: 'transform 0.3s ease',
+                  left: `calc(4px + ${(activeIdx * 100) / SECTION_TABS.length}% - ${(activeIdx * 8) / SECTION_TABS.length}px)`,
+                  width: `calc(${100 / SECTION_TABS.length}% - ${8 / SECTION_TABS.length}px)`,
+                  transitionTimingFunction: 'cubic-bezier(0.22, 1, 0.36, 1)',
                 }}
               />
-            </button>
-            <div
-              style={{
-                maxHeight: expandedFaq === index ? 300 : 0,
-                opacity: expandedFaq === index ? 1 : 0,
-                overflow: 'hidden',
-                transition: 'max-height 0.35s ease, opacity 0.3s ease',
-              }}
-            >
-              <div style={{ padding: '4px 8px 12px 8px' }}>
-                <p style={{ fontSize: 16, fontWeight: 500, color: '#51535C', lineHeight: '24px' }}>{faq.answer}</p>
+              {SECTION_TABS.map(tab => (
+                <button
+                  type="button"
+                  key={tab.id}
+                  onClick={() => scrollToSection(tab.id)}
+                  className={`relative flex-1 rounded-[13px] py-2 text-[13px] transition-colors duration-300 ${activeSection === tab.id ? 'font-bold text-[#2B313D]' : 'font-semibold text-[#A4ABBA] hover:text-[#51535C]'}`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* ─── 상품 설명 ─── */}
+          <div ref={sectionRefs.desc} className="bg-white px-5 py-6 lg:px-0">
+            <Reveal>
+              <SectionHead title="상품 설명" icon="/icons/pro-detail/document.svg" className="mb-4" />
+            </Reveal>
+            {detailImageUrl && (
+              <Reveal delay={60}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={detailImageUrl} alt={`${product.title} 상세 이미지`} className="mb-5 w-full rounded-[20px] object-cover" />
+              </Reveal>
+            )}
+            {product.description?.trim() ? (
+              <p className="whitespace-pre-wrap break-words text-[16px] leading-[1.7] text-[#333D4B]">{product.description}</p>
+            ) : !detailImageUrl && (
+              <p className="text-[14px] text-[#8B95A1]">등록된 상품 설명이 없어요.</p>
+            )}
+          </div>
+
+          {/* ─── 다른 상품 ─── */}
+          {alsoViewed.length > 0 && (
+            <div className="px-4 pb-4 pt-8 lg:px-0">
+              <Reveal>
+                <h3 className="mb-4 text-[20px] font-bold leading-tight text-[#191F28]">
+                  {sameHospital.length > 0 ? <>이 병원의 다른<br />상품을 살펴보세요</> : <>마이닥의 다른<br />인기 상품을 살펴보세요</>}
+                </h3>
+              </Reveal>
+              <div className="flex snap-x gap-3 overflow-x-auto pr-4 hide-scrollbar">
+                {alsoViewed.map((p, i) => (
+                  <div key={p.id} className="w-[150px] shrink-0 snap-start">
+                    <ProductCard product={p} index={i} />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ─── 병원 정보 ─── */}
+          <div ref={sectionRefs.info} className="bg-white px-5 py-6 lg:px-0">
+            <SectionHead title="병원 정보" icon="/icons/pro-detail/certification.svg" className="mb-5" />
+            {hospital ? (
+              <>
+                <Link href={`/hospital/detail/${hospital.id}`} className="mb-2 flex items-center gap-4">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={hospitalImageUrl} alt="" className="h-[60px] w-[60px] rounded-[14px] bg-[#F2F4F6] object-cover" />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[15px] font-bold text-[#191F28]">{hospital.name}</p>
+                    <div className="mt-0.5 flex items-center gap-1">
+                      <StarRating value={Number(hospital.rating.toFixed(1))} size={12} />
+                      <span className="text-[12px] font-bold text-[#191F28]">{hospital.rating.toFixed(1)}</span>
+                      <span className="text-[12px] text-[#8B95A1]">({hospital.reviewCount})</span>
+                    </div>
+                  </div>
+                  <ChevronRight size={20} className="shrink-0 text-[#B0B8C1]" />
+                </Link>
+                <div className="divide-y divide-[#F2F4F6]">
+                  {infoRows.map(row => (
+                    <div key={row.label} className="flex items-center gap-3 py-3">
+                      <IconTile src={row.icon} />
+                      <span className="text-[13px] text-[#8B95A1]">{row.label}</span>
+                      <span className="ml-auto min-w-0 truncate text-[14px] font-bold text-[#191F28]">{row.value}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {hospital.introduction && (
+                  <div className="mt-6">
+                    <SectionHead title="병원 소개" icon="/icons/pro-detail/sparkle.svg" size="sm" className="mb-2" />
+                    <p className="whitespace-pre-line text-[15px] leading-[1.7] text-[#4E5968]">{hospital.introduction}</p>
+                  </div>
+                )}
+
+                <div className="mt-6">
+                  <SectionHead title="진료 시간" icon="/icons/pro-detail/clock.svg" size="sm" className="mb-2" />
+                  {hospital.holidayNotice && <p className="mb-2 text-[13px] font-semibold text-[#F04452]">{hospital.holidayNotice}</p>}
+                  <ul className="divide-y divide-[#F2F4F6]">
+                    {hospital.operatingHours.map(oh => {
+                      const today = DAY_INDEX[oh.day] === new Date().getDay();
+                      return (
+                        <li key={oh.day} className="flex items-center justify-between py-2.5 text-[14px]">
+                          <span className={today ? 'font-bold text-[#191F28]' : 'font-semibold text-[#6B7684]'}>{oh.day}요일{today && <span className="ml-1.5 rounded-[5px] bg-[#E8F3FF] px-1.5 py-0.5 text-[11px] font-bold" style={{ color: BRAND }}>오늘</span>}</span>
+                          <span className={oh.isClosed ? 'text-[#B0B8C1]' : today ? 'font-bold text-[#191F28]' : 'text-[#4E5968]'}>{oh.isClosed ? '휴진' : `${oh.startTime} ~ ${oh.endTime}`}</span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+
+                <div className="mt-6">
+                  <SectionHead title="오시는 길" icon="/icons/pro-detail/notice.svg" size="sm" className="mb-3" />
+                  <div className="relative aspect-[16/10] overflow-hidden rounded-[20px] border border-[#EEF0F3]">
+                    <NaverMap address={hospital.address} lat={hospital.lat} lng={hospital.lng} name={hospital.name} />
+                  </div>
+                  <p className="mt-3 text-[15px] leading-[1.5] text-[#333D4B]">{hospital.address}</p>
+                  {hospital.addressDetail && <p className="mt-1 whitespace-pre-line text-[14px] leading-[1.6] text-[#6B7684]">{hospital.addressDetail}</p>}
+                  <button
+                    type="button"
+                    onClick={() => window.open(`https://map.naver.com/p?q=${encodeURIComponent(hospital.address || hospital.name)}`, '_blank')}
+                    className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-[#E5E8EB] py-3.5 text-[14px] font-semibold text-[#4E5968] transition-all hover:bg-[#F7F8FA] active:scale-[0.98]"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src="/icons/naver-map.png" alt="" width={18} height={18} />
+                    네이버 지도로 길찾기
+                  </button>
+                </div>
+
+                {hospital.doctors.length > 0 && (
+                  <div className="mt-6">
+                    <SectionHead title="의료진" icon="/icons/pro-detail/person.svg" size="sm" className="mb-1" />
+                    <div className="divide-y divide-[#F2F4F6]">
+                      {hospital.doctors.map(d => (
+                        <Link key={d.id} href={`/doctor/${d.id}`} className="flex items-center gap-3 py-3 transition-opacity active:opacity-70">
+                          <Avatar src={d.profileImage} role="doctor" seed={d.name} size={48} alt={d.name} className="shrink-0" />
+                          <div className="min-w-0 flex-1">
+                            <p className="text-[15px] font-bold text-[#191F28]">{d.name} {d.isOwner ? '대표원장' : d.title || '원장'}</p>
+                            {d.specialty && <p className="mt-0.5 truncate text-[13px] text-[#8B95A1]">{d.specialty}</p>}
+                          </div>
+                          <ChevronRight size={18} className="shrink-0 text-[#B0B8C1]" />
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              <p className="py-6 text-center text-[14px] text-[#8B95A1]">병원 정보가 없어요.</p>
+            )}
+          </div>
+
+          {/* ─── 리뷰 ─── */}
+          <div ref={sectionRefs.reviews} className="bg-white px-5 py-6 lg:px-0">
+            <SectionHead title="리뷰" icon="/icons/pro-detail/eyes.svg" className="mb-4" />
+            <div className="mb-3 flex items-center gap-2">
+              <StarRating value={Number(rating.toFixed(1))} size={20} />
+              <span className="text-[24px] font-bold text-[#191F28]">{rating.toFixed(1)}</span>
+              <span className="text-[14px] text-[#8B95A1]">({reviewCount})</span>
+            </div>
+            <h3 className="mb-1 mt-5 text-[16px] font-bold text-[#191F28]">전체 리뷰 {reviewCount}건</h3>
+            {reviewRows.length > 0 ? (
+              reviewRows.map((r, i) => (
+                <ReviewCommentRow key={r.id} review={r} first={i === 0} menu={<ReviewMenu reviewId={r.id} authorName={r.name} />} />
+              ))
+            ) : (
+              <p className="py-8 text-center text-[14px] text-[#8B95A1]">아직 작성된 리뷰가 없어요.</p>
+            )}
+          </div>
+
+          {/* ─── 자주 묻는 질문 ─── */}
+          <div className="bg-white px-5 py-6 lg:px-0">
+            <SectionHead title="자주 묻는 질문" icon="/icons/pro-detail/bulb.svg" className="mb-1" />
+            {faqItems.map((faq, i) => (
+              <ExpandRow key={faq.question} label={faq.question} open={expandedFaq === i} onToggle={() => setExpandedFaq(expandedFaq === i ? null : i)}>
+                {faq.answer}
+              </ExpandRow>
+            ))}
+          </div>
+        </div>
+
+        {/* ─── PC 오른쪽 붙박이 칸 ─── */}
+        <aside className="hidden lg:block">
+          <div className="sticky top-[96px] rounded-[24px] border border-[#EEF0F3] bg-white p-6">
+            <p className="truncate text-[14px] font-semibold text-[#6B7684]">{product.hospitalName}</p>
+            <p className="mt-1 break-keep text-[20px] font-bold leading-[1.4] text-[#191F28]">{product.title}</p>
+            <div className="mt-2 flex items-center gap-1.5">
+              <StarRating value={Number(rating.toFixed(1))} size={14} />
+              <span className="text-[14px] font-bold text-[#191F28]">{rating.toFixed(1)}</span>
+              <span className="text-[13px] text-[#8B95A1]">({reviewCount})</span>
+            </div>
+            <p className="mt-4 flex items-baseline gap-1.5 font-bold tracking-[-0.5px]">
+              {(product.discount ?? 0) > 0 && <span className="text-[24px] text-[#F04452]">{product.discount}%</span>}
+              <span className="text-[24px] text-[#191F28]">{product.price.toLocaleString()}원</span>
+            </p>
+            {notice && <p className="mt-3 rounded-[12px] bg-[#F2F4F6] px-3 py-2.5 text-[13px] font-semibold text-[#4E5968]">{notice}</p>}
+            <div className="mt-5 flex flex-col gap-2">
+              {buttons}
+              <div className="flex gap-2">
+                <button type="button" onClick={wish} className="flex h-11 flex-1 items-center justify-center gap-1.5 rounded-xl bg-[#F9FAFB] text-[14px] font-semibold text-[#4E5968] active:scale-[0.98]">
+                  <Heart size={16} style={{ color: isWished ? '#F04452' : '#4E5968' }} fill={isWished ? '#F04452' : 'none'} />찜하기
+                </button>
+                <button type="button" onClick={share} className="flex h-11 flex-1 items-center justify-center gap-1.5 rounded-xl bg-[#F9FAFB] text-[14px] font-semibold text-[#4E5968] active:scale-[0.98]">
+                  <Share2 size={15} />공유하기
+                </button>
               </div>
             </div>
           </div>
-        ))}
+        </aside>
       </div>
 
-      </div>{/* End Info Section */}
-      </div>{/* End grid wrapper */}
-
-      {/* Scroll to top button */}
-      <button
-        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-        style={{
-          position: 'fixed',
-          bottom: 90,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          width: 44,
-          height: 44,
-          borderRadius: '50%',
-          backgroundColor: 'rgba(17, 17, 17, 0.4)',
-          backdropFilter: 'blur(12px)',
-          WebkitBackdropFilter: 'blur(12px)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 50,
-          border: 'none',
-          cursor: 'pointer',
-          opacity: showScrollTop ? 1 : 0,
-          pointerEvents: showScrollTop ? 'auto' : 'none',
-          transition: 'opacity 0.3s ease',
-        }}
-        className="lg:hidden"
+      {/* ─── 바닥 버튼 — 흐림 띠 위에 떠 있다 ─── */}
+      <div
+        className="pointer-events-none fixed bottom-0 left-0 right-0 z-40 lg:hidden"
+        style={{ paddingLeft: 16, paddingRight: 16, paddingBottom: 'max(calc(env(safe-area-inset-bottom, 0px) + 12px), 20px)' }}
       >
-        <ChevronUp size={22} style={{ color: '#fff' }} />
-      </button>
-
-      {/* Bottom Fixed Bar - portal to body */}
-      <FixedBar position="bottom" className="lg:hidden">
-        {/* Closed-hours banner */}
-        {(() => {
-          if (!hospital) return null;
-          const dayMap: Record<string, number> = { '일': 0, '월': 1, '화': 2, '수': 3, '목': 4, '금': 5, '토': 6 };
-          const now = new Date();
-          const todayIdx = now.getDay();
-          const todayHour = hospital.operatingHours.find(oh => dayMap[oh.day] === todayIdx);
-          if (!todayHour) return null;
-          if (todayHour.isClosed) {
-            // Find next open day
-            const nextOpen = hospital.operatingHours.find((oh, i) => {
-              const ohIdx = dayMap[oh.day];
-              return ohIdx > todayIdx && !oh.isClosed;
-            }) || hospital.operatingHours.find(oh => !oh.isClosed);
-            return (
-              <div style={{ backgroundColor: '#2B313D', padding: '8px 16px', textAlign: 'center', fontSize: 13, fontWeight: 500, color: '#fff' }}>
-                오늘은 휴진입니다{nextOpen ? ` · ${nextOpen.day}요일 ${nextOpen.startTime}에 운영해요` : ''}
-              </div>
-            );
-          }
-          const currentHour = now.getHours();
-          const currentMin = now.getMinutes();
-          const currentTime = currentHour * 60 + currentMin;
-          const [startH, startM] = (todayHour.startTime || '09:00').split(':').map(Number);
-          const [endH, endM] = (todayHour.endTime || '18:00').split(':').map(Number);
-          const startTime = startH * 60 + startM;
-          const endTime = endH * 60 + endM;
-          if (currentTime < startTime) {
-            return (
-              <div style={{ backgroundColor: '#2B313D', padding: '8px 16px', textAlign: 'center', fontSize: 13, fontWeight: 500, color: '#fff' }}>
-                아직 운영시간이 아니에요 · {todayHour.startTime}에 운영해요
-              </div>
-            );
-          }
-          if (currentTime > endTime) {
-            return (
-              <div style={{ backgroundColor: '#2B313D', padding: '8px 16px', textAlign: 'center', fontSize: 13, fontWeight: 500, color: '#fff' }}>
-                오늘 운영이 종료되었습니다
-              </div>
-            );
-          }
-          return null;
-        })()}
-        <div className="bg-white px-2.5" style={{ borderTop: '1px solid #F2F3F5', paddingTop: 10, paddingBottom: 10 }}>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => router.push(`/booking?productId=${product.id}`)}
-              style={{ height: 48, borderRadius: 12, backgroundColor: '#8037FF', fontSize: 16, fontWeight: 700 }}
-              className="flex-1 text-white btn-press"
-            >
-              예약하기
-            </button>
-            <button
-              onClick={() => router.push(`/booking?productId=${product.id}&payment=app`)}
-              style={{ height: 48, borderRadius: 12, backgroundColor: '#2B313D', fontSize: 16, fontWeight: 700 }}
-              className="flex-1 text-white btn-press"
-            >
-              앱결제
-            </button>
-          </div>
+        <div
+          className="absolute inset-0"
+          style={{
+            background: 'linear-gradient(to top, white 30%, rgba(255,255,255,0.9) 50%, rgba(255,255,255,0.5) 70%, rgba(255,255,255,0) 100%)',
+            backdropFilter: 'blur(6px)',
+            WebkitBackdropFilter: 'blur(6px)',
+            maskImage: 'linear-gradient(to top, black 55%, transparent 100%)',
+            WebkitMaskImage: 'linear-gradient(to top, black 55%, transparent 100%)',
+          }}
+        />
+        <div className="pointer-events-auto relative mx-auto max-w-[680px] pt-10">
+          {notice && (
+            <p className="mx-auto mb-2.5 w-fit rounded-full bg-[#333D4B]/90 px-3.5 py-1.5 text-[12.5px] font-semibold text-white backdrop-blur-md">{notice}</p>
+          )}
+          {buttons}
         </div>
-      </FixedBar>
+      </div>
+
+      {/* ─── 사진 크게 ─── */}
+      {imageModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 modal-overlay-enter" onClick={() => setImageModal(null)}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={imageModal} alt="" className="max-h-full max-w-full object-contain" />
+          <button type="button" aria-label="닫기" className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-white/15 text-white" onClick={() => setImageModal(null)}>
+            <X size={22} />
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -974,80 +611,3 @@ function ReviewMenu({ reviewId, authorName }: { reviewId: string; authorName: st
     </div>
   );
 }
-
-function ReviewContent({ content }: { content: string }) {
-  const [expanded, setExpanded] = useState(false);
-  const isLong = content.length > 200;
-
-  return (
-    <div style={{ marginTop: 14, position: 'relative' }}>
-      <p style={{
-        fontSize: 14, fontWeight: 400, color: '#2C2C2C', lineHeight: '22px',
-        ...(isLong && !expanded ? { maxHeight: 220, overflow: 'hidden' } : {}),
-      }}>
-        {content}
-      </p>
-      {isLong && !expanded && (
-        <>
-          <div style={{ position: 'absolute', bottom: 24, left: 0, right: 0, height: 40, background: 'linear-gradient(transparent, white)' }} />
-          <button
-            onClick={() => setExpanded(true)}
-            style={{ fontSize: 13, fontWeight: 600, color: '#8037FF', marginTop: 4, display: 'block' }}
-          >
-            더보기
-          </button>
-        </>
-      )}
-      {isLong && expanded && (
-        <button
-          onClick={() => setExpanded(false)}
-          style={{ fontSize: 13, fontWeight: 600, color: '#A4ABBA', marginTop: 4, display: 'block' }}
-        >
-          접기
-        </button>
-      )}
-    </div>
-  );
-}
-
-/* Hospital cover image carousel — native horizontal scroll-snap + position pill.
-   Counter updates on scroll, no JS animation needed. */
-function HospitalCoverSlider({ images }: { images: string[] }) {
-  const [idx, setIdx] = useState(0);
-  const ref = useRef<HTMLDivElement>(null);
-
-  const handleScroll = () => {
-    const el = ref.current;
-    if (!el) return;
-    const i = Math.round(el.scrollLeft / el.clientWidth);
-    if (i !== idx) setIdx(i);
-  };
-
-  if (!images || images.length === 0) return null;
-
-  return (
-    <div className="relative bg-gray-100">
-      <div
-        ref={ref}
-        onScroll={handleScroll}
-        className="flex overflow-x-auto hide-scrollbar snap-x snap-mandatory"
-        style={{ scrollBehavior: 'smooth' }}
-      >
-        {images.map((src, i) => (
-          <div key={i} className="aspect-[4/3] w-full flex-shrink-0 snap-start">
-            <img src={src} alt="" className="w-full h-full object-cover" />
-          </div>
-        ))}
-      </div>
-      {images.length > 1 && (
-        <div
-          className="absolute bottom-3 right-3 text-white text-[11px] font-medium px-2 py-1 rounded-full backdrop-blur"
-          style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
-        >
-          {idx + 1} / {images.length}
-        </div>
-      )}
-    </div>
-  );
-}
-

@@ -7236,3 +7236,21 @@ body.partner-profile-editing .partner-bottom-nav {
     font-size: 14px;
   }
 }
+
+/* ─── 프리티풀 상세 결(DetailKit) ─── */
+/* 별점 — 채워진 별이 순서대로 반짝인다 */
+@keyframes starTwinkle {
+  0%, 70%, 100% { transform: scale(1); filter: brightness(1); }
+  80%           { transform: scale(1.18); filter: brightness(1.35); }
+  90%           { transform: scale(1); filter: brightness(1); }
+}
+.star-twinkle { animation: starTwinkle 2.6s ease-in-out infinite; transform-origin: center; }
+/* 리뷰 카드 — 각자 다른 속도로 천천히 위아래로 떠다닌다 */
+@keyframes reviewFloat {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-10px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .star-twinkle { animation: none; }
+  .review-float { animation: none !important; }
+}
