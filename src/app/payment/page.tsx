@@ -10,6 +10,7 @@ import {
   generateOrderId,
   isTossConfigured,
   VIRTUAL_ACCOUNT_VALID_HOURS,
+  VIRTUAL_ACCOUNT_ENABLED,
   type TossPayMethod,
 } from '@/lib/toss';
 import { useStore } from '@/store';
@@ -30,6 +31,16 @@ function getVisitTimestamp(dateParam: string | null, timeParam: string | null) {
 
   return { date, iso };
 }
+
+/** 토스 결제수단별 최소 결제금액(원). 계좌이체는 200원 미만이면 결제창이 오류를 띄운다. */
+const TOSS_MIN_AMOUNT: Record<TossPayMethod, number> = { CARD: 1, TRANSFER: 200, VIRTUAL_ACCOUNT: 1 };
+
+/** 앱결제 하위 결제수단. 무통장입금은 토스 가상계좌 계약 후 환경변수로 켠다. */
+const APP_PAY_METHODS: ReadonlyArray<readonly [TossPayMethod, string]> = [
+  ['CARD', '카드·간편결제'],
+  ['TRANSFER', '계좌이체'],
+  ...(VIRTUAL_ACCOUNT_ENABLED ? ([['VIRTUAL_ACCOUNT', '무통장입금']] as const) : []),
+];
 
 export default function PaymentPageWrapper() {
   return (
@@ -156,6 +167,11 @@ function PaymentPage() {
     if (visit.date.getTime() <= Date.now()) {
       showToast('이미 지난 예약 시간입니다. 다시 선택해주세요.');
       router.push(`/booking?productId=${encodeURIComponent(product.id)}`);
+      return;
+    }
+    // 토스 최소 결제금액 미만이면 결제창이 오류로 끝나므로 예약을 만들기 전에 막는다
+    if (paymentMethod === '앱결제' && totalPrice > 0 && totalPrice < TOSS_MIN_AMOUNT[appPayMethod]) {
+      showToast(`${APP_PAY_METHODS.find(([m]) => m === appPayMethod)?.[1] ?? '앱결제'}는 ${TOSS_MIN_AMOUNT[appPayMethod].toLocaleString()}원 이상부터 결제할 수 있어요.`);
       return;
     }
 
@@ -323,10 +339,7 @@ function PaymentPage() {
           {paymentMethod === '앱결제' && (
             <>
               <div className="flex gap-2 mt-3">
-                {([
-                  ['CARD', '카드·간편결제'],
-                  ['VIRTUAL_ACCOUNT', '무통장입금'],
-                ] as const).map(([method, label]) => (
+                {APP_PAY_METHODS.map(([method, label]) => (
                   <button
                     key={method}
                     type="button"
@@ -344,7 +357,9 @@ function PaymentPage() {
               <p className="text-xs text-gray-400 mt-2">
                 {appPayMethod === 'CARD'
                   ? '앱에서 카드결제로 미리 결제합니다.'
-                  : `발급된 계좌로 ${VIRTUAL_ACCOUNT_VALID_HOURS}시간 안에 입금하면 결제가 완료됩니다.`}
+                  : appPayMethod === 'TRANSFER'
+                    ? '내 은행 계좌에서 바로 이체해 결제합니다.'
+                    : `발급된 계좌로 ${VIRTUAL_ACCOUNT_VALID_HOURS}시간 안에 입금하면 결제가 완료됩니다.`}
               </p>
             </>
           )}
