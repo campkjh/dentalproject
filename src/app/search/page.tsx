@@ -9,6 +9,7 @@ import { useStore } from '@/store';
 import { regions, dentalSubCategories } from '@/lib/mock-data';
 import type { Product } from '@/types';
 import EmptyState from '@/components/common/EmptyState';
+import ProductCard from '@/components/common/ProductCard';
 
 const PROVINCES: Record<string, string[]> = {
   '서울': ['전체', '강남구', '서초구', '송파구', '강동구', '마포구', '용산구', '성동구', '광진구', '동대문구', '중랑구', '성북구', '강북구', '도봉구', '노원구', '은평구', '서대문구', '종로구', '중구', '동작구', '관악구', '금천구', '구로구', '영등포구', '양천구'],
@@ -505,15 +506,15 @@ function SearchPage() {
         {/* 결과 — animated slide on tab switch */}
         <div
           key={activeCategory || 'all'}
-          className={`px-2.5 pb-4 lg:max-w-7xl lg:mx-auto ${tabDirection === 'right' ? 'tab-slide-right' : 'tab-slide-left'}`}
+          className={`px-4 pb-4 lg:max-w-7xl lg:mx-auto ${tabDirection === 'right' ? 'tab-slide-right' : 'tab-slide-left'}`}
         >
           <p className="text-sm text-gray-500 mb-3">
             <span className="font-bold text-black">{currentCat?.name || '전체'}</span> · {categoryResults.length}건
           </p>
           {categoryResults.length > 0 ? (
-            <div className="flex flex-col divide-y divide-gray-100 stagger-children">
-              {categoryResults.map((product) => (
-                <SearchProductListItem key={product.id} product={product} />
+            <div className="grid grid-cols-2 gap-2.5 stagger-children md:grid-cols-3 lg:grid-cols-4 lg:gap-4">
+              {categoryResults.map((product, i) => (
+                <ProductCard key={product.id} product={product} index={i} />
               ))}
             </div>
           ) : (
@@ -628,9 +629,9 @@ function SearchPage() {
                   <p className="text-sm text-gray-500 mb-3">
                     검색결과 <span className="font-bold text-black">{searchResults.length}</span>건
                   </p>
-                  <div className="flex flex-col divide-y divide-gray-100">
-                    {searchResults.map((product) => (
-                      <SearchProductListItem key={product.id} product={product} />
+                  <div className="grid grid-cols-2 gap-2.5 md:grid-cols-3 lg:grid-cols-4 lg:gap-4">
+                    {searchResults.map((product, i) => (
+                      <ProductCard key={product.id} product={product} index={i} />
                     ))}
                   </div>
                 </>
@@ -868,111 +869,6 @@ function SearchPage() {
         </FilterModal>
       )}
     </div>
-  );
-}
-
-function SearchProductListItem({ product }: { product: Product }) {
-  const { wishlist, toggleWishlist } = useStore();
-  const isWished = wishlist.includes(product.id);
-
-  return (
-    <Link
-      href={`/product/${product.id}`}
-      className="block py-4 card-press"
-    >
-      {/* Top: thumbnail + info + heart */}
-      <div className="flex gap-3">
-        <div className="relative w-[120px] h-[120px] flex-shrink-0 overflow-hidden rounded-xl bg-gray-100">
-          <img
-            src={product.imageUrl}
-            alt={product.title}
-            className="w-full h-full object-cover"
-          />
-        </div>
-
-        <div className="min-w-0 flex-1">
-          <div className="flex items-start justify-between gap-2">
-            <h3 className="flex-1 text-[18px] leading-[24px] font-bold text-[#2B313D] line-clamp-2">
-              {product.title}
-            </h3>
-            <button
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                toggleWishlist(product.id);
-              }}
-              className="flex-shrink-0 -mt-0.5 -mr-0.5 p-1"
-              aria-label={isWished ? '찜 해제' : '찜하기'}
-            >
-              <Heart
-                size={22}
-                fill={isWished ? '#EF4444' : 'none'}
-                stroke={isWished ? '#EF4444' : '#C5CAD4'}
-                strokeWidth={1.8}
-              />
-            </button>
-          </div>
-
-          <p className="mt-0.5 text-[13px] text-gray-500 line-clamp-1">
-            {product.location ? `${product.hospitalName} · ${product.location}` : product.hospitalName}
-          </p>
-
-          <div className="mt-1 flex items-center gap-1">
-            <Star size={14} fill="#FBBF24" stroke="#FBBF24" />
-            <span className="text-[14px] font-bold text-[#2B313D]">{product.rating.toFixed(1)}</span>
-            <span className="text-[13px] text-gray-400">({product.reviewCount.toLocaleString()})</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Bottom: VAT 포함 + (discount) price + tags — right aligned */}
-      <div className="mt-3 flex flex-col items-end">
-        <p className="text-[12px] text-gray-400">
-          VAT 포함
-          {product.originalPrice && (
-            <>
-              {' '}·{' '}
-              <span className="line-through">{product.originalPrice.toLocaleString()}원</span>
-            </>
-          )}
-        </p>
-        <div className="flex items-baseline gap-1.5 mt-0.5">
-          {product.discount && (
-            <span className="text-[18px] font-bold" style={{ color: '#EF4444' }}>
-              {product.discount}%
-            </span>
-          )}
-          <span className="text-[18px] font-bold text-[#2B313D]">
-            {product.price.toLocaleString()}원
-          </span>
-        </div>
-        <div className="flex items-center gap-2 mt-2 justify-end">
-          {/* 앱결제 — gray, text-only (matches ProductCard) */}
-          <span
-            style={{
-              fontSize: 11,
-              fontWeight: 500,
-              padding: '2px 6px',
-              borderRadius: 4,
-              color: '#51535C',
-              backgroundColor: '#F2F3F5',
-            }}
-          >
-            앱결제
-          </span>
-          {/* 인증병원 — brand logo + purple text, no background chip */}
-          {product.rating >= 4.8 && (
-            <span
-              className="flex items-center gap-1"
-              style={{ fontSize: 11, fontWeight: 600, color: '#7A71FF' }}
-            >
-              <img src="/icons/brand-logo.png" alt="" width={16} height={16} className="flex-shrink-0" />
-              인증병원
-            </span>
-          )}
-        </div>
-      </div>
-    </Link>
   );
 }
 
