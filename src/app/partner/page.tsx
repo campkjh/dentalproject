@@ -9,6 +9,7 @@ import { useMyHospitalData } from '@/lib/partner/my-hospital-cache';
 import { useSession } from '@/lib/supabase/SessionProvider';
 import { useReservationRealtimeRefresh } from '@/lib/realtime/reservations';
 import { useStore } from '@/store';
+import { HeaderBellIcon } from '@/components/icons/HeaderIcons';
 
 type ScheduleHistoryItem = {
   id: string;
@@ -115,10 +116,10 @@ type ProductApprovalTab = (typeof PRODUCT_APPROVAL_TABS)[number];
 
 const FILTER_LABEL: Record<Filter, string> = {
   all: '전체',
-  pending: '새로운예약',
-  confirmed: '확정된예약',
-  completed: '완료된예약',
-  cancelled: '취소된예약',
+  pending: '새 예약',
+  confirmed: '확정',
+  completed: '완료',
+  cancelled: '취소',
 };
 
 const HOME_TAB_LABEL: Record<HomeTab, string> = {
@@ -567,7 +568,7 @@ function ProductRequestCard({
           <dd>
             <span className="partner-product-stars" aria-hidden="true">
               {Array.from({ length: 5 }).map((_, index) => (
-                <Star key={index} size={17} strokeWidth={0} fill={index < Math.round(rating) ? '#8037ff' : '#c8ced9'} />
+                <Star key={index} size={17} strokeWidth={0} fill={index < Math.round(rating) ? '#3180F7' : '#c8ced9'} />
               ))}
             </span>
             <strong>{rating.toFixed(1)}{reviewCount > 0 ? `(${reviewCount.toLocaleString('ko-KR')})` : ''}</strong>
@@ -600,6 +601,7 @@ export default function PartnerHomePage() {
   const { authUser } = useSession();
   const showToast = useStore((s) => s.showToast);
   const showConfirm = useStore((s) => s.showConfirm);
+  const unreadNotice = useStore((s) => s.meHydrated && s.notifications.some((n) => !n.isRead));
   const {
     data: hospitalData,
     loading,
@@ -620,7 +622,6 @@ export default function PartnerHomePage() {
   });
   const thumbnailInputRef = useRef<HTMLInputElement>(null);
   const detailInputRef = useRef<HTMLInputElement>(null);
-  const [filterIndicator, setFilterIndicator] = useState({ x: 20, width: 64 });
   const [productModal, setProductModal] = useState<{ mode: 'create' | 'edit'; product?: ProductRow } | null>(null);
   const [productForm, setProductForm] = useState<ProductForm>({ ...EMPTY_PRODUCT_FORM });
   const [productTagDraft, setProductTagDraft] = useState('');
@@ -647,7 +648,6 @@ export default function PartnerHomePage() {
     const updateIndicator = () => {
       const target = filterRefs.current[filter];
       if (!target) return;
-      setFilterIndicator({ x: target.offsetLeft, width: target.offsetWidth });
       target.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
     };
 
@@ -902,11 +902,24 @@ export default function PartnerHomePage() {
 
   return (
     <div className="partner-mobile-screen has-fixed-title">
+      {/* 머리 — 프리티풀 탭 머리 표준: 병원 이름(20 굵게) + 오른쪽 종(안 읽은 알림 빨간 점) */}
       <header className="partner-screen-title partner-home-title with-action">
-        <div className="partner-home-title-icon" aria-label="홈">
-          <img src="/partner-template/nav-home.svg" alt="" />
+        <h1>{hospital.name || '내 병원'}</h1>
+        <div className="pd-tabhead-actions">
+          <button
+            type="button"
+            aria-label={unreadNotice ? '알림 (안 읽은 알림 있음)' : '알림'}
+            onClick={() => window.dispatchEvent(new CustomEvent('dental:notifications'))}
+          >
+            <HeaderBellIcon dot={unreadNotice} />
+          </button>
         </div>
-        <nav className="partner-inline-segment" aria-label="홈 탭">
+      </header>
+
+      {/* 예약 · 상품 — 회색 트랙 위 흰 알약 */}
+      <div className="px-4 pb-2 pt-1">
+        <nav className="pd-seg is-wide" aria-label="홈 탭" style={{ ['--n' as string]: HOME_TABS.length, ['--i' as string]: HOME_TABS.indexOf(homeTab) }}>
+          <span className="pd-seg-thumb" aria-hidden />
           {HOME_TABS.map((tab) => (
             <button
               key={tab}
@@ -915,10 +928,11 @@ export default function PartnerHomePage() {
               onClick={() => setHomeTab(tab)}
             >
               {HOME_TAB_LABEL[tab]}
+              {tab === 'reservations' && counts.pending > 0 && <em className="not-italic text-[#3180F7]">{counts.pending}</em>}
             </button>
           ))}
         </nav>
-      </header>
+      </div>
 
       {homeTab === 'products' ? (
         <section className="partner-product-management">
@@ -975,15 +989,8 @@ export default function PartnerHomePage() {
         </section>
       ) : (
         <>
-          <div className="partner-home-filter hide-scrollbar" role="tablist" aria-label="예약 상태">
-            <span
-              className="partner-home-filter-indicator"
-              style={{
-                width: filterIndicator.width,
-                transform: `translateX(${filterIndicator.x}px)`,
-              }}
-              aria-hidden="true"
-            />
+          {/* 예약 상태 — 프리티풀 정렬 칩(고르면 검정) */}
+          <div className="pd-chips" role="tablist" aria-label="예약 상태">
             {FILTERS.map((item) => (
               <button
                 key={item}
@@ -994,9 +1001,10 @@ export default function PartnerHomePage() {
                 role="tab"
                 aria-selected={filter === item}
                 onClick={() => setFilter(item)}
-                className={filter === item ? 'is-active' : undefined}
+                className={`pd-chip${filter === item ? ' is-active' : ''}`}
               >
-                {FILTER_LABEL[item]}({counts[item]})
+                {FILTER_LABEL[item]}
+                <em>{counts[item]}</em>
               </button>
             ))}
           </div>

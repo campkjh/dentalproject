@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { X } from 'lucide-react';
 import { useStore } from '@/store';
 import { useSession } from '@/lib/supabase/SessionProvider';
-import { useMyHospitalData } from '@/lib/partner/my-hospital-cache';
+import { fetchMyHospitalData, useMyHospitalData } from '@/lib/partner/my-hospital-cache';
 import Avatar from './Avatar';
 import { HeaderBellIcon } from '@/components/icons/HeaderIcons';
 import { isDualModeUser, writeAccountMode } from '@/lib/account-mode';
@@ -15,6 +15,21 @@ import styles from './app-ui.module.css';
 
 type Row = { label: string; icon: string; href?: string; description?: string; badge?: number; action?: () => void };
 type HospitalData = { id: string; name: string; status?: string };
+
+/** 화면 전환 막 — 흰 바탕 + 가운데 글씨가 떠올랐다가, 돌려준 함수를 부르면 흐려지며 걷힌다 */
+function showSwitchVeil(text: string) {
+  const veil = document.createElement('div');
+  veil.className = 'md-switch-veil';
+  veil.setAttribute('role', 'status');
+  const label = document.createElement('p');
+  label.textContent = text;
+  veil.appendChild(label);
+  document.body.appendChild(veil);
+  return () => {
+    veil.classList.add('is-out');
+    setTimeout(() => veil.remove(), 360);
+  };
+}
 
 export default function MyHome({ partner = false }: { partner?: boolean }) {
   const router = useRouter();
@@ -63,11 +78,21 @@ export default function MyHome({ partner = false }: { partner?: boolean }) {
   ];
   // 의사 ↔ 고객 화면 오가기 — 정해 둔 계정만(lib/account-mode). 병원 주인이어야 의사 화면으로 갈 수 있다
   const dual = isDualModeUser(user?.id);
-  const switchMode = () => {
+  //  · 바꾸는 동안 흰 막(문서에 직접 붙인 것 — 화면이 바뀌며 이 컴포넌트가 사라져도 남는다)이 덮고, 의사 화면이면 병원 정보를 먼저 받아 둔다
+  //    → 빈 화면·'승인 기다리는 중'이 번쩍이지 않고 새 화면이 그려진 뒤 막이 걷힌다
+  const switchMode = async () => {
     const next = partner ? 'customer' : 'doctor';
+    const veil = showSwitchVeil(next === 'doctor' ? '의사 화면으로 바꾸고 있어요' : '고객 화면으로 바꾸고 있어요');
+    const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+    await Promise.all([
+      wait(420),
+      next === 'doctor' && authUser?.id ? Promise.race([fetchMyHospitalData(authUser.id).catch(() => null), wait(1800)]) : null,
+    ]);
     writeAccountMode(next);
     useStore.setState({ isDoctor: next === 'doctor' });
     router.replace(next === 'doctor' ? '/partner' : '/');
+    window.scrollTo(0, 0);
+    setTimeout(veil, 520);
   };
   const sections: { title: string; rows: Row[]; public?: boolean }[] = [
     ...(dual ? [{ title: '화면 전환', rows: [

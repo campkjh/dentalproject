@@ -7,14 +7,15 @@ import { useSession } from '@/lib/supabase/SessionProvider';
 import { useStore } from '@/store';
 import { useMyHospitalData } from '@/lib/partner/my-hospital-cache';
 import appStyles from '@/components/common/app-ui.module.css';
-import { animateNavigationIcon } from '@/lib/ui-motion';
+import { CommunityTabIcon, HomeTabIcon, HospitalTabIcon, MyTabIcon, ReservationTabIcon, TabBarNav } from '@/components/common/BottomNav';
 
+// 의사 화면 하단 탭 — 고객 화면과 같은 프리티풀 흰 탭 바(TabBarNav)·같은 선 아이콘. 확인 기다리는 예약 = 예약관리 빨간 점
 const BOTTOM_NAV = [
-  { label: '홈', href: '/partner', asset: 'home', match: ['/partner'] },
-  { label: '병원관리', href: '/partner/hospital-info', asset: 'hospital', match: ['/partner/hospital-info', '/partner/doctors', '/partner/reviews', '/partner/contact'] },
-  { label: '예약관리', href: '/partner/reservations', asset: 'reservation', match: ['/partner/reservations'] },
-  { label: '커뮤니티', href: '/partner/community', asset: 'community', match: ['/partner/community', '/partner/community/'] },
-  { label: '마이홈', href: '/partner/account', asset: 'my', match: ['/partner/account'] },
+  { label: '홈', href: '/partner', Icon: HomeTabIcon, match: ['/partner'] },
+  { label: '예약관리', href: '/partner/reservations', Icon: ReservationTabIcon, match: ['/partner/reservations'] },
+  { label: '병원관리', href: '/partner/hospital-info', Icon: HospitalTabIcon, match: ['/partner/hospital-info', '/partner/doctors', '/partner/reviews', '/partner/contact'] },
+  { label: '커뮤니티', href: '/partner/community', Icon: CommunityTabIcon, match: ['/partner/community'] },
+  { label: '마이', href: '/partner/account', Icon: MyTabIcon, match: ['/partner/account'] },
 ] as const;
 
 const MANAGEMENT_TABS = [
@@ -48,22 +49,8 @@ function isGatedRoute(pathname: string) {
   return GATED_ROUTE_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 }
 
-function PartnerNavIcon({ asset }: { asset: (typeof BOTTOM_NAV)[number]['asset'] }) {
-  if (asset === 'home') return <img src="/partner-template/nav-home.svg" alt="" />;
-  if (asset === 'hospital') return <img src="/partner-template/nav-hospital.svg" alt="" />;
-  if (asset === 'reservation') return <img src="/partner-template/nav-reservation.svg" alt="" />;
-  if (asset === 'community') {
-    return (
-      <span className="partner-community-icon" aria-hidden="true">
-        <img src="/partner-template/nav-community-a.svg" alt="" />
-        <img src="/partner-template/nav-community-b.svg" alt="" />
-      </span>
-    );
-  }
-  return <span className="partner-my-icon">My</span>;
-}
-
 type HospitalLite = { status?: string | null; name?: string | null };
+type ReservationLite = { status?: string | null };
 
 function ApprovalPendingScreen({ status, hospitalName }: { status: string | null | undefined; hospitalName?: string | null }) {
   const router = useRouter();
@@ -146,10 +133,11 @@ export default function PartnerLayout({ children }: { children: React.ReactNode 
   const showAlert = useStore((s) => s.showAlert);
   const isLoginPage = pathname === '/partner/login';
 
-  const { data: hospitalData } = useMyHospitalData<HospitalLite>(authUser?.id, { enabled: !isLoginPage && !!authUser });
+  const { data: hospitalData } = useMyHospitalData<HospitalLite, ReservationLite>(authUser?.id, { enabled: !isLoginPage && !!authUser });
   const hospital = hospitalData?.hospital ?? null;
   const status = hospital?.status ?? null;
   const isApproved = status === 'approved';
+  const pendingReservation = (hospitalData?.reservations ?? []).some((r) => r.status === 'pending');
 
   // sessionLoading이 막 false가 된 직후의 첫 렌더에서 Zustand isDoctor가
   // 아직 갱신되지 않을 수 있어 300ms 유예 후 리다이렉트
@@ -182,9 +170,7 @@ export default function PartnerLayout({ children }: { children: React.ReactNode 
   if (sessionLoading || !authUser) {
     return (
       <div className="partner-shell-bg">
-        <div className="partner-phone-shell">
-          <div className="partner-loading">불러오는 중...</div>
-        </div>
+        <div className="partner-phone-shell" />
       </div>
     );
   }
@@ -211,21 +197,23 @@ export default function PartnerLayout({ children }: { children: React.ReactNode 
       : '병원 승인 후 사용할 수 있어요.';
 
   const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, item: (typeof BOTTOM_NAV)[number]) => {
-    if (isApproved) return;
+    if (isApproved || !hospitalData) return;
     if (item.href === '/partner/account') return;
     e.preventDefault();
     showAlert('승인 대기 중', pendingMessage);
   };
 
-  const gated = !isApproved && isGatedRoute(pathname);
+  // 병원 정보를 받기 전엔 막지 않는다 — 받기 전에 막으면 의사 화면으로 바꾸자마자 '승인 기다리는 중'이 번쩍 보였다
+  const gated = Boolean(hospitalData) && !isApproved && isGatedRoute(pathname);
 
   return (
     <div className={`partner-shell-bg ${appStyles.partnerShell}`}>
       <div className="partner-phone-shell" style={hideNav ? { overflowX: 'visible' } : undefined}>
         {showManagementHeader && !gated && (
-          <header className="partner-screen-title partner-management-title with-action">
+          <header className="pd-tabhead">
             <h1>병원관리</h1>
-            <nav className="partner-inline-segment" aria-label="병원관리 탭">
+            <nav className="pd-seg" aria-label="병원관리 탭" style={{ ['--n' as string]: MANAGEMENT_TABS.length, ['--i' as string]: Math.max(0, MANAGEMENT_TABS.findIndex((tab) => tab.href === pathname)) }}>
+              <span className="pd-seg-thumb" aria-hidden />
               {MANAGEMENT_TABS.map((tab) => (
                 <Link
                   key={tab.href}
@@ -239,7 +227,7 @@ export default function PartnerLayout({ children }: { children: React.ReactNode 
             </nav>
           </header>
         )}
-        <main className="partner-app-main" style={hideNav ? { paddingBottom: 0 } : undefined}>
+        <main className={`partner-app-main${showManagementHeader && !gated ? ' has-tabhead' : ''}`} style={hideNav ? { paddingBottom: 0 } : undefined}>
           <div key={pathname} className={`partner-page${routeTransitionClass}`}>
             {gated ? (
               <ApprovalPendingScreen status={status} hospitalName={hospital?.name ?? null} />
@@ -249,24 +237,17 @@ export default function PartnerLayout({ children }: { children: React.ReactNode 
           </div>
         </main>
         {!hideNav && (
-          <nav className={`partner-bottom-nav ${appStyles.partnerNav}`} aria-label="파트너 하단 내비게이션">
-            {BOTTOM_NAV.map((item) => {
-              const active = isActive(item);
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={active ? 'is-active' : undefined}
-                  aria-current={active ? 'page' : undefined}
-                  onClick={(e) => handleNavClick(e, item)}
-                  onPointerDown={(e) => animateNavigationIcon(e.currentTarget)}
-                >
-                  <PartnerNavIcon asset={item.asset} />
-                  <span>{item.label}</span>
-                </Link>
-              );
-            })}
-          </nav>
+          <TabBarNav
+            label="파트너 하단 메뉴"
+            items={BOTTOM_NAV.map((item) => ({
+              href: item.href,
+              label: item.label,
+              Icon: item.Icon,
+              active: isActive(item),
+              dot: item.href === '/partner/reservations' && pendingReservation,
+              onPress: (e) => handleNavClick(e, item),
+            }))}
+          />
         )}
       </div>
     </div>

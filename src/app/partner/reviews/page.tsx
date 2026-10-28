@@ -148,7 +148,7 @@ export default function PartnerReviewsPage() {
   if (!authUser) return (
     <div className="bg-white rounded-xl p-10 text-center">
       <p className="text-sm text-gray-500 mb-4">로그인이 필요합니다.</p>
-      <Link href="/partner/login" className="inline-block px-5 py-2.5 bg-[#8037FF] text-white text-sm font-bold rounded-xl">로그인</Link>
+      <Link href="/partner/login" className="inline-block px-5 py-2.5 bg-[#3180F7] text-white text-sm font-bold rounded-xl">로그인</Link>
     </div>
   );
 
@@ -250,7 +250,7 @@ export default function PartnerReviewsPage() {
             <button
               type="button"
               onClick={() => setShowAddModal(true)}
-              style={{ width: '100%', height: 48, borderRadius: 14, border: '1.5px dashed #C8CEDA', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 14, color: '#8037FF', cursor: 'pointer', fontWeight: 600 }}
+              style={{ width: '100%', height: 48, borderRadius: 14, border: '1.5px dashed #C8CEDA', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 14, color: '#3180F7', cursor: 'pointer', fontWeight: 600 }}
             >
               <Plus size={16} />
               초기 리뷰 등록 ({initialImageCount}/{MAX_INITIAL_IMAGE} 이미지 · {initialTextCount}/{MAX_INITIAL_TEXT} 텍스트)
@@ -277,7 +277,7 @@ export default function PartnerReviewsPage() {
                     type: t.v,
                     ...(t.v === 'text' ? { beforeImage: '', afterImage: '' } : {}),
                   }))}
-                  style={{ flex: 1, padding: '10px', borderRadius: 10, border: `1.5px solid ${addForm.type === t.v ? '#8037FF' : '#E5E7EB'}`, background: addForm.type === t.v ? '#F3EEFF' : 'white', color: addForm.type === t.v ? '#8037FF' : '#6B7280', fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>
+                  style={{ flex: 1, padding: '10px', borderRadius: 10, border: `1.5px solid ${addForm.type === t.v ? '#3180F7' : '#E5E7EB'}`, background: addForm.type === t.v ? '#F3EEFF' : 'white', color: addForm.type === t.v ? '#3180F7' : '#6B7280', fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>
                   {t.label}
                 </button>
               ))}
@@ -326,7 +326,7 @@ export default function PartnerReviewsPage() {
               <button type="button" onClick={() => setShowAddModal(false)} style={{ flex: 1, height: 48, borderRadius: 12, border: '1.5px solid #E5E7EB', background: 'white', fontSize: 14, fontWeight: 600, cursor: 'pointer', color: '#6B7280' }}>
                 취소
               </button>
-              <button type="button" onClick={handleAddReview} disabled={saving} style={{ flex: 2, height: 48, borderRadius: 12, background: saving ? '#C4B5FD' : '#8037FF', color: 'white', fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer' }}>
+              <button type="button" onClick={handleAddReview} disabled={saving} style={{ flex: 2, height: 48, borderRadius: 12, background: saving ? '#C4B5FD' : '#3180F7', color: 'white', fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer' }}>
                 {saving ? '등록 중...' : '등록하기'}
               </button>
             </div>

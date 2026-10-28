@@ -656,7 +656,7 @@ export default function PartnerHospitalInfoPage() {
           <h2 style={{ display: 'flex', alignItems: 'center' }}>
             병원위치
             <button type="button" onClick={() => openMode('location')}
-              style={{ marginLeft: 'auto', fontSize: 13, color: '#8037FF', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}>수정</button>
+              style={{ marginLeft: 'auto', fontSize: 13, color: '#3180F7', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}>수정</button>
           </h2>
           <div style={{ position: 'relative', overflow: 'hidden', borderRadius: 14, height: 180 }}>
             {address ? (

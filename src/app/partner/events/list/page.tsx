@@ -88,7 +88,7 @@ export default function EventsListPage() {
     return (
       <div className="bg-white rounded-xl p-10 text-center">
         <p className="text-sm text-gray-500 mb-4">로그인이 필요합니다.</p>
-        <Link href="/login" className="inline-block px-5 py-2.5 bg-[#8037FF] text-white text-sm font-bold rounded-xl">
+        <Link href="/login" className="inline-block px-5 py-2.5 bg-[#3180F7] text-white text-sm font-bold rounded-xl">
           로그인
         </Link>
       </div>
@@ -125,7 +125,7 @@ export default function EventsListPage() {
             const s = STATUS_LABEL[e.status];
             return (
               <article key={e.id} className="partner-list-row items-start">
-                <div className="h-[64px] w-[64px] flex-shrink-0 overflow-hidden rounded-[16px] bg-[#F4EFFF] text-[#6D28D9] flex items-center justify-center">
+                <div className="h-[64px] w-[64px] flex-shrink-0 overflow-hidden rounded-[16px] bg-[#EDF4FF] text-[#6D28D9] flex items-center justify-center">
                   {e.image_url ? (
                     /* eslint-disable-next-line @next/next/no-img-element */
                     <img src={e.image_url} alt="" className="w-full h-full object-cover" />
@@ -143,7 +143,7 @@ export default function EventsListPage() {
                   )}
                   <div className="mt-3 flex items-center justify-between gap-3 text-[12px] text-[rgba(0,19,43,0.58)]">
                     {e.sale_price ? (
-                      <span className="text-[17px] font-bold text-[#8037FF]">
+                      <span className="text-[17px] font-bold text-[#3180F7]">
                         {e.sale_price.toLocaleString()}원
                       </span>
                     ) : (

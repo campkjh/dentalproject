@@ -1385,7 +1385,7 @@ textarea.tds-input {
 }
 
 .partner-page :where(.bg-gradient-to-r.from-\[\#8037FF\].to-\[\#B18CFF\]) {
-  background: #8037ff;
+  background: #3180F7;
 }
 
 .partner-page :where(.text-\[10px\].font-bold.px-1\.5.py-0\.5.rounded),
@@ -1815,7 +1815,7 @@ textarea.tds-input {
   align-items: center;
   justify-content: center;
   border-radius: 10px;
-  background: #f4efff;
+  background: #EDF4FF;
   color: var(--tds-brand);
 }
 
@@ -1872,7 +1872,7 @@ textarea.tds-input {
   justify-content: center;
   margin: 0 auto 16px;
   border-radius: 18px;
-  background: #f4efff;
+  background: #EDF4FF;
   color: var(--tds-brand);
 }
 
@@ -2521,8 +2521,8 @@ body.partner-product-modal-open .partner-bottom-nav {
 }
 
 .partner-community-sort-menu button.is-active {
-  background: #f4efff;
-  color: #8037ff;
+  background: #EDF4FF;
+  color: #3180F7;
 }
 
 .partner-community-category-shell {
@@ -2978,7 +2978,7 @@ body.partner-product-modal-open .partner-bottom-nav {
   max-width: 100%;
   margin-top: 4px;
   overflow: hidden;
-  color: #8037ff;
+  color: #3180F7;
   font-size: 14px;
   font-weight: 700;
   line-height: 1.4;
@@ -3101,7 +3101,7 @@ body.partner-product-modal-open .partner-bottom-nav {
   height: 44px;
   border: 0;
   border-radius: 12px;
-  background: #8037ff;
+  background: #3180F7;
   color: #fff;
   font-size: 14px;
   font-weight: 600;
@@ -3129,7 +3129,7 @@ body.partner-product-modal-open .partner-bottom-nav {
   justify-content: center;
   border: 0;
   border-radius: 12px;
-  background: #8037ff;
+  background: #3180F7;
   color: #fff;
   font-size: 15px;
   font-weight: 600;
@@ -3152,7 +3152,7 @@ body.partner-product-modal-open .partner-bottom-nav {
   align-items: center;
   justify-content: center;
   border-radius: 12px;
-  background: #8037ff;
+  background: #3180F7;
   padding: 0 20px;
   color: #fff;
   font-size: 14px;
@@ -3471,7 +3471,7 @@ body.partner-product-modal-open .partner-bottom-nav {
 
 .partner-product-thumb span {
   background:
-    linear-gradient(135deg, rgba(43, 49, 61, 0.08), rgba(128, 55, 255, 0.08)),
+    linear-gradient(135deg, rgba(43, 49, 61, 0.08), rgba(49, 128, 247, 0.08)),
     #f6f7f9;
 }
 
@@ -3638,7 +3638,7 @@ body.partner-product-modal-open .partner-bottom-nav {
 }
 
 .partner-product-pending-box > span {
-  color: #8037ff;
+  color: #3180F7;
   font-size: 11px;
   font-weight: 700;
   line-height: 1.3;
@@ -3693,7 +3693,7 @@ body.partner-product-modal-open .partner-bottom-nav {
 }
 
 .partner-product-status.is-live {
-  color: #8037ff;
+  color: #3180F7;
 }
 
 .partner-product-status.is-muted {
@@ -3707,7 +3707,7 @@ body.partner-product-modal-open .partner-bottom-nav {
 .partner-product-status.is-pending_create,
 .partner-product-status.is-pending_update {
   background: transparent;
-  color: #8037ff;
+  color: #3180F7;
 }
 
 .partner-product-status.is-pending_delete,
@@ -3734,7 +3734,7 @@ body.partner-product-modal-open .partner-bottom-nav {
   flex: 1 1 0;
   border: 0;
   border-radius: 12px;
-  background: #8037ff;
+  background: #3180F7;
   padding: 0 12px;
   color: #fff;
   font-size: 18px;
@@ -4134,7 +4134,7 @@ body.partner-product-modal-open .partner-bottom-nav {
   height: 64px;
   border-radius: 10px;
   background:
-    linear-gradient(135deg, rgba(49, 130, 246, 0.14), rgba(128, 55, 255, 0.12)),
+    linear-gradient(135deg, rgba(49, 130, 246, 0.14), rgba(49, 128, 247, 0.12)),
     #eef1f6;
   object-fit: cover;
 }
@@ -4241,7 +4241,7 @@ body.partner-product-modal-open .partner-bottom-nav {
   border-radius: 8px;
   background: #eef5ff;
   padding: 5px 8px;
-  color: #8037ff;
+  color: #3180F7;
   font-size: 13px;
   font-weight: 700;
 }
@@ -4386,7 +4386,7 @@ body.partner-product-modal-open .partner-bottom-nav {
   height: 48px;
   border: 0;
   border-radius: 12px;
-  background: #8037ff;
+  background: #3180F7;
   color: #fff;
   font-size: 18px;
   font-weight: 600;
@@ -4800,8 +4800,8 @@ body.partner-product-modal-open .partner-bottom-nav {
 }
 
 .partner-reservation-payment em:first-child {
-  background: #f4efff;
-  color: #8037ff;
+  background: #EDF4FF;
+  color: #3180F7;
 }
 
 .partner-reservation-change {
@@ -4813,7 +4813,7 @@ body.partner-product-modal-open .partner-bottom-nav {
 .partner-reservation-change span {
   display: block;
   margin-bottom: 3px;
-  color: #8037ff;
+  color: #3180F7;
   font-size: 11px;
   font-weight: 700;
   line-height: 1.3;
@@ -4913,7 +4913,7 @@ body.partner-product-modal-open .partner-bottom-nav {
   justify-content: center;
   border: 0;
   border-radius: 12px;
-  background: #8037ff;
+  background: #3180F7;
   color: #fff;
   font-size: 18px;
   font-weight: 600;
@@ -5013,7 +5013,7 @@ body.partner-product-modal-open .partner-bottom-nav {
   border-radius: 8px;
   background: #f9f0ff;
   padding: 4px 6px;
-  color: #8037ff;
+  color: #3180F7;
   font-size: 14px;
   font-weight: 500;
   line-height: 1.4;
@@ -5259,7 +5259,7 @@ body.partner-product-modal-open .partner-bottom-nav {
 }
 
 .partner-member-accept-button {
-  background: #8037ff;
+  background: #3180F7;
 }
 
 .partner-member-leave-button:disabled,
@@ -5528,7 +5528,7 @@ body.partner-product-modal-open .partner-bottom-nav {
 }
 
 .partner-review-card-head > span {
-  color: #8037ff;
+  color: #3180F7;
   font-size: 16px;
   font-weight: 700;
   line-height: 1;
@@ -6048,7 +6048,7 @@ body.partner-profile-editing .partner-bottom-nav {
 }
 
 .partner-profile-edit-field input:focus {
-  border-color: rgba(128, 55, 255, 0.46);
+  border-color: rgba(49, 128, 247, 0.46);
 }
 
 .partner-profile-hospital-field {
@@ -6083,7 +6083,7 @@ body.partner-profile-editing .partner-bottom-nav {
 }
 
 .partner-profile-hospital-field button.change {
-  color: #8037ff;
+  color: #3180F7;
 }
 
 .partner-profile-hospital-field button.leave {
@@ -6170,7 +6170,7 @@ body.partner-profile-editing .partner-bottom-nav {
 }
 
 .partner-profile-dialog button.confirm {
-  background: #8037ff;
+  background: #3180F7;
   color: #fff;
 }
 
@@ -6779,7 +6779,7 @@ body.partner-profile-editing .partner-bottom-nav {
 }
 
 .partner-calendar-grid button.is-active span {
-  background: #8037ff;
+  background: #3180F7;
   color: #fff;
   font-weight: 700;
 }
@@ -6880,7 +6880,7 @@ body.partner-profile-editing .partner-bottom-nav {
 }
 
 .partner-settings-grid button.is-active span {
-  background: #8037ff;
+  background: #3180F7;
   color: #fff;
   font-weight: 700;
 }
@@ -7037,7 +7037,7 @@ body.partner-profile-editing .partner-bottom-nav {
 }
 
 .partner-schedule-row em.purple {
-  color: #8037ff;
+  color: #3180F7;
 }
 
 .partner-schedule-row button {
@@ -7061,15 +7061,15 @@ body.partner-profile-editing .partner-bottom-nav {
   border-radius: 8px;
   background: #f9f0ff;
   padding: 4px 6px;
-  color: #8037ff;
+  color: #3180F7;
   font-size: 14px;
   font-weight: 500;
   line-height: 1.4;
 }
 
 .partner-badge-row span.blue {
-  background: #f4efff;
-  color: #8037ff;
+  background: #EDF4FF;
+  color: #3180F7;
 }
 
 .partner-schedule-memo {
@@ -7424,3 +7424,117 @@ textarea.qd-input { height: auto; min-height: 140px; padding: 16px 18px; line-he
 @media (prefers-reduced-motion: reduce) {
   .toss-bubble, .toss-bubble * { animation: none !important; }
 }
+
+/* ─── 의사 화면(파트너) 2.0 — 프리티풀 탭 머리 표준·토스 분할 버튼(261029) ───
+   · 탭 머리 = 흰 56 줄, 왼쪽 16 · 20 굵게 제목, 오른쪽 자리. 아래로 흰 그늘이 길게 녹는다(뚝 끊긴 선 없음).
+   · 분할 버튼 = 회색 트랙 위 흰 알약이 미끄러진다(--n 칸 수 · --i 고른 칸). */
+.partner-app-main { padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px)); }
+.pd-tabhead {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 70;
+  max-width: 640px; margin: 0 auto;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  height: calc(56px + env(safe-area-inset-top, 0px)); padding: env(safe-area-inset-top, 0px) 16px 0;
+  background: #fff;
+}
+.pd-tabhead::after {
+  content: ''; position: absolute; left: 0; right: 0; top: 100%; height: 24px; pointer-events: none;
+  background: linear-gradient(180deg, #FFFFFF 0%, rgba(255,255,255,0.72) 40%, rgba(255,255,255,0) 100%);
+}
+.pd-tabhead h1 { margin: 0; font-size: 20px; font-weight: 700; line-height: 1; letter-spacing: -0.4px; color: #191F28; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pd-tabhead-actions { display: flex; align-items: center; margin-right: -10px; }
+.pd-tabhead-actions button, .pd-tabhead-actions a { display: flex; align-items: center; justify-content: center; width: 44px; height: 42px; transition: transform .15s; }
+.pd-tabhead-actions button:active, .pd-tabhead-actions a:active { transform: scale(.9); }
+.pd-seg { --n: 2; --i: 0; position: relative; display: flex; gap: 0; padding: 3px; border-radius: 14px; background: #F2F3F5; }
+.pd-seg-thumb {
+  position: absolute; top: 3px; bottom: 3px; left: 3px; width: calc((100% - 6px) / var(--n));
+  border-radius: 11px; background: #fff; box-shadow: 0 1px 4px rgba(25, 31, 40, 0.08);
+  transform: translateX(calc(var(--i) * 100%)); transition: transform .45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.pd-seg > a, .pd-seg > button {
+  position: relative; z-index: 1; flex: 1 1 0; min-width: 56px; height: 34px; padding: 0 12px;
+  display: flex; align-items: center; justify-content: center; gap: 4px; border: 0; background: transparent;
+  font-size: 14px; font-weight: 600; color: #8B95A1; letter-spacing: -0.2px; white-space: nowrap; transition: color .25s;
+}
+.pd-seg > .is-active { font-weight: 700; color: #191F28; }
+.pd-seg.is-wide { width: 100%; }
+.pd-seg.is-wide > a, .pd-seg.is-wide > button { height: 40px; font-size: 15px; }
+/* 거르기 칩 — 프리티풀 정렬 칩: 회색 알약, 고르면 검정 */
+.pd-chips { display: flex; gap: 6px; overflow-x: auto; padding: 4px 16px 12px; scrollbar-width: none; }
+.pd-chips::-webkit-scrollbar { display: none; }
+.pd-chip {
+  flex: 0 0 auto; height: 34px; padding: 0 13px; border-radius: 999px; border: 0;
+  background: #F2F4F6; color: #4E5968; font-size: 14px; font-weight: 600; letter-spacing: -0.2px;
+  display: inline-flex; align-items: center; gap: 4px; transition: background-color .2s, color .2s, transform .15s;
+}
+.pd-chip:active { transform: scale(.96); }
+.pd-chip.is-active { background: #191F28; color: #fff; }
+.pd-chip em { font-style: normal; color: #8B95A1; font-weight: 600; }
+.pd-chip.is-active em { color: rgba(255,255,255,0.7); }
+/* 옛 화면 머리(.partner-screen-title)·분할 버튼(.partner-inline-segment)도 같은 결로 — 쪽마다 고치지 않고 여기서 덮는다 */
+.partner-page .partner-mobile-screen.has-fixed-title > .partner-screen-title,
+.partner-page .partner-screen-title.partner-home-title {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 70;
+  max-width: 640px; margin: 0 auto; width: auto;
+  height: calc(56px + env(safe-area-inset-top, 0px)); padding: env(safe-area-inset-top, 0px) 16px 0;
+  background: #fff; backdrop-filter: none; -webkit-backdrop-filter: none; border: 0;
+}
+.partner-page .partner-mobile-screen.has-fixed-title > .partner-screen-title::after,
+.partner-page .partner-screen-title.partner-home-title::after {
+  content: ''; position: absolute; left: 0; right: 0; top: 100%; height: 24px; pointer-events: none;
+  background: linear-gradient(180deg, #FFFFFF 0%, rgba(255,255,255,0.72) 40%, rgba(255,255,255,0) 100%);
+}
+.partner-page .partner-screen-title h1 { font-size: 20px; font-weight: 700; line-height: 1; letter-spacing: -0.4px; color: #191F28; }
+.partner-page .partner-mobile-screen.has-fixed-title { padding-top: calc(60px + env(safe-area-inset-top, 0px)); }
+.partner-page .partner-inline-segment { height: auto; padding: 3px; border-radius: 14px; background: #F2F3F5; }
+.partner-page .partner-inline-segment::before { top: 3px; bottom: 3px; left: 3px; border-radius: 11px; box-shadow: 0 1px 4px rgba(25, 31, 40, 0.08); transition: transform .45s cubic-bezier(0.22, 1, 0.36, 1), width .45s cubic-bezier(0.22, 1, 0.36, 1); }
+.partner-page .partner-inline-segment a,
+.partner-page .partner-inline-segment button { min-height: 34px; padding: 0 12px; border-radius: 11px; font-size: 14px; font-weight: 600; letter-spacing: -0.2px; color: #8B95A1; }
+.partner-page .partner-inline-segment .is-active { color: #191F28; font-weight: 700; }
+/* 예약·상품 카드 — 토스 결: 흰 카드 r20 + 옅은 테두리, 회색 머리 띠 없앰, 상태는 색 글씨 + 점, 버튼은 파랑/회색 r14 */
+.partner-page .partner-reservation-stack { gap: 12px; padding: 4px 16px 24px; }
+.partner-page .partner-reservation-card { border-radius: 20px; border: 1px solid #F2F4F6; box-shadow: 0 2px 10px rgba(25, 31, 40, 0.04); animation: fadeSlideUp .5s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.partner-page .partner-reservation-card:nth-child(2) { animation-delay: .04s; }
+.partner-page .partner-reservation-card:nth-child(3) { animation-delay: .08s; }
+.partner-page .partner-reservation-card:nth-child(n+4) { animation-delay: .12s; }
+.partner-page .partner-reservation-card-head { background: transparent; border-radius: 0; padding: 16px 16px 4px; }
+.partner-page .partner-reservation-card-head strong { display: inline-flex; align-items: center; gap: 6px; font-size: 15px; letter-spacing: -0.2px; }
+.partner-page .partner-reservation-card-head strong::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.partner-page .partner-reservation-card-head strong.is-confirmed { color: #03B26C; }
+.partner-page .partner-reservation-card-head strong.is-pending { color: #FE9800; }
+.partner-page .partner-reservation-card-head strong.is-completed { color: #3180F7; }
+.partner-page .partner-reservation-card-head strong.is-cancelled { color: #B0B8C1; }
+.partner-page .partner-reservation-card-head span { color: #8B95A1; font-size: 14px; font-weight: 500; }
+.partner-page .partner-reservation-card-head span svg { width: 18px; height: 18px; color: #B0B8C1; }
+.partner-page .partner-reservation-card-body { border: 0; border-radius: 0; padding: 8px 16px 16px; gap: 12px; }
+.partner-page .partner-reservation-product { min-height: 64px; gap: 12px; align-items: center; }
+.partner-page .partner-reservation-product img,
+.partner-page .partner-reservation-image-empty { width: 64px; height: 64px; border-radius: 14px; }
+.partner-page .partner-reservation-product h2 { margin: 0 0 3px; font-size: 16px; font-weight: 700; letter-spacing: -0.3px; color: #191F28; }
+.partner-page .partner-reservation-product p { font-size: 13px; color: #6B7684; }
+.partner-page .partner-reservation-product p:first-of-type { color: #8B95A1; }
+.partner-page .partner-reservation-facts { gap: 8px; border-top: 0; padding: 12px 14px; border-radius: 14px; background: #F9FAFB; }
+.partner-page .partner-reservation-facts dt { font-size: 14px; font-weight: 500; color: #8B95A1; }
+.partner-page .partner-reservation-facts dd { font-size: 14px; font-weight: 600; color: #333D4B; }
+.partner-page .partner-reservation-payment strong { font-size: 15px; color: #191F28; }
+.partner-page .partner-reservation-payment em { min-height: 20px; padding: 3px 7px; font-size: 11px; background: #fff; color: #6B7684; }
+.partner-page .partner-reservation-payment em:first-child { background: #EDF4FF; color: #3180F7; }
+.partner-page .partner-reservation-actions { gap: 8px; }
+.partner-page .partner-reservation-actions button { height: 48px; border-radius: 14px; background: #3180F7; font-size: 16px; transition: transform .15s; }
+.partner-page .partner-reservation-actions button:active { transform: scale(.97); }
+.partner-page .partner-reservation-actions button + button { background: #F2F4F6; color: #4E5968; }
+.partner-page .partner-product-card { border-radius: 20px; border: 1px solid #F2F4F6; box-shadow: 0 2px 10px rgba(25, 31, 40, 0.04); }
+.partner-page .partner-product-card-top { height: auto; background: transparent; padding: 16px 16px 4px; }
+.partner-page .partner-product-card-top > span:last-child { font-size: 13px; font-weight: 500; color: #8B95A1; }
+.partner-page .partner-product-status { font-size: 15px; letter-spacing: -0.2px; }
+.partner-page .partner-product-content { border-bottom: 0; padding: 8px 16px 12px; grid-template-columns: 64px minmax(0, 1fr); gap: 12px; align-items: center; }
+.partner-page .partner-product-thumb { width: 64px; height: 64px; border-radius: 14px; }
+.partner-page .partner-product-stats { margin: 0 16px 12px; border-radius: 14px; background: #F9FAFB; }
+.partner-page .partner-product-actions { gap: 8px; padding: 0 16px 16px; }
+.partner-page .partner-product-actions button { height: 48px; border-radius: 14px; background: #3180F7; font-size: 16px; }
+.partner-page .partner-product-actions button + button { background: #F2F4F6; color: #4E5968; }
+/* 의사 ↔ 고객 화면 전환 막(MyHome showSwitchVeil) */
+.md-switch-veil { position: fixed; inset: 0; z-index: 200; display: flex; align-items: center; justify-content: center; background: #fff; animation: mdVeilIn .22s ease both; }
+.md-switch-veil p { margin: 0; font-size: 17px; font-weight: 700; letter-spacing: -0.3px; color: #191F28; animation: fadeSlideUp .5s cubic-bezier(0.22, 1, 0.36, 1) .06s both; }
+.md-switch-veil.is-out { animation: mdVeilOut .34s ease both; }
+@keyframes mdVeilIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes mdVeilOut { from { opacity: 1; } to { opacity: 0; } }

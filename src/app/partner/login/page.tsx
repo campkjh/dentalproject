@@ -59,7 +59,7 @@ export default function PartnerLoginPage() {
         <div className="bg-white rounded-[16px] border border-[rgba(0,27,55,0.1)] p-6 partner-page shadow-[0_10px_32px_rgba(25,31,40,0.08)]">
           {/* Brand */}
           <div className="flex items-center gap-3 mb-6">
-            <div className="w-9 h-9 rounded-[12px] bg-[#8037FF] flex items-center justify-center text-white text-[15px] font-bold">
+            <div className="w-9 h-9 rounded-[12px] bg-[#3180F7] flex items-center justify-center text-white text-[15px] font-bold">
               K
             </div>
             <span className="text-[17px] font-bold text-[#191F28]">마이닥 파트너센터</span>

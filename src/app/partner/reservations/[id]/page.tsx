@@ -38,7 +38,7 @@ type ReservationDetail = {
 const STATUS_COPY: Record<ReservationStatus, { label: string; color: string }> = {
   pending: { label: '예약확인중...', color: '#FF8A50' },
   confirmed: { label: '예약확정', color: '#00C781' },
-  completed: { label: '진료완료', color: '#8037FF' },
+  completed: { label: '진료완료', color: '#3180F7' },
   cancelled: { label: '취소', color: '#A4ABBA' },
 };
 

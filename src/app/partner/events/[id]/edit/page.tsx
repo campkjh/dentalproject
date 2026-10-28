@@ -109,7 +109,7 @@ export default function EventEditPage() {
     return (
       <div className="bg-white rounded-xl p-10 text-center">
         <p className="text-sm text-gray-500 mb-4">로그인이 필요합니다.</p>
-        <Link href="/login" className="inline-block px-5 py-2.5 bg-[#8037FF] text-white text-sm font-bold rounded-xl">
+        <Link href="/login" className="inline-block px-5 py-2.5 bg-[#3180F7] text-white text-sm font-bold rounded-xl">
           로그인
         </Link>
       </div>
@@ -121,7 +121,7 @@ export default function EventEditPage() {
     return (
       <div className="bg-white rounded-xl p-10 text-center">
         <p className="text-sm text-gray-500 mb-4">이벤트를 찾을 수 없습니다.</p>
-        <Link href="/partner/events/list" className="text-[#8037FF] text-sm font-bold">목록으로</Link>
+        <Link href="/partner/events/list" className="text-[#3180F7] text-sm font-bold">목록으로</Link>
       </div>
     );
   }
@@ -149,10 +149,10 @@ export default function EventEditPage() {
       <Card title="기본 정보">
         <div className="space-y-3">
           <Field label="이벤트명">
-            <input value={title} onChange={(e) => setTitle(e.target.value)} className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:border-[#8037FF]" />
+            <input value={title} onChange={(e) => setTitle(e.target.value)} className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:border-[#3180F7]" />
           </Field>
           <Field label="이벤트 소개">
-            <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={4} className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:border-[#8037FF] resize-none" />
+            <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={4} className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:border-[#3180F7] resize-none" />
           </Field>
           <Field label="대표 이미지">
             <ImageUploader
@@ -169,24 +169,24 @@ export default function EventEditPage() {
       <Card title="가격">
         <div className="grid grid-cols-2 gap-3">
           <Field label="정가 (원)">
-            <input type="number" value={originalPrice} onChange={(e) => setOriginalPrice(e.target.value)} className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:border-[#8037FF]" />
+            <input type="number" value={originalPrice} onChange={(e) => setOriginalPrice(e.target.value)} className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:border-[#3180F7]" />
           </Field>
           <Field label="할인가 (원)">
-            <input type="number" value={salePrice} onChange={(e) => setSalePrice(e.target.value)} className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:border-[#8037FF]" />
+            <input type="number" value={salePrice} onChange={(e) => setSalePrice(e.target.value)} className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:border-[#3180F7]" />
           </Field>
         </div>
         {discountPercent !== null && discountPercent > 0 && (
-          <p className="text-[12px] text-[#8037FF] mt-2 font-bold">할인율: {discountPercent}%</p>
+          <p className="text-[12px] text-[#3180F7] mt-2 font-bold">할인율: {discountPercent}%</p>
         )}
       </Card>
 
       <Card title="기간">
         <div className="grid grid-cols-2 gap-3">
           <Field label="시작일">
-            <input type="date" value={startAt} onChange={(e) => setStartAt(e.target.value)} className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:border-[#8037FF]" />
+            <input type="date" value={startAt} onChange={(e) => setStartAt(e.target.value)} className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:border-[#3180F7]" />
           </Field>
           <Field label="종료일">
-            <input type="date" value={endAt} onChange={(e) => setEndAt(e.target.value)} className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:border-[#8037FF]" />
+            <input type="date" value={endAt} onChange={(e) => setEndAt(e.target.value)} className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:border-[#3180F7]" />
           </Field>
         </div>
       </Card>
