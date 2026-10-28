@@ -7549,3 +7549,17 @@ textarea.qd-input { height: auto; min-height: 140px; padding: 16px 18px; line-he
 .md-switch-veil.is-out { animation: mdVeilOut .34s ease both; }
 @keyframes mdVeilIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes mdVeilOut { from { opacity: 1; } to { opacity: 0; } }
+
+/* ─── 검색 화면 — 프리티풀 globals .srch-* 그대로 ─── */
+@keyframes srchFieldIn { from { max-width: 48px; border-radius: 24px; } to { max-width: 100%; border-radius: 14px; } }
+.srch-field { animation: srchFieldIn .62s cubic-bezier(.22,1,.36,1) both; }
+@keyframes srchFade { from { opacity: 0; } to { opacity: 1; } }
+.srch-input { animation: srchFade .3s ease .22s both; }
+@keyframes srchBackIn { from { opacity: 0; transform: translateX(-8px); } to { opacity: 1; transform: none; } }
+.srch-back { animation: srchBackIn .42s cubic-bezier(.22,1,.36,1) .12s both; }
+@keyframes srchClearIn { 0% { opacity: 0; transform: translateY(-50%) scale(.4); } 70% { opacity: 1; transform: translateY(-50%) scale(1.1); } 100% { opacity: 1; transform: translateY(-50%) scale(1); } }
+.srch-clear { animation: srchClearIn .28s cubic-bezier(.22,1,.36,1) both; }
+.srch-chip { max-width: 260px; }
+@media (prefers-reduced-motion: reduce) {
+  .srch-field, .srch-input, .srch-back, .srch-clear { animation: none !important; }
+}

@@ -554,9 +554,9 @@ function SearchPage() {
             <div className="flex-1 overflow-y-auto">
               {sortOptions.map((opt) => (
                 <button key={opt} onClick={() => { setSelectedSort(opt); setShowSortModal(false); }}
-                  className={`w-full flex items-center justify-between px-5 py-3.5 text-sm hover:bg-gray-50 transition-colors ${selectedSort === opt ? 'text-[#8037FF] font-medium bg-purple-50' : 'text-gray-700'}`}>
+                  className={`w-full flex items-center justify-between px-5 py-3.5 text-sm hover:bg-gray-50 transition-colors ${selectedSort === opt ? 'text-[#3180F7] font-medium bg-[#EDF4FF]' : 'text-gray-700'}`}>
                   <span>{opt}</span>
-                  {selectedSort === opt && <Check size={16} className="text-[#8037FF]" />}
+                  {selectedSort === opt && <Check size={16} className="text-[#3180F7]" />}
                 </button>
               ))}
             </div>
@@ -672,8 +672,8 @@ function SearchPage() {
             <div className="flex-1 overflow-y-auto">
               {sortOptions.map((o) => (
                 <button key={o} onClick={() => { setSelectedSort(o); setShowSortModal(false); }}
-                  className={`w-full flex items-center justify-between px-5 py-3.5 text-sm hover:bg-gray-50 ${selectedSort === o ? 'text-[#8037FF] font-medium bg-purple-50' : 'text-gray-700'}`}>
-                  <span>{o}</span>{selectedSort === o && <Check size={16} className="text-[#8037FF]" />}
+                  className={`w-full flex items-center justify-between px-5 py-3.5 text-sm hover:bg-gray-50 ${selectedSort === o ? 'text-[#3180F7] font-medium bg-[#EDF4FF]' : 'text-gray-700'}`}>
+                  <span>{o}</span>{selectedSort === o && <Check size={16} className="text-[#3180F7]" />}
                 </button>
               ))}
             </div>
@@ -683,157 +683,139 @@ function SearchPage() {
     );
   }
 
-  // ===== Landing state — matches the "검색" mock =====
+  // ===== 검색 첫 화면 — 프리티풀 검색 그대로(뒤로 · 칸이 오른쪽에서 벌어짐 · 최근 검색 칩 · 차례 등장).
+  //  · 지역은 칸 안 왼쪽 알약(핀 + 지역 ⌄)으로 — 홈 내린 머리 검색 줄(내 근처 ⌄ | 글자)과 같은 결, 고르면 파랑
+  //  · 인기 검색어는 순위 줄(1~3위 파랑), 추천 상품은 맨 위 한 줄
+  const regionPicked = selectedRegions.length > 0;
   return (
-    <div className="pb-[86px] lg:pb-0 bg-white min-h-screen page-enter">
-      {/* Header: back arrow + "검색" title */}
-      <div
-        style={{ position: 'sticky', top: 0, zIndex: 40 }}
-        className="bg-white px-4 pt-3 pb-2 flex items-center gap-2"
-      >
-        <button
-          onClick={() => router.back()}
-          className="p-1 -ml-1 flex-shrink-0"
-          aria-label="뒤로가기"
-        >
-          <ChevronLeft size={26} className="text-[#2B313D]" strokeWidth={2.2} />
-        </button>
-        <h1 className="text-[22px] font-extrabold text-[#2B313D] leading-none">검색</h1>
-      </div>
-
-      {/* Combined region + keyword box */}
-      <div className="px-4 pt-3 lg:max-w-2xl lg:mx-auto">
-        <div
-          className="rounded-2xl overflow-hidden"
-          style={{ border: '1px solid #E5E7EB', backgroundColor: '#fff' }}
-        >
+    <div className="min-h-screen bg-white pb-[86px] lg:pb-0" style={{ letterSpacing: '-0.02em' }}>
+      {/* 머리 — 뒤로 · 지역+검색 칸 */}
+      <div className="sticky top-0 z-40 bg-white" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+        <div className="mx-auto flex h-[60px] w-full max-w-[720px] items-center gap-1 pl-1.5 pr-4">
           <button
             type="button"
-            onClick={() => setFilterModalTab('region')}
-            className="w-full flex items-center justify-between px-5"
-            style={{ height: 56 }}
+            onClick={() => router.back()}
+            aria-label="뒤로가기"
+            className="srch-back flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[#191F28] transition-colors active:bg-[#F2F4F6]"
           >
-            <span
-              className="text-[16px]"
-              style={{
-                color: selectedRegions.length > 0 ? '#2B313D' : '#C5CAD4',
-                fontWeight: selectedRegions.length > 0 ? 600 : 400,
-              }}
-            >
-              {selectedRegions.length > 0 ? regionLabel : '지역을 선택해주세요.'}
-            </span>
-            <ChevronDown size={20} className="text-[#C5CAD4]" />
-          </button>
-          <div style={{ height: 1, backgroundColor: '#F1F2F4' }} />
-          <div className="flex items-center px-5" style={{ height: 56 }}>
-            <input
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="검색어를 입력해주세요."
-              className="flex-1 bg-transparent outline-none text-[16px] text-[#2B313D] placeholder:text-[#C5CAD4] placeholder:font-normal"
+            <i
+              aria-hidden="true"
+              className="block h-[26px] w-[26px] bg-[#191F28]"
+              style={{ WebkitMaskImage: 'url(/quick-match/icons/back.svg)', maskImage: 'url(/quick-match/icons/back.svg)', WebkitMaskSize: 'contain', maskSize: 'contain', WebkitMaskRepeat: 'no-repeat', maskRepeat: 'no-repeat', WebkitMaskPosition: 'center', maskPosition: 'center' }}
             />
-            {query && (
+          </button>
+          <div className="flex min-w-0 flex-1 justify-end">
+            <div className="srch-field relative flex h-12 w-full items-center overflow-hidden rounded-[14px] bg-[#F2F4F6] transition-colors focus-within:bg-[#EDEFF2]">
               <button
-                onClick={() => setQuery('')}
-                className="flex-shrink-0 ml-2"
-                aria-label="검색어 지우기"
+                type="button"
+                onClick={() => setFilterModalTab('region')}
+                aria-label={regionPicked ? `지역 ${regionLabel} — 바꾸기` : '지역 고르기'}
+                className="srch-input ml-1.5 flex h-9 max-w-[42%] shrink-0 items-center gap-1 rounded-[10px] pl-2 pr-1.5 transition-colors active:bg-black/5"
               >
-                <svg width={20} height={20} viewBox="0 0 24 24" fill="none">
-                  <circle cx="12" cy="12" r="10" fill="rgba(43,49,61,0.45)" />
-                  <path d="m15 9-6 6" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
-                  <path d="m9 9 6 6" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true" className="shrink-0">
+                  <path d="M12 21.2s-6.6-5.7-6.6-11.1a6.6 6.6 0 0 1 13.2 0c0 5.4-6.6 11.1-6.6 11.1z" fill={regionPicked ? '#3180F7' : '#8B95A1'} />
+                  <circle cx="12" cy="10" r="2.4" fill="#fff" />
                 </svg>
+                <span className={`truncate text-[15px] font-semibold ${regionPicked ? 'text-[#3180F7]' : 'text-[#4E5968]'}`}>
+                  {regionPicked ? regionLabel : '전국'}
+                </span>
+                <ChevronDown size={15} strokeWidth={2.4} className={`shrink-0 ${regionPicked ? 'text-[#3180F7]' : 'text-[#B0B8C1]'}`} />
               </button>
-            )}
+              <span aria-hidden className="mx-1.5 h-4 w-px shrink-0 bg-[#D1D6DB]" />
+              <input
+                type="search"
+                value={query}
+                autoFocus
+                onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="시술, 병원 이름으로 검색"
+                enterKeyHint="search"
+                autoComplete="off"
+                className="srch-input h-full min-w-0 flex-1 bg-transparent pr-10 text-[16px] font-medium text-[#191F28] outline-none placeholder:font-normal placeholder:text-[#8B95A1] [&::-webkit-search-cancel-button]:hidden"
+              />
+              {query && (
+                <button
+                  type="button"
+                  onClick={() => setQuery('')}
+                  aria-label="검색어 지우기"
+                  className="srch-clear absolute right-3 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full bg-[#C9CED6] text-white"
+                >
+                  <X size={13} strokeWidth={2.6} />
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="lg:max-w-2xl lg:mx-auto">
-        {recentSearches.length > 0 && (
-          <div className="px-4 pt-6 fade-in-up">
-            <h2 className="text-[15px] font-bold text-[#2B313D] mb-3">최근검색어</h2>
-            <div className="flex flex-wrap gap-2">
-              {recentSearches.map((keyword) => (
-                <div
+      <div className="mx-auto w-full max-w-[720px] pb-10">
+        {/* 최근 검색 — 시계 칩, × 로 하나씩 */}
+        <section className="qd-a-title px-5 pt-6">
+          <h2 className="text-[18px] font-bold text-[#191F28]">최근 검색</h2>
+          {recentSearches.length > 0 ? (
+            <div className="-mx-5 mt-3 flex gap-2 overflow-x-auto px-5 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {recentSearches.map((keyword, i) => (
+                <span
                   key={keyword}
-                  className="inline-flex items-center gap-1.5 rounded-full"
-                  style={{
-                    backgroundColor: '#F2F3F5',
-                    paddingLeft: 12,
-                    paddingRight: 16,
-                    height: 36,
-                  }}
+                  className="srch-chip qd-a-item inline-flex h-10 shrink-0 items-center rounded-full border border-[#E5E8EB] bg-white"
+                  style={{ animationDelay: `${0.14 + i * 0.045}s` }}
                 >
                   <button
-                    onClick={() => removeRecentSearch(keyword)}
-                    className="flex-shrink-0"
-                    aria-label={`${keyword} 삭제`}
+                    type="button"
+                    onClick={() => handleSearch(keyword)}
+                    className="flex h-full items-center gap-1.5 pl-3.5 pr-1 text-[15px] font-medium text-[#333D4B]"
                   >
-                    <X size={16} className="text-[#A4ABBA]" strokeWidth={2.2} />
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true" className="shrink-0">
+                      <circle cx="12" cy="12" r="8.6" stroke="#B0B8C1" strokeWidth="2" />
+                      <path d="M12 7.8V12l2.8 1.8" stroke="#B0B8C1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                    <span className="max-w-[160px] truncate">{keyword}</span>
                   </button>
                   <button
-                    onClick={() => handleSearch(keyword)}
-                    className="text-[15px] font-semibold text-[#2B313D]"
+                    type="button"
+                    onClick={() => removeRecentSearch(keyword)}
+                    aria-label={`최근 검색어 ${keyword} 지우기`}
+                    className="flex h-full items-center pl-1 pr-3 text-[#B0B8C1] transition-colors active:text-[#6B7684]"
                   >
-                    {keyword}
+                    <X size={14} strokeWidth={2.4} />
                   </button>
-                </div>
+                </span>
               ))}
             </div>
-          </div>
-        )}
-
-        <div className="px-4 pt-6 pb-6 fade-in-up fade-in-up-delay-1">
-          <h2 className="text-[18px] font-bold text-[#2B313D] mb-2">인기검색어</h2>
-
-          {/* 추천 (AD) row — promoted slot above the ranking */}
-          {promoProductData && (
-            <Link
-              href={`/product/${promoProductData.id}`}
-              className="w-full flex items-center gap-3 py-3 text-left"
-            >
-              <span
-                className="inline-flex items-center justify-center rounded-md flex-shrink-0"
-                style={{
-                  backgroundColor: '#F1ECFF',
-                  color: '#8037FF',
-                  fontSize: 13,
-                  fontWeight: 700,
-                  height: 28,
-                  paddingLeft: 8,
-                  paddingRight: 8,
-                }}
-              >
-                추천
-              </span>
-              <span className="text-[18px] font-semibold text-[#2B313D] truncate">
-                {promoProductData.title}
-              </span>
-              <span className="text-[14px] font-medium text-[#C5CAD4] flex-shrink-0">AD</span>
-            </Link>
+          ) : (
+            <p className="qd-a-sub mt-3 text-[15px] text-[#8B95A1]">최근에 검색한 기록이 없어요</p>
           )}
+        </section>
 
-          <div className="flex flex-col">
+        {/* 인기 검색어 — 순위 줄 */}
+        <section className="qd-a-sub px-5 pt-9">
+          <h2 className="text-[18px] font-bold text-[#191F28]">인기 검색어</h2>
+          <div className="mt-2 flex flex-col">
+            {promoProductData && (
+              <Link
+                href={`/product/${promoProductData.id}`}
+                className="qd-a-item -mx-2 flex h-[52px] items-center gap-3 rounded-[14px] px-2 transition-colors active:bg-[#F9FAFB]"
+                style={{ animationDelay: '0.26s' }}
+              >
+                <span className="inline-flex h-6 shrink-0 items-center rounded-[7px] bg-[#EDF4FF] px-2 text-[12.5px] font-bold text-[#3180F7]">추천</span>
+                <span className="min-w-0 flex-1 truncate text-[16px] font-semibold text-[#191F28]">{promoProductData.title}</span>
+                <span className="shrink-0 text-[12px] font-medium text-[#B0B8C1]">AD</span>
+              </Link>
+            )}
             {popularSearches.map((keyword, index) => (
               <button
                 key={keyword}
+                type="button"
                 onClick={() => handleSearch(keyword)}
-                className="flex items-center gap-4 py-3 text-left"
+                className="qd-a-item -mx-2 flex h-[52px] items-center gap-3 rounded-[14px] px-2 text-left transition-colors active:bg-[#F9FAFB]"
+                style={{ animationDelay: `${0.3 + index * 0.04}s` }}
               >
-                <span
-                  className="text-[18px] font-bold flex-shrink-0 text-center"
-                  style={{ color: '#8037FF', width: 24 }}
-                >
-                  {index + 1}
-                </span>
-                <span className="text-[18px] text-[#2B313D]">{keyword}</span>
+                <span className={`w-6 shrink-0 text-center text-[16px] font-bold tabular-nums ${index < 3 ? 'text-[#3180F7]' : 'text-[#8B95A1]'}`}>{index + 1}</span>
+                <span className="min-w-0 flex-1 truncate text-[16px] font-medium text-[#333D4B]">{keyword}</span>
               </button>
             ))}
           </div>
-        </div>
+        </section>
       </div>
 
       {/* Unified filter sheet for search mode */}
@@ -861,8 +843,8 @@ function SearchPage() {
           <div className="flex-1 overflow-y-auto">
             {sortOptions.map((o) => (
               <button key={o} onClick={() => { setSelectedSort(o); setShowSortModal(false); }}
-                className={`w-full flex items-center justify-between px-5 py-3.5 text-sm hover:bg-gray-50 ${selectedSort === o ? 'text-[#8037FF] font-medium bg-purple-50' : 'text-gray-700'}`}>
-                <span>{o}</span>{selectedSort === o && <Check size={16} className="text-[#8037FF]" />}
+                className={`w-full flex items-center justify-between px-5 py-3.5 text-sm hover:bg-gray-50 ${selectedSort === o ? 'text-[#3180F7] font-medium bg-[#EDF4FF]' : 'text-gray-700'}`}>
+                <span>{o}</span>{selectedSort === o && <Check size={16} className="text-[#3180F7]" />}
               </button>
             ))}
           </div>
