@@ -7,6 +7,8 @@ import { useRouter } from 'next/navigation';
 import { createPortal } from 'react-dom';
 import { Search, ChevronLeft, ChevronRight, ChevronDown, Star, MapPin, X, ArrowUp } from 'lucide-react';
 import ProductCard from '@/components/common/ProductCard';
+import HospitalToneCard from '@/components/common/HospitalToneCard';
+import { ReviewCommentRow } from '@/components/detail/DetailKit';
 import Avatar from '@/components/common/Avatar';
 import MobileHomeHeader from '@/components/common/MobileHomeHeader';
 import HomeBannerSlider from '@/components/home/HomeBannerSlider';
@@ -348,10 +350,10 @@ export default function HomePage() {
               icon="/icons/dental.svg"
               action={<MoreButton href="/search?category=dental" />}
             />
-            <div className="px-2.5 lg:max-w-7xl lg:mx-auto">
-              <div className="flex gap-1.5 overflow-x-auto hide-scrollbar pb-2 lg:grid lg:grid-cols-4 lg:gap-1.5 lg:overflow-visible">
+            <div className="px-4 lg:max-w-7xl lg:mx-auto">
+              <div className="flex snap-x gap-2.5 overflow-x-auto hide-scrollbar pb-2 scroll-px-4 lg:grid lg:grid-cols-4 lg:gap-4 lg:overflow-visible">
                 {dentalProducts.map((product) => (
-                  <div key={product.id} className="w-[42vw] max-w-[180px] flex-shrink-0 lg:w-auto lg:max-w-none lg:flex-shrink">
+                  <div key={product.id} className="w-[44vw] max-w-[200px] flex-shrink-0 snap-start lg:w-auto lg:max-w-none lg:flex-shrink">
                     <ProductCard product={product} />
                   </div>
                 ))}
@@ -369,10 +371,10 @@ export default function HomePage() {
               icon="/icons/plastic.svg"
               action={<MoreButton href="/search?category=plastic" />}
             />
-            <div className="px-2.5 lg:max-w-7xl lg:mx-auto">
-              <div className="flex gap-1.5 overflow-x-auto hide-scrollbar pb-2 lg:grid lg:grid-cols-4 lg:gap-1.5 lg:overflow-visible">
+            <div className="px-4 lg:max-w-7xl lg:mx-auto">
+              <div className="flex snap-x gap-2.5 overflow-x-auto hide-scrollbar pb-2 scroll-px-4 lg:grid lg:grid-cols-4 lg:gap-4 lg:overflow-visible">
                 {plasticProducts.map((product) => (
-                  <div key={product.id} className="w-[42vw] max-w-[180px] flex-shrink-0 lg:w-auto lg:max-w-none lg:flex-shrink">
+                  <div key={product.id} className="w-[44vw] max-w-[200px] flex-shrink-0 snap-start lg:w-auto lg:max-w-none lg:flex-shrink">
                     <ProductCard product={product} />
                   </div>
                 ))}
@@ -387,67 +389,38 @@ export default function HomePage() {
         {/* 나한테 꿀이되는 후기 */}
         <div className="mb-8">
           <SectionHeader title="나한테 꿀이되는 후기" subtitle="실제 방문자가 남긴 시술 경험을 살펴보세요." />
-          <div className="px-2.5 lg:max-w-7xl lg:mx-auto">
-            <div className="flex gap-2.5 overflow-x-auto hide-scrollbar pb-2" style={{ scrollSnapType: 'x mandatory' }}>
-              {reviews.slice(0, 10).map((review) => {
-                const hospital = hospitals.find(h => h.id === review.hospitalId);
-                const relatedProduct = products.find(p => p.id === review.productId || p.hospitalId === review.hospitalId);
-                const hasReviewImages = Boolean(review.beforeImage || review.afterImage);
-                return (
-	                  <Link
-	                    key={review.id}
-	                    href={relatedProduct ? `/product/${relatedProduct.id}` : '#'}
-	                    className="flex-shrink-0 block"
-	                    style={{ width: 230, scrollSnapAlign: 'start' }}
-	                  >
-                      {hasReviewImages && (
-                        <div className="relative overflow-hidden" style={{ borderRadius: '14px 14px 0 0', backgroundColor: '#111' }}>
-                          <div className="flex">
-                            {review.beforeImage && (
-                              <div className="relative flex-1 h-[104px]" style={{ backgroundColor: '#EBEBEB' }}>
-                                <img src={review.beforeImage} alt="시술 전" className="h-full w-full object-cover" />
-                                <span style={{ position: 'absolute', top: 8, left: 8, fontSize: 11, fontWeight: 700, color: '#fff', background: 'rgba(0,0,0,0.45)', borderRadius: 999, padding: '2px 6px' }}>전</span>
-                              </div>
-                            )}
-                            {review.afterImage && (
-                              <div className="relative flex-1 h-[104px]" style={{ backgroundColor: '#DEDEDE' }}>
-                                <img src={review.afterImage} alt="시술 후" className="h-full w-full object-cover" />
-                                <span style={{ position: 'absolute', top: 8, left: 8, fontSize: 11, fontWeight: 700, color: '#fff', background: 'rgba(49,130,246,0.84)', borderRadius: 999, padding: '2px 6px' }}>후</span>
-                              </div>
-                            )}
-                          </div>
+          <div className="px-4 lg:max-w-7xl lg:mx-auto">
+            {/* 프리티풀 상세의 둥실 리뷰 카드 — 흰 카드·댓글형 줄·각자 다른 속도로 떠다닌다 */}
+            <div className="-mx-4 overflow-x-auto px-4 pb-3 pt-1 hide-scrollbar">
+              <div className="flex items-start gap-3" style={{ width: 'max-content' }}>
+                {reviews.slice(0, 10).map((review, i) => {
+                  const relatedProduct = products.find(p => p.id === review.productId) || products.find(p => p.hospitalId === review.hospitalId);
+                  const photos = [review.beforeImage, review.afterImage].filter(Boolean) as string[];
+                  return (
+                    <Link
+                      key={review.id}
+                      href={relatedProduct ? `/product/${relatedProduct.id}` : `/review/${review.id}`}
+                      className="review-float block w-[248px] shrink-0 rounded-[20px] border border-[#EEF0F3] bg-white p-4 active:scale-[0.98]"
+                      style={{ marginTop: (i % 3) * 14, animation: `reviewFloat ${(4.2 + (i % 3) * 0.9).toFixed(1)}s ease-in-out ${(i * 0.35).toFixed(2)}s infinite` }}
+                    >
+                      {photos.length > 0 && (
+                        <div className="mb-3 flex gap-1 overflow-hidden rounded-[14px]">
+                          {photos.map((src, pi) => (
+                            <span key={src} className="relative h-[96px] flex-1 bg-[#F2F4F6]">
+                              <img src={src} alt="" className="h-full w-full object-cover" loading="lazy" />
+                              <span className="absolute left-1.5 top-1.5 rounded-[6px] bg-black/45 px-1.5 text-[11px] font-semibold leading-[18px] text-white">{pi === 0 && review.beforeImage ? '전' : '후'}</span>
+                            </span>
+                          ))}
                         </div>
                       )}
-	                    {/* 카드 본문 */}
-	                    <div style={{ backgroundColor: '#F6F6F8', borderRadius: hasReviewImages ? '0 0 14px 14px' : '14px', padding: '10px 12px' }}>
-	                      <p className="truncate" style={{ fontSize: 12, color: '#C8CEDA' }}>
-	                        {hospital?.location || currentLocation} · {hospital?.name || review.authorName}
-	                      </p>
-	                      <h3 style={{ fontSize: 15, fontWeight: 600, color: '#2B313D', marginTop: 4, lineHeight: '20px' }} className="line-clamp-1">
-	                        {review.treatmentName}
-	                      </h3>
-	                      <div className="flex items-center gap-1" style={{ marginTop: 5 }}>
-	                        <Star size={13} fill="#FBBF24" stroke="#FBBF24" />
-	                        <span style={{ fontSize: 12, fontWeight: 600, color: '#2B313D' }}>{review.rating.toFixed(1)}</span>
-	                        <span style={{ fontSize: 12, color: '#A4ABBA' }}>({relatedProduct?.reviewCount?.toLocaleString() || '0'})</span>
-	                      </div>
-	                      <p style={{ fontSize: 16, fontWeight: 700, color: '#111111', marginTop: 4 }}>
-	                        {review.totalCost.toLocaleString()}원
-	                      </p>
-	                      <div className="flex items-center gap-1" style={{ marginTop: 7 }}>
-	                        <span className="flex items-center gap-1" style={{ fontSize: 11, fontWeight: 500, color: '#8037FF', backgroundColor: '#F4EFFF', borderRadius: 4, padding: '2px 6px' }}>
-	                          <svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
-	                          앱결제
-	                        </span>
-	                        <span className="flex items-center gap-1" style={{ fontSize: 11, fontWeight: 500, color: '#10B981', backgroundColor: '#ECFDF5', borderRadius: 4, padding: '2px 6px' }}>
-	                          <svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4 12 14.01l-3-3"/></svg>
-	                          앱예약
-	                        </span>
-                      </div>
-                    </div>
-                  </Link>
-                );
-              })}
+                      <ReviewCommentRow compact review={{ id: review.id, name: review.authorName, avatarSeed: review.authorId || review.authorName, rating: review.rating, date: review.date, content: review.content }} />
+                      <p className="mt-2.5 truncate rounded-[10px] bg-[#F7F8FA] px-2.5 py-2 text-[12.5px] font-semibold text-[#4E5968]">
+                        {review.treatmentName} · {review.totalCost.toLocaleString()}원
+                      </p>
+                    </Link>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </div>
@@ -459,10 +432,10 @@ export default function HomePage() {
             subtitle="후기가 많은 패키지부터 빠르게 비교해보세요."
             action={<MoreButton href="/search" />}
           />
-          <div className="px-2.5 lg:max-w-7xl lg:mx-auto">
-            <div className="flex gap-1.5 overflow-x-auto hide-scrollbar pb-2 lg:grid lg:grid-cols-4 lg:gap-1.5 lg:overflow-visible">
+          <div className="px-4 lg:max-w-7xl lg:mx-auto">
+            <div className="flex snap-x gap-2.5 overflow-x-auto hide-scrollbar pb-2 scroll-px-4 lg:grid lg:grid-cols-4 lg:gap-4 lg:overflow-visible">
               {weeklyPopularPackages.map((product) => (
-                <div key={product.id} className="w-[42vw] max-w-[180px] flex-shrink-0 lg:w-auto lg:max-w-none lg:flex-shrink">
+                <div key={product.id} className="w-[44vw] max-w-[200px] flex-shrink-0 snap-start lg:w-auto lg:max-w-none lg:flex-shrink">
                   <ProductCard product={product} />
                 </div>
               ))}
@@ -477,10 +450,10 @@ export default function HomePage() {
             subtitle="할인율이 좋은 시술을 골라 추천해드려요."
             action={<MoreButton href="/search" />}
           />
-          <div className="px-2.5 lg:max-w-7xl lg:mx-auto">
-            <div className="flex gap-1.5 overflow-x-auto hide-scrollbar pb-2 lg:grid lg:grid-cols-4 lg:gap-1.5 lg:overflow-visible">
+          <div className="px-4 lg:max-w-7xl lg:mx-auto">
+            <div className="flex snap-x gap-2.5 overflow-x-auto hide-scrollbar pb-2 scroll-px-4 lg:grid lg:grid-cols-4 lg:gap-4 lg:overflow-visible">
               {suggestedPackages.map((product) => (
-                <div key={product.id} className="w-[42vw] max-w-[180px] flex-shrink-0 lg:w-auto lg:max-w-none lg:flex-shrink">
+                <div key={product.id} className="w-[44vw] max-w-[200px] flex-shrink-0 snap-start lg:w-auto lg:max-w-none lg:flex-shrink">
                   <ProductCard product={product} />
                 </div>
               ))}
@@ -491,8 +464,8 @@ export default function HomePage() {
         {/* 요즘 뜨고 있는 병원 */}
         <div className="mb-8">
           <SectionHeader title="요즘 뜨고 있는 병원" subtitle="평점과 후기가 좋은 병원을 둘러보세요." />
-          <div className="px-2.5 lg:max-w-7xl lg:mx-auto">
-            <div className="flex gap-2.5 overflow-x-auto hide-scrollbar pb-2" style={{ scrollSnapType: 'x mandatory' }}>
+          <div className="px-4 lg:max-w-7xl lg:mx-auto">
+            <div className="flex snap-x gap-3 overflow-x-auto pb-2 hide-scrollbar scroll-px-4">
               {(() => {
                 const BLOB = 'https://4ipmgcqyzk6ysqa7.public.blob.vercel-storage.com';
                 const hospitalCovers = [
@@ -506,44 +479,23 @@ export default function HomePage() {
                   `${BLOB}/etc_1754971619.jpg`,
                   `${BLOB}/etc_1770601235.jpg`,
                 ];
-                return trendingHospitals.map((hp, hpIdx) => {
-                const hpReviews = reviews.filter(r => r.hospitalId === hp.id);
-                const topReview = hpReviews[0];
-                const coverSrc = hp.coverImages?.[0] || hospitalCovers[hpIdx % hospitalCovers.length];
-                const logoSrc = resolveHospitalImageUrl(hp);
-                return (
-                  <Link
-                    key={hp.id}
-                    href={`/hospital/detail/${hp.id}`}
-                    className="flex-shrink-0 block"
-                    style={{ width: 286, scrollSnapAlign: 'start' }}
-                  >
-                    {/* 커버 이미지 */}
-                    <div className="relative overflow-hidden" style={{ borderRadius: 16, aspectRatio: '64/26' }}>
-                      <img src={coverSrc} alt={hp.name} className="w-full h-full object-cover" />
-                      {/* 로고 */}
-                      <div className="absolute top-3 left-3 w-8 h-8 bg-white/90 rounded-full overflow-hidden flex items-center justify-center" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.1)' }}>
-                        <img src={logoSrc} alt="" className="w-full h-full object-cover" />
-                      </div>
-                    </div>
-                    {/* 정보 */}
-                    <div style={{ padding: '12px 4px' }}>
-                      <h3 style={{ fontSize: 18, fontWeight: 600, color: '#2B313D' }}>{hp.name}</h3>
-                      {topReview && (
-                        <p style={{ fontSize: 14, fontWeight: 600, color: '#8037FF', marginTop: 4 }}>
-                          {topReview.treatmentName} 후기 {hpReviews.length}개
-                        </p>
-                      )}
-                      <div className="flex items-center gap-1" style={{ marginTop: 6, fontSize: 14, color: '#A4ABBA' }}>
-                        <Star size={14} fill="#FBBF24" stroke="#FBBF24" />
-                        <span style={{ fontWeight: 600, color: '#2B313D' }}>{hp.rating.toFixed(1)}</span>
-                        <span>· 후기 {hp.reviewCount.toLocaleString()}개</span>
-                        <span>· {hp.location}</span>
-                      </div>
-                    </div>
-                  </Link>
-                );
-              });
+                return trendingHospitals.map((hp, hpIdx) => (
+                  <div key={hp.id} className="w-[78vw] max-w-[320px] shrink-0 snap-start">
+                    <HospitalToneCard
+                      index={hpIdx}
+                      hospital={{
+                        id: hp.id,
+                        name: hp.name,
+                        location: hp.location,
+                        image: hp.coverImages?.[0] || hospitalCovers[hpIdx % hospitalCovers.length],
+                        logo: resolveHospitalImageUrl(hp),
+                        rating: hp.rating,
+                        reviewCount: hp.reviewCount,
+                        tags: hp.tags || [],
+                      }}
+                    />
+                  </div>
+                ));
               })()}
             </div>
           </div>
@@ -556,10 +508,10 @@ export default function HomePage() {
             subtitle="많이 찜하고 예약한 상품을 확인해보세요."
             action={<MoreButton href="/search" label="전체보기" />}
           />
-          <div className="px-2.5 lg:max-w-7xl lg:mx-auto">
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-6 stagger-children">
+          <div className="px-4 lg:max-w-7xl lg:mx-auto">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 lg:gap-4 stagger-children">
               {popularProducts.map((product) => (
-                <ProductCard key={product.id} product={product} />
+                <ProductCard key={product.id} product={product} index={popularProducts.indexOf(product)} />
               ))}
             </div>
           </div>
@@ -870,8 +822,10 @@ function NearbyHotPlaces({
 function LiveQuestionsTeaser() {
   // 실시간 접속자 수 — 3850~4450 사이를 ±수십 단위로 흔들어 "살아있는" 느낌.
   // 진짜 presence 백엔드가 생기면 fetch로 바꿔치우면 됨.
-  const [liveCount, setLiveCount] = useState(() => 4000 + Math.floor(Math.random() * 250));
+  // 첫 값은 서버·브라우저가 같아야 한다(hydration 불일치) — 고정값에서 시작해 마운트 뒤 흔든다
+  const [liveCount, setLiveCount] = useState(4120);
   useEffect(() => {
+    setLiveCount(4000 + Math.floor(Math.random() * 250));
     const id = setInterval(() => {
       setLiveCount((prev) => {
         // -18 ~ +31 의 약한 상방 편향 random walk
@@ -1238,7 +1192,7 @@ function RecentlyViewedSection({
         subtitle={hasRecent ? '최근 둘러본 상품을 이어서 확인해보세요.' : '추천으로 보여드려요.'}
         action={<MoreButton href="/wishlist" />}
       />
-      <div className="px-2.5 lg:max-w-7xl lg:mx-auto">
+      <div className="px-4 lg:max-w-7xl lg:mx-auto">
         <div className="flex gap-3 overflow-x-auto hide-scrollbar pb-2 lg:grid lg:grid-cols-4 lg:gap-6 lg:overflow-visible">
           {items.map((p) => (
             <div
@@ -1265,34 +1219,26 @@ function SectionHeader({
   icon?: string;
   action?: ReactNode;
 }) {
+  // 프리티풀 홈 섹션 머리 — (아이콘) 제목 18·20 + 회색 부제 14, 오른쪽 '전체보기 >'
   return (
-    <div className="flex items-start justify-between gap-3 px-2.5 lg:px-6 lg:max-w-7xl lg:mx-auto mb-3">
-      <div className="min-w-0">
-        <div className="flex items-center gap-2">
-          {icon && <img src={icon} alt={title} className="w-6 h-6 flex-shrink-0" />}
-          <h2 className="font-bold text-[22px] leading-[28px] text-[#2B313D]">{title}</h2>
+    <div className="flex items-end justify-between gap-3 px-4 lg:px-6 lg:max-w-7xl lg:mx-auto mb-3">
+      <div className="flex min-w-0 items-center gap-2">
+        {icon && <img src={icon} alt="" className="h-9 w-9 shrink-0 object-contain" />}
+        <div className="min-w-0">
+          <h2 className="text-[18px] font-semibold leading-tight tracking-tight text-[#191F28] lg:text-[20px]">{title}</h2>
+          {subtitle && <p className="mt-1 text-[14px] leading-relaxed text-[#8B95A1]">{subtitle}</p>}
         </div>
-        {subtitle && (
-          <p className="mt-0.5 text-[14px] leading-[19px] text-gray-400">
-            {subtitle}
-          </p>
-        )}
       </div>
-      {action && <div className="flex-shrink-0 pt-0.5">{action}</div>}
+      {action && <div className="shrink-0 pb-0.5">{action}</div>}
     </div>
   );
 }
 
-// MoreButton — collapses to a bare gray chevron in a 24×24 tap target.
-// The `label` prop is kept so older call sites compile, but it's ignored.
-function MoreButton({ href }: { href: string; label?: string }) {
+// 전체보기 — 회색 글자 + 꺾쇠(프리티풀 홈과 같은 모양)
+function MoreButton({ href, label = '전체보기' }: { href: string; label?: string }) {
   return (
-    <Link
-      href={href}
-      aria-label="더보기"
-      className="inline-flex items-center justify-center w-6 h-6 active:opacity-60"
-    >
-      <ChevronRight size={24} strokeWidth={1.8} className="text-gray-400" />
+    <Link href={href} className="flex items-center gap-0.5 text-[13px] font-medium text-[#8B95A1] transition-colors hover:text-[#4E5968] active:opacity-60">
+      {label} <ChevronRight size={16} />
     </Link>
   );
 }
@@ -1309,7 +1255,7 @@ function RecentTagsSection({
   return (
     <div className="mb-6">
       <SectionHeader title="최근 본 태그" />
-      <div className="px-2.5 lg:max-w-7xl lg:mx-auto">
+      <div className="px-4 lg:max-w-7xl lg:mx-auto">
         <div className="flex gap-1.5 overflow-x-auto hide-scrollbar pb-1">
           {tags.map((tag) => (
             <div
