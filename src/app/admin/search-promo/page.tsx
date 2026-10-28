@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { AlertCircle, Check, Save, X, Megaphone } from 'lucide-react';
+import { AlertCircle, Megaphone, Save, Search as SearchIc } from 'lucide-react';
 import { useStore } from '@/store';
-import { PageHeader, SearchInput, EmptyState, PrimaryCTA } from '@/components/admin/ui';
+import { PageHeader, SearchInput, EmptyState, PrimaryCTA, SectionCard, StatusBadge, LoadingRows, Toolbar, Count } from '@/components/admin/ui';
 
 type AdminProduct = {
   id: string;
@@ -105,124 +105,96 @@ export default function AdminSearchPromoPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="adm-stack">
       <PageHeader
-        title="검색 추천 상품"
-        subtitle='검색 화면 "인기검색어" 상단의 "추천(AD)" 슬롯에 노출할 상품을 선택합니다.'
         right={
           <PrimaryCTA onClick={handleSave} disabled={!dirty || saving}>
-            {saving ? '저장 중…' : '저장'}
+            <Save size={16} /> {saving ? '저장 중…' : '저장'}
           </PrimaryCTA>
         }
       />
 
       {(productsError || promoError) && (
-        <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-[13px] text-red-700">
-          <div className="flex items-center gap-2 font-semibold mb-1">
-            <AlertCircle size={14} /> 데이터를 가져오지 못했어요
-          </div>
-          {productsError && <div className="text-[12px]">· {productsError}</div>}
-          {promoError && <div className="text-[12px]">· {promoError}</div>}
+        <div className="adm-note red">
+          <p className="flex items-center gap-2"><AlertCircle size={16} /> 데이터를 가져오지 못했어요</p>
+          {productsError && <p className="font-medium">· {productsError}</p>}
+          {promoError && <p className="font-medium">· {promoError}</p>}
         </div>
       )}
 
-      {/* Current selection card */}
-      <section>
-        <div className="flex items-end justify-between mb-3 px-1">
-          <h2 className="text-[17px] font-bold text-[#191F28] tracking-tight">현재 노출 중</h2>
-          {selectedId && (
-            <button
-              onClick={() => setSelectedId(null)}
-              className="inline-flex items-center gap-1 h-7 px-2.5 text-[12px] font-semibold text-[#4E5968] bg-[#F2F4F6] rounded-md hover:bg-[#E5E8EB]"
-            >
-              해제
-            </button>
-          )}
-        </div>
-        <div className="bg-white rounded-2xl border border-[#E5E8EB] p-5">
-          {display ? (
-            <div className="flex items-center gap-3">
-              <span
-                className="inline-flex items-center justify-center rounded-md flex-shrink-0"
-                style={{ background: '#E5F1FF', color: '#3182F6', fontSize: 12, fontWeight: 700, height: 28, padding: '0 10px' }}
-              >
-                추천
-              </span>
-              <div className="flex-1 min-w-0">
-                <p className="text-[15px] font-semibold text-[#191F28] truncate">{display.name}</p>
-                <p className="text-[12px] text-[#8B95A1] truncate mt-0.5">{display.sub}</p>
-              </div>
-              <span className="text-[12px] font-medium text-[#C9CDD2]">AD</span>
+      {/* 현재 노출 중 */}
+      <SectionCard
+        title="현재 노출 중"
+        sub='검색 화면 "인기검색어" 위 "추천(AD)" 칸에 보여요'
+        action={selectedId ? (
+          <button type="button" className="adm-btn sm" onClick={() => setSelectedId(null)}>해제</button>
+        ) : undefined}
+      >
+        {display ? (
+          <div className="flex items-center gap-3 px-6 pb-6">
+            <StatusBadge tone="blue">추천</StatusBadge>
+            <div className="flex-1 min-w-0">
+              <p className="adm-cell-main truncate">{display.name}</p>
+              <p className="adm-cell-sub truncate">{display.sub}</p>
             </div>
-          ) : (
-            <div className="text-center py-6">
-              <div className="w-10 h-10 mx-auto bg-[#F2F4F6] rounded-full flex items-center justify-center mb-2">
-                <Megaphone size={16} className="text-[#8B95A1]" />
-              </div>
-              <p className="text-[13px] text-[#8B95A1]">선택된 상품이 없어요. 아래에서 선택해 주세요.</p>
-            </div>
-          )}
-        </div>
-      </section>
+            <span className="adm-cell dim">AD</span>
+          </div>
+        ) : (
+          <EmptyState icon={<Megaphone size={22} />} title="선택된 상품이 없어요" hint="아래에서 선택해 주세요." />
+        )}
+      </SectionCard>
 
-      {/* Product picker */}
-      <section>
-        <div className="flex items-end justify-between mb-3 px-1">
-          <h2 className="text-[17px] font-bold text-[#191F28] tracking-tight">상품 선택</h2>
-          <span className="text-[12px] text-[#8B95A1]">
-            {loading ? '불러오는 중…' : `${filtered.length} / ${products.length}개`}
-          </span>
+      {/* 상품 고르기 */}
+      <div className="adm-listcard">
+        <div className="adm-filter">
+          <Toolbar>
+            <SearchInput value={search} onChange={setSearch} placeholder="상품명, 병원명, 카테고리" width={320} />
+            <span className="grow" />
+            {!loading && <Count n={filtered.length} unit={`개 / ${products.length}개`} />}
+          </Toolbar>
         </div>
-        <div className="bg-white rounded-2xl border border-[#E5E8EB] overflow-hidden">
-          <div className="border-b border-[#F2F4F6] p-3">
-            <SearchInput value={search} onChange={setSearch} placeholder="상품명, 병원명, 카테고리 검색" width={undefined as any} />
-          </div>
-          <div className="max-h-[60vh] overflow-y-auto">
-            {loading ? (
-              <div className="px-5 py-10 text-center text-[13px] text-[#8B95A1]">불러오는 중…</div>
-            ) : products.length === 0 ? (
-              <EmptyState title="등록된 상품이 없어요" hint="상품 관리에서 등록한 뒤 다시 시도해 주세요." />
-            ) : filtered.length === 0 ? (
-              <div className="px-5 py-10 text-center text-[13px] text-[#8B95A1]">검색 결과가 없어요</div>
-            ) : (
-              filtered.map((p, i) => {
-                const isSelected = selectedId === p.id;
-                return (
-                  <button
-                    key={p.id}
-                    type="button"
-                    onClick={() => setSelectedId(p.id)}
-                    className="flex w-full items-center gap-3 px-5 py-3 text-left transition-colors"
-                    style={{
-                      background: isSelected ? '#E5F1FF' : 'transparent',
-                      borderBottom: i === filtered.length - 1 ? 'none' : '1px solid #F2F4F6',
-                    }}
+        <div className="max-h-[60vh] overflow-y-auto" role="radiogroup" aria-label="추천 상품">
+          {loading ? (
+            <LoadingRows />
+          ) : products.length === 0 ? (
+            <EmptyState icon={<Megaphone size={22} />} title="등록된 상품이 없어요" hint="상품 관리에서 등록한 뒤 다시 시도해 주세요." />
+          ) : filtered.length === 0 ? (
+            <EmptyState icon={<SearchIc size={22} />} title="검색 결과가 없어요" hint="다른 검색어로 찾아보세요." />
+          ) : (
+            filtered.map((p) => {
+              const isSelected = selectedId === p.id;
+              return (
+                <button
+                  key={p.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={isSelected}
+                  onClick={() => setSelectedId(p.id)}
+                  className={`adm-grow clickable flex w-full items-center gap-3 text-left ${isSelected ? '!bg-[#E8F3FF]' : ''}`}
+                >
+                  {/* 라디오 점(.adm-radio-dot 결) */}
+                  <span
+                    aria-hidden="true"
+                    className="relative h-5 w-5 flex-shrink-0 rounded-full bg-white transition-shadow"
+                    style={{ boxShadow: `inset 0 0 0 2px ${isSelected ? '#3182F6' : '#D1D6DB'}` }}
                   >
-                    <span
-                      className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border"
-                      style={{
-                        background: isSelected ? '#3182F6' : '#FFFFFF',
-                        borderColor: isSelected ? '#3182F6' : '#C9CDD2',
-                      }}
-                    >
-                      {isSelected && <Check size={12} className="text-white" />}
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[14px] font-semibold text-[#191F28] truncate">{p.name || '(이름 없음)'}</p>
-                      <p className="text-[12px] text-[#8B95A1] truncate mt-0.5">
-                        {p.hospital || '병원 미지정'} · {p.category || '카테고리 미지정'}
-                      </p>
-                    </div>
-                    <div className="text-[13px] font-semibold text-[#4E5968] flex-shrink-0">
-                      {p.discountPrice ? `${p.discountPrice.toLocaleString('ko-KR')}원` : '-'}
-                    </div>
-                  </button>
-                );
-              })
-            )}
-          </div>
+                    {isSelected && <span className="absolute inset-[5px] rounded-full bg-[#3182F6]" />}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p className="adm-cell-main truncate">{p.name || '(이름 없음)'}</p>
+                    <p className="adm-cell-sub truncate">
+                      {p.hospital || '병원 미지정'} · {p.category || '카테고리 미지정'}
+                    </p>
+                  </div>
+                  <div className="adm-num flex-shrink-0">
+                    {p.discountPrice ? `${p.discountPrice.toLocaleString('ko-KR')}원` : '-'}
+                  </div>
+                </button>
+              );
+            })
+          )}
         </div>
-      </section>
+      </div>
     </div>
   );
 }

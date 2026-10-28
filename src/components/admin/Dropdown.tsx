@@ -10,11 +10,12 @@ type DropdownOption<T extends string | number> = {
 
 type DropdownOrigin = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
 
+// 메뉴가 커져 나오는 기준점 = 연 자리 쪽(툴팁 메뉴 어법)
 const originClass: Record<DropdownOrigin, string> = {
   'top-left': '',
-  'top-right': 'admin-dropdown-origin-right',
-  'bottom-left': 'admin-dropdown-origin-bottom',
-  'bottom-right': 'admin-dropdown-origin-bottom-right',
+  'top-right': 'o-tr',
+  'bottom-left': 'o-bl',
+  'bottom-right': 'o-br',
 };
 
 const positionStyle: Record<DropdownOrigin, React.CSSProperties> = {
@@ -60,46 +61,43 @@ export function Dropdown<T extends string | number>({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="admin-chip inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full text-[13px] font-semibold border border-[#E5E8EB] bg-white text-[#4E5968] hover:bg-[#F9FAFB]"
+        className={`adm-sortbtn ${open ? 'on' : ''}`}
+        aria-haspopup="menu"
+        aria-expanded={open}
       >
         {trigger ?? <span>{active?.label ?? '선택'}</span>}
-        <ChevronDown
-          size={14}
-          style={{
-            transition: 'transform 0.2s ease',
-            transform: open ? 'rotate(180deg)' : 'rotate(0deg)',
-          }}
-        />
+        <ChevronDown size={18} className="adm-sortbtn-chev" />
       </button>
 
       {open && (
         <>
-          <div className="admin-dropdown-backdrop" onClick={() => setOpen(false)} />
+          <div className="adm-pop-catch" onClick={() => setOpen(false)} />
           <div
-            className={`admin-dropdown ${originClass[origin]}`}
-            style={{ ...positionStyle[origin], minWidth: width ?? 200 }}
+            role="menu"
+            className={`adm-pop-menu ${originClass[origin]}`}
+            style={{ ...positionStyle[origin], minWidth: width ?? 196 }}
           >
-            {title && <div className="admin-dropdown-title">{title}</div>}
-            {options.map((opt) => {
+            {title && <div className="adm-pop-title">{title}</div>}
+            {options.map((opt, i) => {
               const isActive = opt.value === value;
               return (
-                <div
+                <button
                   key={String(opt.value)}
-                  role="button"
-                  tabIndex={0}
+                  type="button"
+                  role="menuitemradio"
+                  aria-checked={isActive}
                   onClick={() => { onChange(opt.value); setOpen(false); }}
-                  className={`admin-dropdown-item ${isActive ? 'admin-dropdown-item-active' : ''}`}
+                  className={`adm-pop-item ${isActive ? 'on' : ''}`}
+                  // 항목은 위에서부터 차례로 오른쪽→왼쪽 촤라락
+                  style={{ animationDelay: `${60 + i * 30}ms` }}
                 >
-                  <span
-                    className="flex-shrink-0 w-[18px] flex items-center justify-center"
-                    style={{ visibility: isActive ? 'visible' : 'hidden' }}
-                  >
-                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-                      <path d="M3 8.5L6.5 12L13 4" stroke="#3182F6" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </span>
                   <span>{opt.label}</span>
-                </div>
+                  {isActive && (
+                    <svg width="18" height="18" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                      <path d="M3 8.5L6.5 12L13 4" stroke="#3182F6" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  )}
+                </button>
               );
             })}
           </div>

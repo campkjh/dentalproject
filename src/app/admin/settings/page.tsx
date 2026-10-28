@@ -1,10 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { AlertCircle, Trash2, Plus, X, Save } from 'lucide-react';
+import { AlertCircle, ShieldCheck, Users, ChevronRight } from 'lucide-react';
 import { siteConfig } from '@/lib/site-config';
 import { useStore } from '@/store';
 import { Dropdown } from '@/components/admin/Dropdown';
+import { PageHeader, SectionCard, PillButton, EmptyState, LoadingRows, AdminModal } from '@/components/admin/ui';
 
 type AdminRow = {
   id: string;
@@ -25,60 +26,23 @@ const cycleLabel: Record<string, string> = {
   weekly: '주간', biweekly: '격주', monthly: '월간', quarterly: '분기',
 };
 
-// ---- Reusable Toss-style components ----
-function SectionCard({ title, action, children }: { title: string; action?: React.ReactNode; children: React.ReactNode }) {
+// ---- 설정 줄(라벨·값·동작) — 어드민 2.0 표 줄 결 ----
+function InfoRow({ label, value, action }: { label: string; value: React.ReactNode; action?: React.ReactNode }) {
   return (
-    <section>
-      <div className="flex items-end justify-between mb-3 px-1">
-        <h2 className="text-[17px] font-bold text-[#191F28] tracking-tight">{title}</h2>
-        {action}
-      </div>
-      <div className="bg-white rounded-2xl border border-[#E5E8EB] overflow-hidden">
-        {children}
-      </div>
-    </section>
-  );
-}
-
-function InfoRow({ label, value, action, last }: { label: string; value: React.ReactNode; action?: React.ReactNode; last?: boolean }) {
-  return (
-    <div
-      className="grid grid-cols-[160px_1fr_auto] items-center gap-4 px-5 py-[14px]"
-      style={{ borderBottom: last ? 'none' : '1px solid #F2F4F6' }}
-    >
-      <span className="text-[13px] font-medium text-[#8B95A1]">{label}</span>
-      <span className="text-[14px] text-[#191F28] truncate">{value}</span>
+    <div className="grid grid-cols-[140px_1fr_auto] items-center gap-4 adm-grow">
+      <span className="adm-cell dim">{label}</span>
+      <span className="adm-cell-main truncate">{value}</span>
       <span>{action}</span>
     </div>
   );
 }
 
-function FieldRow({ label, children, last }: { label: string; children: React.ReactNode; last?: boolean }) {
+function FieldRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div
-      className="grid grid-cols-[160px_1fr] items-center gap-4 px-5 py-[14px]"
-      style={{ borderBottom: last ? 'none' : '1px solid #F2F4F6' }}
-    >
-      <span className="text-[13px] font-medium text-[#8B95A1]">{label}</span>
+    <div className="grid grid-cols-[140px_1fr] items-center gap-4 adm-grow">
+      <span className="adm-label !mb-0">{label}</span>
       <div className="max-w-[420px]">{children}</div>
     </div>
-  );
-}
-
-function PillButton({ children, onClick, tone = 'gray' }: { children: React.ReactNode; onClick?: () => void; tone?: 'gray' | 'blue' | 'red' }) {
-  const styles: Record<string, string> = {
-    gray: 'bg-[#F2F4F6] text-[#4E5968] hover:bg-[#E5E8EB]',
-    blue: 'bg-[#E5F1FF] text-[#3182F6] hover:bg-[#D6E8FF]',
-    red: 'bg-[#FEECEC] text-[#E54848] hover:bg-[#FCDCDC]',
-  };
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`inline-flex items-center h-[28px] px-[10px] rounded-md text-[12px] font-semibold transition-colors ${styles[tone]}`}
-    >
-      {children}
-    </button>
   );
 }
 
@@ -203,19 +167,18 @@ export default function AdminSettingsPage() {
     );
   };
 
-  const inputCls =
-    'w-full h-11 px-3.5 border border-[#E5E8EB] rounded-[10px] text-[14px] text-[#191F28] focus:outline-none focus:border-[#3182F6] focus:ring-2 focus:ring-[#3182F6]/15 bg-white transition-all';
-
   return (
-    <div className="max-w-[920px] mx-auto space-y-7">
-      {/* Page header — Toss-style: bold title + small description */}
-      <div>
-        <h1 className="text-[24px] font-bold tracking-tight text-[#191F28]">설정</h1>
-        <p className="text-[13px] text-[#8B95A1] mt-1.5">플랫폼 기본 정보와 관리자 권한, 정산 정책을 관리합니다.</p>
-      </div>
+    <div className="adm-stack max-w-[920px]">
+      <PageHeader
+        right={
+          <button type="button" className="adm-btn primary" onClick={() => setShowGrant(true)}>
+            <ShieldCheck size={16} /> 관리자 권한 부여
+          </button>
+        }
+      />
 
       {/* ---------- 기본 정보 ---------- */}
-      <SectionCard title="기본 정보">
+      <SectionCard title="기본 정보" sub="Vercel 환경 변수(NEXT_PUBLIC_COMPANY_*)에서 가져와요">
         <InfoRow label="서비스명" value={siteConfig.copyrightName} />
         <InfoRow label="상호" value={siteConfig.companyName} />
         <InfoRow label="대표자" value={siteConfig.representative} />
@@ -223,59 +186,48 @@ export default function AdminSettingsPage() {
         <InfoRow label="통신판매업신고" value={siteConfig.mailOrderNumber} />
         <InfoRow label="주소" value={siteConfig.address} />
         <InfoRow label="고객센터" value={siteConfig.phone} />
-        <InfoRow label="이메일" value={siteConfig.email} last />
+        <InfoRow label="이메일" value={siteConfig.email} />
       </SectionCard>
-      <p className="text-[12px] text-[#8B95A1] -mt-4 px-1">
-        이 정보는 Vercel 환경 변수(<code className="px-1 py-0.5 bg-[#F2F4F6] rounded text-[#4E5968]">NEXT_PUBLIC_COMPANY_*</code>)에서 가져옵니다.
-      </p>
 
       {/* ---------- 관리자 계정 ---------- */}
       <SectionCard
         title="관리자 계정"
-        action={
-          <button
-            onClick={() => setShowGrant(true)}
-            className="inline-flex items-center gap-1.5 h-9 px-3.5 bg-[#3182F6] text-white rounded-[10px] text-[13px] font-semibold hover:bg-[#1B64DA] transition-colors"
-          >
-            권한 부여
-          </button>
-        }
+        sub={loading ? undefined : `${admins.length}명`}
       >
         {loadError && (
-          <div className="mx-5 my-4 rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-700 flex items-center gap-2">
-            <AlertCircle size={14} /> {loadError}
-          </div>
+          <p className="adm-note red mx-6 mb-4 flex items-center gap-2">
+            <AlertCircle size={16} /> {loadError}
+          </p>
         )}
         {loading ? (
-          <div className="px-5 py-10 text-center text-sm text-[#8B95A1]">불러오는 중…</div>
+          <LoadingRows rows={3} />
         ) : admins.length === 0 ? (
-          <div className="px-5 py-12 text-center">
-            <p className="text-[14px] text-[#4E5968] font-medium">관리자 권한을 가진 회원이 없어요.</p>
-            <p className="text-[12px] text-[#8B95A1] mt-1">우측 상단의 "권한 부여" 버튼으로 추가할 수 있어요.</p>
-          </div>
+          <EmptyState icon={<Users size={22} />} title="관리자 권한을 가진 회원이 없어요" hint="오른쪽 위 '관리자 권한 부여'로 추가할 수 있어요." />
         ) : (
-          <div>
-            {admins.map((a, i) => (
-              <div
-                key={a.id}
-                className="grid grid-cols-[1.2fr_1.4fr_1fr_1.2fr_auto] items-center gap-4 px-5 py-[14px]"
-                style={{ borderBottom: i === admins.length - 1 ? 'none' : '1px solid #F2F4F6' }}
-              >
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <div
-                    className="w-8 h-8 rounded-full flex items-center justify-center text-white text-[12px] font-bold flex-shrink-0"
-                    style={{ background: 'linear-gradient(135deg, #3182F6, #90C2FF)' }}
-                  >
-                    {(a.name || a.email || '?').charAt(0).toUpperCase()}
-                  </div>
-                  <span className="text-[14px] font-semibold text-[#191F28] truncate">{a.name || '(미입력)'}</span>
-                </div>
-                <span className="text-[13px] text-[#4E5968] truncate">{a.email}</span>
-                <span className="text-[13px] text-[#8B95A1]">{a.phone || '-'}</span>
-                <span className="text-[13px] text-[#8B95A1]">{formatDate(a.last_sign_in_at)}</span>
-                <PillButton tone="red" onClick={() => handleRevoke(a)}>해제</PillButton>
+          <div className="adm-tscroll">
+            <div className="adm-tscroll-in">
+              <div className="grid grid-cols-[1.2fr_1.4fr_1fr_1.2fr_auto] items-center gap-4 adm-ghead">
+                <div>이름</div>
+                <div>이메일</div>
+                <div>연락처</div>
+                <div>마지막 로그인</div>
+                <div className="text-right">관리</div>
               </div>
-            ))}
+              {admins.map((a) => (
+                <div key={a.id} className="grid grid-cols-[1.2fr_1.4fr_1fr_1.2fr_auto] items-center gap-4 adm-grow">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <span className="adm-avatar">{(a.name || a.email || '?').charAt(0).toUpperCase()}</span>
+                    <span className="adm-cell-main truncate">{a.name || '(미입력)'}</span>
+                  </div>
+                  <span className="adm-cell">{a.email}</span>
+                  <span className="adm-cell dim">{a.phone || '-'}</span>
+                  <span className="adm-cell dim">{formatDate(a.last_sign_in_at)}</span>
+                  <div className="adm-actions">
+                    <PillButton tone="red" onClick={() => handleRevoke(a)}>해제</PillButton>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </SectionCard>
@@ -283,20 +235,17 @@ export default function AdminSettingsPage() {
       {/* ---------- 수수료 / 정산 정책 ---------- */}
       <SectionCard
         title="수수료 · 정산 정책"
+        sub="결제 시 수수료 계산과 정산 배치 작업에 이 값이 사용돼요"
         action={
-          <button
-            onClick={savePolicy}
-            disabled={policyBusy}
-            className="inline-flex items-center gap-1.5 h-9 px-3.5 bg-[#3182F6] text-white rounded-[10px] text-[13px] font-semibold hover:bg-[#1B64DA] transition-colors disabled:opacity-50"
-          >
-            {policyBusy ? '저장 중...' : policySaved ? '저장됨' : '저장'}
+          <button type="button" className="adm-btn sm primary" onClick={savePolicy} disabled={policyBusy}>
+            {policyBusy ? '저장 중…' : policySaved ? '저장됨' : '저장'}
           </button>
         }
       >
         {policyMigrationRequired && (
-          <div className="mx-5 mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-[12px] text-amber-900">
-            <p className="font-semibold flex items-center gap-1.5 mb-1"><AlertCircle size={12} /> 정책 테이블이 없습니다.</p>
-            <p>Supabase SQL Editor에서 <code className="px-1 py-0.5 bg-amber-100 rounded">supabase/migrations/0013_platform_settings.sql</code>을 실행한 후 저장하세요.</p>
+          <div className="adm-note mx-6 mb-4">
+            <p className="flex items-center gap-1.5"><AlertCircle size={14} /> 정책 테이블이 없어요.</p>
+            <p className="font-medium">Supabase SQL Editor에서 <code className="adm-mono">supabase/migrations/0013_platform_settings.sql</code>을 실행한 뒤 저장하세요.</p>
           </div>
         )}
         <FieldRow label="기본 수수료율">
@@ -305,9 +254,9 @@ export default function AdminSettingsPage() {
               type="number" step="0.1" min={0} max={100}
               value={feePolicy.base_fee_percent}
               onChange={(e) => setFeePolicy({ ...feePolicy, base_fee_percent: Number(e.target.value) || 0 })}
-              className={inputCls}
+              className="adm-input"
             />
-            <span className="text-[13px] text-[#8B95A1]">%</span>
+            <span className="adm-cell dim">%</span>
           </div>
         </FieldRow>
         <FieldRow label="프리미엄 수수료율">
@@ -316,9 +265,9 @@ export default function AdminSettingsPage() {
               type="number" step="0.1" min={0} max={100}
               value={feePolicy.premium_fee_percent}
               onChange={(e) => setFeePolicy({ ...feePolicy, premium_fee_percent: Number(e.target.value) || 0 })}
-              className={inputCls}
+              className="adm-input"
             />
-            <span className="text-[13px] text-[#8B95A1]">%</span>
+            <span className="adm-cell dim">%</span>
           </div>
         </FieldRow>
         <FieldRow label="정산 주기">
@@ -330,81 +279,61 @@ export default function AdminSettingsPage() {
             width={200}
           />
         </FieldRow>
-        <FieldRow label="최소 정산 금액" last>
+        <FieldRow label="최소 정산 금액">
           <div className="flex items-center gap-2">
             <input
               type="number" min={0} step={10000}
               value={feePolicy.minimum_payout}
               onChange={(e) => setFeePolicy({ ...feePolicy, minimum_payout: Number(e.target.value) || 0 })}
-              className={inputCls}
+              className="adm-input"
             />
-            <span className="text-[13px] text-[#8B95A1]">원</span>
+            <span className="adm-cell dim">원</span>
           </div>
         </FieldRow>
       </SectionCard>
-      <p className="text-[12px] text-[#8B95A1] -mt-4 px-1">
-        결제 시 수수료 계산과 정산 배치 작업에 이 값이 사용됩니다.
-      </p>
 
       {/* ---------- 기타 안내 ---------- */}
       <SectionCard title="기타 설정">
         <InfoRow
           label="서비스 카테고리"
-          value="카테고리 활성/비활성을 직접 관리합니다."
-          action={<a href="/admin/categories"><PillButton tone="blue">바로 가기</PillButton></a>}
+          value="카테고리 활성/비활성을 직접 관리해요."
+          action={<a href="/admin/categories" className="adm-card-link">바로 가기 <ChevronRight size={16} /></a>}
         />
         <InfoRow
           label="약관 편집"
-          value="개인정보처리방침, 이용약관 등을 편집합니다."
-          action={<a href="/admin/terms"><PillButton tone="blue">바로 가기</PillButton></a>}
-          last
+          value="개인정보처리방침, 이용약관 등을 편집해요."
+          action={<a href="/admin/terms" className="adm-card-link">바로 가기 <ChevronRight size={16} /></a>}
         />
       </SectionCard>
 
       {/* ---------- 권한 부여 모달 ---------- */}
       {showGrant && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center px-4" onClick={() => setShowGrant(false)}>
-          <div className="bg-white rounded-3xl w-full max-w-md p-7" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-[18px] font-bold text-[#191F28]">관리자 권한 부여</h3>
-              <button onClick={() => setShowGrant(false)} className="p-1 -m-1 hover:bg-gray-100 rounded">
-                <X size={18} className="text-[#8B95A1]" />
+        <AdminModal
+          onClose={() => setShowGrant(false)}
+          busy={grantBusy}
+          icon={<span className="adm-modal-ic"><ShieldCheck size={22} /></span>}
+          title="관리자 권한 부여"
+          sub="회원 관리 페이지에서 회원 UUID를 확인할 수 있어요"
+          actions={
+            <>
+              <button type="button" className="adm-btn" onClick={() => setShowGrant(false)} disabled={grantBusy}>취소</button>
+              <button type="button" className="adm-btn primary" onClick={handleGrant} disabled={grantBusy}>
+                {grantBusy ? '처리 중…' : '권한 부여'}
               </button>
-            </div>
-            <p className="text-[13px] text-[#4E5968] mb-4 leading-relaxed">
-              관리자로 지정할 회원의 <strong>UUID</strong>를 입력하세요.<br />
-              (회원 관리 페이지에서 확인 가능)
-            </p>
-            <input
-              value={grantUserId}
-              onChange={(e) => setGrantUserId(e.target.value)}
-              placeholder="예) 8614da07-0cd9-442e-..."
-              className={`${inputCls} font-mono`}
-              autoFocus
-            />
-            {grantError && (
-              <div className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-[12px] text-red-700">
-                {grantError}
-              </div>
-            )}
-            <div className="flex gap-2 mt-5">
-              <button
-                onClick={() => setShowGrant(false)}
-                disabled={grantBusy}
-                className="flex-1 h-11 border border-[#E5E8EB] rounded-[10px] text-[14px] font-semibold text-[#4E5968] hover:bg-[#F9FAFB] disabled:opacity-50"
-              >
-                취소
-              </button>
-              <button
-                onClick={handleGrant}
-                disabled={grantBusy}
-                className="flex-1 h-11 bg-[#3182F6] text-white rounded-[10px] text-[14px] font-semibold hover:bg-[#1B64DA] disabled:opacity-50"
-              >
-                {grantBusy ? '처리 중...' : '권한 부여'}
-              </button>
-            </div>
-          </div>
-        </div>
+            </>
+          }
+        >
+          <label className="adm-label" htmlFor="grant-user-id">회원 UUID</label>
+          <input
+            id="grant-user-id"
+            value={grantUserId}
+            onChange={(e) => setGrantUserId(e.target.value)}
+            placeholder="예) 8614da07-0cd9-442e-..."
+            className="adm-input font-mono"
+            autoFocus
+          />
+          {grantError && <p className="adm-note red mt-3">{grantError}</p>}
+        </AdminModal>
       )}
     </div>
   );

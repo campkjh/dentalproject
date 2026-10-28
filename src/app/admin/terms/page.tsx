@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { FileText, Save, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { FileText, AlertCircle, Save } from 'lucide-react';
 import { useStore } from '@/store';
-import { PageHeader, PrimaryCTA, EmptyState } from '@/components/admin/ui';
+import { PageHeader, PrimaryCTA, EmptyState, StatusBadge, LoadingRows } from '@/components/admin/ui';
 
 type TermsDoc = {
   id: string;
@@ -71,107 +71,93 @@ export default function AdminTermsPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="adm-stack">
       <PageHeader
-        title="약관 관리"
-        subtitle="약관 본문을 편집합니다. 저장 즉시 사용자 페이지에 반영됩니다."
         right={active && (
           <PrimaryCTA onClick={save} disabled={busy}>
-            {savedFlash ? '저장됨' : busy ? '저장 중…' : '저장'}
+            <Save size={16} /> {savedFlash ? '저장됨' : busy ? '저장 중…' : '저장'}
           </PrimaryCTA>
         )}
       />
 
       {loadError && (
-        <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-[13px] text-red-700 flex items-center gap-2">
-          <AlertCircle size={14} /> {loadError}
-        </div>
+        <p className="adm-note red flex items-center gap-2">
+          <AlertCircle size={16} /> {loadError}
+        </p>
       )}
 
-      <div className="rounded-2xl border border-[#D6E8FF] bg-[#F1F7FF] p-4 text-[12px] text-[#1B64DA] flex items-start gap-2">
-        <FileText size={14} className="mt-0.5 flex-shrink-0" />
+      <div className="adm-note blue flex items-start gap-2">
+        <FileText size={16} className="mt-0.5 flex-shrink-0" />
         <div>
-          약관 본문은 Vercel Blob (<code className="bg-white/70 px-1 py-0.5 rounded text-[11px] font-mono">terms/index.json</code>)에 저장됩니다.
-          본문이 비어있는 약관은 기존 정적 페이지 콘텐츠가 그대로 표시돼요.
+          약관 본문은 Vercel Blob(<code className="adm-mono">terms/index.json</code>)에 저장되고, 저장 즉시 사용자 페이지에 반영돼요.
+          본문이 비어 있는 약관은 기존 정적 페이지 콘텐츠가 그대로 표시돼요.
         </div>
       </div>
 
-      <div className="grid grid-cols-[240px_1fr] gap-6">
-        {/* Sidebar */}
-        <div className="bg-white rounded-2xl border border-[#E5E8EB] overflow-hidden h-fit">
-          <div className="px-4 py-3 border-b border-[#F2F4F6] text-[11px] font-semibold text-[#8B95A1] uppercase tracking-wider">
-            약관 목록
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-[260px_1fr]">
+        {/* 약관 목록 */}
+        <section className="adm-card flush h-fit">
+          <div className="adm-card-head">
+            <h2 className="adm-card-title">약관 목록</h2>
           </div>
           {loading ? (
-            <div className="px-4 py-6 text-[13px] text-[#8B95A1] text-center">불러오는 중…</div>
+            <LoadingRows rows={4} />
           ) : (
-            terms.map((t, i) => (
-              <button
-                key={t.id}
-                onClick={() => setActiveId(t.id)}
-                className="w-full text-left px-4 py-3 transition-colors"
-                style={{
-                  background: activeId === t.id ? '#E5F1FF' : 'transparent',
-                  borderBottom: i === terms.length - 1 ? 'none' : '1px solid #F2F4F6',
-                }}
-                onMouseEnter={(e) => {
-                  if (activeId !== t.id) e.currentTarget.style.background = '#F9FAFB';
-                }}
-                onMouseLeave={(e) => {
-                  if (activeId !== t.id) e.currentTarget.style.background = 'transparent';
-                }}
-              >
-                <div
-                  className="text-[14px] font-semibold truncate"
-                  style={{ color: activeId === t.id ? '#3182F6' : '#191F28' }}
+            terms.map((t) => {
+              const on = activeId === t.id;
+              return (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => setActiveId(t.id)}
+                  className={`adm-grow clickable block w-full text-left ${on ? '!bg-[#E8F3FF]' : ''}`}
+                  aria-current={on ? 'true' : undefined}
                 >
-                  {t.title}
-                </div>
-                <div className="text-[11px] text-[#8B95A1] mt-0.5 flex items-center gap-1.5">
-                  <span
-                    className="inline-flex h-[18px] px-1.5 rounded font-semibold items-center"
-                    style={{ background: t.content ? '#E8F8EE' : '#F2F4F6', color: t.content ? '#1AB554' : '#8B95A1' }}
-                  >
-                    {t.content ? '편집됨' : '기본'}
-                  </span>
-                  {t.updatedAt && <span>{new Date(t.updatedAt).toLocaleDateString('ko-KR')}</span>}
-                </div>
-              </button>
-            ))
+                  <div className={`adm-cell-main truncate ${on ? '!text-[#3182F6]' : ''}`}>{t.title}</div>
+                  <div className="mt-1 flex items-center gap-1.5">
+                    <StatusBadge tone={t.content ? 'green' : 'gray'}>{t.content ? '편집됨' : '기본'}</StatusBadge>
+                    {t.updatedAt && <span className="adm-cell dim">{new Date(t.updatedAt).toLocaleDateString('ko-KR')}</span>}
+                  </div>
+                </button>
+              );
+            })
           )}
-        </div>
+        </section>
 
-        {/* Editor */}
+        {/* 편집 */}
         {active ? (
-          <div className="bg-white rounded-2xl border border-[#E5E8EB] p-6">
+          <section className="adm-card">
             <div className="mb-5">
-              <p className="text-[11px] font-mono text-[#8B95A1] mb-1.5">{active.id}</p>
+              <p className="adm-mono mb-1.5">{active.id}</p>
+              <label className="adm-label" htmlFor="terms-title">제목</label>
               <input
+                id="terms-title"
                 value={active.title}
                 onChange={(e) => updateActive({ title: e.target.value })}
-                className="text-[20px] font-bold tracking-tight text-[#191F28] border-b-2 border-transparent hover:border-[#E5E8EB] focus:border-[#3182F6] focus:outline-none w-full pb-1 transition-colors"
+                className="adm-input"
               />
             </div>
 
-            <label className="block text-[12px] font-semibold text-[#4E5968] mb-2">본문</label>
+            <label className="adm-label" htmlFor="terms-body">본문</label>
             <textarea
+              id="terms-body"
               value={active.content}
               onChange={(e) => updateActive({ content: e.target.value })}
               rows={22}
               placeholder="약관 본문을 입력하세요. 비워두면 기존 정적 페이지가 표시됩니다."
-              className="w-full px-4 py-3 border border-[#E5E8EB] rounded-[10px] text-[13px] font-mono text-[#191F28] focus:outline-none focus:border-[#3182F6] focus:ring-2 focus:ring-[#3182F6]/15 resize-y leading-relaxed transition-all"
+              className="adm-input adm-textarea font-mono !text-[14px]"
             />
 
             {active.updatedAt && (
-              <p className="text-[12px] text-[#8B95A1] mt-3">
+              <p className="adm-hint">
                 마지막 수정: {new Date(active.updatedAt).toLocaleString('ko-KR')}
               </p>
             )}
-          </div>
+          </section>
         ) : (
-          <div className="bg-white rounded-2xl border border-[#E5E8EB]">
-            <EmptyState icon={<FileText size={20} className="text-[#8B95A1]" />} title="왼쪽에서 약관을 선택해 주세요" />
-          </div>
+          <section className="adm-card flush">
+            <EmptyState icon={<FileText size={22} />} title="왼쪽에서 약관을 선택해 주세요" />
+          </section>
         )}
       </div>
     </div>

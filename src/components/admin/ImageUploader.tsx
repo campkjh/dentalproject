@@ -47,7 +47,7 @@ export function ImageUploader({
   return (
     <div className="space-y-2">
       <div
-        className="relative overflow-hidden rounded-[12px] border border-[#E5E8EB] bg-[#F9FAFB]"
+        className="relative overflow-hidden rounded-[14px] border-[1.5px] border-dashed border-[#D1D6DB] bg-[#FAFBFC]"
         style={{ aspectRatio: aspect }}
       >
         {value ? (
@@ -56,7 +56,7 @@ export function ImageUploader({
             <button
               type="button"
               onClick={() => onChange('')}
-              className="absolute right-2 top-2 inline-flex h-7 w-7 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80"
+              className="absolute right-2 top-2 inline-flex h-7 w-7 items-center justify-center rounded-full bg-[rgba(25,31,40,.78)] text-white hover:bg-[#191F28]"
               aria-label="이미지 제거"
             >
               <X size={14} />
@@ -67,13 +67,13 @@ export function ImageUploader({
             type="button"
             onClick={() => inputRef.current?.click()}
             disabled={uploading}
-            className="absolute inset-0 flex flex-col items-center justify-center text-[#8B95A1] hover:bg-[#F2F4F6] transition-colors disabled:opacity-50"
+            className="absolute inset-0 flex flex-col items-center justify-center text-[#6B7684] hover:text-[#3182F6] hover:bg-[#F4F8FF] transition-colors disabled:opacity-50"
           >
             <Upload size={20} className="mb-1.5" />
-            <span className="text-[12px] font-semibold">
+            <span className="text-[13px] font-semibold">
               {uploading ? '업로드 중…' : placeholder}
             </span>
-            <span className="text-[11px] mt-0.5 text-[#C9CDD2]">클릭해서 파일 선택</span>
+            <span className="text-[12px] mt-0.5 text-[#B0B8C1]">클릭해서 파일 선택</span>
           </button>
         )}
       </div>
@@ -82,15 +82,15 @@ export function ImageUploader({
           type="button"
           onClick={() => inputRef.current?.click()}
           disabled={uploading}
-          className="h-9 px-3.5 bg-white border border-[#E5E8EB] rounded-[10px] text-[12px] font-semibold text-[#4E5968] hover:bg-[#F9FAFB] disabled:opacity-50"
+          className="adm-btn sm"
         >
           {uploading ? '업로드 중…' : value ? '이미지 변경' : '이미지 선택'}
         </button>
         {value && (
-          <span className="text-[11px] text-[#8B95A1] truncate">{value.split('/').pop()}</span>
+          <span className="text-[12px] text-[#8B95A1] truncate">{value.split('/').pop()}</span>
         )}
       </div>
-      {error && <p className="text-[11px] text-[#E54848]">{error}</p>}
+      {error && <p className="text-[12.5px] font-semibold text-[#F04452]">{error}</p>}
       <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
     </div>
   );

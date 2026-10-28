@@ -1,0 +1,484 @@
+/* ═══ 마이닥 어드민 — 프리티풀 어드민 2.0 톤앤매너 이식 ═══════════════════════════════
+   · 회색 바탕(#F2F4F6) + 흰 카드(모서리 20, 테두리·그림자 없음) · 글자 14~15 · 고른 것 = 연한 파랑(#E8F3FF) + 파랑 글자
+   · 껍데기(.adm-shell · .adm-side · .adm-head) = admin/layout.tsx, 공통 조각(.adm-card · .adm-stat · .adm-btn · .adm-badge …) = components/admin
+   · 등장 = 아래→위 스르르(admRise), 표 줄은 차례로, 버튼 누름 쫀득, 메뉴 고른 바탕은 미끄러진다
+   · 글자 굵기 최대 700(800·900 금지)
+   · 원본 = 프리티풀 apps/web/src/app/globals.css 의 .admin-shell · .adm-* 규칙(필요한 것만 옮김, 이름 그대로) */
+
+@keyframes admRise {
+  from { opacity: 0; transform: translate3d(0, 14px, 0); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes admRowIn {
+  from { opacity: 0; transform: translate3d(0, 8px, 0); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes admSlideIn {
+  from { opacity: 0; transform: translate3d(22px, 0, 0); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes admDrawerIn {
+  from { transform: translateX(-100%); }
+  to { transform: none; }
+}
+@keyframes admShimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+@keyframes admFade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes admPop { from { opacity: 0; transform: translateY(12px) scale(.98); } to { opacity: 1; transform: none; } }
+@keyframes admDpRise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes admSpin { to { transform: rotate(360deg); } }
+/* 툴팁 메뉴 — 작게 시작해 정비율로 커지고, 항목은 오른쪽→왼쪽으로 촤라락 */
+@keyframes admPopMenuIn {
+  0% { opacity: 0; transform: scale(0.5); }
+  35% { opacity: 1; }
+  100% { opacity: 1; transform: scale(1); }
+}
+@keyframes admPopItemIn {
+  0% { opacity: 0; transform: translateX(20px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+
+.admin-shell {
+  --admin-blue: #3182F6;
+  --admin-blue-press: #2272EB;
+  --admin-blue-weak: #E8F3FF;
+  --admin-ink: #191F28;
+  --admin-sub: #4E5968;
+  --admin-muted: #6B7684;
+  --admin-ph: #8B95A1;
+  --admin-dis: #B0B8C1;
+  --admin-line: #E5E8EB;
+  --admin-divider: #F2F4F6;
+  --admin-surface: #FFFFFF;
+  --admin-bg: #F2F4F6;
+  --admin-green: #03B26C;
+  --admin-green-weak: #E5F8EF;
+  --admin-red: #F04452;
+  --admin-red-weak: #FFEEEF;
+  --admin-orange: #F46A00;
+  --admin-orange-weak: #FFF1E6;
+  --admin-purple: #7B4DFF;
+  --admin-purple-weak: #F3EEFF;
+  --adm-ease: cubic-bezier(.22, .61, .36, 1);
+  --adm-spring: cubic-bezier(.3, 1.25, .5, 1);
+  font-size: 14px;
+  line-height: 1.5;
+  letter-spacing: -0.2px;
+  color: var(--admin-ink);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* ── 껍데기 ── */
+.adm-shell { display: flex; height: 100vh; height: 100dvh; overflow: hidden; background: var(--admin-bg); }
+body:has(.adm-shell) { background-color: #F2F4F6; }
+.adm-side { display: none; width: 248px; flex: none; flex-direction: column; background: #fff; border-right: 1px solid #EEF0F3; }
+@media (min-width: 768px) { .adm-side { display: flex; } }
+.adm-side-top { height: 72px; flex: none; display: flex; align-items: center; justify-content: space-between; padding: 0 22px; }
+.adm-brand { display: flex; align-items: center; gap: 8px; min-width: 0; text-decoration: none; color: var(--admin-ink); }
+.adm-brand-logo { width: 24px; height: 24px; flex: none; }
+.adm-brand-name { font-size: 18px; font-weight: 700; letter-spacing: -0.5px; color: var(--admin-ink); }
+.adm-brand-tag { padding: 3px 8px; border-radius: 999px; background: var(--admin-blue-weak); color: var(--admin-blue); font-size: 12px; font-weight: 700; line-height: 1.4; white-space: nowrap; }
+.adm-side-scroll { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; padding: 4px 14px 16px; scrollbar-width: none; }
+.adm-side-scroll::-webkit-scrollbar { display: none; }
+.adm-nav { position: relative; display: flex; flex-direction: column; gap: 18px; }
+.adm-nav-sec { display: flex; flex-direction: column; gap: 2px; }
+.adm-nav-label { margin: 0; padding: 0 12px 6px; font-size: 12px; font-weight: 600; color: var(--admin-ph); }
+.adm-nav-item { position: relative; z-index: 1; display: flex; align-items: center; gap: 12px; height: 46px; padding: 0 12px; border: 0; border-radius: 12px; background: none; color: var(--admin-sub); font-family: inherit; font-size: 15px; font-weight: 600; text-decoration: none; cursor: pointer; transition: background-color .15s ease, color .15s ease; }
+.adm-nav-item:hover:not(.on) { background: #F7F8FA; color: var(--admin-ink); }
+.adm-nav-item.on { color: var(--admin-blue); }
+.adm-nav-pill { position: absolute; left: 0; right: 0; top: 0; z-index: 0; border-radius: 12px; background: var(--admin-blue-weak); transition: transform .42s var(--adm-spring), height .3s var(--adm-ease); pointer-events: none; }
+.adm-nav-item .adm-nav-ic { flex: none; color: #B0B8C1; transition: color .2s ease; }
+.adm-nav-item.on .adm-nav-ic { color: var(--admin-blue); }
+.adm-nav-text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left; }
+.adm-side-foot { margin-top: auto; padding-top: 18px; display: flex; flex-direction: column; gap: 6px; }
+.adm-account { display: flex; align-items: center; gap: 10px; padding: 10px 10px 10px 12px; border-radius: 14px; background: #F7F8FA; }
+.adm-avatar { width: 32px; height: 32px; flex: none; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--admin-blue-weak); color: var(--admin-blue); font-size: 13px; font-weight: 700; }
+.adm-account-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; font-weight: 600; }
+.adm-account-out { flex: none; padding: 6px 10px; border: 0; border-radius: 10px; background: #fff; color: var(--admin-muted); font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; }
+.adm-account-out:hover { color: var(--admin-red); }
+.adm-body { position: relative; flex: 1; min-width: 0; display: flex; flex-direction: column; }
+
+/* 머리 — 스크롤(.adm-main) 밖 한 줄. 폰 .adm-mtop(로고·종·메뉴), 데스크톱 .adm-dtop(작은 제목·종).
+   내리면(.adm-body[data-scrolled]) 아래 가장자리에 바탕색 → 투명 그라데이션, 큰 제목이 머리 밑으로 들어가면(data-titled) 작은 제목이 올라온다 */
+.adm-mtop { position: relative; z-index: 5; display: flex; height: 60px; flex: none; align-items: center; justify-content: space-between; padding: 0 12px 0 18px; background: var(--admin-bg); }
+@media (min-width: 768px) { .adm-mtop { display: none; } }
+.adm-mtop-btn { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border: 0; border-radius: 12px; background: transparent; color: var(--admin-sub); cursor: pointer; }
+.adm-mtop-btn:hover { background: #E8EBEE; }
+.adm-dtop { display: none; position: relative; z-index: 5; flex: none; height: 64px; background: var(--admin-bg); }
+@media (min-width: 768px) { .adm-dtop { display: block; } }
+.adm-dtop-in { display: flex; align-items: center; justify-content: space-between; gap: 16px; max-width: 1360px; height: 100%; margin: 0 auto; padding: 0 30px 0 40px; }
+.adm-dtop-title { min-width: 0; margin: 0; overflow: hidden; color: var(--admin-ink); font-size: 17px; font-weight: 700; letter-spacing: -0.4px; text-overflow: ellipsis; white-space: nowrap; opacity: 0; transform: translate3d(0, 10px, 0); transition: opacity .28s ease, transform .5s var(--adm-ease); }
+.adm-body[data-titled] .adm-dtop-title { opacity: 1; transform: none; }
+.adm-dtop-act { display: flex; flex: none; align-items: center; margin-left: auto; }
+.adm-mtop::after, .adm-dtop::after {
+  content: ''; position: absolute; left: 0; right: 0; top: 100%; height: 28px; pointer-events: none; opacity: 0; transition: opacity .42s var(--adm-ease);
+  background: linear-gradient(to bottom, rgba(242, 244, 246, 1) 0%, rgba(242, 244, 246, .94) 13%, rgba(242, 244, 246, .82) 27%, rgba(242, 244, 246, .64) 42%, rgba(242, 244, 246, .44) 57%, rgba(242, 244, 246, .25) 72%, rgba(242, 244, 246, .1) 86%, rgba(242, 244, 246, 0) 100%);
+}
+.adm-dtop::after { height: 40px; }
+.adm-body[data-scrolled] .adm-mtop::after, .adm-body[data-scrolled] .adm-dtop::after { opacity: 1; }
+.adm-ubtn { position: relative; width: 44px; height: 44px; flex: none; display: flex; align-items: center; justify-content: center; padding: 0; border: 0; border-radius: 50%; background: transparent; color: var(--admin-sub); cursor: pointer; transition: background-color .15s ease, transform .12s var(--adm-ease); }
+.adm-ubtn:hover { background: rgba(0, 0, 0, .04); }
+.adm-ubtn:active { transform: scale(.92); background: rgba(0, 0, 0, .06); }
+.adm-mtop .adm-ubtn { width: 40px; height: 40px; }
+
+.adm-main { flex: 1; min-width: 0; overflow: auto; background: var(--admin-bg); }
+.adm-frame { position: relative; max-width: 1360px; margin: 0 auto; padding: 28px 16px 56px; }
+@media (min-width: 768px) { .adm-frame { padding: 8px 40px 72px; } }
+
+/* 페이지 머리 — 큰 제목(26) + 설명, 오른쪽 = 화면 버튼 자리(PageHeader 가 포털로 넣는다) */
+.adm-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 24px; }
+.adm-head-text { min-width: 0; }
+.adm-head-act { display: flex; flex: none; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; }
+.adm-head-act:empty { display: none; }
+@media (max-width: 640px) { .adm-head { flex-direction: column; align-items: stretch; } .adm-head-act { justify-content: flex-start; } }
+.admin-shell .adm-title { margin: 0; font-size: 26px !important; font-weight: 700 !important; line-height: 1.35 !important; letter-spacing: -0.6px; color: var(--admin-ink) !important; animation: admRise .5s var(--adm-ease) both; }
+.adm-desc { margin: 6px 0 0; font-size: 15px; color: var(--admin-muted); animation: admRise .5s var(--adm-ease) .05s both; }
+/* 제목 탭 — 큰 제목 글씨가 그대로 탭(고른 것 = 검정, 나머지 = 옅은 회색 #C4CAD1) */
+.adm-title-tabs { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 18px; animation: admRise .5s var(--adm-ease) both; }
+.admin-shell .adm-title-tab { padding: 0; border: 0; background: none; font-family: inherit; font-size: 26px !important; font-weight: 700 !important; line-height: 1.35 !important; letter-spacing: -0.6px; color: #C4CAD1; text-decoration: none; cursor: pointer; transition: color .22s ease; -webkit-tap-highlight-color: transparent; }
+.admin-shell .adm-title-tab:hover { color: #8B95A1; }
+.admin-shell .adm-title-tab.on { color: var(--admin-ink); cursor: default; }
+.admin-shell .adm-title-tab:focus-visible { outline: none; text-decoration: underline; text-underline-offset: 6px; }
+.admin-shell .adm-title-tab:active { transform: none; }
+@media (max-width: 640px) { .admin-shell .adm-title-tab, .admin-shell .adm-title { font-size: 23px !important; } .adm-title-tabs { gap: 2px 14px; } }
+/* 본문 안 작은 탭(흰 알약 줄, 고른 바탕이 미끄러진다) */
+.adm-tabs { position: relative; display: inline-flex; gap: 2px; padding: 4px; border-radius: 14px; background: #fff; max-width: 100%; overflow-x: auto; scrollbar-width: none; }
+.adm-tabs::-webkit-scrollbar { display: none; }
+.adm-tab { position: relative; z-index: 1; display: flex; align-items: center; gap: 6px; height: 38px; padding: 0 18px; border: 0; border-radius: 10px; background: none; color: var(--admin-muted); font-family: inherit; font-size: 15px; font-weight: 600; white-space: nowrap; text-decoration: none; cursor: pointer; }
+.adm-tab:hover:not(.on) { color: var(--admin-ink); }
+.adm-tab.on { color: var(--admin-blue); }
+.adm-tab-ind { position: absolute; left: 0; top: 4px; bottom: 4px; z-index: 0; border-radius: 10px; background: var(--admin-blue-weak); transition: transform .42s var(--adm-spring), width .3s var(--adm-ease); pointer-events: none; }
+
+/* 본문 등장 — 페이지 맨 바깥 div 의 자식(섹션)마다 오른쪽에서 차례로 */
+.adm-content > * > * { animation: admSlideIn .46s var(--adm-ease) both; }
+.adm-content > * > *:nth-child(1) { animation-delay: .08s; }
+.adm-content > * > *:nth-child(2) { animation-delay: .14s; }
+.adm-content > * > *:nth-child(3) { animation-delay: .2s; }
+.adm-content > * > *:nth-child(4) { animation-delay: .26s; }
+.adm-content > * > *:nth-child(5) { animation-delay: .32s; }
+.adm-content > * > *:nth-child(n + 6) { animation-delay: .38s; }
+/* 떠 있는 것(모달·고정 막대)은 등장 애니에서 뺀다 — transform 이 fixed 기준을 바꾼다 */
+.adm-content > * > .fixed, .adm-content > * > .adm-modal-root { animation: none; }
+
+.adm-drawer-wrap { position: fixed; inset: 0; z-index: 60; }
+.adm-drawer-dim { position: absolute; inset: 0; background: rgba(0, 0, 0, .36); animation: admFade .2s ease; }
+.adm-drawer { position: absolute; top: 0; bottom: 0; left: 0; width: 300px; max-width: 86vw; display: flex; flex-direction: column; background: #fff; box-shadow: 0 0 40px rgba(0, 0, 0, .12); animation: admDrawerIn .32s var(--adm-ease) both; }
+.adm-spinner { width: 36px; height: 36px; border-radius: 50%; border: 3.5px solid #E5E8EB; border-top-color: #3182F6; animation: admSpin .8s linear infinite; }
+
+/* ── 카드 · 숫자 ── */
+.adm-stack { display: flex; flex-direction: column; gap: 16px; }
+.adm-card { background: #fff; border-radius: 20px; padding: 24px; }
+.adm-card.flush { padding: 0; overflow: hidden; }
+.adm-card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+.adm-card.flush > .adm-card-head { margin: 0; padding: 22px 24px 14px; }
+.adm-card-title { margin: 0; font-size: 18px; font-weight: 700; letter-spacing: -0.4px; color: var(--admin-ink); }
+.adm-card-sub { margin: 2px 0 0; font-size: 13px; color: var(--admin-ph); }
+.adm-card-link { display: inline-flex; align-items: center; gap: 2px; color: var(--admin-muted); font-size: 14px; font-weight: 600; text-decoration: none; }
+.adm-card-link:hover { color: var(--admin-blue); }
+/* 숫자 줄 — 박스 없이 회색 바탕 위에 바로 */
+.adm-stats { display: grid; gap: 18px 16px; padding: 4px 2px 0; }
+.adm-stat { min-width: 0; background: transparent; border-radius: 0; padding: 6px 2px; }
+.adm-stat-label { margin: 0; overflow: hidden; font-size: 15px; font-weight: 500; color: var(--admin-muted); text-overflow: ellipsis; white-space: nowrap; }
+.adm-stat-value { margin: 8px 0 0; overflow: hidden; font-size: 28px; font-weight: 700; letter-spacing: -0.8px; line-height: 1.2; color: var(--admin-ink); font-variant-numeric: tabular-nums; text-overflow: ellipsis; white-space: nowrap; }
+.adm-stat-value small { margin-left: 2px; font-size: 18px; font-weight: 600; color: var(--admin-sub); }
+.adm-stat-sub { margin: 6px 0 0; font-size: 13px; color: var(--admin-ph); }
+@media (max-width: 640px) { .adm-stat-value { font-size: 22px; letter-spacing: -0.5px; } .adm-stat-value small { font-size: 15px; } }
+a.adm-stat { text-decoration: none; color: inherit; }
+a.adm-stat:hover .adm-stat-value { color: var(--admin-blue); }
+
+/* ── 버튼 ── h40 · 모서리 12 · 회색 #F2F4F6 · 누르면 쫀득 */
+.adm-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 40px; padding: 0 16px; border: 0; border-radius: 12px; background: #F2F4F6; color: var(--admin-sub); font-family: inherit; font-size: 14px; font-weight: 600; white-space: nowrap; cursor: pointer; text-decoration: none; transition: transform .12s var(--adm-ease), background-color .15s ease, color .15s ease, opacity .15s ease; }
+.adm-btn:hover:not(:disabled) { background: #E8EBEE; color: var(--admin-ink); }
+.adm-btn:active:not(:disabled) { transform: scale(.96); }
+.adm-btn:disabled { opacity: .45; cursor: default; }
+.adm-btn.primary { background: var(--admin-blue); color: #fff; }
+.adm-btn.primary:hover:not(:disabled) { background: var(--admin-blue-press); color: #fff; }
+.adm-btn.weak { background: var(--admin-blue-weak); color: var(--admin-blue); }
+.adm-btn.weak:hover:not(:disabled) { background: #D9EBFF; color: var(--admin-blue); }
+.adm-btn.danger { background: var(--admin-red-weak); color: var(--admin-red); }
+.adm-btn.danger:hover:not(:disabled) { background: #FFE0E3; color: var(--admin-red); }
+.adm-btn.danger-solid { background: var(--admin-red); color: #fff; }
+.adm-btn.danger-solid:hover:not(:disabled) { background: #E42939; color: #fff; }
+.adm-btn.ok { background: var(--admin-green-weak); color: var(--admin-green); }
+.adm-btn.ok:hover:not(:disabled) { background: #D3F3E3; color: var(--admin-green); }
+.adm-btn.warn { background: var(--admin-orange-weak); color: var(--admin-orange); }
+.adm-btn.warn:hover:not(:disabled) { background: #FFE4CC; color: var(--admin-orange); }
+.adm-btn.purple { background: var(--admin-purple-weak); color: var(--admin-purple); }
+.adm-btn.purple:hover:not(:disabled) { background: #E8DEFF; color: var(--admin-purple); }
+.adm-btn.white { background: #fff; }
+.adm-btn.white:hover:not(:disabled) { background: #F7F8FA; }
+.adm-btn.ghost { background: transparent; }
+.adm-btn.ghost:hover:not(:disabled) { background: #F2F4F6; }
+.adm-btn.sm { height: 32px; padding: 0 12px; border-radius: 10px; font-size: 13px; }
+.adm-btn.lg { height: 48px; padding: 0 18px; border-radius: 14px; font-size: 15px; }
+.adm-btn.icon { width: 40px; padding: 0; }
+.adm-btn.icon.sm { width: 32px; }
+/* 머리 오른쪽(회색 바탕 위) 회색 버튼은 흰색으로 */
+.adm-head-act .adm-btn:not(.primary):not(.weak):not(.danger):not(.danger-solid):not(.ok):not(.warn):not(.purple) { background: #fff; }
+.adm-head-act .adm-btn:not(.primary):not(.weak):not(.danger):not(.danger-solid):not(.ok):not(.warn):not(.purple):hover:not(:disabled) { background: #F7F8FA; }
+.adm-link { padding: 0; border: 0; background: none; color: var(--admin-blue); font-family: inherit; font-size: 14px; font-weight: 600; text-decoration: none; cursor: pointer; }
+.adm-link:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+/* ── 칩(시간 거르기 등) · 뱃지 ── */
+.adm-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.adm-chip { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 14px; border: 0; border-radius: 999px; background: #fff; color: var(--admin-muted); font-family: inherit; font-size: 14px; font-weight: 600; white-space: nowrap; cursor: pointer; transition: background-color .2s ease, color .2s ease, transform .12s var(--adm-ease); }
+.adm-chip:hover:not(.on) { color: var(--admin-ink); }
+.adm-chip:active { transform: scale(.95); }
+.adm-chip.on { background: var(--admin-blue-weak); color: var(--admin-blue); }
+.adm-chip .n { font-size: 13px; font-weight: 700; opacity: .7; }
+.adm-badge { display: inline-flex; align-items: center; gap: 4px; height: 24px; padding: 0 9px; border-radius: 8px; background: #F2F4F6; color: var(--admin-muted); font-size: 12.5px; font-weight: 700; white-space: nowrap; }
+.adm-badge.blue { background: var(--admin-blue-weak); color: var(--admin-blue); }
+.adm-badge.green { background: var(--admin-green-weak); color: var(--admin-green); }
+.adm-badge.red { background: var(--admin-red-weak); color: var(--admin-red); }
+.adm-badge.orange { background: var(--admin-orange-weak); color: var(--admin-orange); }
+.adm-badge.purple { background: var(--admin-purple-weak); color: var(--admin-purple); }
+.adm-badge.solid { background: var(--admin-blue); color: #fff; }
+
+/* ── 입력 ── 회색 바탕 44 · 모서리 12 · 누르면 흰 바탕 + 파란 테두리 */
+.adm-label { display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600; color: var(--admin-muted); }
+.adm-input { width: 100%; height: 44px; padding: 0 14px; border: 1.5px solid transparent; border-radius: 12px; background: #F2F4F6; color: var(--admin-ink); font-family: inherit; font-size: 15px; outline: none; transition: background-color .15s ease, border-color .15s ease; }
+.adm-input:focus { background: #fff; border-color: var(--admin-blue); }
+.adm-input::placeholder { color: var(--admin-dis); }
+.adm-input:disabled { opacity: .6; cursor: default; }
+.adm-input.sm { width: auto; height: 36px; padding: 0 10px; border-radius: 10px; font-size: 14px; }
+.adm-input.adm-textarea { height: auto; min-height: 96px; padding: 12px 14px; line-height: 1.55; resize: vertical; }
+select.adm-input { padding-right: 36px; -webkit-appearance: none; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' stroke='%238B95A1' stroke-width='1.8' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; cursor: pointer; }
+.adm-hint { margin: 6px 0 0; font-size: 12.5px; line-height: 1.55; color: var(--admin-ph); }
+.adm-field + .adm-field { margin-top: 16px; }
+.adm-note { margin: 0; padding: 12px 16px; border-radius: 14px; background: var(--admin-orange-weak); color: #B35000; font-size: 13px; font-weight: 600; line-height: 1.55; }
+.adm-note.blue { background: var(--admin-blue-weak); color: #1B64DA; }
+.adm-note.red { background: var(--admin-red-weak); color: #D22030; }
+
+/* 검색칸 — 회색 44 · 돋보기 · 지우기 동그라미(프리티풀 AdminSearchField) */
+.adm-sf { position: relative; display: flex; align-items: center; min-width: 220px; height: 44px; padding: 0 11px 0 10px; border-radius: 12px; background: #F2F4F6; cursor: text; }
+.adm-sf-ic { flex: none; color: rgba(0, 19, 43, .58); }
+.admin-shell .adm-sf input { flex: 1; min-width: 0; height: 100%; margin: 0 0 0 9px; padding: 0 4px 0 0; border: 0; border-radius: 0 !important; outline: none; box-shadow: none !important; background: transparent; color: #191F28; font-family: inherit; font-size: 16px; font-weight: 500; letter-spacing: 0; caret-color: #3182F6; -webkit-appearance: none; appearance: none; -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 16px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 16px), transparent); }
+.admin-shell .adm-sf input::placeholder { color: rgba(3, 24, 50, .46); opacity: 1; }
+.adm-sf input::-webkit-search-cancel-button, .adm-sf input::-webkit-search-decoration { -webkit-appearance: none; appearance: none; display: none; }
+.adm-sf-clear { flex: none; display: grid; place-items: center; width: 24px; height: 24px; margin-left: 4px; padding: 0; border: 0; border-radius: 50%; background: none; color: rgba(0, 25, 54, .31); cursor: pointer; animation: admFade .15s ease both; transition: color .15s ease; }
+.adm-sf-clear:hover { color: rgba(0, 25, 54, .45); }
+@media (max-width: 640px) { .adm-sf { min-width: 0; flex: 1 1 100%; } }
+
+/* ── 목록 카드 — 거르기 줄(검색·라디오·건수) + 표 = 흰 카드 하나 ── */
+.adm-listcard { background: #fff; border-radius: 20px; overflow: hidden; }
+.adm-filter { display: flex; flex-direction: column; box-shadow: inset 0 -1px 0 var(--admin-divider); }
+.adm-filter > .adm-toolbar { padding: 12px 14px 12px 20px; }
+.adm-filter > .adm-toolbar + .adm-toolbar { box-shadow: inset 0 1px 0 var(--admin-divider); }
+.adm-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; min-width: 0; }
+.adm-toolbar .grow { flex: 1; }
+.adm-toolbar-label { color: var(--admin-muted); font-size: 14px; font-weight: 600; white-space: nowrap; }
+.adm-count { padding: 0 6px; color: var(--admin-muted); font-size: 14px; white-space: nowrap; }
+.adm-count b { color: var(--admin-ink); font-weight: 700; }
+.adm-filter .adm-chip { background: #F2F4F6; }
+.adm-filter .adm-chip.on { background: var(--admin-blue-weak); }
+.adm-daterange { display: inline-flex; align-items: center; gap: 6px; color: var(--admin-dis); }
+
+/* 표(줄 = grid div) — 머리 48 · 회색 13 글씨, 칸 위아래 16 · 양 끝 24, 가는 선, 줄은 차례로 올라온다 */
+.adm-ghead { padding: 0 24px; min-height: 48px; align-items: center; border-bottom: 1px solid var(--admin-divider); color: var(--admin-ph); font-size: 13px; font-weight: 600; white-space: nowrap; }
+.adm-grow { padding: 14px 24px; min-height: 64px; border-bottom: 1px solid var(--admin-divider); color: #333D4B; font-size: 14px; transition: background-color .15s ease; animation: admRowIn .36s var(--adm-ease) both; }
+.adm-grow:last-child { border-bottom: 0; }
+.adm-grow:hover { background: #F9FAFB; }
+.adm-grow.clickable { cursor: pointer; }
+.adm-grow.clickable:hover { background: #F4F8FF; }
+.adm-grow:nth-child(2) { animation-delay: 25ms; }
+.adm-grow:nth-child(3) { animation-delay: 50ms; }
+.adm-grow:nth-child(4) { animation-delay: 75ms; }
+.adm-grow:nth-child(5) { animation-delay: 100ms; }
+.adm-grow:nth-child(6) { animation-delay: 125ms; }
+.adm-grow:nth-child(n + 7) { animation-delay: 150ms; }
+.adm-grow.off { background: #FAFBFC; }
+.adm-grow.off .adm-cell-main { color: var(--admin-dis); }
+/* 가로로 넘치면 옆으로 민다 */
+.adm-tscroll { overflow-x: auto; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; }
+.adm-tscroll > .adm-tscroll-in { min-width: 960px; }
+/* <table> 쓰는 표 */
+.adm-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+.admin-shell .adm-table th { height: 48px; padding: 0 16px; background: #fff; border: 0; border-bottom: 1px solid var(--admin-divider); color: var(--admin-ph); font-size: 13px; font-weight: 600; text-align: left; white-space: nowrap; }
+.admin-shell .adm-table td { padding: 16px; border-bottom: 1px solid var(--admin-divider); color: #333D4B; font-size: 14px; vertical-align: middle; }
+.admin-shell .adm-table th:first-child, .admin-shell .adm-table td:first-child { padding-left: 24px; }
+.admin-shell .adm-table th:last-child, .admin-shell .adm-table td:last-child { padding-right: 24px; }
+.admin-shell .adm-table tbody tr:last-child td { border-bottom: 0; }
+.admin-shell .adm-table tbody tr { animation: admRowIn .36s var(--adm-ease) both; }
+.admin-shell .adm-table tbody tr:hover { background: #F9FAFB; }
+/* 칸 글씨 — 굵은 첫 줄 + 회색 둘째 줄 */
+.adm-cell-main { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 15px; font-weight: 600; color: var(--admin-ink); }
+.adm-cell-sub { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 2px; font-size: 13px; color: var(--admin-ph); }
+.adm-cell { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--admin-sub); font-size: 14px; }
+.adm-cell.dim { color: var(--admin-ph); font-size: 13px; }
+.adm-mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; color: var(--admin-ph); letter-spacing: 0; }
+.adm-num { font-size: 14px; font-weight: 600; color: var(--admin-ink); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.adm-ava { flex: none; width: 36px; height: 36px; border-radius: 50%; object-fit: cover; display: flex; align-items: center; justify-content: center; overflow: hidden; background: #F2F4F6; color: var(--admin-muted); font-size: 13px; font-weight: 700; }
+.adm-thumb { flex: none; width: 44px; height: 44px; border-radius: 10px; object-fit: cover; overflow: hidden; background: #F2F4F6; }
+.adm-actions { display: flex; align-items: center; justify-content: flex-end; gap: 6px; }
+.adm-table-foot { margin: 0; padding: 14px 24px 18px; border-top: 1px solid var(--admin-divider); font-size: 13px; line-height: 1.6; color: var(--admin-ph); text-align: center; }
+.adm-table-foot b { color: var(--admin-ink); font-weight: 700; }
+.adm-more { display: flex; align-items: center; justify-content: center; height: 40px; color: var(--admin-dis); font-size: 12.5px; }
+.adm-empty { padding: 56px 16px; text-align: center; color: var(--admin-ph); font-size: 15px; }
+.adm-empty-ic { display: grid; place-items: center; width: 52px; height: 52px; margin: 0 auto 12px; border-radius: 50%; background: #F2F4F6; color: var(--admin-dis); }
+.adm-empty-title { margin: 0; color: var(--admin-sub); font-size: 15px; font-weight: 600; }
+.adm-empty-hint { margin: 4px 0 0; color: var(--admin-ph); font-size: 13px; }
+.adm-skel { border-radius: 10px; background: linear-gradient(90deg, #F2F4F6 25%, #E9ECEF 37%, #F2F4F6 63%); background-size: 400% 100%; animation: admShimmer 1.4s ease infinite; }
+.adm-loading { display: flex; flex-direction: column; gap: 12px; padding: 20px 24px; }
+.adm-loading .adm-skel { height: 40px; }
+
+/* 고른 줄 일괄 처리 막대 */
+.adm-selbar { position: sticky; top: 8px; z-index: 10; display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 16px; background: #191F28; color: #fff; box-shadow: 0 12px 32px rgba(0, 0, 0, .18); animation: admRise .3s var(--adm-ease) both; }
+
+/* 정보 줄(라벨 · 값) */
+.adm-kv { display: grid; grid-template-columns: 110px minmax(0, 1fr); align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--admin-divider); }
+.adm-kv:last-child { border-bottom: 0; }
+.adm-kv > :first-child { color: var(--admin-ph); font-size: 14px; font-weight: 500; }
+.adm-kv > :last-child { min-width: 0; color: var(--admin-ink); font-size: 14px; font-weight: 500; text-align: right; overflow-wrap: anywhere; }
+.adm-kvbox { padding: 4px 16px; border-radius: 16px; background: #F7F8FA; }
+.adm-kvbox .adm-kv { padding: 10px 0; border-color: #EDEFF2; }
+
+/* ── 라디오 묶음 — 상태 거르기(시간 칩만 칩) ── 동그라미 → 고르면 파란 테두리 + 가운데 점이 톡 */
+.adm-radios { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 18px; min-width: 0; }
+.adm-radio { display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 2px; border: 0; background: none; color: var(--admin-sub); font-family: inherit; font-size: 14px; font-weight: 600; white-space: nowrap; cursor: pointer; transition: color .15s ease; -webkit-tap-highlight-color: transparent; }
+.admin-shell .adm-radio:active { transform: none; }
+.adm-radio-dot { position: relative; flex: none; width: 20px; height: 20px; border-radius: 50%; background: #fff; box-shadow: inset 0 0 0 2px #D1D6DB; transition: box-shadow .2s ease; }
+.adm-radio-dot::after { content: ''; position: absolute; inset: 5px; border-radius: 50%; background: var(--admin-blue); transform: scale(0); transition: transform .3s var(--adm-spring); }
+.adm-radio:hover .adm-radio-dot { box-shadow: inset 0 0 0 2px #B0B8C1; }
+.adm-radio[aria-checked="true"] { color: var(--admin-ink); }
+.adm-radio[aria-checked="true"] .adm-radio-dot { box-shadow: inset 0 0 0 2px var(--admin-blue); }
+.adm-radio[aria-checked="true"] .adm-radio-dot::after { transform: scale(1); }
+.adm-radio:focus-visible { outline: none; }
+.adm-radio:focus-visible .adm-radio-dot { box-shadow: inset 0 0 0 2px var(--admin-blue), 0 0 0 4px rgba(49, 130, 246, .2); }
+.adm-radio-count { margin-left: -2px; color: var(--admin-ph); font-weight: 600; font-variant-numeric: tabular-nums; }
+.adm-radio[aria-checked="true"] .adm-radio-count { color: var(--admin-blue); }
+
+/* ── 스위치 ── */
+.adm-switch { position: relative; display: inline-flex; flex: none; align-items: center; width: 48px; height: 28px; padding: 3px; border: 0; border-radius: 999px; background: #D1D6DB; cursor: pointer; transition: background-color .2s ease, opacity .2s ease; }
+.adm-switch.on { background: var(--admin-blue); }
+.adm-switch:disabled { opacity: .45; cursor: default; }
+.adm-switch:focus-visible { outline: none; box-shadow: 0 0 0 4px rgba(49, 128, 247, .15); }
+.adm-switch-knob { width: 22px; height: 22px; border-radius: 50%; background: #fff; box-shadow: 0 2px 6px rgba(25, 31, 40, .22); transition: transform .25s var(--adm-spring); }
+.adm-switch.on .adm-switch-knob { transform: translateX(20px); }
+.admin-shell .adm-switch:active:not(:disabled) { transform: none; }
+.adm-switch-row { display: inline-flex; align-items: center; gap: 10px; color: var(--admin-ink); font-size: 14px; font-weight: 600; }
+
+/* ── 날짜 칸 + 그 자리 달력(모달 말고 칸 바로 아래 팝오버) ── */
+.adm-datefield { display: inline-flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 148px; cursor: pointer; text-align: left; }
+.adm-datefield.full { width: 100%; height: 44px; padding: 0 14px; border-radius: 12px; font-size: 15px; }
+.adm-datefield-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.adm-datefield.empty .adm-datefield-text { color: var(--admin-dis); }
+.adm-datefield-ic { flex: none; color: #8B95A1; transition: color .15s ease; }
+.adm-datefield:hover { background: #E8EBEE; }
+.adm-datefield.on { background: #fff; border-color: var(--admin-blue); }
+.adm-datefield.on .adm-datefield-ic { color: var(--admin-blue); }
+.adm-datepop { position: fixed; z-index: 1200; padding: 18px 16px 12px; border-radius: 24px; background: #fff; box-shadow: 0 16px 48px rgba(15, 23, 42, .18), 0 0 0 1px rgba(2, 32, 71, .04); opacity: 0; transform: translate3d(0, -6px, 0) scale(.97); transform-origin: top left; transition: opacity .16s ease, transform .2s ease; pointer-events: none; }
+.adm-datepop.up { transform: translate3d(0, 6px, 0) scale(.97); transform-origin: bottom left; }
+.adm-datepop.on { opacity: 1; transform: none; pointer-events: auto; transition: opacity .2s ease, transform .32s var(--adm-spring); }
+.adm-datepop-head { display: flex; align-items: center; justify-content: space-between; padding: 0 4px 0 6px; }
+.adm-datepop-head b { font-size: 17px; font-weight: 600; letter-spacing: -0.3px; color: #191F28; }
+.adm-datepop-nav { display: flex; gap: 2px; margin-right: -4px; }
+.adm-datepop-nav button { display: grid; place-items: center; width: 36px; height: 36px; padding: 0; border: 0; border-radius: 11px; background: none; color: #4E5968; cursor: pointer; transition: background-color .15s ease; }
+.adm-datepop-nav button:hover { background: #F2F4F6; }
+.adm-datepop-week { display: grid; grid-template-columns: repeat(7, 1fr); margin-top: 10px; color: #8B95A1; font-size: 12.5px; font-weight: 500; text-align: center; }
+.adm-datepop-grid { margin-top: 2px; }
+.adm-datepop-row { display: grid; grid-template-columns: repeat(7, 1fr); justify-items: center; align-items: center; height: 42px; animation: admDpRise .38s cubic-bezier(.22, .61, .36, 1) both; }
+.adm-datepop-day { position: relative; width: 40px; height: 38px; padding: 0; border: 0; border-radius: 13px; background: transparent; color: #333D4B; font-family: inherit; font-size: 16px; font-weight: 500; font-variant-numeric: tabular-nums; cursor: pointer; transition: background-color .18s ease, color .18s ease, transform .12s var(--adm-ease); -webkit-tap-highlight-color: transparent; }
+.adm-datepop-day:hover { background: #F2F4F6; }
+.adm-datepop-day:active { transform: scale(.93); }
+.adm-datepop-day.today { color: #191F28; font-weight: 700; }
+.adm-datepop-day.today::after { content: ''; position: absolute; left: 50%; bottom: 4px; width: 4px; height: 4px; margin-left: -2px; border-radius: 50%; background: var(--admin-blue); }
+.adm-datepop-day.in { background: #F4F8FF; color: #2B6FD6; }
+.adm-datepop-day.edge { box-shadow: inset 0 0 0 1.5px #B9D5FC; color: #2B6FD6; }
+.adm-datepop-day.on { background: var(--admin-blue-weak); color: var(--admin-blue); font-weight: 700; }
+.adm-datepop-foot { display: flex; justify-content: flex-end; gap: 4px; margin-top: 6px; padding-top: 8px; box-shadow: inset 0 1px 0 #F2F4F6; }
+.adm-datepop-foot button { height: 32px; padding: 0 12px; border: 0; border-radius: 10px; background: none; color: var(--admin-blue); font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer; transition: background-color .15s ease; }
+.adm-datepop-foot button:hover { background: var(--admin-blue-weak); }
+.adm-datepop-foot button.sub { color: var(--admin-muted); }
+.adm-datepop-foot button.sub:hover { background: #F2F4F6; }
+
+/* ── 툴팁 메뉴(드롭다운) — 모서리 18 · 흰 면 · 옅고 넓은 그림자, 작게→정비율 + 항목 오른쪽→왼쪽 ── */
+.adm-sortbtn { flex: none; display: inline-flex; align-items: center; gap: 6px; height: 40px; padding: 0 10px 0 14px; border: 0; border-radius: 12px; background: #fff; color: #4E5968; font-family: inherit; font-size: 14px; font-weight: 600; white-space: nowrap; cursor: pointer; transition: background-color .15s ease, color .15s ease; }
+.adm-sortbtn:hover, .adm-sortbtn.on { background: #F7F8FA; color: #333D4B; }
+.adm-filter .adm-sortbtn, .adm-card .adm-sortbtn, .adm-modal .adm-sortbtn { background: #F2F4F6; }
+.adm-filter .adm-sortbtn:hover, .adm-filter .adm-sortbtn.on, .adm-card .adm-sortbtn:hover, .adm-card .adm-sortbtn.on { background: #E8EBEE; }
+.adm-sortbtn:focus-visible { outline: 2px solid #3182F6; outline-offset: 2px; }
+.adm-sortbtn-chev { color: #8B95A1; transition: transform .2s var(--adm-ease); }
+.adm-sortbtn.on .adm-sortbtn-chev { transform: rotate(180deg); }
+.adm-pop-menu { position: absolute; z-index: 60; min-width: 196px; padding: 6px; border-radius: 18px; background: #fff; box-shadow: 0 16px 48px rgba(15, 23, 42, .12), 0 2px 10px rgba(15, 23, 42, .05); transform-origin: top left; animation: admPopMenuIn .42s cubic-bezier(.33, 1, .68, 1) both; }
+.adm-pop-menu.o-tr { transform-origin: top right; }
+.adm-pop-menu.o-bl { transform-origin: bottom left; }
+.adm-pop-menu.o-br { transform-origin: bottom right; }
+.adm-pop-title { padding: 8px 14px 6px; color: var(--admin-dis); font-size: 12.5px; font-weight: 600; }
+.adm-pop-item { display: flex; align-items: center; justify-content: space-between; gap: 16px; width: 100%; height: 46px; padding: 0 12px 0 14px; border: 0; border-radius: 12px; background: none; color: #333D4B; font-family: inherit; font-size: 15px; font-weight: 500; text-align: left; white-space: nowrap; cursor: pointer; transition: background-color .15s ease; animation: admPopItemIn .42s var(--adm-ease) backwards; }
+.adm-pop-item:hover, .adm-pop-item:focus-visible { background: #F2F4F6; outline: none; }
+.adm-pop-item.on { color: #3182F6; font-weight: 700; }
+.adm-pop-item.danger { color: var(--admin-red); }
+.admin-shell .adm-pop-item:active { transform: none; }
+.adm-pop-catch { position: fixed; inset: 0; z-index: 59; }
+
+/* ── 모달(가운데 흰 창, 딤 + 아래→위 스르르) ── */
+.adm-modal-root { position: fixed; inset: 0; z-index: 1100; display: grid; place-items: center; padding: 16px; }
+.adm-modal-dim { position: absolute; inset: 0; border: 0; padding: 0; background: rgba(0, 0, 0, .3); cursor: default; animation: admFade .22s ease both; }
+.admin-shell .adm-modal-dim:active { transform: none; }
+.adm-modal { position: relative; width: min(440px, 100%); max-height: calc(100vh - 32px); max-height: calc(100dvh - 32px); overflow-y: auto; padding: 24px; border-radius: 24px; background: #fff; box-shadow: 0 20px 60px rgba(0, 0, 0, .18); animation: admPop .3s cubic-bezier(.16, 1, .3, 1) both; overscroll-behavior: contain; }
+.adm-modal-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+.admin-shell .adm-modal-title { margin: 0; font-size: 19px !important; font-weight: 700; line-height: 1.4 !important; letter-spacing: -0.4px; color: var(--admin-ink); }
+.adm-modal-sub { margin: 4px 0 0; color: var(--admin-muted); font-size: 14px; line-height: 1.55; }
+.adm-modal-x { display: grid; place-items: center; flex: none; width: 36px; height: 36px; margin: -6px -8px 0 0; padding: 0; border: 0; border-radius: 12px; background: none; color: var(--admin-ph); cursor: pointer; }
+.adm-modal-x:hover { background: #F2F4F6; color: var(--admin-ink); }
+.adm-modal-ic { display: grid; place-items: center; flex: none; width: 44px; height: 44px; border-radius: 50%; background: var(--admin-blue-weak); color: var(--admin-blue); }
+.adm-modal-ic.red { background: var(--admin-red-weak); color: var(--admin-red); }
+.adm-modal-ic.green { background: var(--admin-green-weak); color: var(--admin-green); }
+.adm-modal-ic.orange { background: var(--admin-orange-weak); color: var(--admin-orange); }
+.adm-modal-note { margin: 14px 0 0; color: var(--admin-muted); font-size: 14px; line-height: 1.6; }
+.adm-modal-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 20px; }
+.adm-modal-actions > .adm-btn { flex: 1; height: 48px; border-radius: 14px; font-size: 15px; }
+/* 오른쪽 서랍(상세 보기) */
+.adm-modal-root.side { place-items: stretch end; padding: 0; }
+.adm-modal-root.side .adm-modal { width: min(560px, 100vw); max-height: none; height: 100%; border-radius: 0; animation: admSideIn .32s var(--adm-ease) both; }
+@keyframes admSideIn { from { transform: translateX(100%); } to { transform: none; } }
+
+/* ── 세그먼트(작은 고르기) ── */
+.adm-seg { display: inline-flex; gap: 2px; padding: 3px; border-radius: 12px; background: #F2F4F6; }
+.adm-seg button { height: 32px; padding: 0 12px; border: 0; border-radius: 9px; background: transparent; color: var(--admin-muted); font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer; transition: background-color .2s ease, color .2s ease; }
+.adm-seg button.on { background: #fff; color: var(--admin-blue); box-shadow: 0 1px 3px rgba(0, 0, 0, .06); }
+
+/* ── 옛 화면 덮어쓰기(.admin-shell 아래) — 손대지 않은 조각도 같은 결로 ── */
+.admin-shell .font-black,
+.admin-shell .font-extrabold { font-weight: 700 !important; }
+.admin-shell .uppercase { text-transform: none !important; }
+.admin-shell .tracking-wider { letter-spacing: 0 !important; }
+.admin-shell [class*="text-[10px]"],
+.admin-shell [class*="text-[11px]"] { font-size: 12px !important; line-height: 1.45 !important; }
+.admin-shell .rounded-3xl,
+.admin-shell .rounded-2xl { border-radius: 20px; }
+.admin-shell .rounded-xl { border-radius: 14px; }
+/* 흰 카드 테두리 없앰(회색 바탕 위 흰 카드만으로 가른다) */
+.admin-shell .bg-white.border-\[\#E5E8EB\].rounded-2xl,
+.admin-shell .bg-white.rounded-2xl.border { border-color: transparent; }
+.admin-shell button:not(:disabled):not(.adm-radio):not(.adm-switch):not(.adm-title-tab):not(.adm-pop-item):not(.adm-modal-dim):active { transform: scale(.97); }
+.admin-shell button:not(:disabled) { transition: transform 160ms var(--adm-ease), background-color 160ms ease, color 160ms ease, border-color 160ms ease, box-shadow 160ms ease, opacity 160ms ease; }
+.admin-shell input:not([type='checkbox']):not([type='radio']):not(.adm-input):not(.adm-sf-input):focus,
+.admin-shell select:not(.adm-input):focus,
+.admin-shell textarea:not(.adm-input):focus { border-color: rgba(49, 130, 246, .5) !important; box-shadow: 0 0 0 3px rgba(49, 130, 246, .12); outline: none; }
+.admin-shell input[type='checkbox'] { accent-color: var(--admin-blue); }
+
+@media (prefers-reduced-motion: reduce) {
+  .adm-content > * > *, .adm-title, .adm-desc, .adm-title-tabs, .adm-grow, .admin-shell .adm-table tbody tr,
+  .adm-pop-menu, .adm-pop-item, .adm-modal, .adm-modal-dim, .adm-datepop-row {
+    animation: none !important;
+  }
+  .adm-nav-pill, .adm-tab-ind, .adm-radio-dot, .adm-radio-dot::after, .adm-switch-knob, .adm-datepop { transition: none !important; }
+}
+
+/* ── 화면 작업 중 보탠 조각 ── */
+/* 고른 줄(목록에서 하나 고르기) */
+.adm-grow.on, .adm-grow.on:hover { background: var(--admin-blue-weak); }
+.adm-grow.on .adm-cell-main { color: var(--admin-blue); }
+.adm-modal-ic.gray { background: #F2F4F6; color: var(--admin-muted); }
+.adm-note.green { background: var(--admin-green-weak); color: #028A54; }
+/* 대시보드 인사 제목(28) */
+.admin-shell .adm-title.hello { font-size: 28px !important; line-height: 1.3 !important; letter-spacing: -0.7px; }
+@media (max-width: 640px) { .admin-shell .adm-title.hello { font-size: 24px !important; } }
+/* 체크 상자 — 회색 테두리 네모 → 고르면 파랑 채움 + 흰 체크 */
+.adm-check { display: inline-grid; place-items: center; flex: none; width: 20px; height: 20px; padding: 0; border: 0; border-radius: 6px; background: #fff; box-shadow: inset 0 0 0 2px #D1D6DB; color: #fff; cursor: pointer; transition: background-color .15s ease, box-shadow .15s ease; }
+.adm-check:hover { box-shadow: inset 0 0 0 2px #B0B8C1; }
+.adm-check.on { background: var(--admin-blue); box-shadow: none; }

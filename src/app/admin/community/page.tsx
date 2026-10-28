@@ -3,8 +3,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useStore } from '@/store';
 import { useInfiniteScroll } from '@/lib/hooks/useInfiniteScroll';
-import { Trash2, Eye, MessageSquare, ThumbsUp, X } from 'lucide-react';
-import { PageHeader, FilterChips, SearchInput, StatCard, PillButton, StatusBadge, EmptyState } from '@/components/admin/ui';
+import { Trash2, Eye, MessageSquare, ThumbsUp } from 'lucide-react';
+import {
+  FilterChips, SearchInput, StatCard, StatRow, PillButton, StatusBadge, EmptyState,
+  AdminListCard, Toolbar, Count, TableFoot, LoadingRows, AdminModal,
+} from '@/components/admin/ui';
 
 type BoardType = 'question' | 'free' | 'dental';
 
@@ -23,8 +26,8 @@ type Post = {
 const boardLabel: Record<BoardType, string> = {
   question: '질문게시판', free: '자유게시판', dental: '치과게시판',
 };
-const boardTone: Record<BoardType, 'blue' | 'green' | 'purple'> = {
-  question: 'blue', free: 'green', dental: 'purple',
+const boardTone: Record<BoardType, 'blue' | 'green' | 'orange'> = {
+  question: 'blue', free: 'green', dental: 'orange',
 };
 
 const PAGE_SIZE = 20;
@@ -113,171 +116,158 @@ export default function AdminCommunityPage() {
     );
   };
 
-  return (
-    <div className="space-y-6">
-      <PageHeader title="커뮤니티 관리" subtitle="게시글을 조회하고 삭제합니다." />
+  const GRID = 'grid grid-cols-[36px_100px_1.8fr_1fr_140px_140px_auto] gap-4 items-center';
+  const allSel = pageData.length > 0 && pageData.every((p) => selected.has(p.id));
 
-      <div className="grid grid-cols-4 gap-3">
+  // 제목·설명은 레이아웃이 '게시글 · 신고' 제목 탭과 함께 그린다
+  return (
+    <div className="adm-stack">
+      <StatRow cols={4}>
         <StatCard label="전체 게시글" value={counts.total} suffix="개" />
         <StatCard label="오늘 작성" value={counts.today} suffix="개" accent="#1AB554" />
         <StatCard label="질문게시판" value={counts.question} suffix="개" accent="#3182F6" />
-        <StatCard label="자유/치과" value={counts.others} suffix="개" accent="#7B61FF" />
-      </div>
-
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <FilterChips
-          value={activeBoard}
-          onChange={setActiveBoard}
-          options={[
-            { value: 'all', label: '전체' },
-            { value: 'question', label: '질문' },
-            { value: 'free', label: '자유' },
-            { value: 'dental', label: '치과' },
-          ]}
-        />
-        <SearchInput value={search} onChange={setSearch} placeholder="제목, 내용, 작성자 검색" />
-      </div>
+        <StatCard label="자유/치과" value={counts.others} suffix="개" />
+      </StatRow>
 
       {selected.size > 0 && (
-        <div className="flex items-center justify-between bg-[#FEECEC] border border-[#E54848]/30 rounded-2xl px-4 py-3">
-          <span className="text-[13px] text-[#E54848] font-semibold">{selected.size}개 선택됨</span>
-          <PillButton tone="red" disabled={busy} onClick={() => handleDelete(Array.from(selected))}>
-            선택 삭제
-          </PillButton>
+        <div className="adm-selbar">
+          <span className="text-[14px] font-semibold">{selected.size}개 선택됨</span>
+          <span className="grow" />
+          <button type="button" className="adm-btn sm danger-solid" disabled={busy} onClick={() => handleDelete(Array.from(selected))}>
+            <Trash2 size={14} /> 선택 삭제
+          </button>
         </div>
       )}
 
-      <div className="bg-white rounded-2xl border border-[#E5E8EB] overflow-hidden">
-        {loading ? (
-          <div className="px-5 py-16 text-center text-[13px] text-[#8B95A1]">불러오는 중…</div>
-        ) : pageData.length === 0 ? (
-          <EmptyState icon={<MessageSquare size={20} className="text-[#8B95A1]" />} title="표시할 게시글이 없어요" hint="검색어나 필터를 변경해 보세요." />
-        ) : (
+      <AdminListCard
+        filter={
           <>
-            <div className="grid grid-cols-[36px_100px_1.8fr_1fr_140px_140px_auto] gap-4 px-5 py-3 bg-[#FAFBFC] border-b border-[#F2F4F6] text-[11px] font-semibold text-[#8B95A1] uppercase tracking-wider">
-              <button
-                onClick={() => {
-                  const allSel = pageData.every((p) => selected.has(p.id));
-                  setSelected((prev) => {
-                    const next = new Set(prev);
-                    if (allSel) pageData.forEach((p) => next.delete(p.id));
-                    else pageData.forEach((p) => next.add(p.id));
-                    return next;
-                  });
-                }}
-                className="w-5 h-5 rounded border flex items-center justify-center"
-                style={{
-                  background: pageData.every((p) => selected.has(p.id)) ? '#3182F6' : '#FFFFFF',
-                  borderColor: pageData.every((p) => selected.has(p.id)) ? '#3182F6' : '#C9CDD2',
-                }}
-              >
-                {pageData.every((p) => selected.has(p.id)) && (
-                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
-                    <path d="M3 8.5L6.5 12L13 4" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                )}
-              </button>
-              <div>게시판</div>
-              <div>제목</div>
-              <div>작성자</div>
-              <div>통계</div>
-              <div>작성일</div>
-              <div className="text-right">관리</div>
-            </div>
-            {pageData.map((p, i) => {
-              const isSel = selected.has(p.id);
-              return (
-                <div
-                  key={p.id}
-                  className="grid grid-cols-[36px_100px_1.8fr_1fr_140px_140px_auto] gap-4 items-center px-5 py-3.5 hover:bg-[#F9FAFB] transition-colors"
-                  style={{ borderBottom: i === pageData.length - 1 ? 'none' : '1px solid #F2F4F6' }}
-                >
-                  <button
-                    onClick={() => setSelected((prev) => {
-                      const next = new Set(prev);
-                      if (next.has(p.id)) next.delete(p.id); else next.add(p.id);
-                      return next;
-                    })}
-                    className="w-5 h-5 rounded border flex items-center justify-center"
-                    style={{
-                      background: isSel ? '#3182F6' : '#FFFFFF',
-                      borderColor: isSel ? '#3182F6' : '#C9CDD2',
-                    }}
-                  >
-                    {isSel && (
-                      <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
-                        <path d="M3 8.5L6.5 12L13 4" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    )}
-                  </button>
-                  <div>
-                    <StatusBadge tone={boardTone[p.board_type]}>{boardLabel[p.board_type]}</StatusBadge>
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-[14px] font-semibold text-[#191F28] truncate">{p.title}</p>
-                  </div>
-                  <div className="text-[13px] text-[#4E5968] truncate">{p.author}</div>
-                  <div className="flex items-center gap-2.5 text-[12px] text-[#8B95A1]">
-                    <span className="flex items-center gap-0.5"><Eye size={11} />{p.views}</span>
-                    <span className="flex items-center gap-0.5"><MessageSquare size={11} />{p.comments}</span>
-                    <span className="flex items-center gap-0.5"><ThumbsUp size={11} />{p.likes}</span>
-                  </div>
-                  <div className="text-[12px] text-[#8B95A1]">{formatDate(p.created_at)}</div>
-                  <div className="flex items-center gap-1.5 justify-end">
-                    <PillButton tone="blue" onClick={() => setViewPost(p)}>
-                      보기
-                    </PillButton>
-                    <PillButton tone="red" disabled={busy} onClick={() => handleDelete([p.id])}>
-                      삭제
-                    </PillButton>
-                  </div>
-                </div>
-              );
-            })}
+            <Toolbar>
+              <SearchInput value={search} onChange={setSearch} placeholder="제목, 내용, 작성자 검색" width={300} />
+              <span className="grow" />
+              <Count n={filtered.length} unit="개" />
+            </Toolbar>
+            <Toolbar>
+              <FilterChips
+                value={activeBoard}
+                onChange={setActiveBoard}
+                options={[
+                  { value: 'all', label: '전체' },
+                  { value: 'question', label: '질문' },
+                  { value: 'free', label: '자유' },
+                  { value: 'dental', label: '치과' },
+                ]}
+                ariaLabel="게시판"
+              />
+            </Toolbar>
           </>
-        )}
-        <div className="px-5 py-4 border-t border-[#F2F4F6]">
-          <p className="text-[12px] text-[#8B95A1] text-center">
-            전체 <span className="font-semibold text-[#191F28]">{filtered.length.toLocaleString()}</span>개 중{' '}
-            <span className="font-semibold text-[#191F28]">{Math.min(visibleCount, filtered.length)}</span>개 표시
-          </p>
-          {visibleCount < filtered.length && (
-            <div ref={sentinelRef} className="h-10 flex items-center justify-center text-[11px] text-[#8B95A1]">
-              스크롤하면 더 불러옵니다…
-            </div>
-          )}
-        </div>
-      </div>
-
-      <div className="bg-[#FAFBFC] border border-[#F2F4F6] rounded-2xl px-5 py-3.5 text-[13px] text-[#4E5968]">
-        사용자 신고는{' '}
-        <a href="/admin/community/reports" className="text-[#3182F6] font-semibold hover:underline">
-          신고 관리
-        </a>
-        에서 처리합니다.
-      </div>
-
-      {viewPost && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center px-4" onClick={() => setViewPost(null)}>
-          <div className="bg-white rounded-3xl w-full max-w-2xl p-7 max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <StatusBadge tone={boardTone[viewPost.board_type]}>{boardLabel[viewPost.board_type]}</StatusBadge>
-                <h3 className="text-[18px] font-bold text-[#191F28] mt-2">{viewPost.title}</h3>
+        }
+      >
+        {loading ? (
+          <LoadingRows />
+        ) : pageData.length === 0 ? (
+          <EmptyState icon={<MessageSquare size={22} />} title="표시할 게시글이 없어요" hint="검색어나 거르기를 바꿔 보세요." />
+        ) : (
+          <div className="adm-tscroll">
+            <div className="adm-tscroll-in">
+              <div className={`${GRID} adm-ghead`}>
+                <CheckBox
+                  checked={allSel}
+                  ariaLabel="이 화면 게시글 모두 고르기"
+                  onClick={() => {
+                    setSelected((prev) => {
+                      const next = new Set(prev);
+                      if (allSel) pageData.forEach((p) => next.delete(p.id));
+                      else pageData.forEach((p) => next.add(p.id));
+                      return next;
+                    });
+                  }}
+                />
+                <div>게시판</div>
+                <div>제목</div>
+                <div>작성자</div>
+                <div>통계</div>
+                <div>작성일</div>
+                <div className="text-right">관리</div>
               </div>
-              <button onClick={() => setViewPost(null)} className="p-1 -m-1 hover:bg-gray-100 rounded">
-                <X size={18} className="text-[#8B95A1]" />
-              </button>
-            </div>
-            <p className="text-[12px] text-[#8B95A1] mb-4">
-              <span className="font-semibold text-[#4E5968]">{viewPost.author}</span> · {formatDate(viewPost.created_at)}
-            </p>
-            <div className="text-[14px] text-[#191F28] whitespace-pre-wrap leading-relaxed bg-[#FAFBFC] rounded-xl p-4 border border-[#F2F4F6]">
-              {viewPost.content || '(내용 없음)'}
+              {pageData.map((p) => {
+                const isSel = selected.has(p.id);
+                return (
+                  <div key={p.id} className={`${GRID} adm-grow`}>
+                    <CheckBox
+                      checked={isSel}
+                      ariaLabel="게시글 고르기"
+                      onClick={() => setSelected((prev) => {
+                        const next = new Set(prev);
+                        if (next.has(p.id)) next.delete(p.id); else next.add(p.id);
+                        return next;
+                      })}
+                    />
+                    <div>
+                      <StatusBadge tone={boardTone[p.board_type]}>{boardLabel[p.board_type]}</StatusBadge>
+                    </div>
+                    <div className="adm-cell-main truncate">{p.title}</div>
+                    <div className="adm-cell truncate">{p.author}</div>
+                    <div className="adm-cell dim flex items-center gap-2.5">
+                      <span className="flex items-center gap-1"><Eye size={13} />{p.views}</span>
+                      <span className="flex items-center gap-1"><MessageSquare size={13} />{p.comments}</span>
+                      <span className="flex items-center gap-1"><ThumbsUp size={13} />{p.likes}</span>
+                    </div>
+                    <div className="adm-cell dim">{formatDate(p.created_at)}</div>
+                    <div className="adm-actions">
+                      <PillButton tone="blue" onClick={() => setViewPost(p)}>
+                        보기
+                      </PillButton>
+                      <PillButton tone="red" disabled={busy} onClick={() => handleDelete([p.id])}>
+                        삭제
+                      </PillButton>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
-        </div>
+        )}
+        {!loading && <TableFoot total={filtered.length} shown={visibleCount} sentinelRef={sentinelRef} />}
+      </AdminListCard>
+
+      {viewPost && (
+        <AdminModal
+          onClose={() => setViewPost(null)}
+          width={640}
+          title={viewPost.title}
+          sub={<>{viewPost.author} · {formatDate(viewPost.created_at)}</>}
+          actions={<button type="button" className="adm-btn" onClick={() => setViewPost(null)}>닫기</button>}
+        >
+          <div className="mb-3">
+            <StatusBadge tone={boardTone[viewPost.board_type]}>{boardLabel[viewPost.board_type]}</StatusBadge>
+          </div>
+          <div className="adm-kvbox whitespace-pre-wrap py-4 text-[14px] leading-relaxed text-[#191F28]">
+            {viewPost.content || '(내용 없음)'}
+          </div>
+        </AdminModal>
       )}
     </div>
+  );
+}
+
+/** 표 칸 체크 상자(토스 파랑) */
+function CheckBox({ checked, onClick, ariaLabel }: { checked: boolean; onClick: () => void; ariaLabel: string }) {
+  return (
+    <button
+      type="button"
+      role="checkbox"
+      aria-checked={checked}
+      aria-label={ariaLabel}
+      onClick={onClick}
+      className="flex h-5 w-5 items-center justify-center rounded-md border-[1.5px] transition-colors"
+      style={{ background: checked ? '#3182F6' : '#FFFFFF', borderColor: checked ? '#3182F6' : '#D1D6DB' }}
+    >
+      {checked && (
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path d="M3 8.5L6.5 12L13 4" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      )}
+    </button>
   );
 }

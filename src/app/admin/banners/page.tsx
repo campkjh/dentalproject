@@ -9,12 +9,10 @@ import {
   Pencil,
   Plus,
   RefreshCcw,
-  Save,
   Trash2,
-  Upload,
 } from 'lucide-react';
 import type { HomeBanner } from '@/types';
-import { PageHeader, PrimaryCTA, EmptyState } from '@/components/admin/ui';
+import { PageHeader, PrimaryCTA, EmptyState, SectionCard, StatusBadge, Switch, LoadingRows } from '@/components/admin/ui';
 import { ImageUploader } from '@/components/admin/ImageUploader';
 
 type BannerForm = {
@@ -213,120 +211,85 @@ export default function AdminBannersPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="adm-stack">
       <PageHeader
-        title="홈 배너"
-        subtitle="고객 홈 상단 슬라이드 배너를 추가, 수정, 삭제할 수 있어요."
         right={
           <PrimaryCTA onClick={() => setForm(emptyForm)}>
-            새 배너
+            <Plus size={16} /> 새 배너
           </PrimaryCTA>
         }
       />
 
-      {error && (
-        <div className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-medium text-red-600">
-          {error}
-        </div>
-      )}
+      {error && <p className="adm-note red">{error}</p>}
 
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
-        <section className="rounded-2xl border border-[#E5E8EB] bg-white overflow-hidden">
-          <div className="flex items-center justify-between border-b border-[#F2F4F6] px-5 py-4">
-            <div>
-              <h3 className="text-[15px] font-bold text-[#191F28]">등록된 배너</h3>
-              <p className="text-[12px] text-[#8B95A1] mt-0.5">노출 순서가 낮을수록 먼저 보여요.</p>
-            </div>
-            <button
-              type="button"
-              onClick={() => void loadBanners()}
-              className="inline-flex items-center gap-1.5 h-9 px-3 rounded-[10px] bg-[#F2F4F6] text-[12px] font-semibold text-[#4E5968] hover:bg-[#E5E8EB] transition-colors"
-            >
-              <RefreshCcw size={13} />
-              새로고침
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_420px] items-start">
+        <SectionCard
+          title="등록된 배너"
+          sub="노출 순서가 낮을수록 먼저 보여요."
+          action={
+            <button type="button" onClick={() => void loadBanners()} className="adm-btn sm">
+              <RefreshCcw size={14} /> 새로고침
             </button>
-          </div>
+          }
+        >
+          {loading ? (
+            <LoadingRows />
+          ) : sortedBanners.length === 0 ? (
+            <EmptyState icon={<ImagePlus size={22} />} title="등록된 배너가 없어요" hint='오른쪽 위 "새 배너"로 시작해 보세요.' />
+          ) : (
+            sortedBanners.map((banner) => (
+              <div key={banner.id} className={`adm-grow grid grid-cols-[220px_minmax(0,1fr)] gap-5 ${banner.isActive ? '' : 'off'}`}>
+                <div className="aspect-[2/1] overflow-hidden rounded-xl bg-[#F2F4F6]">
+                  {banner.imageUrl ? (
+                    <img src={banner.imageUrl} alt={banner.title} className="h-full w-full object-cover" />
+                  ) : (
+                    <div className="flex h-full items-center justify-center adm-cell dim">이미지 없음</div>
+                  )}
+                </div>
 
-          <div className="divide-y divide-[#F2F4F6]">
-            {loading ? (
-              <div className="px-5 py-12 text-center text-[13px] text-[#8B95A1]">불러오는 중…</div>
-            ) : sortedBanners.length === 0 ? (
-              <EmptyState icon={<ImagePlus size={20} className="text-[#8B95A1]" />} title="등록된 배너가 없어요" hint='우측 상단 "새 배너"로 시작해 보세요.' />
-            ) : (
-              sortedBanners.map((banner) => (
-                <div key={banner.id} className="grid grid-cols-[220px_minmax(0,1fr)] gap-5 px-5 py-4">
-                  <div className="aspect-[2/1] overflow-hidden rounded-xl bg-gray-100">
-                    {banner.imageUrl ? (
-                      <img src={banner.imageUrl} alt={banner.title} className="h-full w-full object-cover" />
-                    ) : (
-                      <div className="flex h-full items-center justify-center text-xs text-gray-400">이미지 없음</div>
-                    )}
-                  </div>
-
-                  <div className="min-w-0">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-bold text-gray-600">
-                            #{banner.sortOrder}
-                          </span>
-                          <span
-                            className={`rounded-full px-2 py-0.5 text-xs font-bold ${
-                              banner.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
-                            }`}
-                          >
-                            {banner.isActive ? '노출중' : '숨김'}
-                          </span>
-                        </div>
-                        <h4 className="mt-2 truncate text-base font-bold text-gray-900">{banner.title}</h4>
-                        {banner.subtitle && <p className="mt-1 truncate text-[13px] text-[#8B95A1]">{banner.subtitle}</p>}
-                        <p className="mt-2 text-xs text-gray-400">{formatPeriod(banner)}</p>
-                        {banner.targetUrl && (
-                          <p className="mt-1 truncate text-xs text-[#3182F6]">{banner.targetUrl}</p>
-                        )}
+                <div className="min-w-0">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <StatusBadge tone="gray">#{banner.sortOrder}</StatusBadge>
+                        <StatusBadge tone={banner.isActive ? 'green' : 'gray'}>{banner.isActive ? '노출중' : '숨김'}</StatusBadge>
                       </div>
-                      <div className="flex flex-shrink-0 items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => void toggleActive(banner)}
-                          className="rounded-lg bg-gray-100 p-2 text-gray-600 hover:bg-gray-200"
-                          aria-label={banner.isActive ? '배너 숨기기' : '배너 노출하기'}
-                        >
-                          {banner.isActive ? <Eye size={16} /> : <EyeOff size={16} />}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setForm(toForm(banner))}
-                          className="rounded-lg bg-blue-50 p-2 text-[#3182F6] hover:bg-blue-100"
-                          aria-label="배너 수정"
-                        >
-                          <Pencil size={16} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => void handleDelete(banner)}
-                          className="rounded-lg bg-red-50 p-2 text-red-500 hover:bg-red-100"
-                          aria-label="배너 삭제"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
+                      <p className="adm-cell-main mt-2 truncate">{banner.title}</p>
+                      {banner.subtitle && <p className="adm-cell-sub truncate">{banner.subtitle}</p>}
+                      <p className="adm-cell dim mt-2">{formatPeriod(banner)}</p>
+                      {banner.targetUrl && <p className="adm-cell mt-1 truncate text-[#3182F6]">{banner.targetUrl}</p>}
+                    </div>
+                    <div className="adm-actions flex-shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => void toggleActive(banner)}
+                        className="adm-btn sm icon"
+                        aria-label={banner.isActive ? '배너 숨기기' : '배너 노출하기'}
+                      >
+                        {banner.isActive ? <Eye size={16} /> : <EyeOff size={16} />}
+                      </button>
+                      <button type="button" onClick={() => setForm(toForm(banner))} className="adm-btn sm icon weak" aria-label="배너 수정">
+                        <Pencil size={16} />
+                      </button>
+                      <button type="button" onClick={() => void handleDelete(banner)} className="adm-btn sm icon danger" aria-label="배너 삭제">
+                        <Trash2 size={16} />
+                      </button>
                     </div>
                   </div>
                 </div>
-              ))
-            )}
-          </div>
-        </section>
+              </div>
+            ))
+          )}
+        </SectionCard>
 
-        <aside className="rounded-2xl border border-[#E5E8EB] bg-white p-6">
-          <div className="mb-5 flex items-center justify-between">
+        <aside className="adm-card">
+          <div className="adm-card-head">
             <div>
-              <h3 className="text-[15px] font-bold text-[#191F28]">{form.id ? '배너 수정' : '배너 추가'}</h3>
-              <p className="text-[11px] text-[#8B95A1] mt-0.5">권장 사이즈 1774 × 887, 2:1 비율</p>
+              <h2 className="adm-card-title">{form.id ? '배너 수정' : '배너 추가'}</h2>
+              <p className="adm-card-sub">권장 사이즈 1774 × 887, 2:1 비율</p>
             </div>
             {form.id && (
-              <button type="button" onClick={() => setForm(emptyForm)} className="text-[12px] font-semibold text-[#8B95A1] hover:text-[#4E5968]">
+              <button type="button" onClick={() => setForm(emptyForm)} className="adm-link">
                 새로 만들기
               </button>
             )}
@@ -334,7 +297,7 @@ export default function AdminBannersPage() {
 
           <div className="space-y-4">
             <div>
-              <span className="mb-1.5 block text-[12px] font-semibold text-[#4E5968]">PC/공통 배너 이미지</span>
+              <span className="adm-label">PC/공통 배너 이미지</span>
               <ImageUploader
                 value={form.imageUrl}
                 onChange={(url) => updateForm('imageUrl', url)}
@@ -345,7 +308,7 @@ export default function AdminBannersPage() {
             </div>
 
             <div>
-              <span className="mb-1.5 block text-[12px] font-semibold text-[#4E5968]">모바일 전용 이미지 (선택)</span>
+              <span className="adm-label">모바일 전용 이미지 (선택)</span>
               <ImageUploader
                 value={form.mobileImageUrl}
                 onChange={(url) => updateForm('mobileImageUrl', url)}
@@ -355,96 +318,77 @@ export default function AdminBannersPage() {
               />
             </div>
 
-            <div className="grid grid-cols-1 gap-4">
-              <label className="block">
-                <span className="mb-1.5 block text-[12px] font-semibold text-[#4E5968]">제목</span>
-                <input
-                  value={form.title}
-                  onChange={(event) => updateForm('title', event.target.value)}
-                  className="w-full h-11 border border-[#E5E8EB] bg-white px-3.5 rounded-[10px] text-[14px] text-[#191F28] focus:border-[#3182F6] focus:outline-none focus:ring-2 focus:ring-[#3182F6]/15 transition-all"
-                />
-              </label>
-              <label className="block">
-                <span className="mb-1.5 block text-[12px] font-semibold text-[#4E5968]">부제목</span>
-                <input
-                  value={form.subtitle}
-                  onChange={(event) => updateForm('subtitle', event.target.value)}
-                  className="w-full h-11 border border-[#E5E8EB] bg-white px-3.5 rounded-[10px] text-[14px] text-[#191F28] focus:border-[#3182F6] focus:outline-none focus:ring-2 focus:ring-[#3182F6]/15 transition-all"
-                />
-              </label>
-              <label className="block">
-                <span className="mb-1.5 block text-[12px] font-semibold text-[#4E5968]">클릭 이동 링크</span>
-                <input
-                  value={form.targetUrl}
-                  onChange={(event) => updateForm('targetUrl', event.target.value)}
-                  placeholder="/search 또는 https://..."
-                  className="w-full h-11 border border-[#E5E8EB] bg-white px-3.5 rounded-[10px] text-[14px] text-[#191F28] focus:border-[#3182F6] focus:outline-none focus:ring-2 focus:ring-[#3182F6]/15 transition-all"
-                />
-              </label>
-            </div>
+            <label className="block">
+              <span className="adm-label">제목</span>
+              <input value={form.title} onChange={(event) => updateForm('title', event.target.value)} className="adm-input" />
+            </label>
+            <label className="block">
+              <span className="adm-label">부제목</span>
+              <input value={form.subtitle} onChange={(event) => updateForm('subtitle', event.target.value)} className="adm-input" />
+            </label>
+            <label className="block">
+              <span className="adm-label">클릭 이동 링크</span>
+              <input
+                value={form.targetUrl}
+                onChange={(event) => updateForm('targetUrl', event.target.value)}
+                placeholder="/search 또는 https://..."
+                className="adm-input"
+              />
+            </label>
 
             <div className="grid grid-cols-2 gap-3">
               <label className="block">
-                <span className="mb-1.5 block text-[12px] font-semibold text-[#4E5968]">뱃지</span>
+                <span className="adm-label">뱃지</span>
                 <input
                   value={form.badgeText}
                   onChange={(event) => updateForm('badgeText', event.target.value)}
                   placeholder="최대 49%"
-                  className="w-full h-11 border border-[#E5E8EB] bg-white px-3.5 rounded-[10px] text-[14px] text-[#191F28] focus:border-[#3182F6] focus:outline-none focus:ring-2 focus:ring-[#3182F6]/15 transition-all"
+                  className="adm-input"
                 />
               </label>
               <label className="block">
-                <span className="mb-1.5 block text-[12px] font-semibold text-[#4E5968]">노출 순서</span>
+                <span className="adm-label">노출 순서</span>
                 <input
                   type="number"
                   value={form.sortOrder}
                   onChange={(event) => updateForm('sortOrder', Number(event.target.value))}
-                  className="w-full h-11 border border-[#E5E8EB] bg-white px-3.5 rounded-[10px] text-[14px] text-[#191F28] focus:border-[#3182F6] focus:outline-none focus:ring-2 focus:ring-[#3182F6]/15 transition-all"
+                  className="adm-input"
                 />
               </label>
             </div>
 
+            {/* 시각까지 고르는 칸이라 AdminDatePop(날짜만) 대신 datetime-local 그대로 */}
             <div className="grid grid-cols-2 gap-3">
               <label className="block">
-                <span className="mb-1.5 block text-[12px] font-semibold text-[#4E5968]">시작일</span>
+                <span className="adm-label">시작일</span>
                 <input
                   type="datetime-local"
                   value={form.startsAt}
                   onChange={(event) => updateForm('startsAt', event.target.value)}
-                  className="w-full h-11 border border-[#E5E8EB] bg-white px-3.5 rounded-[10px] text-[14px] text-[#191F28] focus:border-[#3182F6] focus:outline-none focus:ring-2 focus:ring-[#3182F6]/15 transition-all"
+                  className="adm-input"
                 />
               </label>
               <label className="block">
-                <span className="mb-1.5 block text-[12px] font-semibold text-[#4E5968]">종료일</span>
+                <span className="adm-label">종료일</span>
                 <input
                   type="datetime-local"
                   value={form.endsAt}
                   onChange={(event) => updateForm('endsAt', event.target.value)}
-                  className="w-full h-11 border border-[#E5E8EB] bg-white px-3.5 rounded-[10px] text-[14px] text-[#191F28] focus:border-[#3182F6] focus:outline-none focus:ring-2 focus:ring-[#3182F6]/15 transition-all"
+                  className="adm-input"
                 />
               </label>
             </div>
 
-            <label className="flex items-center justify-between rounded-[10px] bg-[#FAFBFC] border border-[#F2F4F6] px-4 py-3">
-              <span className="text-[13px] font-semibold text-[#191F28]">홈에 노출</span>
-              <button
-                type="button"
-                onClick={() => updateForm('isActive', !form.isActive)}
-                className="relative inline-flex items-center w-12 h-7 rounded-full transition-colors"
-                style={{ background: form.isActive ? '#3182F6' : '#E5E8EB' }}
-              >
-                <span
-                  className="absolute w-5 h-5 bg-white rounded-full shadow transition-transform"
-                  style={{ left: form.isActive ? '24px' : '4px' }}
-                />
-              </button>
-            </label>
+            <div className="flex items-center justify-between rounded-xl bg-[#F2F4F6] px-4 py-3">
+              <span className="adm-cell-main">홈에 노출</span>
+              <Switch checked={form.isActive} onChange={(v) => updateForm('isActive', v)} ariaLabel="홈에 노출" />
+            </div>
 
             <button
               type="button"
               onClick={() => void handleSubmit()}
               disabled={saving}
-              className="inline-flex w-full items-center justify-center gap-2 h-12 rounded-[10px] bg-[#3182F6] text-[14px] font-semibold text-white hover:bg-[#1B64DA] disabled:opacity-50 transition-colors"
+              className="adm-btn primary lg w-full"
             >
               {saving ? '저장 중…' : form.id ? '수정 저장' : '배너 추가'}
             </button>
