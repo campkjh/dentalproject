@@ -1,67 +1,71 @@
 'use client';
 
+// 홈 배너 — 사장 견본: 가운데 큰 정사각 카드(모서리 28) + 양옆 카드가 작게 살짝 보이는 넘기기.
+//  · 카드 아래쪽은 그 배너 사진의 키 컬러(lib/image-tone)로 그라데이션이 차오르고, 그 위에 제목(굵게 2줄)·부제.
+//  · 오른쪽 아래 'N | 전체' 알약. 3.4초마다 다음 장, 손으로 밀면 4초 쉬었다 이어 간다.
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import type { HomeBanner } from '@/types';
 import { defaultHomeBanners } from '@/lib/home-banners';
+import { useImageTone } from '@/lib/image-tone';
 
-function BannerFrame({ banner }: { banner: HomeBanner }) {
-  const imageUrl = banner.imageUrl || banner.mobileImageUrl;
-  const content = imageUrl ? (
-    <picture className="block h-full w-full">
-      {banner.mobileImageUrl && <source media="(max-width: 767px)" srcSet={banner.mobileImageUrl} />}
-      <img
-        src={imageUrl}
-        alt={banner.title}
-        className="h-full w-full object-cover"
-        draggable={false}
+/** 카드 폭 — 모바일 화면의 76%(옆 카드가 보이게), 넓은 화면은 420 */
+const CARD_W = 'min(76vw, 420px)';
+const GAP = 12;
+
+function BannerCard({ banner, index, total, active }: { banner: HomeBanner; index: number; total: number; active: boolean }) {
+  const imageUrl = banner.mobileImageUrl || banner.imageUrl;
+  const tone = useImageTone(imageUrl || null, 'square');
+  const key = tone?.bg || '#EEF1F5';
+  const body = (
+    <div className="relative h-full w-full overflow-hidden rounded-[28px]" style={{ backgroundColor: key, transition: 'background-color .5s ease' }}>
+      {imageUrl && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={imageUrl} alt="" className="absolute inset-0 h-full w-full object-cover" draggable={false} loading={index < 2 ? 'eager' : 'lazy'} />
+      )}
+      {/* 아래쪽 키 컬러 그라데이션 — 글자가 사진 위에서도 읽히게 */}
+      <div
+        aria-hidden
+        className="absolute inset-x-0 bottom-0 h-[58%]"
+        style={{ background: `linear-gradient(to top, ${key} 0%, ${key} 30%, transparent 100%)` }}
       />
-    </picture>
-  ) : (
-    <div className="flex h-full w-full items-center justify-between overflow-hidden bg-[#EAF2FF] px-6 py-5">
-      <div className="min-w-0">
-        {banner.badgeText && (
-          <span className="mb-3 inline-flex rounded-full bg-white/80 px-3 py-1 text-[12px] font-bold text-[#3478F6]">
-            {banner.badgeText}
-          </span>
-        )}
-        <h2 className="max-w-[72%] text-[24px] font-black leading-[1.22] text-gray-950">
+      <div className="absolute inset-x-0 bottom-0 px-6 pb-6">
+        <p className="whitespace-pre-line break-keep text-[clamp(22px,6.4vw,28px)] font-bold leading-[1.3] tracking-[-0.6px] text-[#191F28]">
           {banner.title}
-        </h2>
-        {banner.subtitle && (
-          <p className="mt-2 text-[15px] font-bold leading-[1.35] text-[#4D74D8]">
-            {banner.subtitle}
-          </p>
-        )}
+        </p>
+        <div className="mt-2 flex items-center justify-between gap-3">
+          {banner.subtitle ? (
+            <p className="min-w-0 truncate text-[clamp(14px,4vw,16px)] font-medium tracking-[-0.3px] text-[#333D4B]">{banner.subtitle}</p>
+          ) : <span />}
+          {total > 1 && (
+            <span className="shrink-0 rounded-full bg-black/25 px-3 py-1 text-[12.5px] font-semibold tabular-nums text-white backdrop-blur">
+              {index + 1}<span className="mx-1 opacity-60">|</span>{total}
+            </span>
+          )}
+        </div>
       </div>
-      <div className="h-24 w-24 flex-shrink-0 rounded-[28px] bg-white/70 shadow-[0_20px_60px_rgba(52,120,246,0.22)]" />
     </div>
   );
-
-  if (banner.targetUrl) {
-    return (
-      <Link href={banner.targetUrl} className="block h-full w-full" aria-label={banner.title}>
-        {content}
-      </Link>
-    );
-  }
-
-  return <div className="h-full w-full">{content}</div>;
+  return (
+    <div
+      className="shrink-0 snap-center transition-transform duration-500"
+      style={{ width: CARD_W, aspectRatio: '1 / 1', transform: `scale(${active ? 1 : 0.92})`, transitionTimingFunction: 'cubic-bezier(0.22, 1, 0.36, 1)' }}
+    >
+      {banner.targetUrl ? (
+        <Link href={banner.targetUrl} className="block h-full w-full" aria-label={banner.title} draggable={false}>
+          {body}
+        </Link>
+      ) : body}
+    </div>
+  );
 }
 
 export default function HomeBannerSlider() {
   const [banners, setBanners] = useState<HomeBanner[]>(defaultHomeBanners);
   const [activeIndex, setActiveIndex] = useState(0);
-  const touchStartX = useRef<number | null>(null);
-  // PC(1024↑)는 배너 두 장을 나란히 — 한 장씩 넘긴다(2:1 원본이 잘리지 않게)
-  const [isPc, setIsPc] = useState(false);
-  useEffect(() => {
-    const mq = window.matchMedia('(min-width: 1024px)');
-    const sync = () => setIsPc(mq.matches);
-    sync();
-    mq.addEventListener('change', sync);
-    return () => mq.removeEventListener('change', sync);
-  }, []);
+  const trackRef = useRef<HTMLDivElement>(null);
+  const activeRef = useRef(0);
+  const pausedUntil = useRef(0);
 
   const visibleBanners = useMemo(
     () => banners.filter((banner) => banner.imageUrl || banner.title),
@@ -70,96 +74,58 @@ export default function HomeBannerSlider() {
 
   useEffect(() => {
     let cancelled = false;
-
     fetch('/api/home-banners', { cache: 'no-store' })
       .then((res) => (res.ok ? res.json() : null))
       .then((payload) => {
         const next = Array.isArray(payload?.banners) ? payload.banners : [];
-        if (!cancelled && next.length > 0) {
-          setBanners(next);
-          setActiveIndex(0);
-        }
+        if (!cancelled && next.length > 0) setBanners(next);
       })
       .catch(() => undefined);
-
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, []);
 
+  // 자동 넘김 — 다음 카드를 가운데로 굴리면 onScroll 이 고른 칸을 바꾼다. 손으로 민 뒤 4초는 쉬고, 움직임 줄이기면 멈춤
   useEffect(() => {
-    if (activeIndex <= visibleBanners.length - 1) return;
-    setActiveIndex(0);
-  }, [activeIndex, visibleBanners.length]);
-
-  useEffect(() => {
-    if (visibleBanners.length <= 1) return;
+    const count = visibleBanners.length;
+    if (count <= 1) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const timer = window.setInterval(() => {
-      setActiveIndex((current) => (current + 1) % visibleBanners.length);
+      const el = trackRef.current;
+      if (!el || Date.now() < pausedUntil.current) return;
+      const next = (activeRef.current + 1) % count;
+      const card = el.children[next] as HTMLElement | undefined;
+      if (card) el.scrollTo({ left: card.offsetLeft - (el.clientWidth - card.offsetWidth) / 2, behavior: 'smooth' });
     }, 3400);
     return () => window.clearInterval(timer);
   }, [visibleBanners.length]);
 
   if (visibleBanners.length === 0) return null;
 
-  const perView = isPc && visibleBanners.length > 1 ? 2 : 1;
-  const shownIndex = Math.min(activeIndex, visibleBanners.length - perView);
-
-  const go = (direction: 1 | -1) => {
-    if (visibleBanners.length <= 1) return;
-    setActiveIndex((current) => (current + direction + visibleBanners.length) % visibleBanners.length);
-  };
-
   return (
-    <section
-      className="mx-[10px] mb-2 pc:-mx-2 pc:mb-4"
-      aria-label="홈 배너"
-      onTouchStart={(event) => {
-        touchStartX.current = event.touches[0]?.clientX ?? null;
-      }}
-      onTouchEnd={(event) => {
-        if (touchStartX.current === null) return;
-        const endX = event.changedTouches[0]?.clientX ?? touchStartX.current;
-        const diff = endX - touchStartX.current;
-        touchStartX.current = null;
-        if (Math.abs(diff) < 42) return;
-        go(diff < 0 ? 1 : -1);
-      }}
-    >
-      <div className={`relative overflow-hidden ${perView === 2 ? '' : 'rounded-[20px] bg-gray-100'}`}>
-        <div
-          className="flex transition-transform duration-500 ease-out"
-          style={{ transform: `translate3d(-${(shownIndex * 100) / perView}%, 0, 0)` }}
-        >
-          {visibleBanners.map((banner) => (
-            <div key={banner.id} className="h-auto shrink-0" style={{ width: `${100 / perView}%`, paddingRight: perView === 2 ? 8 : 0, paddingLeft: perView === 2 ? 8 : 0 }}>
-              <div className={`aspect-[2/1] w-full overflow-hidden ${perView === 2 ? 'rounded-[24px] bg-gray-100' : ''}`}>
-                <BannerFrame banner={banner} />
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {visibleBanners.length > 1 && (
-          <>
-            <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-black/20 px-2.5 py-1.5 backdrop-blur">
-              {visibleBanners.map((banner, index) => (
-                <button
-                  key={banner.id}
-                  type="button"
-                  onClick={() => setActiveIndex(index)}
-                  className={`h-1.5 rounded-full transition-all ${
-                    index === activeIndex ? 'w-5 bg-white' : 'w-1.5 bg-white/55'
-                  }`}
-                  aria-label={`${index + 1}번째 배너 보기`}
-                />
-              ))}
-            </div>
-            <div className="absolute bottom-3 right-3 rounded-full bg-black/25 px-2.5 py-1 text-[11px] font-bold text-white backdrop-blur">
-              {activeIndex + 1}/{visibleBanners.length}
-            </div>
-          </>
-        )}
+    <section aria-label="홈 배너" className="mb-4 pc:-mx-8">
+      <div
+        ref={trackRef}
+        className="flex snap-x snap-mandatory overflow-x-auto hide-scrollbar py-1"
+        style={{ gap: GAP, paddingInline: `calc((100% - ${CARD_W}) / 2)` }}
+        onPointerDown={() => { pausedUntil.current = Date.now() + 4000; }}
+        onTouchStart={() => { pausedUntil.current = Date.now() + 4000; }}
+        onScroll={(e) => {
+          const el = e.currentTarget;
+          const center = el.scrollLeft + el.clientWidth / 2;
+          let best = 0;
+          let bestDist = Infinity;
+          Array.from(el.children).forEach((child, i) => {
+            const c = child as HTMLElement;
+            const dist = Math.abs(c.offsetLeft + c.offsetWidth / 2 - center);
+            if (dist < bestDist) { bestDist = dist; best = i; }
+          });
+          activeRef.current = best;
+          if (best !== activeIndex) setActiveIndex(best);
+        }}
+      >
+        {visibleBanners.map((banner, i) => (
+          <BannerCard key={banner.id} banner={banner} index={i} total={visibleBanners.length} active={i === activeIndex} />
+        ))}
       </div>
     </section>
   );
