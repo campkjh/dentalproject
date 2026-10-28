@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { CreditCard, Loader2, Frown } from 'lucide-react';
 import { resolveProductImageUrl } from '@/lib/images';
 import { useStore } from '@/store';
+import { clearPendingPayment } from '@/lib/pending-payment';
 
 type VirtualAccountInfo = {
   bankCode: string | null;
@@ -39,6 +40,10 @@ export default function PaymentSuccessPageWrapper() {
 
 function PaymentSuccessPage() {
   const router = useRouter();
+  // 결제창에서 정상적으로 돌아왔으므로 '결제 미완료 예약' 기록을 지운다
+  useEffect(() => {
+    clearPendingPayment();
+  }, []);
   const searchParams = useSearchParams();
   const productId = searchParams.get('productId');
   const reservationId = searchParams.get('reservationId');

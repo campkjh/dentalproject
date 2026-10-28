@@ -4,6 +4,7 @@ import { Suspense, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Frown } from 'lucide-react';
 import { siteConfig } from '@/lib/site-config';
+import { clearPendingPayment } from '@/lib/pending-payment';
 
 /** 사용자가 결제창을 닫거나 취소했을 때 토스가 failUrl에 붙여 보내는 코드. */
 const USER_CANCEL_CODES = new Set(['PAY_PROCESS_CANCELED', 'USER_CANCEL']);
@@ -18,6 +19,10 @@ export default function PaymentFailPageWrapper() {
 
 function PaymentFailPage() {
   const router = useRouter();
+  // 결제창에서 정상적으로 돌아왔으므로 '결제 미완료 예약' 기록을 지운다
+  useEffect(() => {
+    clearPendingPayment();
+  }, []);
   const searchParams = useSearchParams();
   // 토스 결제창 실패 시 failUrl에 code/message가 붙는다.
   const code = searchParams.get('code');
