@@ -456,15 +456,14 @@ function SearchPage() {
     return (
       <div className="min-h-screen bg-white page-enter">
         {/* Header: 뒤로가기 + 검색창 */}
-        <div style={{ position: 'sticky', top: 0, zIndex: 40 }} className="bg-white px-3 py-2 flex items-center gap-2">
-          <button onClick={() => router.back()} className="p-1 flex-shrink-0">
-            <ChevronLeft size={24} className="text-gray-800" />
+        <div style={{ position: 'sticky', top: 0, zIndex: 40 }} className="bg-white flex h-[60px] items-center gap-1 pl-1.5 pr-4">
+          <button type="button" onClick={() => router.back()} aria-label="뒤로가기" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[#191F28] transition-colors active:bg-[#F2F4F6]">
+            <i aria-hidden="true" className="block h-[26px] w-[26px] bg-[#191F28]" style={{ WebkitMaskImage: 'url(/quick-match/icons/back.svg)', maskImage: 'url(/quick-match/icons/back.svg)', WebkitMaskSize: 'contain', maskSize: 'contain', WebkitMaskRepeat: 'no-repeat', maskRepeat: 'no-repeat', WebkitMaskPosition: 'center', maskPosition: 'center' }} />
           </button>
           <div
-            style={{ height: 46 }}
-            className="flex-1 flex items-center bg-gray-100 rounded-xl px-2.5 gap-2"
+            className="flex h-12 flex-1 items-center gap-2 rounded-[14px] bg-[#F2F4F6] px-3.5 transition-colors focus-within:bg-[#EDEFF2]"
           >
-            <Search size={18} className="text-gray-400 flex-shrink-0" />
+            <Search size={19} strokeWidth={2.2} className="shrink-0 text-[#8B95A1]" />
             <input
               type="text"
               value={query || currentCat?.name || ''}
@@ -472,12 +471,12 @@ function SearchPage() {
               onKeyDown={(e) => { if (e.key === 'Enter' && query) handleSearch(); }}
               placeholder="원하는 시술이 있으신가요?"
               style={{ fontSize: 16 }}
-              className="flex-1 bg-transparent outline-none placeholder-gray-400 text-gray-900"
+              className="min-w-0 flex-1 bg-transparent font-medium text-[#191F28] outline-none placeholder:font-normal placeholder:text-[#8B95A1]"
             />
             {(query || currentCat) && (
               <button onClick={() => { setQuery(''); setHasSearched(false); }}>
                 <svg width={20} height={20} viewBox="0 0 24 24" fill="none">
-                  <circle cx="12" cy="12" r="10" fill="rgba(43,49,61,0.6)" />
+                  <circle cx="12" cy="12" r="10" fill="#C9CED6" />
                   <path d="m15 9-6 6" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
                   <path d="m9 9 6 6" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
                 </svg>
@@ -501,6 +500,7 @@ function SearchPage() {
           onOpenPrice={() => setFilterModalTab('price')}
           onOpenBooking={() => setFilterModalTab('booking')}
           onOpenSort={() => setShowSortModal(true)}
+          count={categoryResults.length}
         />
 
         {/* 결과 — animated slide on tab switch */}
@@ -508,9 +508,6 @@ function SearchPage() {
           key={activeCategory || 'all'}
           className={`px-4 pb-4 lg:max-w-7xl lg:mx-auto ${tabDirection === 'right' ? 'tab-slide-right' : 'tab-slide-left'}`}
         >
-          <p className="text-sm text-gray-500 mb-3">
-            <span className="font-bold text-black">{currentCat?.name || '전체'}</span> · {categoryResults.length}건
-          </p>
           {categoryResults.length > 0 ? (
             <div className="grid grid-cols-2 gap-2.5 stagger-children md:grid-cols-3 lg:grid-cols-4 lg:gap-4">
               {categoryResults.map((product, i) => (
@@ -574,12 +571,12 @@ function SearchPage() {
   if (hasSearched) {
     return (
       <div className="pb-[86px] lg:pb-0 bg-white min-h-screen page-enter">
-        <div style={{ position: 'sticky', top: 0, zIndex: 40 }} className="bg-white px-3 py-2 flex items-center gap-2 lg:hidden">
-          <button onClick={() => router.back()} className="p-1 flex-shrink-0">
-            <ChevronLeft size={24} className="text-gray-800" />
+        <div style={{ position: 'sticky', top: 0, zIndex: 40 }} className="bg-white flex h-[60px] items-center gap-1 pl-1.5 pr-4 lg:hidden">
+          <button type="button" onClick={() => router.back()} aria-label="뒤로가기" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[#191F28] transition-colors active:bg-[#F2F4F6]">
+            <i aria-hidden="true" className="block h-[26px] w-[26px] bg-[#191F28]" style={{ WebkitMaskImage: 'url(/quick-match/icons/back.svg)', maskImage: 'url(/quick-match/icons/back.svg)', WebkitMaskSize: 'contain', maskSize: 'contain', WebkitMaskRepeat: 'no-repeat', maskRepeat: 'no-repeat', WebkitMaskPosition: 'center', maskPosition: 'center' }} />
           </button>
-          <div style={{ height: 46 }} className="flex-1 flex items-center bg-gray-100 rounded-xl px-2.5 gap-2">
-            <Search size={18} className="text-gray-400 flex-shrink-0" />
+          <div className="flex h-12 flex-1 items-center gap-2 rounded-[14px] bg-[#F2F4F6] px-3.5 transition-colors focus-within:bg-[#EDEFF2]">
+            <Search size={19} strokeWidth={2.2} className="shrink-0 text-[#8B95A1]" />
             <input
               type="text"
               value={query}
@@ -587,12 +584,12 @@ function SearchPage() {
               onKeyDown={handleKeyDown}
               placeholder="원하는 시술이 있으신가요?"
               style={{ fontSize: 16 }}
-              className="flex-1 bg-transparent outline-none placeholder-gray-400 text-gray-900"
+              className="min-w-0 flex-1 bg-transparent font-medium text-[#191F28] outline-none placeholder:font-normal placeholder:text-[#8B95A1]"
             />
             {query && (
               <button onClick={() => { setQuery(''); setHasSearched(false); }}>
                 <svg width={20} height={20} viewBox="0 0 24 24" fill="none">
-                  <circle cx="12" cy="12" r="10" fill="rgba(43,49,61,0.6)" />
+                  <circle cx="12" cy="12" r="10" fill="#C9CED6" />
                   <path d="m15 9-6 6" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
                   <path d="m9 9 6 6" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
                 </svg>
@@ -616,6 +613,7 @@ function SearchPage() {
           onOpenPrice={() => setFilterModalTab('price')}
           onOpenBooking={() => setFilterModalTab('booking')}
           onOpenSort={() => setShowSortModal(true)}
+          count={searchResults.length}
         />
 
         <div className="lg:max-w-7xl lg:mx-auto lg:px-6 lg:py-6">
@@ -626,9 +624,6 @@ function SearchPage() {
             >
               {searchResults.length > 0 ? (
                 <>
-                  <p className="text-sm text-gray-500 mb-3">
-                    검색결과 <span className="font-bold text-black">{searchResults.length}</span>건
-                  </p>
                   <div className="grid grid-cols-2 gap-2.5 md:grid-cols-3 lg:grid-cols-4 lg:gap-4">
                     {searchResults.map((product, i) => (
                       <ProductCard key={product.id} product={product} index={i} />
@@ -1272,6 +1267,8 @@ function FiltersBottomSheet({
    Specialty category tabs (전체 + 치과/소아과/...) with sliding underline +
    slide-on-switch animation. Below: filter chips row (지역/시술/가격/예약방법/
    병원정보) + sub-row for the 앱결제 quick toggle and 추천순 sort. */
+// 카테고리·검색 결과 거르기 — 최신 결(261029): 진료과 = 아이콘 알약(고르면 검정), 지역·가격·예약방법·앱결제 = 회색 칩(고르면 파랑),
+//  아래 줄 = 상품 수 · 정렬. 진료과 줄은 고른 알약이 보이게 옆으로 따라 굴러간다.
 function ListPageFilters({
   categories,
   activeCategory,
@@ -1287,8 +1284,9 @@ function ListPageFilters({
   onOpenPrice,
   onOpenBooking,
   onOpenSort,
+  count,
 }: {
-  categories: { id: string; name: string }[];
+  categories: { id: string; name: string; icon?: string }[];
   activeCategory: string;
   onChangeCategory: (id: string) => void;
   selectedRegions: string[];
@@ -1302,146 +1300,82 @@ function ListPageFilters({
   onOpenPrice: () => void;
   onOpenBooking: () => void;
   onOpenSort: () => void;
+  count: number;
 }) {
   const isAppPay = selectedBooking === '앱결제';
-
-  // Sliding underline indicator
-  const tabsList: { id: string; name: string }[] = [
-    { id: '', name: '전체' },
-    ...categories,
-  ];
+  const tabsList: { id: string; name: string; icon?: string }[] = [{ id: '', name: '전체' }, ...categories];
   const tabBtnRefs = useRef<(HTMLButtonElement | null)[]>([]);
-  const [indicator, setIndicator] = useState({ left: 0, width: 0 });
   const activeIdx = tabsList.findIndex((t) => t.id === activeCategory);
 
-  useLayoutEffect(() => {
-    const btn = tabBtnRefs.current[activeIdx >= 0 ? activeIdx : 0];
-    if (!btn) return;
-    setIndicator({ left: btn.offsetLeft, width: btn.offsetWidth });
-  }, [activeIdx, tabsList.length]);
-
+  // 고른 알약을 줄 가운데 쪽으로
   useEffect(() => {
-    const onResize = () => {
-      const btn = tabBtnRefs.current[activeIdx >= 0 ? activeIdx : 0];
-      if (!btn) return;
-      setIndicator({ left: btn.offsetLeft, width: btn.offsetWidth });
-    };
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
+    tabBtnRefs.current[activeIdx >= 0 ? activeIdx : 0]?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
   }, [activeIdx]);
 
-  const chipStyle = (active: boolean): React.CSSProperties => ({
-    fontSize: 14,
-    fontWeight: 600,
-    height: 36,
-    paddingLeft: 14,
-    paddingRight: 12,
-    borderRadius: 999,
-    whiteSpace: 'nowrap',
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: 4,
-    ...(active
-      ? { backgroundColor: '#2B313D', color: '#fff', border: '1px solid #2B313D' }
-      : { backgroundColor: '#fff', color: '#51535C', border: '1px solid #E5E7EB' }),
-  });
+  const chip = (active: boolean) =>
+    `inline-flex h-[34px] shrink-0 items-center gap-1 whitespace-nowrap rounded-full px-3.5 text-[14px] font-semibold tracking-[-0.2px] transition-colors active:scale-[0.97] ${
+      active ? 'bg-[#EDF4FF] text-[#3180F7]' : 'bg-[#F2F4F6] text-[#4E5968]'
+    }`;
 
   return (
     <div className="bg-white">
-      {/* Specialty category tabs — underline lives INSIDE the scroller so
-          offsetLeft (relative to the scrollable content) keeps it locked to
-          the active tab as the user scrolls horizontally. */}
-      <div className="border-b border-gray-100">
-        <div className="relative flex gap-5 overflow-x-auto hide-scrollbar px-4 pt-3">
-          {tabsList.map((tab, i) => {
-            const isActive = tab.id === activeCategory;
-            return (
-              <button
-                key={tab.id || 'all'}
-                ref={(el) => {
-                  tabBtnRefs.current[i] = el;
-                }}
-                onClick={() => onChangeCategory(tab.id)}
-                className="relative pb-3 flex-shrink-0"
-              >
-                <span
-                  className="text-[16px] font-bold whitespace-nowrap"
-                  style={{
-                    color: isActive ? '#2B313D' : '#A4ABBA',
-                    transition: 'color 320ms cubic-bezier(0.22, 1, 0.36, 1)',
-                  }}
-                >
-                  {tab.name}
+      {/* 진료과 — 아이콘 알약 */}
+      <div className="flex gap-1.5 overflow-x-auto hide-scrollbar px-4 pb-1 pt-1">
+        {tabsList.map((tab, i) => {
+          const isActive = tab.id === activeCategory;
+          return (
+            <button
+              key={tab.id || 'all'}
+              ref={(el) => {
+                tabBtnRefs.current[i] = el;
+              }}
+              type="button"
+              onClick={() => onChangeCategory(tab.id)}
+              aria-pressed={isActive}
+              className={`flex h-9 shrink-0 items-center gap-1.5 rounded-full pr-3.5 text-[14px] font-semibold tracking-[-0.2px] transition-colors duration-300 active:scale-[0.97] ${
+                tab.icon ? 'pl-1.5' : 'pl-3.5'
+              } ${isActive ? 'bg-[#191F28] text-white' : 'bg-[#F2F4F6] text-[#4E5968]'}`}
+            >
+              {tab.icon && (
+                <span className={`flex h-[26px] w-[26px] items-center justify-center rounded-full ${isActive ? 'bg-white' : 'bg-white/80'}`}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={tab.icon} alt="" width={20} height={20} />
                 </span>
-              </button>
-            );
-          })}
-          {/* Sliding underline (in-flow w.r.t. scroll, so it sticks to the active tab) */}
-          <span
-            aria-hidden
-            className="absolute bottom-0 h-[3px] rounded-full pointer-events-none"
-            style={{
-              left: indicator.left,
-              width: indicator.width,
-              backgroundColor: '#2B313D',
-              transition:
-                'left 380ms cubic-bezier(0.22, 1, 0.36, 1), width 380ms cubic-bezier(0.22, 1, 0.36, 1)',
-            }}
-          />
-        </div>
+              )}
+              {tab.name}
+            </button>
+          );
+        })}
       </div>
 
-      {/* Filter chips row — 지역 / 가격 / 예약방법 only */}
-      <div className="flex gap-1.5 overflow-x-auto hide-scrollbar px-4 pt-3 pb-2">
-        <button onClick={onOpenRegion} style={chipStyle(selectedRegions.length > 0)}>
+      {/* 거르기 칩 — 지역 · 가격 · 예약방법 · 앱결제 */}
+      <div className="flex gap-1.5 overflow-x-auto hide-scrollbar px-4 pb-1 pt-2">
+        <button type="button" onClick={onOpenRegion} className={chip(selectedRegions.length > 0)}>
           {selectedRegions.length > 0 ? regionLabel : '지역'}
-          <ChevronDown size={14} />
+          <ChevronDown size={15} strokeWidth={2.4} />
         </button>
-        <button onClick={onOpenPrice} style={chipStyle(priceActive)}>
+        <button type="button" onClick={onOpenPrice} className={chip(priceActive)}>
           {priceLabel}
-          <ChevronDown size={14} />
+          <ChevronDown size={15} strokeWidth={2.4} />
         </button>
-        <button onClick={onOpenBooking} style={chipStyle(selectedBooking !== '전체')}>
-          {selectedBooking !== '전체' ? selectedBooking : '예약방법'}
-          <ChevronDown size={14} />
+        <button type="button" onClick={onOpenBooking} className={chip(selectedBooking !== '전체' && !isAppPay)}>
+          {selectedBooking !== '전체' && !isAppPay ? selectedBooking : '예약방법'}
+          <ChevronDown size={15} strokeWidth={2.4} />
+        </button>
+        <button type="button" onClick={() => setSelectedBooking(isAppPay ? '전체' : '앱결제')} aria-pressed={isAppPay} className={chip(isAppPay)}>
+          {isAppPay && <Check size={15} strokeWidth={2.8} />}
+          앱결제
         </button>
       </div>
 
-      {/* Sub-row: 앱결제 checkbox + 추천순 sort */}
-      <div className="flex items-center justify-between px-4 pt-2 pb-3">
-        <button
-          onClick={() => setSelectedBooking(isAppPay ? '전체' : '앱결제')}
-          className="flex items-center gap-2"
-        >
-          <span
-            className="flex items-center justify-center"
-            style={{
-              width: 20,
-              height: 20,
-              borderRadius: 4,
-              backgroundColor: isAppPay ? '#2B313D' : '#fff',
-              border: isAppPay ? 'none' : '1.5px solid #D1D5DB',
-            }}
-          >
-            {isAppPay && (
-              <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={3}>
-                <path d="M20 6 9 17l-5-5" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            )}
-          </span>
-          <span className="text-[14px] font-medium" style={{ color: isAppPay ? '#2B313D' : '#51535C' }}>
-            앱결제
-          </span>
-        </button>
-        <button
-          onClick={onOpenSort}
-          className="flex items-center gap-1 text-[14px] font-medium"
-          style={{ color: '#51535C' }}
-        >
+      {/* 상품 수 · 정렬 */}
+      <div className="flex items-center justify-between px-4 pb-2 pt-3">
+        <p className="text-[15px] text-[#6B7684]">
+          상품 <b className="font-bold tabular-nums text-[#191F28]">{count}</b>개
+        </p>
+        <button type="button" onClick={onOpenSort} className="flex items-center gap-0.5 text-[14px] font-semibold text-[#4E5968] transition-opacity active:opacity-60">
           {selectedSort}
-          <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-            <path d="M3 6h18M6 12h12M10 18h4" strokeLinecap="round" />
-          </svg>
+          <ChevronDown size={16} strokeWidth={2.4} />
         </button>
       </div>
     </div>
