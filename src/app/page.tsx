@@ -194,11 +194,6 @@ export default function HomePage() {
             내리면 흰색으로 채워지고 그 아래로 흰 그늘이 자연스럽게 이어진다 */}
         <div aria-hidden className="pointer-events-none absolute inset-0" style={{ background: 'linear-gradient(180deg, #FFFFFF 0%, rgba(255,255,255,0.88) 55%, rgba(255,255,255,0) 100%)' }} />
         <div aria-hidden className="pointer-events-none absolute inset-0 bg-white transition-opacity duration-300" style={{ opacity: scrolled ? 1 : 0 }} />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-x-0 h-5 transition-opacity duration-300"
-          style={{ top: `calc(100% + ${Math.max(0, dockProgress * 52 - (1 - dockProgress) * 6)}px - 1px)`, opacity: scrolled ? 1 : 0, background: 'linear-gradient(180deg, #FFFFFF 0%, rgba(255,255,255,0) 100%)' }}
-        />
         <div className="relative h-16">
         <MobileHomeHeader hidden={scrolled} />
 
@@ -279,9 +274,11 @@ export default function HomePage() {
         </div>
 
         {/* Docked compact category bar — pill style, 머리 아래에 겹쳐 내려온다(흐름 밖).
-            아래 경계선은 두지 않는다 — 흰 그늘이 이 줄 바로 밑(1px 겹침)에서 이어져야 틈이 안 보인다 */}
+            흰 그늘은 이 줄의 **실제 아래 끝**에 붙인다(감싼 칸의 top:100%) — 높이를 숫자(52)로 계산해 띄우면
+            줄 실제 높이(48)와 어긋나 그 사이 3px 로 뒤 내용이 비쳐 '틈'이 보였다 */}
+        <div className="absolute inset-x-0 top-full">
         <div
-          className="absolute inset-x-0 top-full bg-white"
+          className="relative bg-white"
           style={{
             maxHeight: dockProgress * 52,
             opacity: Math.min(1, dockProgress * 1.6),
@@ -330,6 +327,12 @@ export default function HomePage() {
               opacity: dockProgress,
             }}
           />
+        </div>
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 top-full -mt-px h-6 transition-opacity duration-300"
+          style={{ opacity: scrolled ? 1 : 0, background: 'linear-gradient(180deg, #FFFFFF 0%, rgba(255,255,255,0.75) 40%, rgba(255,255,255,0) 100%)' }}
+        />
         </div>
       </div>
 
