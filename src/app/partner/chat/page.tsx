@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import TopBar from '@/components/common/TopBar';
 import { Search, Send } from 'lucide-react';
 import Avatar from '@/components/common/Avatar';
 import { useSession } from '@/lib/supabase/SessionProvider';
@@ -182,11 +183,8 @@ function PartnerChatPage() {
   }
 
   return (
-    <div className="space-y-4">
-      <div>
-        <h1 className="text-[18px] font-bold text-gray-900">채팅 상담</h1>
-        <p className="text-[12px] text-gray-500 mt-1">환자가 보낸 1:1 상담 메시지에 응답합니다.</p>
-      </div>
+    <div className="pd-sub space-y-4">
+      <TopBar title="채팅 상담" sub="환자가 보낸 1:1 상담 메시지에 응답합니다." />
 
       <div className="grid md:grid-cols-[300px_1fr] gap-4 h-[calc(100dvh-220px)] min-h-[480px]">
         {/* Thread list */}

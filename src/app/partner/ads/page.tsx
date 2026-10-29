@@ -151,7 +151,7 @@ export default function AdsPage() {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="pd-sub space-y-5">
       <PartnerTop
         eyebrow="광고"
         title="부가 광고 관리"

@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import TopBar from '@/components/common/TopBar';
 import { useParams, useRouter } from 'next/navigation';
-import { ChevronLeft } from 'lucide-react';
 import { useStore } from '@/store';
 import { useSession } from '@/lib/supabase/SessionProvider';
 import { ImageUploader } from '@/components/admin/ImageUploader';
@@ -127,17 +127,8 @@ export default function EventEditPage() {
   }
 
   return (
-    <div className="space-y-4 max-w-3xl">
-      <Link href="/partner/events/list" className="inline-flex items-center gap-1 text-[12px] text-gray-500 hover:text-gray-900">
-        <ChevronLeft size={14} /> 이벤트 목록
-      </Link>
-
-      <div className="flex items-center justify-between">
-        <h1 className="text-[18px] font-bold text-gray-900">이벤트 편집</h1>
-        <span className="text-[10px] font-bold px-2 py-1 rounded bg-gray-100 text-gray-600">
-          {evt.status}
-        </span>
-      </div>
+    <div className="pd-sub space-y-4 max-w-3xl">
+      <TopBar title="이벤트 편집" sub={<span className="pd-tag">{evt.status}</span>} />
 
       {evt.reject_reason && (
         <div className="bg-red-50 border border-red-200 rounded-xl p-4">

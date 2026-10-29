@@ -96,7 +96,7 @@ export default function EventsListPage() {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="pd-sub space-y-5">
       <PartnerTop
         eyebrow="이벤트 관리"
         title="이벤트 목록"
@@ -125,7 +125,7 @@ export default function EventsListPage() {
             const s = STATUS_LABEL[e.status];
             return (
               <article key={e.id} className="partner-list-row items-start">
-                <div className="h-[64px] w-[64px] flex-shrink-0 overflow-hidden rounded-[16px] bg-[#EDF4FF] text-[#6D28D9] flex items-center justify-center">
+                <div className="h-[64px] w-[64px] flex-shrink-0 overflow-hidden rounded-[16px] bg-[#EDF4FF] text-[#3180F7] flex items-center justify-center">
                   {e.image_url ? (
                     /* eslint-disable-next-line @next/next/no-img-element */
                     <img src={e.image_url} alt="" className="w-full h-full object-cover" />

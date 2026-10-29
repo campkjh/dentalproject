@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import TopBar from '@/components/common/TopBar';
 import { useRouter } from 'next/navigation';
-import { ChevronLeft } from 'lucide-react';
 import { useStore } from '@/store';
 import { useSession } from '@/lib/supabase/SessionProvider';
 import { ImageUploader } from '@/components/admin/ImageUploader';
@@ -71,15 +71,8 @@ export default function EventNewPage() {
   }
 
   return (
-    <div className="space-y-4 max-w-3xl">
-      <Link href="/partner/events/list" className="inline-flex items-center gap-1 text-[12px] text-gray-500 hover:text-gray-900">
-        <ChevronLeft size={14} /> 이벤트 목록
-      </Link>
-
-      <div>
-        <h1 className="text-[18px] font-bold text-gray-900">이벤트 등록</h1>
-        <p className="text-[12px] text-gray-500 mt-1">등록 후 관리자 검수를 거쳐 환자에게 노출됩니다.</p>
-      </div>
+    <div className="pd-sub space-y-4 max-w-3xl">
+      <TopBar title="이벤트 등록" sub="등록 후 관리자 검수를 거쳐 환자에게 노출됩니다." />
 
       <Card title="기본 정보">
         <div className="space-y-3">

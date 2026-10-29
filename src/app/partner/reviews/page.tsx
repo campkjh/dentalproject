@@ -262,9 +262,11 @@ export default function PartnerReviewsPage() {
 
       {/* 초기 리뷰 등록 모달 */}
       {showAddModal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 100, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
-          <div style={{ background: 'white', borderRadius: '20px 20px 0 0', width: '100%', maxWidth: 480, padding: '24px 20px', paddingBottom: 32 }}>
-            <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 20 }}>초기 리뷰 등록</h2>
+        // 시트 = 고객 예약 시트(flow .scrim/.sheet) 결 — 딤 페이드 + 아래에서 스프링으로 올라옴(partner-v2.css .pd-scrim/.pd-sheet)
+        <div className="pd-scrim">
+          <div className="pd-sheet" role="dialog" aria-modal="true" aria-label="초기 리뷰 등록">
+            <span className="pd-grab" aria-hidden="true" />
+            <h2 className="pd-sheet-title">초기 리뷰 등록</h2>
 
             {/* 리뷰 타입 */}
             <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
@@ -277,7 +279,7 @@ export default function PartnerReviewsPage() {
                     type: t.v,
                     ...(t.v === 'text' ? { beforeImage: '', afterImage: '' } : {}),
                   }))}
-                  style={{ flex: 1, padding: '10px', borderRadius: 10, border: `1.5px solid ${addForm.type === t.v ? '#3180F7' : '#E5E7EB'}`, background: addForm.type === t.v ? '#F3EEFF' : 'white', color: addForm.type === t.v ? '#3180F7' : '#6B7280', fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>
+                  style={{ flex: 1, padding: '10px', borderRadius: 10, border: `1.5px solid ${addForm.type === t.v ? '#3180F7' : '#E5E7EB'}`, background: addForm.type === t.v ? '#EDF4FF' : 'white', color: addForm.type === t.v ? '#3180F7' : '#6B7280', fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>
                   {t.label}
                 </button>
               ))}
@@ -323,10 +325,10 @@ export default function PartnerReviewsPage() {
             )}
 
             <div style={{ display: 'flex', gap: 8 }}>
-              <button type="button" onClick={() => setShowAddModal(false)} style={{ flex: 1, height: 48, borderRadius: 12, border: '1.5px solid #E5E7EB', background: 'white', fontSize: 14, fontWeight: 600, cursor: 'pointer', color: '#6B7280' }}>
+              <button type="button" onClick={() => setShowAddModal(false)} className="pd-sheet-btn is-ghost" style={{ flex: 1 }}>
                 취소
               </button>
-              <button type="button" onClick={handleAddReview} disabled={saving} style={{ flex: 2, height: 48, borderRadius: 12, background: saving ? '#C4B5FD' : '#3180F7', color: 'white', fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer' }}>
+              <button type="button" onClick={handleAddReview} disabled={saving} className="pd-sheet-btn" style={{ flex: 2 }}>
                 {saving ? '등록 중...' : '등록하기'}
               </button>
             </div>

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useStore } from '@/store';
+import TopBar from '@/components/common/TopBar';
 import { createClient, hasSupabaseEnv } from '@/lib/supabase/client';
 import { compressImage } from '@/lib/compressImage';
 import { resolveDoctorImageUrl } from '@/lib/images';
@@ -184,12 +185,8 @@ export default function DoctorEditPage() {
 
   return (
     <div className="partner-mobile-screen partner-profile-edit-screen">
-      <header className="partner-profile-edit-head">
-        <button type="button" onClick={() => router.back()} aria-label="뒤로">
-          <img src="/partner-template/chevron-left.svg" alt="" />
-        </button>
-        <h1>{isNew ? '프로필 등록' : '프로필 수정'}</h1>
-      </header>
+      {/* 머리 = 고객 상세 머리(TopBar) — 56 줄 둥근 뒤로 + 아래 큰 제목 */}
+      <TopBar title={isNew ? '프로필 등록' : '프로필 수정'} />
 
       {loading ? (
         <div className="partner-loading small">불러오는 중...</div>

@@ -59,7 +59,7 @@ export default function PartnerContactPage() {
   };
 
   return (
-    <div className="space-y-5">
+    <div className="pd-sub space-y-5">
       <PartnerTop
         eyebrow="고객지원"
         title="문의"

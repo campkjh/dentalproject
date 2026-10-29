@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
+import TopBar from '@/components/common/TopBar';
 import { Search } from 'lucide-react';
 import { useSession } from '@/lib/supabase/SessionProvider';
 
@@ -22,7 +23,7 @@ type Payment = {
 const STATUS: Record<Payment['status'], { label: string; color: string }> = {
   pending: { label: '결제확인중', color: '#B45309' },
   confirmed: { label: '결제완료', color: '#15803D' },
-  completed: { label: '시술완료', color: '#6D28D9' },
+  completed: { label: '시술완료', color: '#3180F7' },
   cancelled: { label: '취소/환불', color: '#E5484D' },
 };
 
@@ -77,11 +78,8 @@ export default function AppPayPaymentsPage() {
   }
 
   return (
-    <div className="space-y-4">
-      <div>
-        <h1 className="text-[18px] font-bold text-gray-900">앱결제 내역</h1>
-        <p className="text-[12px] text-gray-500 mt-1">앱 안에서 결제된 모든 거래를 확인합니다.</p>
-      </div>
+    <div className="pd-sub space-y-4">
+      <TopBar title="앱결제 내역" sub="앱 안에서 결제된 모든 거래를 확인합니다." />
 
       <div className="bg-white rounded-xl border border-gray-200 p-3">
         <div className="relative">

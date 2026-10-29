@@ -29,7 +29,7 @@ const PRESET = [50000, 100000, 300000, 500000, 1000000, 3000000];
 const TYPE_META: Record<Tx['type'], { label: string; color: string; tone: 'success' | 'danger' | 'info' }> = {
   charge: { label: '충전', color: '#15803D', tone: 'success' },
   spend: { label: '사용', color: '#E5484D', tone: 'danger' },
-  refund: { label: '환불', color: '#6D28D9', tone: 'info' },
+  refund: { label: '환불', color: '#3180F7', tone: 'info' },
 };
 
 export default function PartnerPointsPage() {
@@ -110,7 +110,7 @@ export default function PartnerPointsPage() {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="pd-sub space-y-5">
       <PartnerTop
         eyebrow="포인트"
         title="병원포인트"
@@ -156,7 +156,7 @@ export default function PartnerPointsPage() {
                 style={{
                   backgroundColor: selected ? '#EDF4FF' : '#F9FAFB',
                   borderColor: selected ? '#3180F7' : 'rgba(0,27,55,0.1)',
-                  color: selected ? '#6D28D9' : 'rgba(3,18,40,0.7)',
+                  color: selected ? '#3180F7' : 'rgba(3,18,40,0.7)',
                 }}
               >
                 {preset.toLocaleString()}원

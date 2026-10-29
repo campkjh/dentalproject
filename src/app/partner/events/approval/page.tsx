@@ -79,7 +79,7 @@ export default function EventApprovalPage() {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="pd-sub space-y-5">
       <PartnerTop
         eyebrow="이벤트 관리"
         title="이벤트 검수 현황"

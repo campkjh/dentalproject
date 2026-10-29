@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import TopBar from '@/components/common/TopBar';
 import { useSession } from '@/lib/supabase/SessionProvider';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -67,11 +68,8 @@ export default function SettlementPage() {
   const totalPaid = items.filter((i) => i.status === 'paid').reduce((s, i) => s + i.payout, 0);
 
   return (
-    <div className="space-y-4">
-      <div>
-        <h1 className="text-[18px] font-bold text-gray-900">정산 내역</h1>
-        <p className="text-[12px] text-gray-500 mt-1">월별 앱결제 정산 내역과 입금 상태를 확인합니다.</p>
-      </div>
+    <div className="pd-sub space-y-4">
+      <TopBar title="정산 내역" sub="월별 앱결제 정산 내역과 입금 상태를 확인합니다." />
 
       <div className="grid md:grid-cols-2 gap-3">
         <div className="bg-white rounded-xl border border-gray-200 p-5">

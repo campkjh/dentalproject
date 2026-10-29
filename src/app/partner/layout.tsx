@@ -8,6 +8,8 @@ import { useStore } from '@/store';
 import { useMyHospitalData } from '@/lib/partner/my-hospital-cache';
 import appStyles from '@/components/common/app-ui.module.css';
 import { CommunityTabIcon, HomeTabIcon, HospitalTabIcon, MyTabIcon, ReservationTabIcon, TabBarNav } from '@/components/common/BottomNav';
+// 상세·하위 화면·모달 덮어쓰기(고객 화면 결) — globals 는 건드리지 않고 여기 한 파일에
+import './partner-v2.css';
 
 // 의사 화면 하단 탭 — 고객 화면과 같은 프리티풀 흰 탭 바(TabBarNav)·같은 선 아이콘. 확인 기다리는 예약 = 예약관리 빨간 점
 const BOTTOM_NAV = [

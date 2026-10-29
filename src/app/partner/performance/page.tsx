@@ -62,7 +62,7 @@ export default function PerformancePage() {
   const maxRevenue = Math.max(1, ...weekly.map((w) => w.revenue));
 
   return (
-    <div className="space-y-5">
+    <div className="pd-sub space-y-5">
       <PartnerTop
         eyebrow="성과"
         title="성과 관리"
@@ -112,7 +112,7 @@ export default function PerformancePage() {
                     </div>
                     <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-gradient-to-r from-[#3180F7] to-[#B18CFF] rounded-full transition-all duration-700"
+                        className="h-full bg-gradient-to-r from-[#3180F7] to-[#5BA0FF] rounded-full transition-all duration-700"
                         style={{ width: `${(w.revenue / maxRevenue) * 100}%` }}
                       />
                     </div>

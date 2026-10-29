@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { ChevronLeft, ChevronRight, Info } from 'lucide-react';
+import TopBar from '@/components/common/TopBar';
 import { normalizeProductImageUrl } from '@/lib/images';
 import { useMyHospitalData } from '@/lib/partner/my-hospital-cache';
 import { useReservationRealtimeRefresh } from '@/lib/realtime/reservations';
@@ -36,10 +37,10 @@ type ReservationDetail = {
 };
 
 const STATUS_COPY: Record<ReservationStatus, { label: string; color: string }> = {
-  pending: { label: '예약확인중...', color: '#FF8A50' },
-  confirmed: { label: '예약확정', color: '#00C781' },
+  pending: { label: '예약확인중...', color: '#FE9800' },
+  confirmed: { label: '예약확정', color: '#03B26C' },
   completed: { label: '진료완료', color: '#3180F7' },
-  cancelled: { label: '취소', color: '#A4ABBA' },
+  cancelled: { label: '취소', color: '#B0B8C1' },
 };
 
 const TIME_OPTIONS = [
@@ -324,13 +325,9 @@ export default function PartnerReservationDetailPage() {
   };
 
   return (
-    <div className="min-h-full bg-white">
-      <header className="partner-cancel-topbar">
-        <button type="button" onClick={() => router.back()} aria-label="뒤로가기">
-          <ChevronLeft size={28} strokeWidth={2.2} />
-        </button>
-        <h1>정보</h1>
-      </header>
+    <div className="pd-detail min-h-full bg-white">
+      {/* 머리 = 고객 상세 머리(TopBar) — 56 줄 둥근 뒤로 + 아래 큰 제목 */}
+      <TopBar title="예약 정보" />
 
       {loading ? (
         <div className="partner-loading">불러오는 중...</div>

@@ -2,14 +2,15 @@
 
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
+import TopBar from '@/components/common/TopBar';
 import { Calendar, XCircle, CheckCircle, MessageSquare, Bell } from 'lucide-react';
 import { useStore } from '@/store';
 import { useSession } from '@/lib/supabase/SessionProvider';
 
 const TYPE_CFG: Record<string, { icon: React.ReactNode; bg: string; color: string; label: string }> = {
   important: { icon: <CheckCircle size={14} />, bg: '#E6F7EB', color: '#15803D', label: '중요' },
-  event: { icon: <Bell size={14} />, bg: '#EDE7FF', color: '#6D28D9', label: '이벤트' },
-  recommendation: { icon: <Calendar size={14} />, bg: '#E6F2FF', color: '#6D28D9', label: '추천' },
+  event: { icon: <Bell size={14} />, bg: '#EDF4FF', color: '#3180F7', label: '이벤트' },
+  recommendation: { icon: <Calendar size={14} />, bg: '#EDF4FF', color: '#3180F7', label: '추천' },
   info: { icon: <MessageSquare size={14} />, bg: '#F3F4F6', color: '#6B7280', label: '안내' },
   update: { icon: <XCircle size={14} />, bg: '#FFF8E1', color: '#B45309', label: '업데이트' },
 };
@@ -58,32 +59,25 @@ export default function PartnerNoticesPage() {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-[18px] font-bold text-gray-900">알림</h1>
-          <p className="text-[12px] text-gray-500 mt-1">
-            예약·후기·병원 상태 변경 등 모든 알림을 한곳에서 확인합니다.
-          </p>
-        </div>
-        <button
-          onClick={markAllRead}
-          className="px-3 py-1.5 rounded-lg border border-gray-200 text-[12px] font-semibold text-gray-700 btn-press"
-        >
-          모두 읽음 처리
-        </button>
-      </div>
+    <div className="pd-sub space-y-4">
+      <TopBar
+        title="알림"
+        sub="예약·후기·병원 상태 변경 등 모든 알림을 한곳에서 확인합니다."
+        rightContent={
+          <button type="button" onClick={markAllRead} className="pd-head-text-btn">
+            모두 읽음 처리
+          </button>
+        }
+      />
 
-      <div className="bg-white rounded-xl border border-gray-200 p-3 flex flex-wrap gap-1">
+      {/* 거르기 = 프리티풀 정렬 칩(.pd-chip) — 고르면 검정 */}
+      <div className="pd-chips pd-chips-bleed">
         {(['전체', 'important', 'event', 'recommendation', 'info', 'update'] as const).map((f) => (
           <button
             key={f}
+            type="button"
             onClick={() => setFilter(f)}
-            className="px-3 py-1.5 rounded-full text-[12px] font-semibold"
-            style={{
-              backgroundColor: filter === f ? '#2B313D' : '#F4F5F7',
-              color: filter === f ? '#fff' : '#51535C',
-            }}
+            className={`pd-chip${filter === f ? ' is-active' : ''}`}
           >
             {f === '전체' ? '전체' : TYPE_CFG[f]?.label ?? f}
           </button>
@@ -110,10 +104,7 @@ export default function PartnerNoticesPage() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5 mb-0.5">
-                    <span
-                      className="text-[11px] font-bold px-1.5 py-0.5 rounded"
-                      style={{ backgroundColor: cfg.bg, color: cfg.color }}
-                    >
+                    <span className="pd-tag" style={{ backgroundColor: cfg.bg, color: cfg.color }}>
                       {cfg.label}
                     </span>
                     <span className="text-[12px] font-semibold text-gray-900 truncate">{n.title}</span>

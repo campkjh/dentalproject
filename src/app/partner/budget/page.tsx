@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import TopBar from '@/components/common/TopBar';
 import { Coins } from 'lucide-react';
 import { useStore } from '@/store';
 import { useSession } from '@/lib/supabase/SessionProvider';
@@ -99,14 +100,11 @@ export default function BudgetPage() {
   const totalSpent = txs.filter((t) => t.amount < 0).reduce((s, t) => s + -t.amount, 0);
 
   return (
-    <div className="space-y-4">
-      <div>
-        <h1 className="text-[18px] font-bold text-gray-900">예산 관리</h1>
-        <p className="text-[12px] text-gray-500 mt-1">광고 캠페인에 사용할 병원 포인트를 충전하고 사용 내역을 확인합니다.</p>
-      </div>
+    <div className="pd-sub space-y-4">
+      <TopBar title="예산 관리" sub="광고 캠페인에 사용할 병원 포인트를 충전하고 사용 내역을 확인합니다." />
 
       {/* Balance card */}
-      <div className="bg-gradient-to-br from-[#3180F7] to-[#6D28D9] rounded-2xl p-6 text-white">
+      <div className="bg-[#3180F7] rounded-2xl p-6 text-white">
         <div className="flex items-center gap-3 mb-2">
           <Coins size={20} />
           <span className="text-[13px] font-bold opacity-90">현재 잔액</span>
@@ -177,10 +175,7 @@ export default function BudgetPage() {
                 <li key={t.id} className="px-5 py-3 flex items-center justify-between">
                   <div>
                     <div className="flex items-center gap-2 mb-0.5">
-                      <span
-                        className="text-[10px] font-bold px-1.5 py-0.5 rounded"
-                        style={{ backgroundColor: '#F4F5F7', color: cfg.color }}
-                      >
+                      <span className="pd-tag" style={{ color: cfg.color }}>
                         {cfg.label}
                       </span>
                       <span className="text-[12px] text-gray-700">{t.description ?? '-'}</span>

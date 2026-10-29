@@ -75,7 +75,7 @@ export default function PartnerConsultsPage() {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="pd-sub space-y-5">
       <PartnerTop
         eyebrow="상담"
         title="상담 관리"

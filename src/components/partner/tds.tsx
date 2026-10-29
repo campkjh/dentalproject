@@ -9,6 +9,7 @@ import type {
   TextareaHTMLAttributes,
 } from 'react';
 import { ChevronRight, Search } from 'lucide-react';
+import TopBar from '@/components/common/TopBar';
 
 type Tone = 'brand' | 'neutral' | 'danger';
 type ButtonSize = 's' | 'm' | 'l' | 'xl';
@@ -17,13 +18,13 @@ export function cn(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(' ');
 }
 
+// 하위 화면 머리 — 고객 상세 머리(TopBar = .qd-header 56 줄 + 40 둥근 뒤로 + 아래 큰 제목 24 페이드)와 같은 결.
+//  · eyebrow·icon 은 옛 머리(아이콘 칸 + 작은 윗글) 자리라 이제 그리지 않는다(부르는 쪽 호환으로 prop 만 남김).
+//  · action(추가·등록 버튼)은 머리 줄 오른쪽에 둔다. 머리가 쪽 끝까지 붙어 있도록 감싸는 칸 없이 그린다(sticky).
 export function PartnerTop({
-  eyebrow,
   title,
   description,
   action,
-  icon,
-  className,
 }: {
   eyebrow?: string;
   title: string;
@@ -33,17 +34,7 @@ export function PartnerTop({
   className?: string;
 }) {
   return (
-    <header className={cn('partner-top', className)}>
-      {icon && <div className="partner-top-resource">{icon}</div>}
-      <div className="partner-top-copy">
-        {eyebrow && <p className="partner-top-eyebrow">{eyebrow}</p>}
-        <div className="partner-top-title-row">
-          <h1>{title}</h1>
-          {action}
-        </div>
-        {description && <p>{description}</p>}
-      </div>
-    </header>
+    <TopBar title={title} sub={description} rightContent={action} />
   );
 }
 

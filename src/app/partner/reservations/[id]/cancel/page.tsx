@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ChevronLeft, Info } from 'lucide-react';
+import { Info } from 'lucide-react';
+import TopBar from '@/components/common/TopBar';
 import { normalizeProductImageUrl } from '@/lib/images';
 import { useMyHospitalData } from '@/lib/partner/my-hospital-cache';
 import { useSession } from '@/lib/supabase/SessionProvider';
@@ -124,8 +125,8 @@ export default function PartnerReservationCancelPage() {
   const canSubmit = reason.trim().length >= 5 && !submitting && reservation?.status !== 'cancelled';
 
   const statusCopy = useMemo(() => {
-    if (reservation?.status === 'cancelled') return { label: '취소', color: '#A4ABBA' };
-    return { label: '예약취소', color: '#FF8A50' };
+    if (reservation?.status === 'cancelled') return { label: '취소', color: '#B0B8C1' };
+    return { label: '예약취소', color: '#F04452' };
   }, [reservation?.status]);
 
   const patchReservation = (updater: (current: ReservationDetail | null) => ReservationDetail | null) => {
@@ -185,13 +186,9 @@ export default function PartnerReservationCancelPage() {
   };
 
   return (
-    <div className="min-h-full bg-white">
-      <header className="partner-cancel-topbar">
-        <button type="button" onClick={() => router.back()} aria-label="뒤로가기">
-          <ChevronLeft size={28} strokeWidth={2.2} />
-        </button>
-        <h1>정보</h1>
-      </header>
+    <div className="pd-detail min-h-full bg-white">
+      {/* 머리 = 고객 상세 머리(TopBar) — 56 줄 둥근 뒤로 + 아래 큰 제목 */}
+      <TopBar title="예약 취소" />
 
       {loading ? (
         <div className="partner-loading">불러오는 중...</div>

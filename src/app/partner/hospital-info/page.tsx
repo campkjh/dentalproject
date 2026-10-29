@@ -333,14 +333,22 @@ export default function PartnerHospitalInfoPage() {
     setHoursDraft((prev) => prev.map((r) => r.day === day ? { ...r, [field]: value } : r));
   };
 
-  /* 수정 화면 공통 헤더 — 뒤로 버튼 + 타이틀 */
-  const EditHeader = ({ title, padded = false }: { title: string; padded?: boolean }) => (
-    <header className={`partner-profile-edit-head${padded ? ' is-padded' : ''}`}>
-      <button type="button" onClick={goOverview} aria-label="뒤로">
-        <img src="/partner-template/chevron-left.svg" alt="" />
-      </button>
-      <h1>{title}</h1>
-    </header>
+  /* 수정 화면 공통 헤더 — 고객 상세 머리(TopBar .qd-*)와 같은 결: 56 줄 둥근 뒤로 + 아래 큰 제목.
+     뒤로 = 개요로 돌아가기(라우터 뒤로 아님)라 TopBar 대신 같은 클래스로 직접 그린다. 그늘은 partner-v2.css 가 html[data-pd-scrolled] 로 켠다 */
+  //  · 본문에 큰 제목(.partner-edit-title)이 이미 있는 화면은 noTitle — 같은 제목이 두 번 나오지 않게(그 제목도 같은 결로 덮음)
+  const EditHeader = ({ title, noTitle = false }: { title: string; noTitle?: boolean }) => (
+    <>
+      <header className="qd-header">
+        <button type="button" onClick={goOverview} className="qd-back" aria-label="뒤로 가기">
+          <i aria-hidden="true" className="pd-back-icon" />
+        </button>
+      </header>
+      {!noTitle && (
+        <div className="qd-titlewrap">
+          <h1 className="qd-h1 qd-a-title">{title}</h1>
+        </div>
+      )}
+    </>
   );
 
   if (loading) return <div className="partner-loading">불러오는 중...</div>;
@@ -376,7 +384,7 @@ export default function PartnerHospitalInfoPage() {
             if (f) void handleCoverUpload(f);
           }}
         />
-        <EditHeader title="대문사진" />
+        <EditHeader title="대문사진" noTitle />
         <section className="partner-edit-content" style={{ paddingTop: 20 }}>
           <div className="partner-edit-title">
             <h1>대문사진</h1>
@@ -434,7 +442,7 @@ export default function PartnerHospitalInfoPage() {
   if (mode === 'hours') {
     return (
       <div className="partner-mobile-screen partner-edit-screen with-save" style={{ display: 'flex', flexDirection: 'column' }}>
-        <EditHeader title="운영일 및 시간" padded />
+        <EditHeader title="운영일 및 시간" noTitle />
         <section className="partner-edit-content compact" style={{ paddingTop: 20 }}>
           <div className="partner-edit-title small-gap">
             <h1>운영일 및 시간</h1>

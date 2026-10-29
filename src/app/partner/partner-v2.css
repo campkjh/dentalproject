@@ -1,0 +1,435 @@
+/* ═══ 의사 화면(파트너) 2.0 — 상세·하위 화면·모달을 고객 화면(프리티풀/토스) 결로 (261029) ═══
+   globals.css 는 다른 작업이 고치는 중이라 의사 화면 덮어쓰기는 전부 여기 — partner/layout.tsx 에서 한 번 불러온다.
+   · 머리 = components/common/TopBar(.qd-*) 그대로: 56 흰 줄 + 40 둥근 뒤로, 아래 큰 제목 24 페이드.
+   · 시트 = booking flow.module.css(.scrim/.sheet): 딤 페이드 + 아래에서 스프링, 버튼 56 · r17 · 17pt.
+   · 알림창(dialog) = 가운데 작게→정비율(scale-in).
+   · 글씨 위계 = 고객 화면과 같은 단: 쪽 제목 20/700(탭 머리)·24/700(상세 h1), 구역 18/700, 본문 15–16/500 #333D4B,
+     보조 14 #6B7684, 캡션 13 #8B95A1, 숫자는 tabular. 굵기 최대 700.
+   · 태그 한 가족 = 회색 알약(.pd-tag) · 파랑 알약(.pd-tag.is-info) · 상태 = 색 글씨 + 6 점(.pd-status). */
+
+/* ─── 바탕 — 색 토큰·글씨 기본·스크롤 ─── */
+.partner-shell-bg {
+  --tds-brand: #3180F7;
+  --tds-text-strong: #191F28;
+  --tds-text-primary: #333D4B;
+  --tds-text-secondary: #6B7684;
+  --tds-text-tertiary: #8B95A1;
+  --tds-text-placeholder: #B0B8C1;
+  --tds-border: #E5E8EB;
+  --tds-neutral-weak: #F2F4F6;
+}
+/* overflow-x: hidden 은 스크롤 칸을 만들어 sticky 머리가 붙지 않았다 → clip(넘침만 자르고 스크롤 칸은 안 만든다) */
+.partner-shell-bg .partner-phone-shell { overflow-x: clip; }
+.partner-shell-bg .partner-page {
+  color: #333D4B;
+  letter-spacing: -0.2px;
+  font-variant-numeric: tabular-nums;
+}
+.partner-shell-bg .partner-page :is(.font-extrabold, .font-black) { font-weight: 700; }
+
+/* 상세 들어오기 — 끝나면 transform 을 남기지 않는다(backwards: 끝 값을 붙잡지 않음). translateX(0) 이 남으면 안의 fixed 바닥 버튼·시트가 쪽 기준으로 붙었다 */
+.partner-shell-bg .partner-route-detail-enter { animation: pdDetailIn .34s cubic-bezier(.22, 1, .36, 1) backwards; }
+@keyframes pdDetailIn { from { opacity: 0; transform: translateX(18px); } to { opacity: 1; transform: none; } }
+
+/* ─── 상세 머리(.qd-*) — 의사 화면 안에서 ─── */
+/* globals .partner-page h1(28) · h1 + p 가 큰 제목을 덮어 다시 고객 값으로 */
+.partner-shell-bg .partner-page .qd-h1 { margin: 0; font-size: 24px; font-weight: 700; line-height: 1.4; letter-spacing: -0.4px; color: #191F28; }
+.partner-shell-bg .partner-page .qd-titlewrap .qd-sub { margin: 8px 0 0; font-size: 15px; font-weight: 400; line-height: 1.5; letter-spacing: -0.2px; color: #8B95A1; }
+.partner-shell-bg .partner-page .qd-titlewrap { padding: 8px 20px 20px; }
+.partner-shell-bg .partner-page .qd-header { flex: none; }
+/* 창이 스크롤되면 그늘 — layout 이 html[data-pd-scrolled] 를 단다(TopBar 를 안 쓰는 hospital-info 수정 머리도 같이) */
+html[data-pd-scrolled] .partner-page .qd-header::after { opacity: 1; }
+/* PC 에서도 의사 화면은 폰 칸이라 머리를 숨기지 않는다(globals 는 1024↑ 에서 숨김) */
+@media (min-width: 1024px) {
+  .partner-shell-bg .partner-page .qd-header:not(.in-panel) { display: flex; }
+  .partner-shell-bg .partner-page .qd-titlewrap { padding: 8px 20px 20px; }
+}
+/* 뒤로 화살표(퀵매칭 back.svg) — TopBar BackIcon 과 같은 마스크 */
+.pd-back-icon {
+  display: block; width: 26px; height: 26px; background: #191F28;
+  -webkit-mask: url(/quick-match/icons/back.svg) center / contain no-repeat;
+  mask: url(/quick-match/icons/back.svg) center / contain no-repeat;
+}
+/* 머리 줄 오른쪽 글씨 버튼(모두 읽음 처리 등) */
+.pd-head-text-btn {
+  height: 40px; padding: 0 10px; border: 0; border-radius: 12px; background: transparent;
+  font-size: 15px; font-weight: 600; letter-spacing: -0.2px; color: #3180F7; white-space: nowrap;
+  transition: background-color .15s, transform .15s;
+}
+.pd-head-text-btn:active { background: #F2F4F6; transform: scale(.96); }
+/* 머리 줄 오른쪽 PartnerButton(추가·등록) — 작은 파랑 알약 */
+.partner-shell-bg .qd-header .partner-button { min-height: 36px; min-width: 0; padding: 0 12px; border-radius: 999px; font-size: 14px; font-weight: 600; gap: 4px; }
+
+/* ─── 하위 화면 칸(.pd-sub) — 옛 화면은 좌우 여백이 없었다 ─── */
+.pd-sub { padding: 0 20px 40px; }
+.pd-sub > .qd-header { margin: 0 -20px; }
+.pd-sub > .qd-titlewrap { margin: 0 -20px; }
+/* space-y-* 가 머리 줄·제목 칸 사이에도 틈을 넣어 — 머리 쪽만 0 */
+.pd-sub > .qd-header, .pd-sub > .qd-titlewrap { margin-top: 0 !important; margin-bottom: 0 !important; }
+.pd-sub > .qd-titlewrap + * { margin-top: 0 !important; }
+/* 본문 칸 차례 등장(.qd-a-item 결) */
+.pd-sub > :not(.qd-header):not(.qd-titlewrap):not([class*="backdrop"]):not(.pd-scrim) { animation: qdSlideIn .46s cubic-bezier(.22, .61, .36, 1) backwards; }
+.pd-sub > :nth-child(3) { animation-delay: .22s; }
+.pd-sub > :nth-child(4) { animation-delay: .28s; }
+.pd-sub > :nth-child(5) { animation-delay: .34s; }
+.pd-sub > :nth-child(6) { animation-delay: .40s; }
+.pd-sub > :nth-child(n+7) { animation-delay: .46s; }
+/* 칩 줄이 칸 여백 밖까지 밀리게 */
+.pd-sub > .pd-chips-bleed { margin-left: -20px; margin-right: -20px; padding: 0 20px 4px; }
+/* 카드 = 흰 r20 + 옅은 테두리(목록·홈 카드와 같은 결) */
+.partner-shell-bg .pd-sub :where(section, aside, div, ul)[class*="bg-white"][class*="border"],
+.partner-shell-bg .pd-sub .partner-panel {
+  border: 1px solid #F2F4F6; border-radius: 20px; box-shadow: 0 2px 10px rgba(25, 31, 40, 0.04);
+}
+/* 옛 화면 글씨 크기(10~12px)를 고객 위계로 끌어올린다 — 캡션 13 · 보조 14 · 구역 18 */
+.partner-shell-bg .pd-sub :is(.text-\[9px\], .text-\[10px\], .text-\[11px\], .text-\[12px\]) { font-size: 13px; line-height: 1.45; }
+.partner-shell-bg .pd-sub .text-\[13px\] { font-size: 14px; line-height: 1.45; }
+.partner-shell-bg .pd-sub :is(.text-gray-400) { color: #8B95A1; }
+.partner-shell-bg .pd-sub :is(.text-gray-500, .text-gray-600) { color: #6B7684; }
+.partner-shell-bg .pd-sub :is(.text-gray-700, .text-gray-800) { color: #333D4B; }
+.partner-shell-bg .pd-sub :is(.text-gray-900) { color: #191F28; }
+@media (prefers-reduced-motion: reduce) { .pd-sub > * { animation: none !important; } }
+
+/* ─── 글씨 위계 — 키트(tds.tsx)·공통 칸 ─── */
+/* 구역 제목 — 하위 화면·키트 칸 안에서만(홈·목록의 카드 안 h2 는 따로 정해져 있어 건드리지 않는다) */
+.partner-shell-bg .pd-sub :where(h2), .partner-shell-bg .partner-panel :where(h2) { font-size: 18px; font-weight: 700; line-height: 1.4; letter-spacing: -0.3px; color: #191F28; }
+.partner-shell-bg .pd-sub :where(label), .partner-shell-bg .partner-field label { font-size: 14px; font-weight: 600; line-height: 1.45; letter-spacing: -0.2px; color: #4E5968; }
+.partner-shell-bg .partner-field > p { font-size: 13px; line-height: 1.45; color: #8B95A1; }
+.partner-shell-bg .partner-input { font-size: 16px; font-weight: 500; color: #191F28; border-radius: 14px; }
+.partner-shell-bg .partner-list-row { font-size: 16px; font-weight: 600; letter-spacing: -0.3px; color: #191F28; }
+.partner-shell-bg .partner-list-sub { font-size: 14px; font-weight: 400; line-height: 1.45; color: #6B7684; }
+.partner-shell-bg .partner-list-meta { font-size: 14px; font-weight: 500; color: #8B95A1; }
+.partner-shell-bg .partner-list-icon { border-radius: 12px; background: #F2F4F6; color: #4E5968; }
+.partner-shell-bg .partner-stat-head span { font-size: 14px; font-weight: 500; color: #6B7684; }
+.partner-shell-bg .partner-stat strong { font-weight: 700; letter-spacing: -0.4px; color: #191F28; }
+.partner-shell-bg .partner-stat strong.is-accent { color: #3180F7; }
+.partner-shell-bg .partner-stat p { font-size: 13px; color: #8B95A1; }
+.partner-shell-bg .partner-empty-title { font-size: 16px; font-weight: 600; color: #333D4B; }
+.partner-shell-bg .partner-empty-desc { font-size: 14px; color: #8B95A1; }
+.partner-shell-bg .partner-loading { font-size: 14px; color: #8B95A1; }
+.partner-shell-bg .partner-empty-state p { font-size: 16px; font-weight: 600; color: #333D4B; }
+.partner-shell-bg .partner-empty-state span { font-size: 14px; color: #8B95A1; }
+/* 버튼 — 파랑 채움 / 회색 약함, r14~17 */
+.partner-shell-bg .partner-button { font-weight: 600; letter-spacing: -0.2px; }
+.partner-shell-bg .partner-button-l { min-height: 52px; border-radius: 14px; font-size: 16px; }
+.partner-shell-bg .partner-button-xl { min-height: 56px; border-radius: 17px; font-size: 17px; }
+.partner-shell-bg .partner-button-fill.partner-button-brand { background: #3180F7; }
+.partner-shell-bg .partner-button-fill.partner-button-brand:active:not(:disabled) { background: #2270E6; }
+.partner-shell-bg .partner-button-weak.partner-button-brand { background: #EDF4FF; color: #3180F7; }
+.partner-shell-bg .partner-button-weak.partner-button-neutral { background: #F2F4F6; color: #4E5968; }
+.partner-shell-bg .partner-button-fill.partner-button-danger { background: #F04452; }
+.partner-shell-bg .partner-button-weak.partner-button-danger { background: #FFEEEE; color: #F04452; }
+/* 분할 칩(PartnerSegmentedControl) = 프리티풀 정렬 칩 — 테두리 상자 없이 */
+.partner-shell-bg .partner-segmented { flex-wrap: nowrap; overflow-x: auto; gap: 6px; border: 0; border-radius: 0; background: transparent; padding: 0; scrollbar-width: none; }
+.partner-shell-bg .partner-segmented::-webkit-scrollbar { display: none; }
+.partner-shell-bg .partner-segmented button {
+  flex: 0 0 auto; height: 34px; min-height: 34px; padding: 0 13px; border-radius: 999px;
+  background: #F2F4F6; color: #4E5968; font-size: 14px; font-weight: 600; letter-spacing: -0.2px;
+  transition: background-color .2s, color .2s, transform .15s;
+}
+.partner-shell-bg .partner-segmented button.is-active { background: #191F28; color: #fff; }
+/* 검색 칸 — 카드 바탕 빼고 회색 칸만 */
+.partner-shell-bg .pd-sub .partner-search-shell { padding: 0; background: transparent; }
+.partner-shell-bg .partner-search { border-radius: 14px; }
+.partner-shell-bg .partner-search input { font-size: 16px !important; font-weight: 500 !important; }
+
+/* ─── 태그·배지·상태 — 한 가족 ─── */
+.pd-tag,
+.partner-shell-bg .partner-badge,
+.partner-shell-bg .partner-badge-row span,
+.partner-shell-bg .partner-cancel-customer dd span,
+.partner-shell-bg .partner-page :where(.text-\[10px\].font-bold.px-1\.5.py-0\.5.rounded),
+.partner-shell-bg .partner-page :where(.text-\[11px\].font-bold.px-1\.5.py-0\.5.rounded) {
+  display: inline-flex; align-items: center; gap: 4px; flex: none;
+  min-height: 0; padding: 4px 10px; border: 0; border-radius: 999px;
+  background: #F2F4F6; color: #4E5968;
+  font-size: 13px; font-weight: 600; line-height: 1.3; letter-spacing: -0.2px; white-space: nowrap;
+}
+/* 정보 태그(파랑) */
+.pd-tag.is-info,
+.partner-shell-bg .partner-badge-brand,
+.partner-shell-bg .partner-badge-info,
+.partner-shell-bg .partner-badge-row span.blue,
+.partner-shell-bg .partner-cancel-customer dd span { background: #EDF4FF; color: #3180F7; }
+.partner-shell-bg .partner-badge-neutral { background: #F2F4F6; color: #4E5968; }
+/* 상태 = 색 글씨 + 6 점(바탕 없음) — 대기 주황 · 확정 초록 · 완료 파랑 · 취소 회색 · 위험 빨강 */
+.pd-status,
+.partner-shell-bg .partner-badge-success,
+.partner-shell-bg .partner-badge-warning,
+.partner-shell-bg .partner-badge-danger {
+  display: inline-flex; align-items: center; gap: 6px; padding: 0; background: transparent;
+  font-size: 14px; font-weight: 600; line-height: 1.4; letter-spacing: -0.2px; white-space: nowrap;
+}
+.pd-status::before,
+.partner-shell-bg .partner-badge-success::before,
+.partner-shell-bg .partner-badge-warning::before,
+.partner-shell-bg .partner-badge-danger::before { content: ''; flex: none; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.pd-status.is-pending, .partner-shell-bg .partner-badge-warning { color: #FE9800; }
+.pd-status.is-confirmed, .partner-shell-bg .partner-badge-success { color: #03B26C; }
+.pd-status.is-completed { color: #3180F7; }
+.pd-status.is-cancelled { color: #B0B8C1; }
+.pd-status.is-danger, .partner-shell-bg .partner-badge-danger { color: #F04452; }
+
+/* ─── 예약 상세·취소(partner-cancel-*) — 목록 카드와 같은 결 ─── */
+.partner-shell-bg .partner-cancel-page { gap: 12px; padding: 0 16px 120px; }
+.partner-shell-bg .partner-cancel-page > * { animation: qdSlideIn .46s cubic-bezier(.22, .61, .36, 1) backwards; }
+.partner-shell-bg .partner-cancel-page > :nth-child(1) { animation-delay: .22s; }
+.partner-shell-bg .partner-cancel-page > :nth-child(2) { animation-delay: .29s; }
+.partner-shell-bg .partner-cancel-page > :nth-child(3) { animation-delay: .36s; }
+.partner-shell-bg .partner-cancel-page > :nth-child(n+4) { animation-delay: .43s; }
+.partner-shell-bg .partner-cancel-card { border: 1px solid #F2F4F6; border-radius: 20px; box-shadow: 0 2px 10px rgba(25, 31, 40, 0.04); }
+.partner-shell-bg .partner-cancel-card-head { height: auto; background: transparent; padding: 18px 18px 4px; }
+.partner-shell-bg .partner-cancel-card-head strong { display: inline-flex; align-items: center; gap: 6px; font-size: 15px; font-weight: 700; letter-spacing: -0.2px; }
+.partner-shell-bg .partner-cancel-card-head strong::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.partner-shell-bg .partner-cancel-card-head span { font-size: 14px; font-weight: 500; color: #8B95A1; }
+.partner-shell-bg .partner-cancel-card-head span svg { width: 18px; height: 18px; color: #B0B8C1; }
+.partner-shell-bg .partner-cancel-product { gap: 12px; align-items: center; padding: 10px 18px 14px; }
+.partner-shell-bg .partner-cancel-product img,
+.partner-shell-bg .partner-cancel-product > div:first-child { border-radius: 14px; background: #F2F4F6; }
+.partner-shell-bg .partner-cancel-product h2 { margin: 0 0 3px; font-size: 16px; font-weight: 700; letter-spacing: -0.3px; color: #191F28; }
+.partner-shell-bg .partner-cancel-product p { font-size: 13px; font-weight: 500; color: #8B95A1; }
+.partner-shell-bg .partner-cancel-product p:last-child { color: #6B7684; }
+.partner-shell-bg .partner-cancel-facts { gap: 10px; margin: 0 18px 18px; border-top: 0; border-radius: 14px; background: #F9FAFB; padding: 14px 16px; }
+.partner-shell-bg .partner-cancel-facts dt { font-size: 14px; font-weight: 500; color: #8B95A1; }
+.partner-shell-bg .partner-cancel-facts dd { font-size: 15px; font-weight: 600; color: #333D4B; }
+.partner-shell-bg .partner-cancel-customer,
+.partner-shell-bg .partner-cancel-reason { padding: 20px 18px; }
+.partner-shell-bg .partner-cancel-customer h2,
+.partner-shell-bg .partner-cancel-reason h2,
+.partner-shell-bg .partner-cancel-policy h2 { font-size: 18px; font-weight: 700; line-height: 1.4; letter-spacing: -0.3px; color: #191F28; }
+.partner-shell-bg .partner-cancel-customer dl { gap: 16px; margin-top: 16px; }
+.partner-shell-bg .partner-cancel-customer dt { margin-bottom: 4px; font-size: 13px; font-weight: 500; color: #8B95A1; }
+.partner-shell-bg .partner-cancel-customer dd { font-size: 16px; font-weight: 500; color: #333D4B; }
+.partner-shell-bg .partner-cancel-helper { margin: 6px 0 12px; font-size: 14px; font-weight: 400; color: #6B7684; }
+.partner-shell-bg .partner-cancel-reason > p:not(.partner-cancel-helper) { font-size: 15px; font-weight: 500; line-height: 1.6; color: #333D4B; }
+.partner-shell-bg .partner-cancel-reason textarea {
+  min-height: 140px; padding: 16px 18px; border: 1.5px solid #E5E8EB; border-radius: 16px; background: #fff;
+  font-size: 16px; font-weight: 500; line-height: 1.55; color: #191F28; resize: none; transition: border-color .15s;
+}
+.partner-shell-bg .partner-cancel-reason textarea:focus { border-color: #3180F7; box-shadow: none; }
+.partner-shell-bg .partner-cancel-reason textarea::placeholder { color: #B0B8C1; }
+/* 사유 예시 = 칩(.pd-chip 결) */
+.partner-shell-bg .partner-cancel-presets { gap: 6px; margin-top: 12px; }
+.partner-shell-bg .partner-cancel-presets button {
+  min-height: 34px; padding: 7px 13px; border-radius: 999px; background: #F2F4F6; color: #4E5968;
+  font-size: 14px; font-weight: 600; line-height: 1.4; letter-spacing: -0.2px; text-align: left; transition: background-color .2s, transform .15s;
+}
+.partner-shell-bg .partner-cancel-presets button:active { transform: scale(.97); background: #E5E8EB; }
+.partner-shell-bg .partner-cancel-policy { border-radius: 20px; background: #F9FAFB; padding: 20px 18px; }
+.partner-shell-bg .partner-cancel-policy h2 { font-size: 16px; color: #333D4B; }
+.partner-shell-bg .partner-cancel-policy h2 svg { color: #8B95A1; }
+.partner-shell-bg .partner-cancel-policy p { margin-top: 8px; font-size: 14px; font-weight: 400; line-height: 1.6; color: #6B7684; }
+.partner-shell-bg .partner-detail-page { padding-bottom: 120px; }
+.partner-shell-bg .partner-detail-date-pill { min-height: 36px; border-radius: 12px; background: #F2F4F6; padding: 0 8px 0 12px; color: #191F28; font-size: 15px; font-weight: 600; }
+.partner-shell-bg .partner-detail-date-pill svg { width: 18px; height: 18px; color: #8B95A1; }
+
+/* 바닥 버튼 — 꽉 찬 검정 띠 대신 흰 그늘 위 56 · r17 파랑(고객 예약 CTA 결) */
+.partner-shell-bg :is(.partner-cancel-bottom, .partner-detail-bottom) {
+  left: 50%; right: auto; width: 100%; max-width: 640px; transform: translateX(-50%);
+  gap: 8px; padding: 20px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+  background: linear-gradient(180deg, rgba(255,255,255,0) 0%, #fff 32%);
+  animation: pdCtaIn .44s cubic-bezier(.22, 1, .36, 1) .3s backwards;
+}
+.partner-shell-bg .partner-detail-bottom.is-split { display: grid; width: 100%; max-width: 640px; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.partner-shell-bg :is(.partner-cancel-bottom, .partner-detail-bottom) button {
+  width: 100%; height: 56px; border-radius: 17px; background: #3180F7; color: #fff;
+  font-size: 17px; font-weight: 600; letter-spacing: -0.2px; transition: transform .1s ease, background-color .15s ease;
+}
+.partner-shell-bg :is(.partner-cancel-bottom, .partner-detail-bottom) button:active:not(:disabled) { transform: scale(.97); background: #2270E6; }
+.partner-shell-bg .partner-detail-bottom button.secondary { background: #F2F4F6; color: #4E5968; }
+.partner-shell-bg .partner-detail-bottom button.secondary:active:not(:disabled) { background: #E5E8EB; }
+.partner-shell-bg :is(.partner-cancel-bottom, .partner-detail-bottom) button:disabled { background: #F2F4F6; color: #B0B8C1; }
+@keyframes pdCtaIn { from { opacity: 0; transform: translate(-50%, 16px); } to { opacity: 1; transform: translate(-50%, 0); } }
+
+/* 스케줄 고르기 = 아래 시트(고객 BookingDateTimeSheet 달력 결) */
+.partner-shell-bg .partner-detail-picker-layer {
+  z-index: 90; align-items: flex-end; padding: 0; background: rgba(0, 0, 0, .4);
+  -webkit-backdrop-filter: blur(0); backdrop-filter: blur(0); animation: pdFade .22s ease;
+}
+.partner-shell-bg .partner-detail-picker {
+  position: relative; width: 100%; max-width: 448px; max-height: calc(100dvh - 32px); overflow-y: auto;
+  border-radius: 24px 24px 0 0; background: #fff; box-shadow: none;
+  padding: 38px 24px calc(120px + env(safe-area-inset-bottom, 0px));
+  animation: pdSheetUp .34s cubic-bezier(.16, 1, .3, 1);
+}
+.partner-shell-bg .partner-detail-picker::before { content: ''; position: absolute; top: 12px; left: 50%; width: 40px; height: 4px; margin-left: -20px; border-radius: 999px; background: #D1D6DB; }
+.partner-shell-bg .partner-detail-picker-head strong { font-size: 19px; font-weight: 600; letter-spacing: -0.3px; color: #191F28; }
+.partner-shell-bg .partner-detail-picker-head strong::after { display: none; }
+.partner-shell-bg .partner-detail-picker-head div { gap: 4px; margin-right: -10px; }
+.partner-shell-bg .partner-detail-picker-head button { width: 40px; height: 40px; border-radius: 12px; color: #4E5968; }
+.partner-shell-bg .partner-detail-picker-head button svg { width: 24px; height: 24px; }
+.partner-shell-bg .partner-detail-picker-head button:active { background: #F2F4F6; }
+.partner-shell-bg .partner-detail-weekdays { margin-top: 14px; }
+.partner-shell-bg .partner-detail-weekdays span { font-size: 13px; font-weight: 500; color: #8B95A1; }
+.partner-shell-bg .partner-detail-weekdays span:first-child { color: #F04452; }
+.partner-shell-bg .partner-detail-weekdays span:last-child { color: #3180F7; }
+.partner-shell-bg .partner-detail-calendar { row-gap: 4px; margin-top: 8px; }
+.partner-shell-bg .partner-detail-calendar button,
+.partner-shell-bg .partner-detail-calendar span { width: 44px; height: 42px; }
+.partner-shell-bg .partner-detail-calendar button { border-radius: 14px; font-size: 19px; font-weight: 500; line-height: 42px; color: #333D4B; transition: background-color .2s, color .2s, transform .12s; }
+.partner-shell-bg .partner-detail-calendar button:active { transform: scale(.93); }
+.partner-shell-bg .partner-detail-calendar button.is-selected { background: #E8F3FF; color: #3180F7; font-weight: 700; }
+.partner-shell-bg .partner-detail-picker-time { margin-top: 16px; border-top: 1px solid #F2F4F6; padding-top: 16px; }
+.partner-shell-bg .partner-detail-picker-time span { font-size: 18px; font-weight: 600; letter-spacing: -0.3px; color: #4E5968; }
+.partner-shell-bg .partner-detail-picker-time select { min-width: 120px; min-height: 40px; border: 0; border-radius: 12px; background: #F2F4F6; padding: 0 16px; font-size: 16px; font-weight: 600; color: #191F28; }
+/* 시트가 열리면 바닥 버튼(스케줄변경)이 시트 위에 와야 해서 */
+.partner-shell-bg .partner-detail-picker-layer ~ .partner-detail-bottom { z-index: 95; }
+
+/* ─── 프로필 등록·수정(doctors/[id]) ─── */
+.partner-shell-bg .partner-profile-edit-screen { padding-bottom: 120px; }
+.partner-shell-bg .partner-profile-edit-content { gap: 20px; padding: 0 20px 28px; color: inherit; }
+.partner-shell-bg .partner-profile-edit-content > * { animation: qdSlideIn .46s cubic-bezier(.22, .61, .36, 1) backwards; }
+.partner-shell-bg .partner-profile-edit-content > :nth-child(2) { animation-delay: .07s; }
+.partner-shell-bg .partner-profile-edit-content > :nth-child(3) { animation-delay: .14s; }
+.partner-shell-bg .partner-profile-edit-content > :nth-child(n+4) { animation-delay: .21s; }
+.partner-shell-bg :is(.partner-profile-photo-section h2, .partner-profile-hospital-field h2, .partner-profile-edit-field > span) { font-size: 14px; font-weight: 600; line-height: 1.45; color: #4E5968; }
+.partner-shell-bg .partner-profile-photo-section p { font-size: 13px; color: #8B95A1; }
+.partner-shell-bg .partner-profile-photo-button { width: 72px; height: 72px; border-radius: 20px; background: #F2F4F6; }
+.partner-shell-bg .partner-profile-edit-field { gap: 8px; }
+.partner-shell-bg .partner-profile-edit-field input,
+.partner-shell-bg .partner-profile-hospital-field > div { height: 56px; min-height: 56px; border: 1.5px solid #E5E8EB; border-radius: 16px; background: #fff; font-size: 16px; color: #191F28; }
+.partner-shell-bg .partner-profile-edit-field input { padding: 0 18px; }
+.partner-shell-bg .partner-profile-edit-field input:focus { border-color: #3180F7; box-shadow: none; }
+.partner-shell-bg .partner-profile-hospital-field > div { padding: 0 18px; }
+.partner-shell-bg .partner-profile-hospital-field button { font-size: 15px; font-weight: 600; }
+.partner-shell-bg .partner-profile-hospital-field button.leave { color: #F04452; }
+.partner-shell-bg .partner-profile-save {
+  left: 50%; right: auto; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%);
+  width: calc(100% - 32px); max-width: 608px; height: 56px; border-radius: 17px; background: #3180F7;
+  font-size: 17px; font-weight: 600; letter-spacing: -0.2px; box-shadow: 0 -20px 20px 4px #fff;
+  transition: background-color .15s;
+}
+.partner-shell-bg .partner-profile-save:active:not(:disabled) { background: #2270E6; }
+
+/* ─── 병원관리 수정 화면(hospital-info EditHeader) ─── */
+.partner-shell-bg .partner-edit-screen > .qd-header,
+.partner-shell-bg .partner-edit-screen > .qd-titlewrap { flex: none; }
+.partner-shell-bg .partner-edit-screen > .qd-titlewrap { padding-bottom: 0; }
+.partner-shell-bg .partner-edit-screen .partner-edit-content { padding-left: 20px; padding-right: 20px; }
+.partner-shell-bg .partner-edit-title h1 { font-size: 24px; font-weight: 700; line-height: 1.4; letter-spacing: -0.4px; color: #191F28; animation: qdFadeUp .5s cubic-bezier(.22, .61, .36, 1) both; }
+.partner-shell-bg .partner-edit-title p { margin-top: 4px; font-size: 15px; font-weight: 400; line-height: 1.5; color: #8B95A1; animation: qdFadeUp .5s cubic-bezier(.22, .61, .36, 1) .18s both; }
+.partner-shell-bg .partner-edit-screen.cover .partner-edit-title p { color: #8B95A1; }
+
+/* ─── 모달·시트 ─── */
+@keyframes pdFade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes pdSheetUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+@keyframes pdPop { from { opacity: 0; transform: translateY(12px) scale(.98); } to { opacity: 1; transform: none; } }
+@keyframes pdDialogIn { from { opacity: 0; transform: translate(-50%, -50%) scale(.92); } to { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
+
+/* 공용 시트(.pd-scrim/.pd-sheet) — reviews 초기 리뷰 등록 */
+.pd-scrim { position: fixed; inset: 0; z-index: 100; display: flex; align-items: flex-end; justify-content: center; background: rgba(0, 0, 0, .4); animation: pdFade .22s ease; }
+.pd-sheet {
+  position: relative; width: 100%; max-width: 448px; max-height: calc(100dvh - 32px); overflow-y: auto; box-sizing: border-box;
+  padding: 12px 24px calc(24px + env(safe-area-inset-bottom, 0px)); border-radius: 24px 24px 0 0; background: #fff; color: #191F28;
+  animation: pdSheetUp .34s cubic-bezier(.16, 1, .3, 1);
+}
+.pd-grab { display: block; width: 40px; height: 4px; margin: 0 auto 22px; border-radius: 999px; background: #D1D6DB; }
+.pd-sheet-title { margin: 0 0 20px; font-size: 22px; font-weight: 700; line-height: 1.42; letter-spacing: -0.4px; color: #191F28; }
+.partner-shell-bg .partner-page .pd-sheet-title { font-size: 22px; }
+.pd-sheet-btn {
+  display: flex; align-items: center; justify-content: center; height: 56px; padding: 0 16px; border: 0; border-radius: 17px;
+  background: #3180F7; color: #fff; font-family: inherit; font-size: 17px; font-weight: 600; letter-spacing: -0.2px; cursor: pointer;
+  transition: transform .1s ease, background-color .15s ease, opacity .15s ease;
+}
+.pd-sheet-btn:active:not(:disabled) { transform: scale(.97); background: #2270E6; }
+.pd-sheet-btn:disabled { opacity: .5; cursor: default; }
+.pd-sheet-btn.is-ghost { background: #F2F4F6; color: #4E5968; }
+.pd-sheet-btn.is-ghost:active:not(:disabled) { background: #E5E8EB; }
+.partner-shell-bg .pd-sheet input, .partner-shell-bg .pd-sheet textarea { border: 1.5px solid #E5E8EB !important; border-radius: 16px !important; font-size: 16px !important; }
+
+/* PartnerModal(tds) — 폰에선 아래 시트, 넓으면 가운데 팝 */
+.partner-shell-bg .partner-modal-backdrop { z-index: 100; align-items: flex-end; padding: 0; background: rgba(0, 0, 0, .4); -webkit-backdrop-filter: blur(0); backdrop-filter: blur(0); animation: pdFade .22s ease; }
+.partner-shell-bg .partner-modal {
+  position: relative; width: 100%; max-width: 448px; max-height: calc(100dvh - 32px); display: flex; flex-direction: column;
+  border: 0; border-radius: 24px 24px 0 0; box-shadow: none; animation: pdSheetUp .34s cubic-bezier(.16, 1, .3, 1);
+}
+.partner-shell-bg .partner-modal::before { content: ''; flex: none; display: block; width: 40px; height: 4px; margin: 12px auto 0; border-radius: 999px; background: #D1D6DB; }
+.partner-shell-bg .partner-modal-header { padding: 18px 24px 8px; }
+.partner-shell-bg .partner-modal-header h3 { font-size: 22px; font-weight: 700; line-height: 1.42; letter-spacing: -0.4px; color: #191F28; }
+.partner-shell-bg .partner-modal-header button { width: 36px; height: 36px; background: #F2F4F6; color: #6B7684; font-size: 22px; transition: transform .15s, background-color .15s; }
+.partner-shell-bg .partner-modal-header button:active { transform: scale(.92); background: #E5E8EB; }
+.partner-shell-bg .partner-modal-body { flex: 1 1 auto; max-height: none; padding: 8px 24px 20px; }
+.partner-shell-bg .partner-modal-footer { gap: 8px; border-top: 0; padding: 8px 24px calc(24px + env(safe-area-inset-bottom, 0px)); }
+.partner-shell-bg .partner-modal-footer .partner-button { flex: 1 1 0; min-height: 56px; border-radius: 17px; font-size: 17px; font-weight: 600; }
+
+/* 상품 추가·수정 시트(partner/page.tsx productModal) */
+.partner-shell-bg .partner-product-sheet-backdrop { background: rgba(0, 0, 0, .4); animation: pdFade .22s ease; }
+.partner-shell-bg .partner-product-sheet {
+  position: relative; width: 100%; max-width: 448px; max-height: calc(100dvh - 32px); gap: 16px;
+  padding: 38px 24px calc(24px + env(safe-area-inset-bottom, 0px)); box-shadow: none;
+  animation: pdSheetUp .34s cubic-bezier(.16, 1, .3, 1);
+}
+.partner-shell-bg .partner-product-sheet::before { content: ''; position: absolute; top: 12px; left: 50%; width: 40px; height: 4px; margin-left: -20px; border-radius: 999px; background: #D1D6DB; }
+.partner-shell-bg .partner-product-sheet-head h2 { font-size: 22px; font-weight: 700; line-height: 1.42; letter-spacing: -0.4px; color: #191F28; }
+.partner-shell-bg .partner-product-sheet-head button { height: 36px; padding: 0 12px; border-radius: 999px; background: #F2F4F6; color: #4E5968; font-size: 14px; font-weight: 600; }
+.partner-shell-bg .partner-product-sheet label,
+.partner-shell-bg .partner-product-tag-field { gap: 8px; font-size: 14px; font-weight: 600; color: #4E5968; }
+.partner-shell-bg .partner-product-sheet input,
+.partner-shell-bg .partner-product-sheet select { height: 52px; min-height: 52px; border: 1.5px solid #E5E8EB; border-radius: 14px; background: #fff; padding: 0 16px; font-size: 16px; font-weight: 500; color: #191F28; }
+.partner-shell-bg .partner-product-sheet input:focus,
+.partner-shell-bg .partner-product-sheet select:focus,
+.partner-shell-bg .partner-product-description:focus { border-color: #3180F7; box-shadow: none; }
+.partner-shell-bg .partner-product-sheet input[readonly] { background: #F9FAFB; color: #6B7684; }
+.partner-shell-bg .partner-product-description { border: 1.5px solid #E5E8EB; border-radius: 16px; padding: 14px 16px; font-size: 16px; }
+.partner-shell-bg .partner-product-description-hint { font-size: 13px; color: #8B95A1; }
+.partner-shell-bg .partner-product-upload { border: 1.5px dashed #D1D6DB; border-radius: 16px; background: #F9FAFB; color: #6B7684; font-size: 15px; font-weight: 600; }
+.partner-shell-bg .partner-product-tag-field > div { grid-template-columns: minmax(0, 1fr) 52px; }
+.partner-shell-bg .partner-product-tag-field > div button { width: 52px; height: 52px; border-radius: 14px; background: #3180F7; }
+.partner-shell-bg .partner-product-tag-field li { height: auto; padding: 4px 10px; background: #F2F4F6; color: #4E5968; font-size: 13px; font-weight: 600; }
+.partner-shell-bg .partner-product-tag-field li button { color: #8B95A1; font-size: 13px; }
+.partner-shell-bg .partner-product-sheet-actions { gap: 8px; padding-top: 8px; }
+.partner-shell-bg .partner-product-sheet-actions button { height: 56px; border-radius: 17px; background: #F2F4F6; color: #4E5968; font-size: 17px; font-weight: 600; letter-spacing: -0.2px; transition: transform .1s ease, background-color .15s ease; }
+.partner-shell-bg .partner-product-sheet-actions button + button { background: #3180F7; color: #fff; }
+.partner-shell-bg .partner-product-sheet-actions button:active:not(:disabled) { transform: scale(.97); }
+
+/* 넓은 화면 — 시트를 가운데 팝으로(고객 시트와 같은 640 기준) */
+@media (min-width: 640px) {
+  .pd-scrim,
+  .partner-shell-bg .partner-modal-backdrop,
+  .partner-shell-bg .partner-product-sheet-backdrop,
+  .partner-shell-bg .partner-detail-picker-layer { align-items: center; padding: 24px; }
+  .pd-sheet,
+  .partner-shell-bg .partner-modal,
+  .partner-shell-bg .partner-product-sheet,
+  .partner-shell-bg .partner-detail-picker { border-radius: 24px; animation: pdPop .28s cubic-bezier(.16, 1, .3, 1); }
+  .pd-grab,
+  .partner-shell-bg .partner-modal::before,
+  .partner-shell-bg .partner-product-sheet::before,
+  .partner-shell-bg .partner-detail-picker::before { display: none; }
+  .pd-sheet { padding: 28px 28px 24px; }
+  .partner-shell-bg .partner-product-sheet { padding: 28px 28px 24px; }
+  .partner-shell-bg .partner-detail-picker { padding: 28px 28px 24px; }
+  .partner-shell-bg .partner-modal-header { padding-top: 24px; }
+  .partner-shell-bg .partner-modal-footer { padding-bottom: 24px; }
+}
+
+/* 알림창(메모 수정·담당의 지정) — 가운데 작게→정비율, 버튼 52 · r16 */
+.partner-shell-bg .partner-figma-dialog-backdrop { z-index: 100; animation: pdFade .2s ease; }
+.partner-shell-bg .partner-figma-alert {
+  width: min(calc(100% - 48px), 340px); padding: 24px 20px 20px; box-shadow: 0 20px 60px rgba(25, 31, 40, 0.16);
+  animation: pdDialogIn .26s cubic-bezier(.16, 1, .3, 1) both;
+}
+.partner-shell-bg .partner-figma-alert-copy { gap: 8px; padding: 0 0 20px; }
+.partner-shell-bg .partner-figma-alert-copy h2 { font-size: 20px; font-weight: 700; line-height: 1.4; letter-spacing: -0.4px; color: #191F28; }
+.partner-shell-bg .partner-figma-alert-copy p { font-size: 15px; font-weight: 400; line-height: 1.6; color: #6B7684; }
+.partner-shell-bg .partner-figma-alert-actions { gap: 8px; }
+.partner-shell-bg .partner-figma-alert-actions button { height: 52px; border-radius: 16px; font-size: 16px; font-weight: 600; letter-spacing: -0.2px; transition: transform .15s, background-color .15s; }
+.partner-shell-bg .partner-figma-alert-actions button:active:not(:disabled) { transform: scale(.98); }
+.partner-shell-bg .partner-figma-alert-actions button + button { background: #F2F4F6; color: #4E5968; }
+.partner-shell-bg .partner-memo-dialog,
+.partner-shell-bg .partner-assign-dialog { gap: 0; padding-bottom: 20px; }
+.partner-shell-bg .partner-memo-dialog textarea { width: 100%; min-height: 140px; margin: 0 0 20px; border: 1.5px solid #E5E8EB; border-radius: 16px; background: #fff; padding: 14px 16px; font-size: 16px; color: #191F28; }
+.partner-shell-bg .partner-memo-dialog textarea:focus { border-color: #3180F7; box-shadow: none; }
+.partner-shell-bg .partner-memo-dialog textarea::placeholder { color: #B0B8C1; }
+.partner-shell-bg .partner-assign-field { padding: 0 0 20px; }
+.partner-shell-bg .partner-assign-field select { height: 52px; border-radius: 14px; background: #F2F4F6; padding: 0 16px; font-size: 16px; color: #191F28; }
+
+@media (prefers-reduced-motion: reduce) {
+  .partner-shell-bg .partner-route-detail-enter,
+  .partner-shell-bg .partner-cancel-page > *,
+  .partner-shell-bg .partner-profile-edit-content > *,
+  .partner-shell-bg :is(.partner-cancel-bottom, .partner-detail-bottom),
+  .pd-scrim, .pd-sheet,
+  .partner-shell-bg :is(.partner-modal-backdrop, .partner-modal, .partner-product-sheet-backdrop, .partner-product-sheet, .partner-detail-picker-layer, .partner-detail-picker, .partner-figma-dialog-backdrop, .partner-figma-alert),
+  .partner-shell-bg .partner-edit-title :is(h1, p) { animation: none !important; }
+}

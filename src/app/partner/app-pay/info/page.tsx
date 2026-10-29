@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react';
 import Link from 'next/link';
+import TopBar from '@/components/common/TopBar';
 import { CreditCard, TrendingUp } from 'lucide-react';
 import { useSession } from '@/lib/supabase/SessionProvider';
 import { useMyHospitalData } from '@/lib/partner/my-hospital-cache';
@@ -35,11 +36,8 @@ export default function AppPayInfoPage() {
   }
 
   return (
-    <div className="space-y-4">
-      <div>
-        <h1 className="text-[18px] font-bold text-gray-900">앱결제 안내</h1>
-        <p className="text-[12px] text-gray-500 mt-1">앱 안에서 환자가 결제한 내역과 정산을 관리합니다.</p>
-      </div>
+    <div className="pd-sub space-y-4">
+      <TopBar title="앱결제 안내" sub="앱 안에서 환자가 결제한 내역과 정산을 관리합니다." />
 
       <div className="grid md:grid-cols-3 gap-3">
         <div className="bg-white rounded-xl border border-gray-200 p-5">
