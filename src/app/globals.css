@@ -7578,3 +7578,10 @@ html[data-pd-scrolled] .partner-page .partner-screen-title.partner-home-title::a
 .point-coin-b { right: 70px; bottom: -14px; width: 46px; opacity: .95; animation: pointCoinBob 5.2s ease-in-out .6s infinite reverse; }
 @keyframes pointCoinBob { 0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-9px) rotate(-6deg); } }
 @media (prefers-reduced-motion: reduce) { .point-coin { animation: none; } }
+
+/* 전체 카테고리 화면(AllCategoriesSheet) — 오른쪽에서 밀려 들어오고 닫을 땐 되돌아 나간다 */
+.all-cats { animation: allCatsIn .38s cubic-bezier(.22,1,.36,1) both; }
+.all-cats.is-out { animation: allCatsOut .26s cubic-bezier(.4,0,1,1) both; }
+@keyframes allCatsIn { from { transform: translateX(28%); opacity: .4; } to { transform: none; opacity: 1; } }
+@keyframes allCatsOut { from { transform: none; opacity: 1; } to { transform: translateX(28%); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .all-cats, .all-cats.is-out { animation: none; } }

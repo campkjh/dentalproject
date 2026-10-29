@@ -9,6 +9,7 @@ import { useStore } from '@/store';
 import { regions, dentalSubCategories } from '@/lib/mock-data';
 import type { Product } from '@/types';
 import EmptyState from '@/components/common/EmptyState';
+import AllCategoriesSheet, { rememberCategory } from '@/components/search/AllCategoriesSheet';
 import ProductCard from '@/components/common/ProductCard';
 
 const PROVINCES: Record<string, string[]> = {
@@ -145,6 +146,11 @@ function SearchPage() {
   const [tabDirection, setTabDirection] = useState<'left' | 'right'>('right');
   const prevTabIdxRef = useRef(0);
   const categoryTabIds = ['', ...categories.map((c) => c.id)];
+
+  // 전체 카테고리 화면(머리 햄버거) — 진료과 알약 줄 대신
+  const [allCatsOpen, setAllCatsOpen] = useState(false);
+  // 본 진료과를 '최근 본 카테고리'로 남긴다
+  useEffect(() => { if (activeCategory) rememberCategory(activeCategory); }, [activeCategory]);
 
   const changeCategory = (id: string) => {
     const nextIdx = categoryTabIds.indexOf(id);
@@ -483,6 +489,9 @@ function SearchPage() {
               </button>
             )}
           </div>
+          <button type="button" onClick={() => setAllCatsOpen(true)} aria-label="전체 카테고리" className="-mr-1.5 ml-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[#191F28] transition-colors active:bg-[#F2F4F6]">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 6.5h16M4 12h16M4 17.5h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
+          </button>
         </div>
 
         <ListPageFilters
@@ -523,6 +532,14 @@ function SearchPage() {
           )}
         </div>
 
+        {allCatsOpen && (
+          <AllCategoriesSheet
+            categories={categories}
+            activeId={activeCategory}
+            onPick={(id) => { changeCategory(id); setQuery(''); }}
+            onClose={() => setAllCatsOpen(false)}
+          />
+        )}
         {/* ===== MODALS ===== */}
         {/* Unified filter sheet — switches between 지역 / 가격 / 예약방법 internally */}
         {filterModalTab && (
@@ -596,6 +613,9 @@ function SearchPage() {
               </button>
             )}
           </div>
+          <button type="button" onClick={() => setAllCatsOpen(true)} aria-label="전체 카테고리" className="-mr-1.5 ml-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[#191F28] transition-colors active:bg-[#F2F4F6]">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 6.5h16M4 12h16M4 17.5h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
+          </button>
         </div>
 
         <ListPageFilters
@@ -643,6 +663,14 @@ function SearchPage() {
           </div>
         </div>
 
+        {allCatsOpen && (
+          <AllCategoriesSheet
+            categories={categories}
+            activeId={activeCategory}
+            onPick={(id) => { changeCategory(id); setQuery(''); }}
+            onClose={() => setAllCatsOpen(false)}
+          />
+        )}
         {filterModalTab && (
           <FiltersBottomSheet
             initialTab={filterModalTab}
@@ -1267,8 +1295,8 @@ function FiltersBottomSheet({
    Specialty category tabs (전체 + 치과/소아과/...) with sliding underline +
    slide-on-switch animation. Below: filter chips row (지역/시술/가격/예약방법/
    병원정보) + sub-row for the 앱결제 quick toggle and 추천순 sort. */
-// 카테고리·검색 결과 거르기 — 최신 결(261029): 진료과 = 아이콘 알약(고르면 검정), 지역·가격·예약방법·앱결제 = 회색 칩(고르면 파랑),
-//  아래 줄 = 상품 수 · 정렬. 진료과 줄은 고른 알약이 보이게 옆으로 따라 굴러간다.
+// 카테고리·검색 결과 거르기 — 최신 결(261029): 지역·가격·예약방법·앱결제 = 회색 칩(고르면 파랑), 아래 줄 = 상품 수 · 정렬.
+//  진료과 고르기는 머리 햄버거 → 전체 카테고리 화면(AllCategoriesSheet)으로 옮겼다.
 function ListPageFilters({
   categories,
   activeCategory,
@@ -1303,14 +1331,6 @@ function ListPageFilters({
   count: number;
 }) {
   const isAppPay = selectedBooking === '앱결제';
-  const tabsList: { id: string; name: string; icon?: string }[] = [{ id: '', name: '전체' }, ...categories];
-  const tabBtnRefs = useRef<(HTMLButtonElement | null)[]>([]);
-  const activeIdx = tabsList.findIndex((t) => t.id === activeCategory);
-
-  // 고른 알약을 줄 가운데 쪽으로
-  useEffect(() => {
-    tabBtnRefs.current[activeIdx >= 0 ? activeIdx : 0]?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-  }, [activeIdx]);
 
   const chip = (active: boolean) =>
     `inline-flex h-[34px] shrink-0 items-center gap-1 whitespace-nowrap rounded-full px-3.5 text-[14px] font-semibold tracking-[-0.2px] transition-colors active:scale-[0.97] ${
@@ -1319,37 +1339,8 @@ function ListPageFilters({
 
   return (
     <div className="bg-white">
-      {/* 진료과 — 아이콘 알약 */}
-      <div className="flex gap-1.5 overflow-x-auto hide-scrollbar px-4 pb-1 pt-1">
-        {tabsList.map((tab, i) => {
-          const isActive = tab.id === activeCategory;
-          return (
-            <button
-              key={tab.id || 'all'}
-              ref={(el) => {
-                tabBtnRefs.current[i] = el;
-              }}
-              type="button"
-              onClick={() => onChangeCategory(tab.id)}
-              aria-pressed={isActive}
-              className={`flex h-9 shrink-0 items-center gap-1.5 rounded-full pr-3.5 text-[14px] font-semibold tracking-[-0.2px] transition-colors duration-300 active:scale-[0.97] ${
-                tab.icon ? 'pl-1.5' : 'pl-3.5'
-              } ${isActive ? 'bg-[#191F28] text-white' : 'bg-[#F2F4F6] text-[#4E5968]'}`}
-            >
-              {tab.icon && (
-                <span className={`flex h-[26px] w-[26px] items-center justify-center rounded-full ${isActive ? 'bg-white' : 'bg-white/80'}`}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={tab.icon} alt="" width={20} height={20} />
-                </span>
-              )}
-              {tab.name}
-            </button>
-          );
-        })}
-      </div>
-
       {/* 거르기 칩 — 지역 · 가격 · 예약방법 · 앱결제 */}
-      <div className="flex gap-1.5 overflow-x-auto hide-scrollbar px-4 pb-1 pt-2">
+      <div className="flex gap-1.5 overflow-x-auto hide-scrollbar px-4 pb-1 pt-1">
         <button type="button" onClick={onOpenRegion} className={chip(selectedRegions.length > 0)}>
           {selectedRegions.length > 0 ? regionLabel : '지역'}
           <ChevronDown size={15} strokeWidth={2.4} />
