@@ -14,6 +14,7 @@ import { BRAND, Reveal, StarRating, SingleStar, SectionHead, ReviewCommentRow, E
 import { useStore } from '@/store';
 import { toneAccent, useImageTone } from '@/lib/image-tone';
 import { resolveHospitalImageUrl, resolveProductImageUrl } from '@/lib/images';
+import SilkBackdrop from '@/components/detail/SilkBackdrop';
 import TossBubble, { BubbleClockIcon, BubbleMoonIcon } from '@/components/common/TossBubble';
 
 const faqItems = [
@@ -70,15 +71,6 @@ const OPTION_CHECKS = [
 ];
 
 /** 적립 줄 앞 동전 두 개(노랑 뒤 · 주황 P 앞) — 견본 아이콘 */
-function PointCoin() {
-  return (
-    <svg width="34" height="24" viewBox="0 0 34 24" aria-hidden className="shrink-0">
-      <circle cx="11" cy="12" r="10" fill="#FFD66B" />
-      <circle cx="21" cy="12" r="10" fill="#F2652E" stroke="#fff" strokeWidth="1.5" />
-      <path d="M18 7.5h3.6a2.9 2.9 0 0 1 0 5.8H19.6V16.5" stroke="#fff" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
 
 /** 요일 표 순서(월→일) */
 const WEEK_ORDER = ['월', '화', '수', '목', '금', '토', '일'];
@@ -389,10 +381,23 @@ export default function ProductDetailPage() {
 
               {/* 적립 — 펼치면 적립 방법 */}
               <div className="border-t border-[#F2F4F6]">
-                <button type="button" onClick={() => setPointOpen(v => !v)} aria-expanded={pointOpen} className="flex w-full items-center gap-2 py-5 text-left">
-                  <PointCoin />
-                  <span className="flex-1 text-[16px] font-semibold text-[#191F28]">최대 <span className="text-[#F04452]">{REVIEW_POINT.toLocaleString()}P</span> 적립</span>
-                  <ChevronDown size={22} className="shrink-0 text-[#4E5968] transition-transform duration-300" style={{ transform: pointOpen ? 'rotate(180deg)' : undefined }} />
+                {/* 적립 카드 — 바탕은 프리티풀 비즈 이사진 소개의 일렁이는 비단(SilkBackdrop), 오른쪽엔 포켓 빈 화면의 동전들이 둥실(카드 안으로 잘림) */}
+                <button
+                  type="button"
+                  onClick={() => setPointOpen(v => !v)}
+                  aria-expanded={pointOpen}
+                  className="point-card relative isolate my-4 flex h-[92px] w-full items-center gap-2 overflow-hidden rounded-[20px] px-5 text-left transition-transform duration-150 active:scale-[0.98]"
+                >
+                  <SilkBackdrop spread={0.62} className="absolute inset-0 z-0 [&_canvas]:block [&_canvas]:h-full [&_canvas]:w-full [&_canvas]:opacity-0 [&_canvas]:transition-opacity [&_canvas]:duration-[1200ms] [&_canvas[data-on]]:opacity-100" />
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/pocket/check-coin.webp" alt="" aria-hidden className="point-coin point-coin-a" draggable={false} />
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/pocket/glass-coin.webp" alt="" aria-hidden className="point-coin point-coin-b" draggable={false} />
+                  <span className="relative z-[2] min-w-0 flex-1">
+                    <span className="block text-[13px] font-semibold text-[#4E5968]">시술 후 후기를 남기면</span>
+                    <span className="mt-0.5 block text-[19px] font-bold tracking-[-0.4px] text-[#191F28]">최대 <span className="text-[#3180F7]">{REVIEW_POINT.toLocaleString()}P</span> 적립</span>
+                  </span>
+                  <ChevronDown size={22} className="relative z-[2] mr-[84px] shrink-0 text-[#4E5968] transition-transform duration-300" style={{ transform: pointOpen ? 'rotate(180deg)' : undefined }} />
                 </button>
                 <div className="grid transition-all duration-500" style={{ gridTemplateRows: pointOpen ? '1fr' : '0fr', opacity: pointOpen ? 1 : 0, transitionTimingFunction: 'cubic-bezier(0.22, 1, 0.36, 1)' }}>
                   <div className="overflow-hidden">

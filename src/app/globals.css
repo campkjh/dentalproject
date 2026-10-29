@@ -7570,3 +7570,11 @@ html[data-pd-scrolled] .partner-page .partner-screen-title.partner-home-title::a
 @media (prefers-reduced-motion: reduce) {
   .srch-field, .srch-input, .srch-back, .srch-clear { animation: none !important; }
 }
+
+/* 상품 상세 적립 카드 — 비단 바탕이 그려지기 전·WebGL 없을 때의 정지 그림(이사진 소개 바탕과 같은 결) + 둥실 동전 */
+.point-card { background: linear-gradient(115deg, #FDFEFF 0%, #E4EEFF 55%, #B9D0F8 100%); box-shadow: inset 0 0 0 1px rgba(49, 128, 247, 0.08); }
+.point-coin { position: absolute; z-index: 1; pointer-events: none; user-select: none; filter: drop-shadow(0 6px 10px rgba(49, 98, 200, 0.18)); }
+.point-coin-a { right: 18px; top: 10px; width: 62px; animation: pointCoinBob 3.8s ease-in-out infinite; }
+.point-coin-b { right: 70px; bottom: -14px; width: 46px; opacity: .95; animation: pointCoinBob 5.2s ease-in-out .6s infinite reverse; }
+@keyframes pointCoinBob { 0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-9px) rotate(-6deg); } }
+@media (prefers-reduced-motion: reduce) { .point-coin { animation: none; } }
