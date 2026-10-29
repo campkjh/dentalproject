@@ -505,9 +505,10 @@ export default function ProductDetailPage() {
                   {sameHospital.length > 0 ? <>이 병원의 다른<br />상품을 살펴보세요</> : <>마이닥의 다른<br />인기 상품을 살펴보세요</>}
                 </h3>
               </Reveal>
-              <div className="flex snap-x gap-3 overflow-x-auto pr-4 hide-scrollbar">
+              <div className="-mx-1.5 flex snap-x gap-2.5 overflow-x-auto scroll-px-2.5 px-2.5 hide-scrollbar">
+                {/* 카드 폭 = 상품 목록 두 칸 그리드 한 칸과 같다(양옆 10 · 사이 10) */}
                 {alsoViewed.map((p, i) => (
-                  <div key={p.id} className="w-[44vw] max-w-[220px] shrink-0 snap-start">
+                  <div key={p.id} className="w-[calc((min(100vw,640px)-30px)/2)] shrink-0 snap-start">
                     <ProductCard product={p} index={i} />
                   </div>
                 ))}

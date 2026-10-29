@@ -78,22 +78,25 @@ export default function MyHome({ partner = false }: { partner?: boolean }) {
   ];
   // 의사 ↔ 고객 화면 오가기 — 정해 둔 계정만(lib/account-mode). 병원 주인이어야 의사 화면으로 갈 수 있다
   const dual = isDualModeUser(user?.id);
-  //  · 바꾸는 동안 흰 막(문서에 직접 붙인 것 — 화면이 바뀌며 이 컴포넌트가 사라져도 남는다)이 덮고, 의사 화면이면 병원 정보를 먼저 받아 둔다
-  //    → 빈 화면·'승인 기다리는 중'이 번쩍이지 않고 새 화면이 그려진 뒤 막이 걷힌다
-  const switchMode = async () => {
+  //  · 바꾸는 동안 흰 막(문서에 직접 붙인 것 — 화면이 바뀌며 이 컴포넌트가 사라져도 남는다)이 잠깐 덮는다.
+  //  · 의사 화면 자료(병원·예약)와 화면 코드는 마이를 열 때 미리 받아 둔다 → 누르면 기다리지 않고 바로 넘어간다
+  //    (예전엔 누른 뒤 자료를 다 받을 때까지 최대 1.8초 기다려 '느리다'였다)
+  useEffect(() => {
+    if (!dual || partner || !authUser?.id) return;
+    router.prefetch('/partner');
+    void fetchMyHospitalData(authUser.id).catch(() => null);
+  }, [dual, partner, authUser?.id, router]);
+  const switchMode = () => {
     const next = partner ? 'customer' : 'doctor';
     const veil = showSwitchVeil(next === 'doctor' ? '의사 화면으로 바꾸고 있어요' : '고객 화면으로 바꾸고 있어요');
-    const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-    await Promise.all([
-      wait(420),
-      next === 'doctor' && authUser?.id ? Promise.race([fetchMyHospitalData(authUser.id).catch(() => null), wait(1800)]) : null,
-    ]);
+    if (next === 'doctor' && authUser?.id) void fetchMyHospitalData(authUser.id).catch(() => null);
     writeAccountMode(next);
     useStore.setState({ isDoctor: next === 'doctor' });
     router.replace(next === 'doctor' ? '/partner' : '/');
     window.scrollTo(0, 0);
-    setTimeout(veil, 520);
+    setTimeout(veil, 380);
   };
+
   const sections: { title: string; rows: Row[]; public?: boolean }[] = [
     ...(dual ? [{ title: '화면 전환', rows: [
       partner

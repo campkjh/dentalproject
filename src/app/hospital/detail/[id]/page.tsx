@@ -7,7 +7,7 @@ import { ChevronLeft, ChevronRight, Share2, X } from 'lucide-react';
 import Avatar from '@/components/common/Avatar';
 import ProductCard from '@/components/common/ProductCard';
 import NaverMap from '@/components/common/NaverMap';
-import { BRAND, Reveal, StarRating, SectionHead, IconTile, FloatingReviewCards, ReviewCommentRow, type ReviewRowData } from '@/components/detail/DetailKit';
+import { Reveal, StarRating, ReviewCommentRow, type ReviewRowData } from '@/components/detail/DetailKit';
 import { useStore } from '@/store';
 import { resolveHospitalImageUrl } from '@/lib/images';
 import { createClient, hasSupabaseEnv } from '@/lib/supabase/client';
@@ -32,7 +32,7 @@ const SECTION_TABS: { id: SectionId; label: string }[] = [
 /** 고정 머리(60) + 섹션 탭(52) */
 const STICKY_OFFSET = 116;
 
-// 병원 상세 — 상품 상세와 같은 프리티풀 상세 결(떠 있는 머리·44 라운드 사진 넘기기·알약 섹션 탭·아이콘 섹션 머리·댓글형 리뷰)
+// 병원 상세 — 상품 상세와 같은 결(261029 사장): 떠 있는 머리·44 라운드 사진 넘기기·가는 줄로 나눈 위 칸·알약 섹션 탭·회색 띠 + 22 굵은 섹션 제목·테두리 둥근 칸·댓글형 리뷰
 export default function HospitalDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -123,12 +123,6 @@ export default function HospitalDetailPage() {
       photos: [r.beforeImage ? { src: r.beforeImage, label: '전' } : null, r.afterImage ? { src: r.afterImage, label: '후' } : null].filter(Boolean) as { src: string; label: string }[],
     };
   });
-  const infoRows = [
-    { icon: '/icons/pro-detail/notice.svg', label: '주소', value: hospital.address },
-    { icon: '/icons/pro-detail/clock.svg', label: '오늘 진료', value: !todayHours || todayHours.isClosed ? '휴진' : `${todayHours.startTime}~${todayHours.endTime}` },
-    { icon: '/icons/pro-detail/person.svg', label: '의료진', value: `${hospital.doctors.length}명` },
-    ...(hospital.phone ? [{ icon: '/icons/pro-detail/chat.svg', label: '전화', value: hospital.phone }] : []),
-  ];
 
   const share = () => {
     if (navigator.share) navigator.share({ title: hospital.name, url: window.location.href }).catch(() => {});
@@ -217,45 +211,78 @@ export default function HospitalDetailPage() {
           )}
         </div>
 
-        {/* ─── 이름 · 별점 · 정보 줄 ─── */}
-        <div className="bg-white px-5 py-6">
+        {/* ─── 이름 · 별점 · 오늘 진료 · 주소 · 바로 하기 — 상품 상세 위 칸과 같은 결(가는 회색 줄로 나눔) ─── */}
+        <div className="bg-white px-5 pb-2 pt-6">
           <Reveal>
-            <div className="flex items-center gap-3">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={hospitalLogo} alt="" className="h-[52px] w-[52px] shrink-0 rounded-[14px] bg-[#F2F4F6] object-cover" />
-              <div className="min-w-0 flex-1">
-                <h1 className="truncate text-[20px] font-bold leading-[1.35] text-[#191F28]">{hospital.name}</h1>
-                {hospital.location && <p className="mt-0.5 truncate text-[13.5px] text-[#8B95A1]">{hospital.location}</p>}
-              </div>
-            </div>
+            {hospital.location && <p className="mb-1.5 truncate text-[14px] font-semibold text-[#6B7684]">{hospital.location}</p>}
+            <h1 className="break-keep text-[22px] font-bold leading-[1.4] tracking-[-0.4px] text-[#191F28]">{hospital.name}</h1>
+            <button type="button" onClick={() => scrollToSection('reviews')} className="mt-2.5 flex items-center gap-1 text-[15px] text-[#191F28]">
+              <svg width="19" height="19" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.8l2.7 5.6 6.1.8-4.5 4.2 1.1 6.1L12 16.6l-5.4 2.9 1.1-6.1-4.5-4.2 6.1-.8z" fill="#FFC933" /></svg>
+              <span className="ml-0.5">{rating.toFixed(1)}</span>
+              <span className="text-[#6B7684]">(<span className="underline underline-offset-2">{reviewCount}</span>)</span>
+            </button>
             {hospital.tags?.length > 0 && (
               <div className="mt-3 flex flex-wrap gap-1.5">
                 {hospital.tags.map(t => (
-                  <span key={t} className="rounded-full bg-[#F2F4F6] px-2.5 py-1 text-[13px] font-semibold text-[#4E5968]">{t}</span>
+                  <span key={t} className="rounded-full bg-[#F2F4F6] px-2.5 py-1 text-[13px] font-semibold text-[#4E5968]">#{t.replace(/^#/, '')}</span>
                 ))}
               </div>
             )}
           </Reveal>
-          <Reveal delay={100}>
-            <div className="mb-1 mt-3 flex items-center gap-2">
-              <StarRating value={Number(rating.toFixed(1))} size={16} twinkle />
-              <span className="text-[18px] font-bold text-[#191F28]">{rating.toFixed(1)}</span>
-              <span className="text-[13px] text-[#8B95A1]">({reviewCount})</span>
+
+          <Reveal delay={80}>
+            {/* 오늘 진료 + 전체보기 */}
+            <div className="mt-6 flex items-center gap-3 border-t border-[#F2F4F6] py-5">
+              <div className="min-w-0 flex-1">
+                <p className="text-[14px] text-[#6B7684]">오늘 진료 · {WEEK_DAYS[todayIdx].name}</p>
+                <p className="mt-1 truncate text-[17px] font-medium text-[#191F28]">{!todayHours || todayHours.isClosed ? '휴진' : `${todayHours.startTime} – ${todayHours.endTime}`}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => scrollToSection('hours')}
+                className="shrink-0 rounded-[12px] border border-[#D1D6DB] px-3.5 py-2.5 text-[14px] font-semibold text-[#191F28] transition-colors active:bg-[#F7F8FA]"
+              >
+                전체보기
+              </button>
             </div>
-            <FloatingReviewCards reviews={reviewRows} />
-          </Reveal>
-          <Reveal delay={150}>
-            <div className="mt-3 divide-y divide-[#F2F4F6]">
-              {infoRows.map(row => (
-                <div key={row.label} className="flex items-center gap-3 py-3">
-                  <IconTile src={row.icon} />
-                  <span className="shrink-0 text-[13px] text-[#8B95A1]">{row.label}</span>
-                  <span className="ml-auto min-w-0 truncate text-right text-[14px] font-bold text-[#191F28]">{row.value}</span>
-                </div>
+
+            {/* 주소 */}
+            <div className="flex items-center gap-3 border-t border-[#F2F4F6] py-5">
+              <div className="min-w-0 flex-1">
+                <p className="text-[14px] text-[#6B7684]">주소</p>
+                <p className="mt-1 break-keep text-[16px] leading-[1.45] text-[#191F28]">{hospital.address}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => { navigator.clipboard?.writeText(hospital.address).then(() => showToast('주소를 복사했어요.')).catch(() => {}); }}
+                className="shrink-0 text-[14px] font-semibold text-[#3180F7]"
+              >
+                복사
+              </button>
+            </div>
+
+            {/* 바로 하기 — 전화 · 길찾기 · 공유 */}
+            <div className="grid grid-cols-3 gap-2 border-t border-[#F2F4F6] py-5">
+              {[
+                ...(hospital.phone ? [{ label: '전화하기', onClick: () => { window.location.href = `tel:${hospital.phone.replace(/[^0-9+]/g, '')}`; } }] : []),
+                { label: '길찾기', onClick: () => window.open(`https://map.naver.com/p?q=${encodeURIComponent(hospital.address || hospital.name)}`, '_blank') },
+                { label: '공유하기', onClick: share },
+              ].map(btn => (
+                <button
+                  key={btn.label}
+                  type="button"
+                  onClick={btn.onClick}
+                  className="flex h-12 items-center justify-center rounded-[12px] border border-[#E5E8EB] text-[14px] font-semibold text-[#333D4B] transition-colors active:bg-[#F7F8FA]"
+                >
+                  {btn.label}
+                </button>
               ))}
             </div>
           </Reveal>
         </div>
+
+        {/* 칸 나눔 — 회색 띠 */}
+        <div className="h-2.5 bg-[#F2F4F6]" />
 
         {/* ─── 섹션 탭 ─── */}
         <div className="sticky top-[60px] z-30 min-[1024px]:top-[72px] bg-white px-4 pb-2 pt-1">
@@ -281,95 +308,104 @@ export default function HospitalDetailPage() {
           </div>
         </div>
 
-        {/* ─── 병원 소개 ─── */}
-        <div ref={sectionRefs.intro} className="bg-white px-5 py-6">
-          <SectionHead title="병원 소개" icon="/icons/pro-detail/sparkle.svg" className="mb-4" />
-          {hospital.introduction ? (
-            <p className="whitespace-pre-line text-[16px] leading-[1.7] text-[#333D4B]">{hospital.introduction}</p>
-          ) : (
-            <p className="text-[14px] text-[#8B95A1]">등록된 소개가 없어요.</p>
-          )}
-          <div className="mt-6">
-            <SectionHead title="오시는 길" icon="/icons/pro-detail/notice.svg" size="sm" className="mb-3" />
-            <div className="relative aspect-[16/10] overflow-hidden rounded-[20px] border border-[#EEF0F3]">
+        {/* ─── 병원 소개 · 오시는 길 — 상품 상세 '병원 정보'와 같은 결: 22 굵은 제목 · 가는 테두리 둥근 칸(16) ─── */}
+        <div ref={sectionRefs.intro} className="bg-white px-5 py-7">
+          <h2 className="text-[22px] font-bold leading-tight text-[#191F28]">병원 소개</h2>
+          <Reveal>
+            {hospital.introduction ? (
+              <p className="mt-4 whitespace-pre-line text-[16px] leading-[1.7] text-[#333D4B]">{hospital.introduction}</p>
+            ) : (
+              <p className="mt-4 text-[15px] text-[#8B95A1]">등록된 소개가 없어요.</p>
+            )}
+          </Reveal>
+          <Reveal>
+            <h3 className="mt-8 text-[17px] font-bold text-[#191F28]">오시는 길</h3>
+            <div className="relative mt-3 aspect-[16/10] overflow-hidden rounded-[16px] border border-[#E5E8EB]">
               <NaverMap address={hospital.address} lat={hospital.lat} lng={hospital.lng} name={hospital.name} />
             </div>
-            <p className="mt-3 text-[15px] leading-[1.5] text-[#333D4B]">{hospital.address}</p>
-            {hospital.addressDetail && <p className="mt-1 whitespace-pre-line text-[14px] leading-[1.6] text-[#6B7684]">{hospital.addressDetail}</p>}
-            <button
-              type="button"
-              onClick={() => window.open(`https://map.naver.com/p?q=${encodeURIComponent(hospital.address || hospital.name)}`, '_blank')}
-              className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-[#E5E8EB] py-3.5 text-[14px] font-semibold text-[#4E5968] transition-all hover:bg-[#F7F8FA] active:scale-[0.98]"
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/icons/naver-map.png" alt="" width={18} height={18} />
-              네이버 지도로 길찾기
-            </button>
-          </div>
+            <p className="mt-3 text-[15px] leading-[1.5] text-[#191F28]">{hospital.address}</p>
+            {hospital.addressDetail && <p className="mt-1.5 whitespace-pre-line rounded-[12px] bg-[#F7F8FA] px-4 py-3 text-[14px] leading-[1.6] text-[#4E5968]">{hospital.addressDetail}</p>}
+          </Reveal>
         </div>
 
-        {/* ─── 상품 ─── */}
+        {/* ─── 상품 — 카드 폭 = 상품 목록 두 칸 그리드 한 칸(양옆 10 · 사이 10) ─── */}
         {hospitalProducts.length > 0 && (
-          <div className="px-4 pb-4 pt-6">
-            <Reveal>
-              <h3 className="mb-4 text-[20px] font-bold leading-tight text-[#191F28]">{hospital.name}의<br />상품을 살펴보세요</h3>
-            </Reveal>
-            <div className="flex snap-x gap-3 overflow-x-auto pr-4 hide-scrollbar">
-              {hospitalProducts.map((p, i) => (
-                <div key={p.id} className="w-[150px] shrink-0 snap-start">
-                  <ProductCard product={p} index={i} />
-                </div>
-              ))}
+          <>
+            <div className="h-2.5 bg-[#F2F4F6]" />
+            <div className="bg-white px-4 py-7">
+              <h2 className="mb-5 px-1 text-[22px] font-bold leading-tight text-[#191F28]">상품 <span className="text-[#3180F7]">{hospitalProducts.length}</span></h2>
+              <div className="-mx-1.5 flex snap-x gap-2.5 overflow-x-auto scroll-px-2.5 px-2.5 hide-scrollbar">
+                {hospitalProducts.map((p, i) => (
+                  <div key={p.id} className="w-[calc((min(100vw,640px)-30px)/2)] shrink-0 snap-start">
+                    <ProductCard product={p} index={i} />
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
+          </>
         )}
 
-        {/* ─── 의료진 ─── */}
-        <div ref={sectionRefs.doctors} className="bg-white px-5 py-6">
-          <SectionHead title="의료진" icon="/icons/pro-detail/person.svg" className="mb-2" />
-          {hospital.doctors.length > 0 ? (
-            <div className="divide-y divide-[#F2F4F6]">
-              {hospital.doctors.map(d => (
-                <Link key={d.id} href={`/doctor/${d.id}`} className="flex items-center gap-3 py-3 transition-opacity active:opacity-70">
-                  <Avatar src={d.profileImage} role="doctor" seed={d.name} size={56} alt={d.name} className="shrink-0" />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[15px] font-bold text-[#191F28]">{d.name} {d.isOwner ? '대표원장' : d.title || '원장'}</p>
-                    {d.specialty && <p className="mt-0.5 truncate text-[13px] text-[#8B95A1]">{d.specialty}</p>}
-                  </div>
-                  <ChevronRight size={18} className="shrink-0 text-[#B0B8C1]" />
-                </Link>
-              ))}
-            </div>
-          ) : (
-            <p className="py-4 text-[14px] text-[#8B95A1]">등록된 의료진이 없어요.</p>
-          )}
+        {/* ─── 의료진 — 테두리 둥근 칸 안 줄 ─── */}
+        <div className="h-2.5 bg-[#F2F4F6]" />
+        <div ref={sectionRefs.doctors} className="bg-white px-5 py-7">
+          <h2 className="text-[22px] font-bold leading-tight text-[#191F28]">의료진 {hospital.doctors.length > 0 && <span className="text-[#3180F7]">{hospital.doctors.length}</span>}</h2>
+          <Reveal>
+            {hospital.doctors.length > 0 ? (
+              <div className="mt-5 divide-y divide-[#F2F4F6] rounded-[16px] border border-[#E5E8EB] px-4">
+                {hospital.doctors.map(d => (
+                  <Link key={d.id} href={`/doctor/${d.id}`} className="flex items-center gap-3 py-3.5 transition-opacity active:opacity-70">
+                    <Avatar src={d.profileImage} role="doctor" seed={d.name} size={48} alt={d.name} className="shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[16px] font-medium text-[#191F28]">{d.name} <span className="text-[14px] text-[#6B7684]">{d.isOwner ? '대표원장' : d.title || '원장'}</span></p>
+                      {d.specialty && <p className="mt-0.5 truncate text-[14px] text-[#8B95A1]">{d.specialty}</p>}
+                    </div>
+                    <ChevronRight size={18} className="shrink-0 text-[#B0B8C1]" />
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <p className="mt-4 text-[15px] text-[#8B95A1]">등록된 의료진이 없어요.</p>
+            )}
+          </Reveal>
         </div>
 
-        {/* ─── 진료 시간 ─── */}
-        <div ref={sectionRefs.hours} className="bg-white px-5 py-6">
-          <SectionHead title="진료 시간" icon="/icons/pro-detail/clock.svg" className="mb-2" />
-          {hospital.holidayNotice && <p className="mb-2 text-[13px] font-semibold text-[#F04452]">{hospital.holidayNotice}</p>}
-          <ul className="divide-y divide-[#F2F4F6]">
-            {WEEK_DAYS.map((d, idx) => {
-              const oh = hospital.operatingHours.find(o => o.day === d.short || o.day === d.name);
-              const today = idx === todayIdx;
-              const closed = !oh || oh.isClosed;
-              return (
-                <li key={d.short} className="flex items-center justify-between py-3 text-[15px]">
-                  <span className={today ? 'font-bold text-[#191F28]' : 'font-semibold text-[#6B7684]'}>
-                    {d.name}
-                    {today && <span className="ml-1.5 rounded-[5px] bg-[#E8F3FF] px-1.5 py-0.5 text-[11px] font-bold" style={{ color: BRAND }}>오늘</span>}
-                  </span>
-                  <span className={closed ? 'text-[#B0B8C1]' : today ? 'font-bold text-[#191F28]' : 'text-[#4E5968]'}>{closed ? '휴진' : `${oh!.startTime} ~ ${oh!.endTime}`}</span>
-                </li>
-              );
-            })}
-          </ul>
+        {/* ─── 진료 시간 — 오늘 줄을 위에 크게, 아래는 요일별 두 칸 줄(가는 선) ─── */}
+        <div className="h-2.5 bg-[#F2F4F6]" />
+        <div ref={sectionRefs.hours} className="bg-white px-5 py-7">
+          <h2 className="text-[22px] font-bold leading-tight text-[#191F28]">진료 시간</h2>
+          <Reveal>
+            <div className="mt-5 rounded-[16px] bg-[#F7F8FA] px-5 py-4">
+              <p className="text-[13px] font-semibold text-[#8B95A1]">오늘 · {WEEK_DAYS[todayIdx].name}</p>
+              <p className="mt-1 text-[22px] font-bold tracking-[-0.4px] text-[#191F28]">{!todayHours || todayHours.isClosed ? '휴진' : `${todayHours.startTime} – ${todayHours.endTime}`}</p>
+            </div>
+            <dl className="mt-4">
+              {[1, 2, 3, 4, 5, 6, 0].map((idx, i) => {
+                const d = WEEK_DAYS[idx];
+                const oh = hospital.operatingHours.find(o => o.day === d.short || o.day === d.name);
+                const today = idx === todayIdx;
+                const closed = !oh || oh.isClosed;
+                return (
+                  <div key={d.short} className={`flex items-center justify-between py-3 text-[15px] ${i > 0 ? 'border-t border-[#F2F4F6]' : ''}`}>
+                    <dt className={today ? 'font-semibold text-[#191F28]' : idx === 0 || idx === 6 ? 'text-[#8B95A1]' : 'text-[#6B7684]'}>{d.name}</dt>
+                    <dd className={`tabular-nums ${closed ? 'text-[#B0B8C1]' : today ? 'font-semibold text-[#191F28]' : 'text-[#333D4B]'}`}>{closed ? '휴진' : `${oh!.startTime} – ${oh!.endTime}`}</dd>
+                  </div>
+                );
+              })}
+            </dl>
+            {hospital.holidayNotice && (
+              <p className="mt-3 flex items-start gap-2 rounded-[12px] bg-[#F7F8FA] px-4 py-3 text-[14px] leading-[1.5] text-[#4E5968]">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden className="mt-0.5 shrink-0"><circle cx="12" cy="12" r="9" stroke="#8B95A1" strokeWidth="1.8" /><path d="M12 8v5M12 16.5v.01" stroke="#8B95A1" strokeWidth="1.8" strokeLinecap="round" /></svg>
+                {hospital.holidayNotice.replace(/^\*/, '')}
+              </p>
+            )}
+            <p className="mt-3 text-[13px] leading-[1.5] text-[#B0B8C1]">진료 시간은 병원 사정에 따라 바뀔 수 있어요.</p>
+          </Reveal>
         </div>
 
         {/* ─── 리뷰 ─── */}
-        <div ref={sectionRefs.reviews} className="bg-white px-5 py-6">
-          <SectionHead title="리뷰" icon="/icons/pro-detail/eyes.svg" className="mb-4" />
+        <div className="h-2.5 bg-[#F2F4F6]" />
+        <div ref={sectionRefs.reviews} className="bg-white px-5 py-7">
+          <h2 className="mb-5 text-[22px] font-bold leading-tight text-[#191F28]">리뷰</h2>
           <div className="mb-3 flex items-center gap-2">
             <StarRating value={Number(rating.toFixed(1))} size={20} />
             <span className="text-[24px] font-bold text-[#191F28]">{rating.toFixed(1)}</span>
