@@ -105,8 +105,8 @@
 .cta:disabled { background: var(--bg-gray); color: var(--t-dis); cursor: default; }
 .cta.busy:disabled { background: var(--blue); color: #fff; opacity: .7; }
 .btnRow { display: flex; gap: 10px; }
-.btnRow .cta { flex: 1; width: auto; }
-.btnRow .cta.ghost { flex: 0 0 34%; background: var(--divider); color: var(--t-sub); }
+.btnRow .cta { flex: 1 1 0; width: auto; min-width: 0; }
+.btnRow .cta.ghost { flex: 1 1 0; background: var(--divider); color: var(--t-sub); }
 .btnRow .cta.ghost:active { background: #E5E8EB; }
 @media (hover: hover) {
   .opt:hover:not(.on) { border-color: #C4CCD4; background: #FBFCFD; }

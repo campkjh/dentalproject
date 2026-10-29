@@ -165,7 +165,7 @@ function BookingPage() {
     <div className={s.root}>
       {step === 'date' && (
         <div className={s.page} key="date">
-          <FlowHeader onBack={() => router.back()} progress={{ at: 1, from: 0, to: 1 }} />
+          <FlowHeader onBack={() => router.back()} />
           <main className={s.main}>
             <h1 className={cx(s.h1, s.aTitle)}>언제 방문하실<br />예정인가요?</h1>
             <p className={cx(s.sub, s.aSub)}>병원 진료시간에 맞춰 예약 가능한 시간만 보여드려요.</p>
@@ -197,7 +197,7 @@ function BookingPage() {
 
       {step === 'confirm' && (
         <div className={s.page} key="confirm">
-          <FlowHeader onBack={() => setStep('date')} progress={{ at: 2, from: 1, to: 2 }} />
+          <FlowHeader onBack={() => setStep('date')} />
           <main className={s.main}>
             <h1 className={cx(s.h1, s.aTitle)}>이 일정으로<br />예약할까요?</h1>
             <p className={cx(s.sub, s.aSub)}>다음 화면에서 결제 방법을 고를 수 있어요.</p>
@@ -217,7 +217,7 @@ function BookingPage() {
           <div className={s.ctaWrap}>
             <div className={s.btnRow}>
               <button type="button" className={cx(s.cta, s.ghost)} onClick={() => { setStep('date'); setSheetOpen(true); }}>다시 선택</button>
-              <button type="button" className={s.cta} onClick={handleConfirm}>예약하고 결제하기</button>
+              <button type="button" className={s.cta} onClick={handleConfirm}>결제하기</button>
             </div>
           </div>
         </div>

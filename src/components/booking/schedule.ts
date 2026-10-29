@@ -38,7 +38,8 @@ export function generateTimeSlotsForDay(startTime?: string, endTime?: string) {
   const startMin = sh * 60 + (sm || 0);
   const endMin = eh * 60 + (em || 0);
   const groups: Record<string, string[]> = { '오전': [], '오후': [], '저녁': [] };
-  for (let m = startMin; m < endMin; m += 30) {
+  // 칸은 정각·30분에 맞춘다 — 진료 시작이 10:31 처럼 어긋나 있어도 10:31·11:01 이 아니라 11:00·11:30 …
+  for (let m = Math.ceil(startMin / 30) * 30; m < endMin; m += 30) {
     const h = Math.floor(m / 60);
     const min = m % 60;
     const t = `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`;

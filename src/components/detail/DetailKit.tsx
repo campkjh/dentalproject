@@ -152,18 +152,17 @@ export function ReviewCommentRow({ review, first = false, menu, compact = false 
   );
 }
 
-/** 별점 아래 둥실 떠다니는 리뷰 카드(옆으로 넘기기) */
+/** 별점 아래 리뷰 카드 줄(옆으로 넘기기) — 둥실 움직임은 뺐다(261029 사장) */
 export function FloatingReviewCards({ reviews }: { reviews: ReviewRowData[] }) {
   const items = reviews.filter(r => (r.content || '').trim()).slice(0, 6);
   if (items.length === 0) return null;
   return (
     <div className="-mx-5 mt-2.5 overflow-x-auto px-5 pb-2 pt-1 hide-scrollbar">
       <div className="flex items-start gap-3" style={{ width: 'max-content' }}>
-        {items.map((r, i) => (
+        {items.map((r) => (
           <div
             key={r.id}
-            className="review-float w-[248px] shrink-0 rounded-[20px] border border-[#EEF0F3] bg-white p-4"
-            style={{ marginTop: (i % 3) * 14, animation: `reviewFloat ${(4.2 + (i % 3) * 0.9).toFixed(1)}s ease-in-out ${(i * 0.35).toFixed(2)}s infinite` }}
+            className="w-[248px] shrink-0 rounded-[20px] border border-[#EEF0F3] bg-white p-4"
           >
             <ReviewCommentRow compact review={r} />
           </div>

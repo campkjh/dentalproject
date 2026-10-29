@@ -272,7 +272,7 @@ function PaymentPage() {
   return (
     <div className={s.root}>
       <div className={s.page}>
-        <FlowHeader onBack={() => router.back()} progress={{ at: 3, from: 2, to: 3 }} />
+        <FlowHeader onBack={() => router.back()} />
 
         <main className={s.main}>
           <p className={cx(s.eyebrow, s.aTitle)}>마지막 단계</p>

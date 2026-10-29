@@ -655,6 +655,12 @@ function PcCategoryRow() {
 function CategoryPager() {
   const categories = useStore((s) => s.categories);
   const [open, setOpen] = useState(false);
+  // 접을 때도 내용을 남겨 두고 높이가 줄어든 뒤에 지운다 — 바로 지우면 펼친 칸이 '뚝' 사라졌다
+  const [rendered, setRendered] = useState(false);
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const expand = () => { if (closeTimer.current) clearTimeout(closeTimer.current); setRendered(true); setOpen(true); };
+  const collapse = () => { setOpen(false); closeTimer.current = setTimeout(() => setRendered(false), 520); };
+  useEffect(() => () => { if (closeTimer.current) clearTimeout(closeTimer.current); }, []);
   const FIRST = 9;
   const hasMore = categories.length > FIRST + 1;
   const first = categories.slice(0, hasMore ? FIRST : categories.length);
@@ -668,18 +674,18 @@ function CategoryPager() {
         ))}
         {tenth && (open
           ? <CategoryTile key={tenth.id} name={tenth.name} icon={tenth.icon} href={`/search?category=${tenth.id}`} index={0} />
-          : <CategoryMoreTile open={false} onToggle={() => setOpen(true)} index={FIRST} />)}
+          : <CategoryMoreTile open={false} onToggle={expand} index={FIRST} />)}
       </div>
       {hasMore && (
         <div className="grid transition-[grid-template-rows,opacity] duration-500" style={{ gridTemplateRows: open ? '1fr' : '0fr', opacity: open ? 1 : 0, transitionTimingFunction: 'cubic-bezier(0.22, 1, 0.36, 1)' }}>
           <div className="overflow-hidden">
             {/* 펼칠 때마다 다시 그려 칸이 차례로 떠오른다 */}
-            {open && (
-              <div className="grid grid-cols-5 gap-x-1 gap-y-4 pb-2 pt-2">
+            {rendered && (
+              <div className="grid grid-cols-5 gap-x-1 gap-y-4 pb-2 pt-2 transition-[transform] duration-500" style={{ transform: open ? 'none' : 'translateY(-10px)', transitionTimingFunction: 'cubic-bezier(0.22, 1, 0.36, 1)' }}>
                 {rest.map((cat, i) => (
                   <CategoryTile key={cat.id} name={cat.name} icon={cat.icon} href={`/search?category=${cat.id}`} index={i + 1} />
                 ))}
-                <CategoryMoreTile open onToggle={() => setOpen(false)} index={rest.length + 1} />
+                <CategoryMoreTile open onToggle={collapse} index={rest.length + 1} />
               </div>
             )}
           </div>

@@ -23,7 +23,6 @@ const CARD_FADE = 'linear-gradient(to bottom, #000 0%, #000 50%, rgba(0,0,0,.4) 
 
 export default function HospitalToneCard({ hospital, index = 0 }: { hospital: HospitalToneCardData; index?: number }) {
   const [broken, setBroken] = useState(false);
-  const [logoBroken, setLogoBroken] = useState(false);
   const tone = useImageTone(broken ? null : hospital.image, 'scene');
   const sub = tone?.sub || '#6B7684';
   const chips = Array.from(new Set(hospital.tags.filter(Boolean)));
@@ -46,12 +45,6 @@ export default function HospitalToneCard({ hospital, index = 0 }: { hospital: Ho
             style={{ WebkitMaskImage: CARD_FADE, maskImage: CARD_FADE }}
             onError={() => setBroken(true)}
           />
-        )}
-        {hospital.logo && !logoBroken && (
-          <span className="absolute left-2.5 top-2.5 h-8 w-8 overflow-hidden rounded-full bg-white/90" style={{ boxShadow: 'inset 0 0 0 0.5px rgba(0,0,0,.08)' }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={hospital.logo} alt="" className="h-full w-full object-cover" onError={() => setLogoBroken(true)} />
-          </span>
         )}
       </div>
       <div className="relative -mt-4 px-4 pb-4">

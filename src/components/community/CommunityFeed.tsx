@@ -1,6 +1,6 @@
 'use client';
 
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import PullToRefresh from '@/components/common/PullToRefresh';
@@ -35,6 +35,10 @@ export default function CommunityFeed({ partner = false }: { partner?: boolean }
   const user = useStore(s => s.user);
   const basePath = partner ? '/partner/community' : '/community';
   const [board, setBoard] = useState<Post['boardType']>('question');
+  // 의사 화면(파트너) 커뮤니티는 두 칸으로 나눈다 — 의사끼리(자유·과별) / 고객 질문(의사에게 질문)
+  const doctorSpaces = partner && isDoctor;
+  const [space, setSpace] = useState<'doctor' | 'customer'>('doctor');
+  const [doctorBoard, setDoctorBoard] = useState<'free' | 'dental'>('free');
   const [mine, setMine] = useState(false);
   const [category, setCategory] = useState(() => communityCategories.includes(params.get('category') || '') ? params.get('category')! : '전체');
   const [query, setQuery] = useState(params.get('q') || '');
@@ -55,15 +59,24 @@ export default function CommunityFeed({ partner = false }: { partner?: boolean }
   const scrollRestored = useRef(false);
   const [likes, setLikes] = useState<{ userId: string; ids: Set<string> }>({ userId: '', ids: new Set() });
   const likedIds = likes.userId === user?.id ? likes.ids : new Set<string>();
-  const activeBoard = isDoctor ? board : 'question';
+  const activeBoard: Post['boardType'] = doctorSpaces ? (space === 'customer' ? 'question' : doctorBoard) : isDoctor ? board : 'question';
   const searchTerm = query.trim().toLocaleLowerCase();
-  const popular = useMemo(() => getWeeklyPopularPosts(posts), [posts]);
+  const popular = useMemo(() => {
+    if (!(doctorSpaces && space === 'doctor')) return getWeeklyPopularPosts(posts);
+    // 의사 커뮤니티 주간 인기 — 자유·과별 글 중 이번 주 조회 많은 순(이번 주 글이 없으면 전체에서)
+    const week = new Date();
+    week.setDate(week.getDate() - ((week.getDay() + 6) % 7));
+    week.setHours(0, 0, 0, 0);
+    const pool = posts.filter(p => p.boardType === 'free' || p.boardType === 'dental');
+    const current = pool.filter(p => new Date(p.createdAt || p.date).getTime() >= week.getTime());
+    return [...(current.length ? current : pool)].sort((a, b) => b.viewCount - a.viewCount).slice(0, 5);
+  }, [posts, doctorSpaces, space]);
   const visible = useMemo(() => posts.filter(post => {
     if (post.boardType !== activeBoard || (mine && post.authorId !== user?.id)) return false;
     if (category !== '전체' && !post.tags.includes(category)) return false;
     return !searchTerm || [post.title, post.content, post.isAnonymous ? '' : post.authorName, ...post.tags].join(' ').toLocaleLowerCase().includes(searchTerm);
   }).sort((a, b) => sort === 'popular' ? b.viewCount - a.viewCount : sort === 'comments' ? b.commentCount - a.commentCount : new Date(b.createdAt || b.date).getTime() - new Date(a.createdAt || a.date).getTime()), [posts, activeBoard, mine, user?.id, category, searchTerm, sort]);
-  const showWeeklyTabs = category === '전체' && !searchTerm && activeBoard === 'question';
+  const showWeeklyTabs = category === '전체' && !searchTerm && (activeBoard === 'question' || doctorSpaces);
 
   // 전체 헤더 검색(?q=)이 바뀌면 이 화면 검색어도 따라간다
   if (previousQuery !== params.get('q')) {
@@ -153,7 +166,7 @@ export default function CommunityFeed({ partner = false }: { partner?: boolean }
   }
 
   // 탭 레일 항목: (의사) 게시판 3개 → 칸막이 → 진료 카테고리
-  const boardItems: RailItem[] = isDoctor ? communityBoards.map(item => ({ key: `b-${item.value}`, label: item.label.replace('게시판', ''), icon: item.icon, on: activeBoard === item.value, onSelect: () => changeBoard(item.value) })) : [];
+  const boardItems: RailItem[] = isDoctor && !doctorSpaces ? communityBoards.map(item => ({ key: `b-${item.value}`, label: item.label.replace('게시판', ''), icon: item.icon, on: activeBoard === item.value, onSelect: () => changeBoard(item.value) })) : [];
   const categoryItems: RailItem[] = communityCategories.map(cat => ({ key: cat, label: cat, icon: categoryIcons[cat] || categoryIcons['전체'], on: category === cat, onSelect: () => selectCategory(cat) }));
 
   const searchField = (id: string) => <label className={styles.searchInline} htmlFor={id}>
@@ -190,11 +203,24 @@ export default function CommunityFeed({ partner = false }: { partner?: boolean }
         <div className={styles.pcTitle}><h1>커뮤니티</h1>{searchField('community-search-pc')}</div>
         {error && <div className={styles.message} role="alert"><span>{error}</span><button type="button" onClick={refresh}>다시 시도</button></div>}
 
+        {doctorSpaces && <div className="px-4 pb-1 pt-2">
+          <nav className="pd-seg is-wide" aria-label="커뮤니티 나누기" style={{ ['--n' as string]: 2, ['--i' as string]: space === 'doctor' ? 0 : 1 }}>
+            <span className="pd-seg-thumb" aria-hidden />
+            <button type="button" className={space === 'doctor' ? 'is-active' : undefined} onClick={() => { setSpace('doctor'); setCategory('전체'); setMine(false); }}>의사 커뮤니티</button>
+            <button type="button" className={space === 'customer' ? 'is-active' : undefined} onClick={() => { setSpace('customer'); setCategory('전체'); setMine(false); }}>고객 질문</button>
+          </nav>
+          {/* 의사 커뮤니티 — 게시판 칩(자유 · 과별) */}
+          {space === 'doctor' && <div className="mt-2.5 flex gap-1.5">
+            {([['free', '자유 게시판'], ['dental', '과별 게시판']] as const).map(([value, label]) => (
+              <button key={value} type="button" className={`pd-chip${doctorBoard === value ? ' is-active' : ''}`} onClick={() => { setDoctorBoard(value); setCategory('전체'); setMine(false); }}>{label}</button>
+            ))}
+          </div>}
+        </div>}
+
         {showWeeklyTabs && <section className={styles.weekly} aria-label="주간 인기글">
           <h2 className={styles.weeklyTitle} role="tablist" aria-label="게시글 보기">
             <button type="button" role="tab" aria-selected={!mine} className={styles.wpTab} onClick={() => setMine(false)}>주간 인기글</button>
             <button type="button" role="tab" aria-selected={mine} className={styles.wpTab} onClick={toggleMine}>내가 쓴 글</button>
-            <Link className={styles.wpLink} href="/community/live">실시간 질문 ›</Link>
           </h2>
           {!mine && popular.length > 0 && <WeeklyCards posts={popular} onOpen={open} />}
         </section>}
@@ -270,17 +296,28 @@ function TabRail({ boards, items, stacked = false }: { boards: RailItem[]; items
   </nav>;
 }
 
-// 주간 인기글 가로 카드 줄 — 3.2초마다 다음 카드로(끝에 닿으면 방향을 뒤집는 핑퐁), 손이 닿으면 4.5초 쉰다.
+// 주간 인기글 가로 카드 줄 — 3.2초마다 다음 카드로 끝없이 돈다(1 2 3 4 5 1 2 …), 손이 닿으면 4.5초 쉰다.
+//  · 목록을 세 벌 이어 붙이고 가운데 벌에 머문다. 멈춘 뒤(손 떼고·카드가 제자리에 붙은 뒤) 앞·뒤 벌이면 가운데 벌 같은 카드로 소리 없이 옮긴다.
 // 비활성 카드는 축소 대신 흐리게(스타디).
+const COPIES = 3;
 const WeeklyCards = memo(function WeeklyCards({ posts, onOpen }: { posts: Post[]; onOpen: (id: string) => void }) {
   const track = useRef<HTMLDivElement>(null);
-  const [active, setActive] = useState(0);
+  const count = posts.length;
+  const loop = count > 1;
+  const items = useMemo(() => (loop ? Array.from({ length: COPIES }, () => posts).flat() : posts), [posts, loop]);
+  const [active, setActive] = useState(loop ? count : 0);
   const touchedAt = useRef(0);
+  const touching = useRef(false);
   const visibleRef = useRef(true);
   const animating = useRef(false);
   const settleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const frame = useRef<number | null>(null);
 
+  const leftOf = useCallback((element: HTMLDivElement, index: number) => {
+    const pad = parseFloat(getComputedStyle(element).paddingLeft) || 0;
+    const child = element.children[index] as HTMLElement | undefined;
+    return child ? child.offsetLeft - pad : 0;
+  }, []);
   const nearest = useCallback(() => {
     const element = track.current;
     if (!element) return 0;
@@ -290,15 +327,48 @@ const WeeklyCards = memo(function WeeklyCards({ posts, onOpen }: { posts: Post[]
     Array.from(element.children).forEach((child, i) => { const d = Math.abs((child as HTMLElement).offsetLeft - x); if (d < min) { min = d; best = i; } });
     return best;
   }, []);
+  /** 앞·뒤 벌에 멈춰 있으면 가운데 벌 같은 카드로 옮긴다 — 손이 닿아 있거나 아직 미끄러지는 중이면 조금 뒤 다시 본다 */
+  const recenter = useCallback(function settle() {
+    if (settleTimer.current) clearTimeout(settleTimer.current);
+    settleTimer.current = setTimeout(() => {
+      const element = track.current;
+      if (!element || !loop) return;
+      const i = nearest();
+      if (touching.current || animating.current || Math.abs(element.scrollLeft - leftOf(element, i)) > 1) { settle(); return; }
+      if (i < count || i >= count * 2) {
+        const mid = count + (i % count);
+        element.style.scrollSnapType = 'none';
+        element.scrollTo({ left: leftOf(element, mid), behavior: 'instant' as ScrollBehavior });
+        element.style.scrollSnapType = '';
+        setActive(mid);
+      }
+    }, 220);
+  }, [count, loop, leftOf, nearest]);
+
+  // 처음엔 가운데 벌 첫 카드에서
+  useLayoutEffect(() => {
+    const element = track.current;
+    if (!element || !loop) return;
+    element.scrollTo({ left: leftOf(element, count), behavior: 'instant' as ScrollBehavior });
+  }, [count, loop, leftOf]);
+
   function onScroll() {
-    if (animating.current || frame.current !== null) return;
-    frame.current = requestAnimationFrame(() => { frame.current = null; const next = nearest(); setActive(cur => cur === next ? cur : next); });
+    if (!animating.current && frame.current === null) {
+      frame.current = requestAnimationFrame(() => { frame.current = null; const next = nearest(); setActive(cur => cur === next ? cur : next); });
+    }
+    recenter();
   }
   function onTouch() {
     touchedAt.current = Date.now();
+    touching.current = true;
     if (animating.current && track.current) track.current.scrollTo({ left: track.current.scrollLeft, behavior: 'instant' as ScrollBehavior });
     animating.current = false;
     if (track.current) track.current.style.scrollSnapType = '';
+  }
+  function onRelease() {
+    touching.current = false;
+    touchedAt.current = Date.now();
+    recenter();
   }
   useEffect(() => {
     const element = track.current;
@@ -308,47 +378,44 @@ const WeeklyCards = memo(function WeeklyCards({ posts, onOpen }: { posts: Post[]
     return () => observer.disconnect();
   }, []);
   useEffect(() => {
-    if (posts.length <= 1 || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    let dir: 1 | -1 = 1;
+    if (!loop || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    let doneTimer: ReturnType<typeof setTimeout> | null = null;
     const id = setInterval(() => {
       const element = track.current;
-      if (!element || document.hidden || !visibleRef.current || animating.current || Date.now() - touchedAt.current < 4500) return;
-      const pad = parseFloat(getComputedStyle(element).paddingLeft) || 0;
-      const max = Math.max(0, element.scrollWidth - element.clientWidth);
-      const left = element.scrollLeft;
-      if (dir === 1 && left >= max - 4) dir = -1; else if (dir === -1 && left <= 4) dir = 1;
-      const children = Array.from(element.children) as HTMLElement[];
-      const index = Math.max(0, Math.min(children.length - 1, nearest() + dir));
-      const target = Math.max(0, Math.min(max, children[index].offsetLeft - pad));
-      if (Math.abs(target - left) < 4) return;
+      if (!element || document.hidden || !visibleRef.current || animating.current || touching.current || Date.now() - touchedAt.current < 4500) return;
+      const index = Math.min(items.length - 1, nearest() + 1);
       // 도는 동안만 스냅을 꺼서 끼어들지 않게 하고, 목표 카드를 먼저 밝힌다
       animating.current = true;
       setActive(index);
       element.style.scrollSnapType = 'none';
-      element.scrollTo({ left: target, behavior: 'smooth' });
-      settleTimer.current = setTimeout(() => { animating.current = false; element.style.scrollSnapType = ''; const next = nearest(); setActive(cur => cur === next ? cur : next); }, 1000);
+      element.scrollTo({ left: leftOf(element, index), behavior: 'smooth' });
+      doneTimer = setTimeout(() => { animating.current = false; element.style.scrollSnapType = ''; recenter(); }, 1000);
     }, 3200);
-    return () => { clearInterval(id); if (settleTimer.current) clearTimeout(settleTimer.current); if (frame.current !== null) cancelAnimationFrame(frame.current); };
-  }, [posts.length, nearest]);
+    return () => { clearInterval(id); if (doneTimer) clearTimeout(doneTimer); if (settleTimer.current) clearTimeout(settleTimer.current); if (frame.current !== null) cancelAnimationFrame(frame.current); };
+  }, [loop, items.length, nearest, leftOf, recenter]);
 
+  const real = loop ? active % count : active;
   return <>
     <div className={styles.weeklyViewport}>
-      <div ref={track} className={styles.weeklyTrack} onScroll={onScroll} onPointerDown={onTouch} onTouchStart={onTouch} onWheel={onTouch}>
-        {posts.map((post, index) => <button key={post.id} type="button" className={styles.weeklyCard} onClick={() => onOpen(post.id)} style={{ opacity: index === active ? 1 : .55 }}>
-          <img className={styles.weeklyMedal} src={`/icons/stady/medal-${Math.min(index + 1, 5)}.svg`} alt={`${index + 1}위`} width={44} height={44} />
-          <span className={styles.weeklyTop}>{post.tags[0] || '의사에게 질문'}</span>
-          <span className={styles.weeklyCardTitle}>{post.title}</span>
-          {post.content !== post.title && <span className={styles.weeklyCardContent}>{post.content}</span>}
-          <span className={styles.weeklyMetrics}>
-            <span><HeartFillIcon /> {post.likeCount.toLocaleString()}</span>
-            <span><CommentFillIcon /> {post.commentCount.toLocaleString()}</span>
-            <span><EyeFillIcon /> {post.viewCount.toLocaleString()}</span>
-          </span>
-        </button>)}
+      <div ref={track} className={styles.weeklyTrack} onScroll={onScroll} onPointerDown={onTouch} onTouchStart={onTouch} onTouchEnd={onRelease} onTouchCancel={onRelease} onPointerUp={onRelease} onWheel={() => { touchedAt.current = Date.now(); recenter(); }}>
+        {items.map((post, index) => {
+          const rank = loop ? index % count : index;
+          return <button key={`${post.id}-${index}`} type="button" className={styles.weeklyCard} onClick={() => onOpen(post.id)} style={{ opacity: index === active ? 1 : .55 }} tabIndex={loop && (index < count || index >= count * 2) ? -1 : undefined}>
+            <img className={styles.weeklyMedal} src={`/icons/stady/medal-${Math.min(rank + 1, 5)}.svg`} alt={`${rank + 1}위`} width={44} height={44} />
+            <span className={styles.weeklyTop}>{post.tags[0] || '의사에게 질문'}</span>
+            <span className={styles.weeklyCardTitle}>{post.title}</span>
+            {post.content !== post.title && <span className={styles.weeklyCardContent}>{post.content}</span>}
+            <span className={styles.weeklyMetrics}>
+              <span><HeartFillIcon /> {post.likeCount.toLocaleString()}</span>
+              <span><CommentFillIcon /> {post.commentCount.toLocaleString()}</span>
+              <span><EyeFillIcon /> {post.viewCount.toLocaleString()}</span>
+            </span>
+          </button>;
+        })}
       </div>
       <div className={`${styles.weeklyFade} ${styles.weeklyFadeL}`} aria-hidden="true" />
       <div className={`${styles.weeklyFade} ${styles.weeklyFadeR}`} aria-hidden="true" />
     </div>
-    {posts.length > 1 && <div className={styles.weeklyDots} aria-hidden="true">{posts.map((post, index) => <span key={post.id} className={styles.weeklyDot} data-active={index === active || undefined} />)}</div>}
+    {count > 1 && <div className={styles.weeklyDots} aria-hidden="true">{posts.map((post, index) => <span key={post.id} className={styles.weeklyDot} data-active={index === real || undefined} />)}</div>}
   </>;
 });

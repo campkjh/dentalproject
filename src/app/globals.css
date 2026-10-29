@@ -7385,9 +7385,9 @@ textarea.qd-input { height: auto; min-height: 140px; padding: 16px 18px; line-he
     rgba(252, 253, 255, 0.9) 27%, rgba(253, 254, 255, 0.96) 31.5%, #FEFEFE 35%, #FEFEFE 100%);
   -webkit-backdrop-filter: blur(12px) saturate(1.2); backdrop-filter: blur(12px) saturate(1.2);
 }
-.toss-bubble-body { position: relative; margin: 0 0 13px; padding: 11px 20px; text-align: left; }
+.toss-bubble-body { position: relative; margin: 0 0 13px; padding: 12px 20px 14px; text-align: left; }
 .toss-bubble.has-icon { width: min(100%, 360px); }
-.toss-bubble.has-icon .toss-bubble-body { padding: 14px 20px 13px 62px; }
+.toss-bubble.has-icon .toss-bubble-body { padding: 15px 22px 17px 62px; }
 .toss-bubble-ic { position: absolute; left: 20px; top: 50%; width: 28px; height: 28px; margin-top: -14px; display: block; animation: tossBubbleIcon 1s linear both; }
 .toss-bubble-ic svg { display: block; }
 .toss-bubble-title, .toss-bubble-sub { margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; animation: tossBubbleContent 1s linear both; }
@@ -7448,9 +7448,12 @@ textarea.qd-input { height: auto; min-height: 140px; padding: 16px 18px; line-he
   background: #fff;
 }
 .pd-tabhead::after {
-  content: ''; position: absolute; left: 0; right: 0; top: 100%; height: 24px; pointer-events: none;
+  content: ''; position: absolute; left: 0; right: 0; top: 100%; height: 20px; pointer-events: none;
   background: linear-gradient(180deg, #FFFFFF 0%, rgba(255,255,255,0.72) 40%, rgba(255,255,255,0) 100%);
+  opacity: 0; transition: opacity .25s ease;
 }
+/* 그늘은 내렸을 때만 — 맨 위에선 내용(달력 첫 줄 등)을 가렸다(partner layout 이 html[data-pd-scrolled] 를 단다) */
+html[data-pd-scrolled] .pd-tabhead::after { opacity: 1; }
 .pd-tabhead h1 { margin: 0; font-size: 20px; font-weight: 700; line-height: 1; letter-spacing: -0.4px; color: #191F28; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pd-tabhead-actions { display: flex; align-items: center; margin-right: -10px; }
 .pd-tabhead-actions button, .pd-tabhead-actions a { display: flex; align-items: center; justify-content: center; width: 44px; height: 42px; transition: transform .15s; }
@@ -7491,11 +7494,14 @@ textarea.qd-input { height: auto; min-height: 140px; padding: 16px 18px; line-he
 }
 .partner-page .partner-mobile-screen.has-fixed-title > .partner-screen-title::after,
 .partner-page .partner-screen-title.partner-home-title::after {
-  content: ''; position: absolute; left: 0; right: 0; top: 100%; height: 24px; pointer-events: none;
+  content: ''; position: absolute; left: 0; right: 0; top: 100%; height: 20px; pointer-events: none;
   background: linear-gradient(180deg, #FFFFFF 0%, rgba(255,255,255,0.72) 40%, rgba(255,255,255,0) 100%);
+  opacity: 0; transition: opacity .25s ease;
 }
+html[data-pd-scrolled] .partner-page .partner-mobile-screen.has-fixed-title > .partner-screen-title::after,
+html[data-pd-scrolled] .partner-page .partner-screen-title.partner-home-title::after { opacity: 1; }
 .partner-page .partner-screen-title h1 { font-size: 20px; font-weight: 700; line-height: 1; letter-spacing: -0.4px; color: #191F28; }
-.partner-page .partner-mobile-screen.has-fixed-title { padding-top: calc(60px + env(safe-area-inset-top, 0px)); }
+.partner-page .partner-mobile-screen.has-fixed-title { padding-top: calc(64px + env(safe-area-inset-top, 0px)); }
 .partner-page .partner-inline-segment { height: auto; padding: 3px; border-radius: 14px; background: #F2F3F5; }
 .partner-page .partner-inline-segment::before { top: 3px; bottom: 3px; left: 3px; border-radius: 11px; box-shadow: 0 1px 4px rgba(25, 31, 40, 0.08); transition: transform .45s cubic-bezier(0.22, 1, 0.36, 1), width .45s cubic-bezier(0.22, 1, 0.36, 1); }
 .partner-page .partner-inline-segment a,
@@ -7555,7 +7561,7 @@ textarea.qd-input { height: auto; min-height: 140px; padding: 16px 18px; line-he
 .srch-field { animation: srchFieldIn .62s cubic-bezier(.22,1,.36,1) both; }
 @keyframes srchFade { from { opacity: 0; } to { opacity: 1; } }
 .srch-input { animation: srchFade .3s ease .22s both; }
-@keyframes srchBackIn { from { opacity: 0; transform: translateX(-8px); } to { opacity: 1; transform: none; } }
+@keyframes srchBackIn { from { opacity: 0; } to { opacity: 1; } }
 .srch-back { animation: srchBackIn .42s cubic-bezier(.22,1,.36,1) .12s both; }
 @keyframes srchClearIn { 0% { opacity: 0; transform: translateY(-50%) scale(.4); } 70% { opacity: 1; transform: translateY(-50%) scale(1.1); } 100% { opacity: 1; transform: translateY(-50%) scale(1); } }
 .srch-clear { animation: srchClearIn .28s cubic-bezier(.22,1,.36,1) both; }

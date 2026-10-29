@@ -143,6 +143,15 @@ export default function PartnerLayout({ children }: { children: React.ReactNode 
   // 아직 갱신되지 않을 수 있어 300ms 유예 후 리다이렉트
   const redirectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // 머리 아래 흰 그늘은 내렸을 때만 — 맨 위에선 내용 첫 줄을 가렸다(globals html[data-pd-scrolled])
+  useEffect(() => {
+    const root = document.documentElement;
+    const read = () => root.toggleAttribute('data-pd-scrolled', window.scrollY > 4);
+    read();
+    window.addEventListener('scroll', read, { passive: true });
+    return () => { window.removeEventListener('scroll', read); root.removeAttribute('data-pd-scrolled'); };
+  }, [pathname]);
+
   useEffect(() => {
     if (redirectTimerRef.current) clearTimeout(redirectTimerRef.current);
 
