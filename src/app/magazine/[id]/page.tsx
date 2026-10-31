@@ -58,20 +58,19 @@ function OtherStoryCard({ banner, index }: { banner: HomeBanner; index: number }
   return (
     <Link
       href={`/magazine/${encodeURIComponent(banner.id)}`}
-      className="qd-a-item card-press block w-[148px] shrink-0 snap-start"
+      className="qd-a-item card-press block w-[200px] shrink-0 snap-start pc:w-[220px]"
       style={item(index)}
     >
-      <div className="relative aspect-square overflow-hidden rounded-[20px]" style={{ backgroundColor: key, transform: 'translateZ(0)' }}>
+      <div className="relative aspect-square overflow-hidden rounded-[22px]" style={{ backgroundColor: key, transform: 'translateZ(0)' }}>
         {imageUrl && (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={imageUrl} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
         )}
         <div aria-hidden className="absolute inset-x-0 bottom-0 h-[64%]" style={{ background: `linear-gradient(to top, ${key} 0%, ${key} 28%, transparent 100%)` }} />
-        <p className="absolute inset-x-0 bottom-0 line-clamp-2 whitespace-pre-line break-keep px-3.5 pb-3.5 text-[14.5px] font-bold leading-[1.35] tracking-[-0.3px] text-[#191F28]">
+        <p className="absolute inset-x-0 bottom-0 line-clamp-2 whitespace-pre-line break-keep px-4 pb-4 text-[16.5px] font-bold leading-[1.35] tracking-[-0.3px] text-[#191F28]">
           {banner.title}
         </p>
       </div>
-      {banner.badgeText && <p className="mt-2 px-0.5 text-[13px] font-medium text-[#8B95A1]">{banner.badgeText}</p>}
     </Link>
   );
 }
