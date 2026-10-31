@@ -225,8 +225,6 @@ export default function ProductDetailPage() {
   })();
   const tagChips = product.tags.map(t => t.replace(/^#/, '').trim()).filter(Boolean);
   const categoryName = categories.find(c => c.id === product.category)?.name;
-  // 옵션 속성 줄 — 첫 칸(진료과)만 파랑, 나머지는 태그
-  const optionAttrs = [categoryName, ...tagChips].filter(Boolean).slice(0, 5) as string[];
 
   const share = () => {
     if (navigator.share) navigator.share({ title: product.title, url: window.location.href }).catch(() => {});
@@ -518,54 +516,65 @@ export default function ProductDetailPage() {
 
           {/* ─── 상품 설명 ─── */}
           <div ref={sectionRefs.desc} className="bg-white px-5 py-6">
-            {/* ─── 옵션 정보 — 사장 견본 그대로: 체크 줄 · 파란 안내 띠 · 번호 붙은 옵션 칸 ─── */}
+            {/* ─── 옵션 정보 — 위 칸(쿠팡 견본) 결: 회색 이름 정보 줄 · 연파랑 안내 · 옵션 비교 목록(고른 줄 연파랑 + 파란 체크) ─── */}
             <Reveal>
-              <h2 className="text-[22px] font-bold leading-tight text-[#191F28]">옵션 정보</h2>
-              <ul className="mt-5 space-y-3">
-                {OPTION_CHECKS.map(c => (
-                  <li key={c.label} className="flex items-center gap-3 text-[17px] text-[#191F28]">
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden className="shrink-0"><path d="M4.5 12.5l5 5 10-11" stroke="#4E5968" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                    <span>{c.label}</span><b className="font-bold">{c.value}</b>
-                  </li>
+              <h2 className="text-[20px] font-bold leading-tight tracking-[-0.4px] text-[#191F28]">옵션 정보</h2>
+              <div className="mt-3">
+                {[
+                  ...(categoryName ? [{ label: '진료과', value: categoryName }] : []),
+                  ...OPTION_CHECKS.map(c => ({ label: c.label === '후기 작성 시' ? '후기 적립' : c.label, value: c.label === '후기 작성 시' ? `작성 시 ${REVIEW_POINT.toLocaleString()}P` : c.value })),
+                  ...(tagChips.length > 0 ? [{ label: '키워드', value: tagChips.join(', ') }] : []),
+                ].map(r => (
+                  <p key={r.label} className="flex min-h-11 items-center py-1.5">
+                    <span className="w-[86px] shrink-0 text-[17px] text-[#8B95A1]">{r.label}</span>
+                    <span className="min-w-0 flex-1 break-keep text-[17px] text-[#333D4B]">{r.value}</span>
+                  </p>
                 ))}
-              </ul>
-              <p className="mt-5 rounded-[12px] bg-[#EEF4FF] px-4 py-3.5 text-[14px] leading-[1.5] text-[#1B4FA8]">시술에 대한 정보는 참고 사항이며, 병원 방문 시 개인의 상태에 따라 달라질 수 있어요.</p>
+              </div>
+              <p className="mt-3 flex gap-2 rounded-[14px] bg-[#EFF5FE] px-4 py-3.5 text-[14px] leading-[1.5] text-[#1E3A78]">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden className="mt-px shrink-0"><circle cx="12" cy="12" r="9" stroke="#2F6FE4" strokeWidth="2" /><path d="M12 11v5.5" stroke="#2F6FE4" strokeWidth="2.2" strokeLinecap="round" /><circle cx="12" cy="7.8" r="1.3" fill="#2F6FE4" /></svg>
+                시술에 대한 정보는 참고 사항이며, 병원 방문 시 개인의 상태에 따라 달라질 수 있어요.
+              </p>
             </Reveal>
-            <div className="mt-5 space-y-4">
-              {optionRows.map((o, i) => (
-                <Reveal key={o.id} delay={i * 60}>
-                  <div className="rounded-[16px] border border-[#E5E8EB] px-5 py-5">
-                    <p className="flex gap-4 text-[17px] text-[#191F28]">
-                      <span className="w-4 shrink-0 font-semibold text-[#8B95A1]">{i + 1}</span>
-                      <span className="min-w-0 break-keep">{o.name}</span>
-                    </p>
-                    {optionAttrs.length > 0 && (
-                      <p className="mt-4 flex flex-wrap items-center gap-x-1.5 gap-y-1 pl-8 text-[15px]">
-                        {optionAttrs.map((attr, ai) => (
-                          <span key={attr} className="flex items-center gap-1.5">
-                            {ai > 0 && <span className="text-[#C9CED6]">/</span>}
-                            <span className={ai === 0 ? 'text-[#1B4FA8]' : 'text-[#4E5968]'}>{attr}</span>
-                          </span>
-                        ))}
-                      </p>
-                    )}
-                    <div className="mt-5 text-right">
-                      {o.original > o.price && (
-                        <p className="text-[14px] text-[#8B95A1]"><span className="line-through">{o.original.toLocaleString()}원</span> (VAT 포함)</p>
+            <Reveal delay={60}>
+              <p className="mt-7 flex items-center gap-2 text-[16px]">
+                <span className="text-[#8B95A1]">옵션 비교</span>
+                <span className="h-3.5 w-px bg-[#E5E8EB]" />
+                <span className="font-bold text-[#3180F7]">{optionRows.length}개</span>
+              </p>
+              <div className="mt-3 overflow-hidden rounded-[16px] border border-[#E5E8EB]">
+                {optionRows.map((o, i) => {
+                  const on = o.id === selected.id;
+                  return (
+                    <button
+                      key={o.id}
+                      type="button"
+                      onClick={() => setOptionId(o.id)}
+                      className={`flex w-full items-center gap-3.5 px-4 py-4 text-left transition-colors ${i > 0 ? 'border-t border-[#F2F4F6]' : ''} ${on ? 'bg-[#EFF5FE]' : 'bg-white active:bg-[#F9FAFB]'}`}
+                    >
+                      <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full transition-colors ${on ? 'bg-[#2F6FE4]' : 'border-2 border-[#E5E8EB]'}`}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={on ? '#fff' : '#D1D6DB'} strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className={`block break-keep text-[16px] leading-[1.4] ${on ? 'font-bold text-[#3180F7]' : 'text-[#333D4B]'}`}>{o.name}</span>
+                        <span className="mt-1.5 flex flex-wrap items-baseline gap-x-1.5">
+                          {o.discount > 0 && <span className="text-[15px] font-bold text-[#1E3A78]">{o.discount}%</span>}
+                          <span className="text-[18px] font-bold tracking-[-0.4px] text-[#191F28]">{o.price.toLocaleString()}원</span>
+                          {o.original > o.price && <span className="text-[13px] text-[#B0B8C1] line-through">{o.original.toLocaleString()}원</span>}
+                        </span>
+                      </span>
+                      {o.id === cheapestId && optionRows.length > 1 && (
+                        <span className="shrink-0 self-start rounded-[6px] bg-[#DCE9FD] px-2 py-1 text-[12px] font-semibold text-[#2F6FE4]">최저가</span>
                       )}
-                      <p className="mt-0.5 text-[20px] font-bold tracking-[-0.4px]">
-                        {o.discount > 0 && <span className="mr-1.5 text-[#F04452]">{o.discount}%</span>}
-                        <span className="text-[#333D4B]">{o.price.toLocaleString()}원</span>
-                      </p>
-                    </div>
-                  </div>
-                </Reveal>
-              ))}
-            </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </Reveal>
 
             <div className="mt-10" />
             <Reveal>
-              <SectionHead title="상품 설명" icon="/icons/pro-detail/document.svg" className="mb-4" />
+              <h2 className="mb-4 text-[20px] font-bold leading-tight tracking-[-0.4px] text-[#191F28]">상품 설명</h2>
             </Reveal>
             {detailImageUrl && (
               <Reveal delay={60}>
