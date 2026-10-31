@@ -7,6 +7,7 @@ import { useStore } from '@/store';
 import { useSession } from '@/lib/supabase/SessionProvider';
 import { createClient, hasSupabaseEnv } from '@/lib/supabase/client';
 import { resolveDoctorImageUrl } from '@/lib/images';
+import MonoIcon from '@/components/common/MonoIcon';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type MemberStatus = 'pending' | 'active' | 'rejected' | 'left';
@@ -177,9 +178,18 @@ export default function PartnerDoctorsPage() {
   const isCurrentDoctor = (doctor: Doctor) => doctor.id === currentDoctorId || doctor.user_id === authUser?.id;
 
   if (!authUser) return (
-    <div className="bg-white rounded-xl p-10 text-center">
-      <p className="text-sm text-gray-500 mb-4">로그인이 필요합니다.</p>
-      <Link href="/partner/login" className="inline-block px-5 py-2.5 bg-[#3180F7] text-white text-sm font-bold rounded-xl">로그인</Link>
+    <div className="flex min-h-[60vh] flex-col items-center justify-center px-6 py-10 text-center">
+      <span className="qd-a-item flex h-[72px] w-[72px] items-center justify-center rounded-[24px] bg-[#F2F4F6]">
+        <MonoIcon name="lock" size={34} color="#B0B8C1" />
+      </span>
+      <p className="qd-a-item mt-5 text-[19px] font-bold tracking-[-0.4px] text-[#191F28]" style={{ animationDelay: '.06s' }}>로그인이 필요해요</p>
+      <Link
+        href="/partner/login"
+        className="qd-a-item mt-5 inline-flex h-[46px] items-center rounded-[12px] bg-[#E8F3FF] px-5 text-[16px] font-bold tracking-[-0.3px] text-[#3180F7] active:bg-[#DCEBFF]"
+        style={{ animationDelay: '.12s' }}
+      >
+        로그인
+      </Link>
     </div>
   );
 
@@ -188,99 +198,113 @@ export default function PartnerDoctorsPage() {
       {loading ? (
         <div className="partner-loading small">불러오는 중...</div>
       ) : (
-        <section className="partner-member-content">
-          <div className="partner-member-list" aria-label="병원 멤버 목록">
-            {orderedDoctors.map((doctor) => {
-              const current = isCurrentDoctor(doctor);
-              const canEdit = isOwner && doctor.is_owner && current;
-              const canLeave = !doctor.is_owner && (isOwner || current);
-              const title = doctor.is_owner ? '병원장' : doctor.title || '원장';
+        <section className="pb-10">
+          <div className="px-5 pt-1">
+            <h2 className="flex items-center gap-1.5 text-[20px] font-bold tracking-[-0.4px] text-[#191F28]">
+              멤버 <span className="text-[#3180F7]">{orderedDoctors.length}</span>
+            </h2>
+            <div className="-mx-2 mt-2" aria-label="병원 멤버 목록">
+              {orderedDoctors.map((doctor, i) => {
+                const current = isCurrentDoctor(doctor);
+                const canEdit = isOwner && doctor.is_owner && current;
+                const canLeave = !doctor.is_owner && (isOwner || current);
+                const title = doctor.is_owner ? '병원장' : doctor.title || '원장';
 
-              return (
-                <article key={doctor.id} className="partner-member-row">
-                  <div className="partner-member-avatar">
-                    <img src={resolveDoctorImageUrl(doctor.profile_image)} alt={doctor.name} />
-                  </div>
-                  <div className="partner-member-summary">
-                    <h2>
-                      <span className="partner-member-name">{doctor.name}</span>
-                      <span className="partner-member-role">{title}</span>
-                      {current && <span className="partner-member-my">My</span>}
-                    </h2>
-                    <p>{doctor.specialty || doctor.bio || '전문분야 미등록'}</p>
-                    <p>{hospitalName || '소속 병원 미등록'}</p>
-                  </div>
-                  <div className="partner-member-actions">
-                    {canEdit && (
-                      <button
-                        className="partner-member-edit"
-                        type="button"
-                        onClick={() => router.push(`/partner/doctors/${doctor.id}`)}
-                        aria-label={`${doctor.name} 정보 수정`}
-                      >
-                        <img src="/partner-template/edit.svg" alt="" />
-                      </button>
-                    )}
-                    {canLeave && (
-                      <button
-                        className="partner-member-leave-button"
-                        type="button"
-                        onClick={() => handleLeave(doctor)}
-                        disabled={actingId === doctor.id}
-                      >
-                        탈퇴
-                      </button>
-                    )}
-                  </div>
-                </article>
-              );
-            })}
-          </div>
-
-          {orderedDoctors.length === 0 && (
-            <div className="partner-member-empty">
-              <span>{hospitalId ? '등록된 멤버가 없습니다.' : '연결된 병원이 없습니다.'}</span>
-            </div>
-          )}
-
-          {isOwner && pendingRequests.length > 0 && (
-            <section className="partner-member-request-section" aria-label="새로운 멤버 요청">
-              <h2>새로운 요청</h2>
-              <div className="partner-member-list">
-                {pendingRequests.map((doctor) => (
-                  <article key={doctor.id} className="partner-member-row request">
-                    <div className="partner-member-avatar">
-                      <img src={resolveDoctorImageUrl(doctor.profile_image)} alt={doctor.name} />
+                return (
+                  <article key={doctor.id} className="qd-a-item flex items-center gap-3.5 rounded-[16px] px-2 py-3" style={{ animationDelay: `${Math.min(i, 8) * 0.04}s` }}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={resolveDoctorImageUrl(doctor.profile_image)} alt={doctor.name} className="h-[52px] w-[52px] shrink-0 rounded-full bg-[#F2F4F6] object-cover" />
+                    <div className="min-w-0 flex-1">
+                      <p className="flex min-w-0 items-center gap-1.5">
+                        <span className="truncate text-[17px] font-bold text-[#191F28]">{doctor.name}</span>
+                        <span className="shrink-0 text-[14px] text-[#6B7684]">{title}</span>
+                        {current && <span className="inline-flex h-5 shrink-0 items-center rounded-[5px] bg-[#EFF5FE] px-1.5 text-[12px] font-bold text-[#2F6FE4]">나</span>}
+                      </p>
+                      <p className="mt-0.5 truncate text-[14px] text-[#8B95A1]">{doctor.specialty || doctor.bio || '전문분야 미등록'}</p>
+                      <p className="truncate text-[14px] text-[#B0B8C1]">{hospitalName || '소속 병원 미등록'}</p>
                     </div>
-                    <div className="partner-member-summary">
-                      <h2>
-                        <span className="partner-member-name">{doctor.name}</span>
-                        <span className="partner-member-role">{doctor.title || '원장'}</span>
-                      </h2>
-                      <p>{doctor.specialty || doctor.bio || '전문분야 미등록'}</p>
-                    </div>
-                    <div className="partner-member-request-actions">
-                      <button
-                        className="partner-member-accept-button"
-                        type="button"
-                        onClick={() => patchMembership(doctor, 'accept')}
-                        disabled={actingId === doctor.id}
-                      >
-                        수락
-                      </button>
-                      <button
-                        className="partner-member-reject-button"
-                        type="button"
-                        onClick={() => patchMembership(doctor, 'reject')}
-                        disabled={actingId === doctor.id}
-                      >
-                        거절
-                      </button>
+                    <div className="flex shrink-0 items-center gap-1.5">
+                      {canEdit && (
+                        <button
+                          type="button"
+                          onClick={() => router.push(`/partner/doctors/${doctor.id}`)}
+                          aria-label={`${doctor.name} 정보 수정`}
+                          className="inline-flex h-9 items-center gap-1 rounded-[10px] bg-[#F2F4F6] px-3 text-[14px] font-semibold text-[#333D4B]"
+                        >
+                          <MonoIcon name="pencil" size={15} color="#6B7684" />
+                          수정
+                        </button>
+                      )}
+                      {canLeave && (
+                        <button
+                          type="button"
+                          onClick={() => handleLeave(doctor)}
+                          disabled={actingId === doctor.id}
+                          className="inline-flex h-9 items-center rounded-[10px] bg-[#F2F4F6] px-3 text-[14px] font-semibold text-[#F04452] disabled:opacity-60"
+                        >
+                          탈퇴
+                        </button>
+                      )}
                     </div>
                   </article>
-                ))}
+                );
+              })}
+            </div>
+
+            {orderedDoctors.length === 0 && (
+              <div className="flex flex-col items-center py-14 text-center">
+                <span className="flex h-[72px] w-[72px] items-center justify-center rounded-[24px] bg-[#F2F4F6]">
+                  <MonoIcon name="hospital" size={34} color="#B0B8C1" />
+                </span>
+                <p className="mt-5 text-[19px] font-bold tracking-[-0.4px] text-[#191F28]">{hospitalId ? '등록된 멤버가 없어요' : '연결된 병원이 없어요'}</p>
               </div>
-            </section>
+            )}
+          </div>
+
+          {isOwner && pendingRequests.length > 0 && (
+            <>
+              <div className="mt-5 h-2.5 bg-[#F2F4F6]" />
+              <section className="px-5 pt-7" aria-label="새로운 멤버 요청">
+                <h2 className="flex items-center gap-1.5 text-[20px] font-bold tracking-[-0.4px] text-[#191F28]">
+                  새로운 요청 <span className="text-[#3180F7]">{pendingRequests.length}</span>
+                </h2>
+                <div className="mt-2 space-y-2">
+                  {pendingRequests.map((doctor) => (
+                    <article key={doctor.id} className="qd-a-item py-3">
+                      <div className="flex items-center gap-3.5">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={resolveDoctorImageUrl(doctor.profile_image)} alt={doctor.name} className="h-[52px] w-[52px] shrink-0 rounded-full bg-[#F2F4F6] object-cover" />
+                        <div className="min-w-0 flex-1">
+                          <p className="flex min-w-0 items-center gap-1.5">
+                            <span className="truncate text-[17px] font-bold text-[#191F28]">{doctor.name}</span>
+                            <span className="shrink-0 text-[14px] text-[#6B7684]">{doctor.title || '원장'}</span>
+                          </p>
+                          <p className="mt-0.5 truncate text-[14px] text-[#8B95A1]">{doctor.specialty || doctor.bio || '전문분야 미등록'}</p>
+                        </div>
+                      </div>
+                      <div className="mt-3 flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => patchMembership(doctor, 'reject')}
+                          disabled={actingId === doctor.id}
+                          className="flex h-11 flex-1 items-center justify-center rounded-[12px] bg-[#F2F4F6] text-[15px] font-semibold text-[#4E5968] disabled:opacity-60"
+                        >
+                          거절
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => patchMembership(doctor, 'accept')}
+                          disabled={actingId === doctor.id}
+                          className="flex h-11 flex-1 items-center justify-center rounded-[12px] bg-[#4A82EE] text-[15px] font-semibold text-white disabled:opacity-60"
+                        >
+                          수락
+                        </button>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              </section>
+            </>
           )}
         </section>
       )}

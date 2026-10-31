@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Camera, Plus, X } from 'lucide-react';
 import TopBar from '@/components/common/TopBar';
+import MonoIcon from '@/components/common/MonoIcon';
 import { useStore } from '@/store';
 
 interface PhotoSlot {
@@ -37,59 +37,54 @@ export default function PhotosEditPage() {
   };
 
   return (
-    <div className="bg-white min-h-screen flex flex-col">
-      <TopBar title="대문사진" />
+    <div className="flex min-h-screen flex-col bg-white" style={{ paddingBottom: 'max(calc(env(safe-area-inset-bottom, 0px) + 96px), 104px)' }}>
+      <TopBar title="대문사진" sub="병원 홈 맨 위에 넘겨 보는 사진이에요." />
 
-      <div className="flex-1 px-2.5 py-4 space-y-4">
-        {/* Guidelines */}
-        <div className="bg-gray-50 rounded-xl p-4 space-y-1">
-          <p className="text-sm text-gray-700 font-medium">
-            이미지는 3:1비율의 사진으로 첨부해주세요.
-          </p>
-          <p className="text-xs text-gray-500">
-            jpg, png, jpeg, avif 10mb이하의 이미지 파일
-          </p>
-        </div>
+      <div className="flex-1 px-5 pb-6 pt-2">
+        <p className="flex gap-2 rounded-[14px] bg-[#F2F4F6] px-4 py-3.5 text-[14px] leading-[1.5] text-[#4E5968]">
+          <MonoIcon name="info-circle" size={18} color="#B0B8C1" className="mt-px" />
+          <span>
+            3:1 비율 사진으로 올려 주세요.
+            <br />
+            jpg, png, jpeg, avif · 10MB 이하
+          </span>
+        </p>
 
-        {/* Photo grid */}
-        <div className="grid grid-cols-2 gap-3">
-          {photos.map((photo) => (
-            <div key={photo.id} className="relative">
+        <div className="mt-5 grid grid-cols-2 gap-2.5">
+          {photos.map((photo, i) => (
+            <div key={photo.id} className="qd-a-item relative" style={{ animationDelay: `${i * 0.04}s` }}>
               {photo.url ? (
-                <div className="aspect-[3/1] rounded-xl bg-gray-100 overflow-hidden relative group">
-                  <div className="w-full h-full bg-gradient-to-br from-purple-100 to-purple-100 flex items-center justify-center"><span className="text-2xl">🦷</span></div>
-                  {/* Overlay buttons */}
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
-                    <button
-                      onClick={() => handleAddPhoto(photo.id)}
-                      className="w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-sm"
-                    >
-                      <Camera size={14} className="text-gray-600" />
+                <div className="group relative aspect-[3/1] overflow-hidden rounded-[14px] bg-[#F2F4F6]">
+                  <div className="flex h-full w-full items-center justify-center">
+                    <MonoIcon name="hospital" size={22} color="#B0B8C1" />
+                  </div>
+                  {/* 마우스를 올리면 바꾸기·지우기 */}
+                  <div className="absolute inset-0 hidden items-center justify-center gap-2 bg-black/0 opacity-0 transition md:flex md:group-hover:bg-black/30 md:group-hover:opacity-100">
+                    <button type="button" aria-label="사진 바꾸기" onClick={() => handleAddPhoto(photo.id)} className="flex h-8 w-8 items-center justify-center rounded-full bg-white">
+                      <MonoIcon name="camera" size={15} color="#4E5968" />
                     </button>
-                    <button
-                      onClick={() => handleDeletePhoto(photo.id)}
-                      className="w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-sm"
-                    >
-                      <X size={14} className="text-red-500" />
+                    <button type="button" aria-label="사진 지우기" onClick={() => handleDeletePhoto(photo.id)} className="flex h-8 w-8 items-center justify-center rounded-full bg-white">
+                      <MonoIcon name="bin" size={15} color="#F04452" />
                     </button>
                   </div>
-                  {/* Delete button always visible on mobile */}
+                  {/* 휴대폰 = 지우기 버튼 늘 보임 */}
                   <button
+                    type="button"
+                    aria-label="사진 지우기"
                     onClick={() => handleDeletePhoto(photo.id)}
-                    className="absolute top-1.5 right-1.5 w-6 h-6 bg-black/50 rounded-full flex items-center justify-center md:hidden"
+                    className="absolute right-1.5 top-1.5 flex h-7 w-7 items-center justify-center rounded-full bg-black/45 md:hidden"
                   >
-                    <X size={12} className="text-white" />
+                    <MonoIcon name="bin" size={14} color="#FFFFFF" />
                   </button>
                 </div>
               ) : (
                 <button
+                  type="button"
                   onClick={() => handleAddPhoto(photo.id)}
-                  className="aspect-[3/1] w-full rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center gap-1 hover:border-[#8037FF] transition-colors"
+                  className="flex aspect-[3/1] w-full items-center justify-center gap-1.5 rounded-[14px] bg-[#F2F4F6] transition-colors active:bg-[#E5E8EB]"
                 >
-                  <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
-                    <Plus size={20} className="text-gray-400" />
-                  </div>
-                  <span className="text-xs text-gray-400">사진추가</span>
+                  <MonoIcon name="camera" size={18} color="#8B95A1" />
+                  <span className="text-[14px] font-semibold text-[#6B7684]">사진 추가</span>
                 </button>
               )}
             </div>
@@ -97,14 +92,18 @@ export default function PhotosEditPage() {
         </div>
       </div>
 
-      {/* Save button */}
-      <div className="sticky bottom-0 bg-white px-2.5 py-4 border-t border-gray-100">
-        <button
-          onClick={handleSave}
-          className="w-full py-3.5 bg-[#8037FF] text-white rounded-xl text-base font-bold"
-        >
-          저장하기
-        </button>
+      {/* 바닥 저장 버튼 — 위 선 대신 흰 그라데이션 */}
+      <div className="fixed inset-x-0 bottom-0 z-40 bg-white px-4 pt-2" style={{ paddingBottom: 'max(calc(env(safe-area-inset-bottom, 0px) + 12px), 16px)' }}>
+        <div className="pointer-events-none absolute inset-x-0 bottom-full h-8 bg-gradient-to-b from-white/0 to-white" />
+        <div className="mx-auto max-w-[608px]">
+          <button
+            type="button"
+            onClick={handleSave}
+            className="flex h-14 w-full items-center justify-center rounded-[18px] bg-[#4A82EE] text-[17px] font-bold text-white transition-all active:scale-[0.98]"
+          >
+            저장하기
+          </button>
+        </div>
       </div>
     </div>
   );

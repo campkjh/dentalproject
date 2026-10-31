@@ -1,14 +1,27 @@
 'use client';
 
+// 이벤트 편집 — 이벤트 등록과 같은 결: 상태 배지 · 반려 사유 칸 · 회색 띠로 칸 나눔 · 회색 입력 칸 · 바닥 버튼 둘(같은 폭).
+
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import TopBar from '@/components/common/TopBar';
+import MonoIcon from '@/components/common/MonoIcon';
 import { useParams, useRouter } from 'next/navigation';
 import { useStore } from '@/store';
 import { useSession } from '@/lib/supabase/SessionProvider';
 import { ImageUploader } from '@/components/admin/ImageUploader';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
+// 상태 배지(표시용) — 대기=회색 · 승인/노출=파랑 · 거절=빨강
+const STATUS_BADGE: Record<string, { text: string; tone: string }> = {
+  draft: { text: '임시저장', tone: 'bg-[#F2F4F6] text-[#6B7684]' },
+  pending: { text: '검수 중', tone: 'bg-[#F2F4F6] text-[#6B7684]' },
+  approved: { text: '승인됨', tone: 'bg-[#E8F3FF] text-[#3180F7]' },
+  active: { text: '노출 중', tone: 'bg-[#E8F3FF] text-[#3180F7]' },
+  rejected: { text: '거절됨', tone: 'bg-[#FFEEEF] text-[#F04452]' },
+  ended: { text: '종료', tone: 'bg-[#F2F4F6] text-[#6B7684]' },
+};
+
 export default function EventEditPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
@@ -107,105 +120,175 @@ export default function EventEditPage() {
 
   if (!authUser) {
     return (
-      <div className="bg-white rounded-xl p-10 text-center">
-        <p className="text-sm text-gray-500 mb-4">로그인이 필요합니다.</p>
-        <Link href="/login" className="inline-block px-5 py-2.5 bg-[#3180F7] text-white text-sm font-bold rounded-xl">
+      <div className="flex min-h-[60vh] flex-col items-center justify-center px-6 py-10 text-center">
+        <span className="flex h-[72px] w-[72px] items-center justify-center rounded-[24px] bg-[#F2F4F6]">
+          <MonoIcon name="lock" size={34} color="#B0B8C1" />
+        </span>
+        <p className="mt-5 text-[19px] font-bold tracking-[-0.4px] text-[#191F28]">로그인이 필요해요</p>
+        <Link href="/login" className="mt-5 inline-flex h-[46px] items-center rounded-[12px] bg-[#E8F3FF] px-5 text-[16px] font-bold text-[#3180F7]">
           로그인
         </Link>
       </div>
     );
   }
 
-  if (loading) return <div className="text-center py-20 text-sm text-gray-400">불러오는 중…</div>;
+  if (loading) {
+    return (
+      <div className="min-h-[60vh] bg-white">
+        <TopBar title="이벤트 편집" />
+        <p className="py-20 text-center text-[15px] text-[#8B95A1]">불러오는 중…</p>
+      </div>
+    );
+  }
   if (!evt) {
     return (
-      <div className="bg-white rounded-xl p-10 text-center">
-        <p className="text-sm text-gray-500 mb-4">이벤트를 찾을 수 없습니다.</p>
-        <Link href="/partner/events/list" className="text-[#3180F7] text-sm font-bold">목록으로</Link>
+      <div className="bg-white">
+        <TopBar title="이벤트 편집" />
+        <div className="flex flex-col items-center px-6 py-16 text-center">
+          <span className="flex h-[72px] w-[72px] items-center justify-center rounded-[24px] bg-[#F2F4F6]">
+            <MonoIcon name="gift" size={34} color="#B0B8C1" />
+          </span>
+          <p className="mt-5 text-[19px] font-bold tracking-[-0.4px] text-[#191F28]">이벤트를 찾을 수 없어요</p>
+          <Link href="/partner/events/list" className="mt-5 inline-flex h-[46px] items-center rounded-[12px] bg-[#E8F3FF] px-5 text-[16px] font-bold text-[#3180F7]">
+            목록으로
+          </Link>
+        </div>
       </div>
     );
   }
 
+  const badge = STATUS_BADGE[evt.status] ?? { text: String(evt.status ?? ''), tone: 'bg-[#F2F4F6] text-[#6B7684]' };
+
   return (
-    <div className="pd-sub space-y-4 max-w-3xl">
-      <TopBar title="이벤트 편집" sub={<span className="pd-tag">{evt.status}</span>} />
+    <div className="bg-white" style={{ paddingBottom: 'max(calc(env(safe-area-inset-bottom, 0px) + 112px), 128px)' }}>
+      <TopBar
+        title="이벤트 편집"
+        sub={<span className={`inline-flex h-6 items-center rounded-[6px] px-2 text-[13.5px] font-semibold ${badge.tone}`}>{badge.text}</span>}
+      />
 
       {evt.reject_reason && (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-4">
-          <p className="text-[12px] text-red-600 font-bold mb-1">반려 사유</p>
-          <p className="text-[12px] text-red-500">{evt.reject_reason}</p>
+        <div className="qd-a-item px-5 pb-2">
+          <div className="flex gap-2 rounded-[14px] bg-[#FFEEEF] px-4 py-3.5">
+            <MonoIcon name="exclamation-circle" size={18} color="#F04452" className="mt-px" />
+            <div className="min-w-0 flex-1">
+              <p className="text-[15px] font-bold text-[#F04452]">반려 사유</p>
+              <p className="mt-0.5 whitespace-pre-line text-[14px] leading-[1.5] text-[#4E5968]">{evt.reject_reason}</p>
+            </div>
+          </div>
         </div>
       )}
 
-      <Card title="기본 정보">
-        <div className="space-y-3">
-          <Field label="이벤트명">
-            <input value={title} onChange={(e) => setTitle(e.target.value)} className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:border-[#3180F7]" />
-          </Field>
-          <Field label="이벤트 소개">
-            <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={4} className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:border-[#3180F7] resize-none" />
-          </Field>
-          <Field label="대표 이미지">
-            <ImageUploader
-              value={imageUrl}
-              onChange={setImageUrl}
-              folder="event-cover"
-              aspect="4/3"
-              placeholder="이벤트 대표 이미지 업로드"
-            />
-          </Field>
-        </div>
-      </Card>
+      <Section title="기본 정보" first>
+        <Field label="이벤트명">
+          <input value={title} onChange={(e) => setTitle(e.target.value)} className={INPUT} />
+        </Field>
+        <Field label="이벤트 소개">
+          <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={4} className={TEXTAREA} />
+        </Field>
+        <Field label="대표 이미지">
+          <ImageUploader
+            value={imageUrl}
+            onChange={setImageUrl}
+            folder="event-cover"
+            aspect="4/3"
+            placeholder="이벤트 대표 이미지 업로드"
+          />
+        </Field>
+      </Section>
 
-      <Card title="가격">
-        <div className="grid grid-cols-2 gap-3">
+      <Band />
+      <Section title="가격">
+        <div className="grid grid-cols-2 gap-2">
           <Field label="정가 (원)">
-            <input type="number" value={originalPrice} onChange={(e) => setOriginalPrice(e.target.value)} className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:border-[#3180F7]" />
+            <input type="number" inputMode="numeric" value={originalPrice} onChange={(e) => setOriginalPrice(e.target.value)} className={INPUT} />
           </Field>
           <Field label="할인가 (원)">
-            <input type="number" value={salePrice} onChange={(e) => setSalePrice(e.target.value)} className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:border-[#3180F7]" />
+            <input type="number" inputMode="numeric" value={salePrice} onChange={(e) => setSalePrice(e.target.value)} className={INPUT} />
           </Field>
         </div>
         {discountPercent !== null && discountPercent > 0 && (
-          <p className="text-[12px] text-[#3180F7] mt-2 font-bold">할인율: {discountPercent}%</p>
+          <div className="rounded-[14px] bg-[#EFF5FE] px-5 pb-4 pt-3.5">
+            <span className="rounded-[6px] bg-[#2F6FE4] px-2 py-1 text-[13.5px] font-bold text-white">{discountPercent}% 할인</span>
+            <p className="mt-2.5 text-[26px] font-bold tracking-[-0.6px] text-[#1E3A78]">{Number(salePrice).toLocaleString()}원</p>
+          </div>
         )}
-      </Card>
+      </Section>
 
-      <Card title="기간">
-        <div className="grid grid-cols-2 gap-3">
+      <Band />
+      <Section title="기간">
+        <div className="grid grid-cols-2 gap-2">
           <Field label="시작일">
-            <input type="date" value={startAt} onChange={(e) => setStartAt(e.target.value)} className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:border-[#3180F7]" />
+            <input type="date" value={startAt} onChange={(e) => setStartAt(e.target.value)} className={INPUT} />
           </Field>
           <Field label="종료일">
-            <input type="date" value={endAt} onChange={(e) => setEndAt(e.target.value)} className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:border-[#3180F7]" />
+            <input type="date" value={endAt} onChange={(e) => setEndAt(e.target.value)} className={INPUT} />
           </Field>
         </div>
-      </Card>
+      </Section>
 
-      <div className="tds-bottom-cta -mx-4 sm:mx-0 rounded-t-[24px]">
-        <button onClick={remove} className="tds-button-weak flex-1 text-[#E5484D]">삭제</button>
-        <button onClick={save} disabled={saving} className="tds-button-primary flex-1 disabled:opacity-50">
+      <BottomBar>
+        <button
+          type="button"
+          onClick={remove}
+          className="flex h-14 flex-1 items-center justify-center rounded-[18px] bg-[#F2F4F6] text-[17px] font-bold text-[#F04452] transition-all active:scale-[0.98]"
+        >
+          삭제
+        </button>
+        <button
+          type="button"
+          onClick={save}
+          disabled={saving}
+          className="flex h-14 flex-1 items-center justify-center rounded-[18px] bg-[#4A82EE] text-[17px] font-bold text-white transition-all active:scale-[0.98] disabled:bg-[#E5E8EB] disabled:text-[#B0B8C1]"
+        >
           {saving ? '저장 중…' : '저장하기'}
         </button>
-      </div>
+      </BottomBar>
     </div>
   );
 }
 
-function Card({ title, children }: { title: string; children: React.ReactNode }) {
+// 입력 칸 — 테두리 없는 회색 칸(globals .partner-page input 을 ! 로 덮는다), 글자 16(iOS 확대 방지)
+const INPUT =
+  '!h-14 !min-h-0 w-full !rounded-[14px] !border-0 !bg-[#F2F4F6] !py-0 !px-4 !text-[16px] !font-medium !text-[#191F28] outline-none transition-colors placeholder:!text-[#B0B8C1] focus:!bg-[#EDEFF2] focus:!shadow-none';
+const TEXTAREA =
+  '!min-h-0 w-full resize-none !rounded-[14px] !border-0 !bg-[#F2F4F6] !px-4 !py-3.5 !text-[16px] !font-medium !leading-[1.6] !text-[#191F28] outline-none transition-colors placeholder:!text-[#B0B8C1] focus:!bg-[#EDEFF2] focus:!shadow-none';
+
+const Band = () => <div className="h-2.5 bg-[#F2F4F6]" />;
+
+function Section({ title, first, children }: { title: string; first?: boolean; children: React.ReactNode }) {
   return (
-    <section className="bg-white rounded-xl border border-gray-200 p-5">
-      <h2 className="text-[14px] font-bold text-gray-900 mb-3">{title}</h2>
-      {children}
+    <section className={`qd-a-item px-5 ${first ? 'pb-7 pt-2' : 'py-7'}`}>
+      <h2 className="!text-[20px] font-bold !leading-[1.3] tracking-[-0.4px] text-[#191F28]">{title}</h2>
+      <div className="mt-4 space-y-4">{children}</div>
     </section>
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
   return (
     <div>
-      <label className="block text-[12px] font-bold text-gray-700 mb-1.5">{label}</label>
+      <p className="mb-2 text-[15px] font-semibold text-[#4E5968]">
+        {label}
+        {required && <span className="ml-0.5 text-[#3180F7]">*</span>}
+      </p>
       {children}
+    </div>
+  );
+}
+
+// 바닥 버튼 — 위 선 대신 흰 흐림 띠 위에 떠 있다(예약 상세와 같은 결)
+function BottomBar({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="pointer-events-none fixed bottom-0 left-0 right-0 z-40" style={{ paddingLeft: 16, paddingRight: 16, paddingBottom: 'max(calc(env(safe-area-inset-bottom, 0px) + 12px), 20px)' }}>
+      <div
+        className="absolute inset-0"
+        style={{
+          background: 'linear-gradient(to top, white 30%, rgba(255,255,255,0.9) 50%, rgba(255,255,255,0.5) 70%, rgba(255,255,255,0) 100%)',
+          maskImage: 'linear-gradient(to top, black 55%, transparent 100%)',
+          WebkitMaskImage: 'linear-gradient(to top, black 55%, transparent 100%)',
+        }}
+      />
+      <div className="pointer-events-auto relative mx-auto flex max-w-[608px] gap-2 pt-10">{children}</div>
     </div>
   );
 }

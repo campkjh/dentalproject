@@ -3,9 +3,9 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Eye, EyeOff, Info } from 'lucide-react';
 import { useSession } from '@/lib/supabase/SessionProvider';
 import { useStore } from '@/store';
+import MonoIcon from '@/components/common/MonoIcon';
 
 export default function PartnerLoginPage() {
   const router = useRouter();
@@ -53,108 +53,114 @@ export default function PartnerLoginPage() {
     router.replace('/partner');
   };
 
+  // 261031 상품 상세 톤 — 테두리 카드 없이 흰 화면 · 회색 면 입력 칸(r14) · #4A82EE 큰 버튼(56 · r18) · 회색 안내 칸
   return (
-    <div className="tds-screen min-h-screen bg-white flex items-center justify-center p-4">
-      <div className="w-full max-w-[380px]">
-        <div className="bg-white rounded-[16px] border border-[rgba(0,27,55,0.1)] p-6 partner-page shadow-[0_10px_32px_rgba(25,31,40,0.08)]">
-          {/* Brand */}
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-9 h-9 rounded-[12px] bg-[#3180F7] flex items-center justify-center text-white text-[15px] font-bold">
-              K
-            </div>
-            <span className="text-[17px] font-bold text-[#191F28]">마이닥 파트너센터</span>
-          </div>
+    <div className="flex min-h-[100dvh] items-center justify-center bg-white px-5 py-10 page-enter">
+      <div className="w-full max-w-[400px]">
+        {/* 브랜드 */}
+        <div className="qd-a-item flex items-center gap-2.5">
+          <span className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-[#EFF5FE]">
+            <MonoIcon name="stethoscope" size={22} color="#2F6FE4" />
+          </span>
+          <span className="text-[16px] font-bold tracking-[-0.3px] text-[#333D4B]">마이닥 파트너센터</span>
+        </div>
 
-          <h1 className="text-[28px] leading-[37px] font-bold text-[#191F28] mb-1">로그인</h1>
-          <p className="text-[17px] leading-[25.5px] text-[rgba(3,18,40,0.7)] mb-6">
-            병원 관리자 계정으로 로그인해주세요.
-          </p>
+        <h1 className="qd-a-item mt-6 text-[26px] font-bold leading-[1.35] tracking-[-0.6px] text-[#191F28]" style={{ animationDelay: '.06s' }}>
+          병원 관리자 계정으로
+          <br />
+          로그인해 주세요
+        </h1>
 
-          <form onSubmit={submit} className="space-y-3">
-            <label className="block">
-              <span className="tds-field-label">아이디</span>
+        <form onSubmit={submit} className="qd-a-item mt-8 space-y-3" style={{ animationDelay: '.12s' }}>
+          <label className="block">
+            <span className="mb-2 block text-[14px] font-semibold text-[#4E5968]">아이디</span>
+            <input
+              type="text"
+              value={userId}
+              onChange={(e) => setUserId(e.target.value)}
+              placeholder="아이디"
+              autoComplete="username"
+              className="h-14 w-full rounded-[14px] border-0 bg-[#F2F4F6] px-4 text-[16px] font-medium text-[#191F28] outline-none transition-colors placeholder:text-[#B0B8C1] focus:bg-[#EDEFF2]"
+            />
+          </label>
+
+          <label className="block">
+            <span className="mb-2 block text-[14px] font-semibold text-[#4E5968]">비밀번호</span>
+            <div className="relative">
               <input
-                type="text"
-                value={userId}
-                onChange={(e) => setUserId(e.target.value)}
-                placeholder="아이디"
-                autoComplete="username"
-                className="tds-input"
+                type={showPw ? 'text' : 'password'}
+                value={pw}
+                onChange={(e) => setPw(e.target.value)}
+                placeholder="비밀번호"
+                autoComplete="current-password"
+                className="h-14 w-full rounded-[14px] border-0 bg-[#F2F4F6] pl-4 pr-12 text-[16px] font-medium text-[#191F28] outline-none transition-colors placeholder:text-[#B0B8C1] focus:bg-[#EDEFF2]"
               />
-            </label>
-
-            <label className="block">
-              <span className="tds-field-label">비밀번호</span>
-              <div className="relative">
-                <input
-                  type={showPw ? 'text' : 'password'}
-                  value={pw}
-                  onChange={(e) => setPw(e.target.value)}
-                  placeholder="비밀번호"
-                  autoComplete="current-password"
-                  className="tds-input pr-12"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPw((v) => !v)}
-                  aria-label={showPw ? '비밀번호 숨기기' : '비밀번호 보기'}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-full hover:bg-[rgba(7,25,76,0.05)] text-[rgba(3,24,50,0.46)]"
-                >
-                  {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
-              </div>
-            </label>
-
-            <div className="flex items-center justify-between text-[13px]">
-              <label className="flex items-center gap-1.5 text-[rgba(3,18,40,0.7)] cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={remember}
-                  onChange={(e) => setRemember(e.target.checked)}
-                  className="w-4 h-4"
-                />
-                아이디 저장
-              </label>
-              <Link href="#" className="text-[rgba(0,19,43,0.58)] hover:text-[#191F28]">
-                비밀번호 찾기
-              </Link>
+              <button
+                type="button"
+                onClick={() => setShowPw((v) => !v)}
+                aria-label={showPw ? '비밀번호 숨기기' : '비밀번호 보기'}
+                className="absolute right-2 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-[12px] transition-colors active:bg-[#E5E8EB]"
+              >
+                <MonoIcon name={showPw ? 'eye-off' : 'eye-on'} size={20} color="#8B95A1" />
+              </button>
             </div>
+          </label>
 
-            {error && (
-              <div className="flex items-start gap-1.5 rounded-lg bg-[#FFF1F0] text-[12px] text-[#E5484D] px-3 py-2">
-                <Info size={12} className="mt-0.5 flex-shrink-0" />
-                {error}
-              </div>
-            )}
-
-            <button type="submit" disabled={loading} className="tds-button-primary w-full disabled:opacity-80">
-              {loading ? '로그인 중...' : '로그인'}
-            </button>
-          </form>
-
-          <div className="my-5 flex items-center gap-3">
-            <div className="flex-1 h-px bg-gray-100" />
-            <span className="text-[11px] text-gray-400">또는</span>
-            <div className="flex-1 h-px bg-gray-100" />
+          <div className="flex items-center justify-between pt-1">
+            <label className="flex cursor-pointer items-center gap-2 text-[15px] text-[#4E5968]">
+              <input
+                type="checkbox"
+                checked={remember}
+                onChange={(e) => setRemember(e.target.checked)}
+                className="sr-only"
+              />
+              {/* 체크 동그라미 — 전역 .chk-dot(검색 화면 checkDot 과 같은 결) */}
+              <span
+                key={String(remember)}
+                aria-hidden
+                className={`chk-dot flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${remember ? 'is-on bg-[#2F6FE4]' : 'is-off border-2 border-[#E5E8EB]'}`}
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={remember ? '#fff' : '#D1D6DB'} strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
+              </span>
+              아이디 저장
+            </label>
+            <Link href="#" className="text-[15px] text-[#8B95A1] active:text-[#4E5968]">
+              비밀번호 찾기
+            </Link>
           </div>
 
+          {error && (
+            <p className="flex gap-2 rounded-[14px] bg-[#FFEEEF] px-4 py-3.5 text-[14px] leading-[1.5] text-[#F04452]">
+              <MonoIcon name="exclamation-circle" size={18} color="#F04452" className="mt-px" />
+              <span className="min-w-0 flex-1">{error}</span>
+            </p>
+          )}
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="!mt-5 flex h-14 w-full items-center justify-center rounded-[18px] bg-[#4A82EE] text-[17px] font-bold text-white transition-all active:scale-[0.98] active:bg-[#3D74DE] disabled:opacity-60"
+          >
+            {loading ? '로그인 중...' : '로그인'}
+          </button>
           <Link
             href="/hospital/register"
-            className="tds-button-weak w-full"
+            className="flex h-14 w-full items-center justify-center rounded-[18px] bg-[#F2F4F6] text-[17px] font-bold text-[#4E5968] transition-all active:scale-[0.98] active:bg-[#E5E8EB]"
           >
             병원 신청하기
           </Link>
+        </form>
 
-          <p className="mt-6 text-[12px] text-[rgba(0,19,43,0.58)] leading-relaxed text-center">
-            비밀번호는 안전하게 암호화되어 저장됩니다.
+        <p className="qd-a-item mt-6 flex gap-2 rounded-[14px] bg-[#F2F4F6] px-4 py-3.5 text-[14px] leading-[1.5] text-[#4E5968]" style={{ animationDelay: '.18s' }}>
+          <MonoIcon name="info-circle" size={18} color="#B0B8C1" className="mt-px" />
+          <span className="min-w-0 flex-1">
+            비밀번호는 안전하게 암호화되어 저장돼요.
             <br />
-            파트너 고객센터: <span className="font-semibold text-[rgba(3,18,40,0.7)]">1588-0000</span>
-          </p>
-        </div>
-
-        <p className="text-center text-[12px] text-[rgba(0,19,43,0.58)] mt-4">
-          © 2026 마이닥. All rights reserved.
+            파트너 고객센터 <span className="font-semibold text-[#333D4B]">1588-0000</span>
+          </span>
         </p>
+
+        <p className="mt-6 text-center text-[13px] text-[#B0B8C1]">© 2026 마이닥. All rights reserved.</p>
       </div>
     </div>
   );

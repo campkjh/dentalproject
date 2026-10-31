@@ -1,4 +1,10 @@
-/* ═══ 의사 화면(파트너) 2.0 — 상세·하위 화면·모달을 고객 화면(프리티풀/토스) 결로 (261029) ═══
+/* ═══ 의사 화면(파트너) 3.0 — 상품 상세(쿠팡 견본) 톤으로 리메이크 (261031) ═══
+   · 테두리 카드 없음 — 묶음은 회색 면(#F2F4F6)/연파랑 면(#EFF5FE) 둥근 칸, 섹션 사이는 회색 띠.
+   · 버튼 = 주 #4A82EE · 보조/위험 회색 면(#F2F4F6) — 큰 56 · r18 · 17/700, 작은 48 · r14.
+   · 입력 = 회색 면 r14 테두리 없음, focus #EDEFF2. 배지 = r6 · 24 · 13.5/600(대기 회색·확정 파랑·완료 초록·취소 빨강).
+   · 칩 = r8 · 36 · 14.5/600 회색, 고르면 연파랑 #EFF5FE/#2F6FE4. 분할 = 회색 트랙 r12 + 흰 알약 r10.
+   (아래 2.0 메모는 구조 설명으로 남긴다)
+   ─── 2.0 (261029) ───
    globals.css 는 다른 작업이 고치는 중이라 의사 화면 덮어쓰기는 전부 여기 — partner/layout.tsx 에서 한 번 불러온다.
    · 머리 = components/common/TopBar(.qd-*) 그대로: 56 흰 줄 + 40 둥근 뒤로, 아래 큰 제목 24 페이드.
    · 시트 = booking flow.module.css(.scrim/.sheet): 딤 페이드 + 아래에서 스프링, 버튼 56 · r17 · 17pt.
@@ -10,12 +16,19 @@
 /* ─── 바탕 — 색 토큰·글씨 기본·스크롤 ─── */
 .partner-shell-bg {
   --tds-brand: #3180F7;
+  --pd-btn: #4A82EE;
+  --pd-btn-active: #3D74DE;
+  --pd-check: #2F6FE4;
+  --pd-face: #F2F4F6;
+  --pd-face-blue: #EFF5FE;
+  --pd-navy: #1E3A78;
   --tds-text-strong: #191F28;
   --tds-text-primary: #333D4B;
   --tds-text-secondary: #6B7684;
   --tds-text-tertiary: #8B95A1;
   --tds-text-placeholder: #B0B8C1;
-  --tds-border: #E5E8EB;
+  --tds-border: transparent; /* 테두리 카드·칸 없음 — globals 의 1px var(--tds-border) 선을 의사 화면에선 지운다 */
+  --tds-field: #F2F4F6;
   --tds-neutral-weak: #F2F4F6;
 }
 /* overflow-x: hidden 은 스크롤 칸을 만들어 sticky 머리가 붙지 않았다 → clip(넘침만 자르고 스크롤 칸은 안 만든다) */
@@ -58,7 +71,8 @@ html[data-pd-scrolled] .partner-page .qd-header::after { opacity: 1; }
 }
 .pd-head-text-btn:active { background: #F2F4F6; transform: scale(.96); }
 /* 머리 줄 오른쪽 PartnerButton(추가·등록) — 작은 파랑 알약 */
-.partner-shell-bg .qd-header .partner-button { min-height: 36px; min-width: 0; padding: 0 12px; border-radius: 999px; font-size: 14px; font-weight: 600; gap: 4px; }
+.partner-shell-bg .qd-header .partner-button { min-height: 36px; min-width: 0; padding: 0 12px; border-radius: 10px; font-size: 14.5px; font-weight: 700; gap: 4px; }
+.partner-shell-bg .qd-header .partner-button.partner-button-fill.partner-button-brand { background: #EFF5FE; color: #2F6FE4; }
 
 /* ─── 하위 화면 칸(.pd-sub) — 옛 화면은 좌우 여백이 없었다 ─── */
 .pd-sub { padding: 0 20px 40px; }
@@ -76,11 +90,12 @@ html[data-pd-scrolled] .partner-page .qd-header::after { opacity: 1; }
 .pd-sub > :nth-child(n+7) { animation-delay: .46s; }
 /* 칩 줄이 칸 여백 밖까지 밀리게 */
 .pd-sub > .pd-chips-bleed { margin-left: -20px; margin-right: -20px; padding: 0 20px 4px; }
-/* 카드 = 흰 r20 + 옅은 테두리(목록·홈 카드와 같은 결) */
-.partner-shell-bg .pd-sub :where(section, aside, div, ul)[class*="bg-white"][class*="border"],
-.partner-shell-bg .pd-sub .partner-panel {
-  border: 1px solid #F2F4F6; border-radius: 20px; box-shadow: 0 2px 10px rgba(25, 31, 40, 0.04);
+/* 카드 = 테두리 없이 회색 면 r16(상품 상세 톤) — 안의 입력 칸은 흰 바탕으로 띄운다 */
+.partner-shell-bg .pd-sub :where(section, aside, div, ul)[class*="bg-white"][class*="border"] {
+  border: 0 !important; border-radius: 16px; background: #F2F4F6 !important; box-shadow: none !important;
 }
+.partner-shell-bg .pd-sub :where(section, aside, div, ul)[class*="bg-white"][class*="border"] .partner-input { background: #fff; }
+.partner-shell-bg .partner-panel { border: 0; border-radius: 0; background: #fff; box-shadow: none; }
 /* 옛 화면 글씨 크기(10~12px)를 고객 위계로 끌어올린다 — 캡션 13 · 보조 14 · 구역 18 */
 .partner-shell-bg .pd-sub :is(.text-\[9px\], .text-\[10px\], .text-\[11px\], .text-\[12px\]) { font-size: 13px; line-height: 1.45; }
 .partner-shell-bg .pd-sub .text-\[13px\] { font-size: 14px; line-height: 1.45; }
@@ -95,42 +110,70 @@ html[data-pd-scrolled] .partner-page .qd-header::after { opacity: 1; }
 .partner-shell-bg .pd-sub :where(h2), .partner-shell-bg .partner-panel :where(h2) { font-size: 18px; font-weight: 700; line-height: 1.4; letter-spacing: -0.3px; color: #191F28; }
 .partner-shell-bg .pd-sub :where(label), .partner-shell-bg .partner-field label { font-size: 14px; font-weight: 600; line-height: 1.45; letter-spacing: -0.2px; color: #4E5968; }
 .partner-shell-bg .partner-field > p { font-size: 13px; line-height: 1.45; color: #8B95A1; }
-.partner-shell-bg .partner-input { font-size: 16px; font-weight: 500; color: #191F28; border-radius: 14px; }
-.partner-shell-bg .partner-list-row { font-size: 16px; font-weight: 600; letter-spacing: -0.3px; color: #191F28; }
+.partner-shell-bg .partner-input {
+  min-height: 56px; border: 0; border-radius: 14px; background: #F2F4F6; padding: 0 16px;
+  font-size: 16px; font-weight: 500; color: #191F28; transition: background-color .15s;
+}
+.partner-shell-bg .partner-input:focus { border: 0; background: #EDEFF2; box-shadow: none; }
+.partner-shell-bg .partner-input::placeholder { color: #B0B8C1; }
+.partner-shell-bg .partner-textarea { padding-top: 14px; padding-bottom: 14px; line-height: 1.55; }
+.partner-shell-bg .partner-list-row {
+  border-radius: 16px; padding: 12px 20px; font-size: 16px; font-weight: 600; letter-spacing: -0.3px; color: #191F28;
+  transition: background-color .15s;
+}
+.partner-shell-bg .partner-list-row + .partner-list-row { border-top: 0; }
+.partner-shell-bg :is(a, button).partner-list-row:active { background: #F9FAFB; }
+.partner-shell-bg .partner-list-main { font-size: 16px; font-weight: 600; color: #191F28; }
+.partner-shell-bg .partner-list-chevron { color: #B0B8C1; }
 .partner-shell-bg .partner-list-sub { font-size: 14px; font-weight: 400; line-height: 1.45; color: #6B7684; }
 .partner-shell-bg .partner-list-meta { font-size: 14px; font-weight: 500; color: #8B95A1; }
-.partner-shell-bg .partner-list-icon { border-radius: 12px; background: #F2F4F6; color: #4E5968; }
+.partner-shell-bg .partner-list-icon { width: 40px; height: 40px; border-radius: 12px; background: #F2F4F6; color: #6B7684; }
+.partner-shell-bg .partner-stat { border: 0; border-radius: 16px; background: #F2F4F6; padding: 18px 20px; box-shadow: none; }
 .partner-shell-bg .partner-stat-head span { font-size: 14px; font-weight: 500; color: #6B7684; }
 .partner-shell-bg .partner-stat strong { font-weight: 700; letter-spacing: -0.4px; color: #191F28; }
-.partner-shell-bg .partner-stat strong.is-accent { color: #3180F7; }
+.partner-shell-bg .partner-stat strong.is-accent { color: #1E3A78; }
 .partner-shell-bg .partner-stat p { font-size: 13px; color: #8B95A1; }
-.partner-shell-bg .partner-empty-title { font-size: 16px; font-weight: 600; color: #333D4B; }
-.partner-shell-bg .partner-empty-desc { font-size: 14px; color: #8B95A1; }
-.partner-shell-bg .partner-loading { font-size: 14px; color: #8B95A1; }
-.partner-shell-bg .partner-empty-state p { font-size: 16px; font-weight: 600; color: #333D4B; }
-.partner-shell-bg .partner-empty-state span { font-size: 14px; color: #8B95A1; }
-/* 버튼 — 파랑 채움 / 회색 약함, r14~17 */
-.partner-shell-bg .partner-button { font-weight: 600; letter-spacing: -0.2px; }
-.partner-shell-bg .partner-button-l { min-height: 52px; border-radius: 14px; font-size: 16px; }
-.partner-shell-bg .partner-button-xl { min-height: 56px; border-radius: 17px; font-size: 17px; }
-.partner-shell-bg .partner-button-fill.partner-button-brand { background: #3180F7; }
-.partner-shell-bg .partner-button-fill.partner-button-brand:active:not(:disabled) { background: #2270E6; }
-.partner-shell-bg .partner-button-weak.partner-button-brand { background: #EDF4FF; color: #3180F7; }
+/* 빈 화면 = LoginRequired 결: 72 회색 둥근 칸(r24) 안 옅은 아이콘 · 19 굵은 제목 · 15 회색 부제 */
+.partner-shell-bg .partner-empty { border: 0; border-radius: 0; background: transparent; padding: 56px 24px; box-shadow: none; }
+.partner-shell-bg .partner-empty-icon { width: 72px; height: 72px; margin: 0 auto 20px; border-radius: 24px; background: #F2F4F6; color: #B0B8C1; }
+.partner-shell-bg .partner-empty-icon svg { width: 34px; height: 34px; }
+.partner-shell-bg .partner-empty-title { font-size: 19px; font-weight: 700; line-height: 1.4; letter-spacing: -0.4px; color: #191F28; word-break: keep-all; }
+.partner-shell-bg .partner-empty-desc { margin-top: 6px; font-size: 15px; line-height: 1.6; letter-spacing: -0.2px; color: #8B95A1; word-break: keep-all; }
+.partner-shell-bg .partner-empty-action { margin-top: 20px; }
+.partner-shell-bg .partner-loading { font-size: 15px; color: #8B95A1; }
+.partner-shell-bg .partner-empty-state p { font-size: 19px; font-weight: 700; letter-spacing: -0.4px; color: #191F28; }
+.partner-shell-bg .partner-empty-state span { font-size: 15px; line-height: 1.6; color: #8B95A1; }
+/* 버튼 — 주 #4A82EE · 보조/위험 회색 면. 큰 버튼 56 · r18 · 17/700 */
+.partner-shell-bg .partner-button { font-weight: 700; letter-spacing: -0.2px; transition: transform .15s ease, background-color .15s ease, opacity .15s ease; }
+.partner-shell-bg .partner-button:active:not(:disabled) { transform: scale(.98); }
+.partner-shell-bg .partner-button-s { min-height: 32px; border-radius: 8px; font-size: 13.5px; }
+.partner-shell-bg .partner-button-m { min-height: 40px; border-radius: 12px; font-size: 15px; }
+.partner-shell-bg .partner-button-l { min-height: 48px; border-radius: 14px; font-size: 16px; }
+.partner-shell-bg .partner-button-xl { min-height: 56px; border-radius: 18px; font-size: 17px; }
+.partner-shell-bg .partner-button-fill.partner-button-brand { background: #4A82EE; color: #fff; }
+.partner-shell-bg .partner-button-fill.partner-button-brand:active:not(:disabled) { background: #3D74DE; }
+.partner-shell-bg .partner-button-weak.partner-button-brand { background: #EFF5FE; color: #2F6FE4; }
+.partner-shell-bg .partner-button-fill.partner-button-neutral,
 .partner-shell-bg .partner-button-weak.partner-button-neutral { background: #F2F4F6; color: #4E5968; }
-.partner-shell-bg .partner-button-fill.partner-button-danger { background: #F04452; }
-.partner-shell-bg .partner-button-weak.partner-button-danger { background: #FFEEEE; color: #F04452; }
-/* 분할 칩(PartnerSegmentedControl) = 프리티풀 정렬 칩 — 테두리 상자 없이 */
+.partner-shell-bg .partner-button-fill.partner-button-danger,
+.partner-shell-bg .partner-button-weak.partner-button-danger { background: #F2F4F6; color: #F04452; }
+.partner-shell-bg :is(.partner-button-weak, .partner-button-fill.partner-button-neutral, .partner-button-fill.partner-button-danger):active:not(:disabled) { background: #E5E8EB; }
+.partner-shell-bg .partner-button-text { color: #3180F7; font-weight: 600; }
+/* 거르기 칩(PartnerSegmentedControl) — r8 회색 칩, 고르면 연파랑 */
 .partner-shell-bg .partner-segmented { flex-wrap: nowrap; overflow-x: auto; gap: 6px; border: 0; border-radius: 0; background: transparent; padding: 0; scrollbar-width: none; }
 .partner-shell-bg .partner-segmented::-webkit-scrollbar { display: none; }
 .partner-shell-bg .partner-segmented button {
-  flex: 0 0 auto; height: 34px; min-height: 34px; padding: 0 13px; border-radius: 999px;
-  background: #F2F4F6; color: #4E5968; font-size: 14px; font-weight: 600; letter-spacing: -0.2px;
+  flex: 0 0 auto; height: 36px; min-height: 36px; padding: 0 12px; border-radius: 8px;
+  background: #F2F4F6; color: #333D4B; font-size: 14.5px; font-weight: 600; letter-spacing: -0.2px;
   transition: background-color .2s, color .2s, transform .15s;
 }
-.partner-shell-bg .partner-segmented button.is-active { background: #191F28; color: #fff; }
+.partner-shell-bg .partner-segmented button:active { transform: scale(.97); }
+.partner-shell-bg .partner-segmented button.is-active { background: #EFF5FE; color: #2F6FE4; }
 /* 검색 칸 — 카드 바탕 빼고 회색 칸만 */
-.partner-shell-bg .pd-sub .partner-search-shell { padding: 0; background: transparent; }
-.partner-shell-bg .partner-search { border-radius: 14px; }
+.partner-shell-bg .partner-search-shell { padding: 0; border-radius: 0; background: transparent; }
+.partner-shell-bg .partner-search { min-height: 52px; border-radius: 14px; background: #F2F4F6; padding: 0 16px 0 14px; color: #8B95A1; }
+.partner-shell-bg .partner-search svg { width: 20px; height: 20px; flex: none; }
+.partner-shell-bg .partner-search:focus-within { background: #EDEFF2; }
 .partner-shell-bg .partner-search input { font-size: 16px !important; font-weight: 500 !important; }
 
 /* ─── 태그·배지·상태 — 한 가족 ─── */
@@ -141,34 +184,30 @@ html[data-pd-scrolled] .partner-page .qd-header::after { opacity: 1; }
 .partner-shell-bg .partner-page :where(.text-\[10px\].font-bold.px-1\.5.py-0\.5.rounded),
 .partner-shell-bg .partner-page :where(.text-\[11px\].font-bold.px-1\.5.py-0\.5.rounded) {
   display: inline-flex; align-items: center; gap: 4px; flex: none;
-  min-height: 0; padding: 4px 10px; border: 0; border-radius: 999px;
-  background: #F2F4F6; color: #4E5968;
-  font-size: 13px; font-weight: 600; line-height: 1.3; letter-spacing: -0.2px; white-space: nowrap;
+  min-height: 24px; padding: 0 8px; border: 0; border-radius: 6px;
+  background: #F2F4F6; color: #6B7684;
+  font-size: 13.5px; font-weight: 600; line-height: 1.3; letter-spacing: -0.2px; white-space: nowrap;
 }
 /* 정보 태그(파랑) */
 .pd-tag.is-info,
 .partner-shell-bg .partner-badge-brand,
 .partner-shell-bg .partner-badge-info,
 .partner-shell-bg .partner-badge-row span.blue,
-.partner-shell-bg .partner-cancel-customer dd span { background: #EDF4FF; color: #3180F7; }
-.partner-shell-bg .partner-badge-neutral { background: #F2F4F6; color: #4E5968; }
-/* 상태 = 색 글씨 + 6 점(바탕 없음) — 대기 주황 · 확정 초록 · 완료 파랑 · 취소 회색 · 위험 빨강 */
+.partner-shell-bg .partner-cancel-customer dd span { background: #E8F3FF; color: #3180F7; }
+.partner-shell-bg .partner-badge-neutral { background: #F2F4F6; color: #6B7684; }
+/* 상태 배지 = 색 면 r6 · 24 — 대기 회색 · 확정 파랑 · 완료 초록 · 취소/위험 빨강(예약내역 목록과 같은 색) */
 .pd-status,
 .partner-shell-bg .partner-badge-success,
 .partner-shell-bg .partner-badge-warning,
 .partner-shell-bg .partner-badge-danger {
-  display: inline-flex; align-items: center; gap: 6px; padding: 0; background: transparent;
-  font-size: 14px; font-weight: 600; line-height: 1.4; letter-spacing: -0.2px; white-space: nowrap;
+  display: inline-flex; align-items: center; flex: none; height: 24px; padding: 0 8px; border-radius: 6px;
+  background: #F2F4F6; color: #6B7684;
+  font-size: 13.5px; font-weight: 600; line-height: 1; letter-spacing: -0.2px; white-space: nowrap;
 }
-.pd-status::before,
-.partner-shell-bg .partner-badge-success::before,
-.partner-shell-bg .partner-badge-warning::before,
-.partner-shell-bg .partner-badge-danger::before { content: ''; flex: none; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
-.pd-status.is-pending, .partner-shell-bg .partner-badge-warning { color: #FE9800; }
-.pd-status.is-confirmed, .partner-shell-bg .partner-badge-success { color: #03B26C; }
-.pd-status.is-completed { color: #3180F7; }
-.pd-status.is-cancelled { color: #B0B8C1; }
-.pd-status.is-danger, .partner-shell-bg .partner-badge-danger { color: #F04452; }
+.pd-status.is-pending, .partner-shell-bg .partner-badge-warning { background: #F2F4F6; color: #6B7684; }
+.pd-status.is-confirmed { background: #E8F3FF; color: #3180F7; }
+.pd-status.is-completed, .partner-shell-bg .partner-badge-success { background: #E6F7EE; color: #03A94D; }
+.pd-status.is-cancelled, .pd-status.is-danger, .partner-shell-bg .partner-badge-danger { background: #FFEEEF; color: #F04452; }
 
 /* ─── 예약 상세·취소(partner-cancel-*) — 목록 카드와 같은 결 ─── */
 .partner-shell-bg .partner-cancel-page { gap: 12px; padding: 0 16px 120px; }
@@ -177,7 +216,7 @@ html[data-pd-scrolled] .partner-page .qd-header::after { opacity: 1; }
 .partner-shell-bg .partner-cancel-page > :nth-child(2) { animation-delay: .29s; }
 .partner-shell-bg .partner-cancel-page > :nth-child(3) { animation-delay: .36s; }
 .partner-shell-bg .partner-cancel-page > :nth-child(n+4) { animation-delay: .43s; }
-.partner-shell-bg .partner-cancel-card { border: 1px solid #F2F4F6; border-radius: 20px; box-shadow: 0 2px 10px rgba(25, 31, 40, 0.04); }
+.partner-shell-bg .partner-cancel-card { border: 0; border-radius: 0; background: #fff; box-shadow: none; }
 .partner-shell-bg .partner-cancel-card-head { height: auto; background: transparent; padding: 18px 18px 4px; }
 .partner-shell-bg .partner-cancel-card-head strong { display: inline-flex; align-items: center; gap: 6px; font-size: 15px; font-weight: 700; letter-spacing: -0.2px; }
 .partner-shell-bg .partner-cancel-card-head strong::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
@@ -189,7 +228,7 @@ html[data-pd-scrolled] .partner-page .qd-header::after { opacity: 1; }
 .partner-shell-bg .partner-cancel-product h2 { margin: 0 0 3px; font-size: 16px; font-weight: 700; letter-spacing: -0.3px; color: #191F28; }
 .partner-shell-bg .partner-cancel-product p { font-size: 13px; font-weight: 500; color: #8B95A1; }
 .partner-shell-bg .partner-cancel-product p:last-child { color: #6B7684; }
-.partner-shell-bg .partner-cancel-facts { gap: 10px; margin: 0 18px 18px; border-top: 0; border-radius: 14px; background: #F9FAFB; padding: 14px 16px; }
+.partner-shell-bg .partner-cancel-facts { gap: 10px; margin: 0 18px 18px; border-top: 0; border-radius: 14px; background: #F2F4F6; padding: 14px 16px; }
 .partner-shell-bg .partner-cancel-facts dt { font-size: 14px; font-weight: 500; color: #8B95A1; }
 .partner-shell-bg .partner-cancel-facts dd { font-size: 15px; font-weight: 600; color: #333D4B; }
 .partner-shell-bg .partner-cancel-customer,
@@ -203,19 +242,19 @@ html[data-pd-scrolled] .partner-page .qd-header::after { opacity: 1; }
 .partner-shell-bg .partner-cancel-helper { margin: 6px 0 12px; font-size: 14px; font-weight: 400; color: #6B7684; }
 .partner-shell-bg .partner-cancel-reason > p:not(.partner-cancel-helper) { font-size: 15px; font-weight: 500; line-height: 1.6; color: #333D4B; }
 .partner-shell-bg .partner-cancel-reason textarea {
-  min-height: 140px; padding: 16px 18px; border: 1.5px solid #E5E8EB; border-radius: 16px; background: #fff;
-  font-size: 16px; font-weight: 500; line-height: 1.55; color: #191F28; resize: none; transition: border-color .15s;
+  min-height: 140px; padding: 16px 18px; border: 0; border-radius: 14px; background: #F2F4F6;
+  font-size: 16px; font-weight: 500; line-height: 1.55; color: #191F28; resize: none; transition: background-color .15s;
 }
-.partner-shell-bg .partner-cancel-reason textarea:focus { border-color: #3180F7; box-shadow: none; }
+.partner-shell-bg .partner-cancel-reason textarea:focus { border: 0; background: #EDEFF2; box-shadow: none; }
 .partner-shell-bg .partner-cancel-reason textarea::placeholder { color: #B0B8C1; }
 /* 사유 예시 = 칩(.pd-chip 결) */
 .partner-shell-bg .partner-cancel-presets { gap: 6px; margin-top: 12px; }
 .partner-shell-bg .partner-cancel-presets button {
-  min-height: 34px; padding: 7px 13px; border-radius: 999px; background: #F2F4F6; color: #4E5968;
-  font-size: 14px; font-weight: 600; line-height: 1.4; letter-spacing: -0.2px; text-align: left; transition: background-color .2s, transform .15s;
+  min-height: 36px; padding: 7px 12px; border-radius: 8px; background: #F2F4F6; color: #333D4B;
+  font-size: 14.5px; font-weight: 600; line-height: 1.4; letter-spacing: -0.2px; text-align: left; transition: background-color .2s, transform .15s;
 }
 .partner-shell-bg .partner-cancel-presets button:active { transform: scale(.97); background: #E5E8EB; }
-.partner-shell-bg .partner-cancel-policy { border-radius: 20px; background: #F9FAFB; padding: 20px 18px; }
+.partner-shell-bg .partner-cancel-policy { border-radius: 14px; background: #F2F4F6; padding: 18px 18px; }
 .partner-shell-bg .partner-cancel-policy h2 { font-size: 16px; color: #333D4B; }
 .partner-shell-bg .partner-cancel-policy h2 svg { color: #8B95A1; }
 .partner-shell-bg .partner-cancel-policy p { margin-top: 8px; font-size: 14px; font-weight: 400; line-height: 1.6; color: #6B7684; }
@@ -232,10 +271,10 @@ html[data-pd-scrolled] .partner-page .qd-header::after { opacity: 1; }
 }
 .partner-shell-bg .partner-detail-bottom.is-split { display: grid; width: 100%; max-width: 640px; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
 .partner-shell-bg :is(.partner-cancel-bottom, .partner-detail-bottom) button {
-  width: 100%; height: 56px; border-radius: 17px; background: #3180F7; color: #fff;
-  font-size: 17px; font-weight: 600; letter-spacing: -0.2px; transition: transform .1s ease, background-color .15s ease;
+  width: 100%; height: 56px; border-radius: 18px; background: #4A82EE; color: #fff;
+  font-size: 17px; font-weight: 700; letter-spacing: -0.2px; transition: transform .1s ease, background-color .15s ease;
 }
-.partner-shell-bg :is(.partner-cancel-bottom, .partner-detail-bottom) button:active:not(:disabled) { transform: scale(.97); background: #2270E6; }
+.partner-shell-bg :is(.partner-cancel-bottom, .partner-detail-bottom) button:active:not(:disabled) { transform: scale(.98); background: #3D74DE; }
 .partner-shell-bg .partner-detail-bottom button.secondary { background: #F2F4F6; color: #4E5968; }
 .partner-shell-bg .partner-detail-bottom button.secondary:active:not(:disabled) { background: #E5E8EB; }
 .partner-shell-bg :is(.partner-cancel-bottom, .partner-detail-bottom) button:disabled { background: #F2F4F6; color: #B0B8C1; }
@@ -268,8 +307,8 @@ html[data-pd-scrolled] .partner-page .qd-header::after { opacity: 1; }
 .partner-shell-bg .partner-detail-calendar span { width: 44px; height: 42px; }
 .partner-shell-bg .partner-detail-calendar button { border-radius: 14px; font-size: 19px; font-weight: 500; line-height: 42px; color: #333D4B; transition: background-color .2s, color .2s, transform .12s; }
 .partner-shell-bg .partner-detail-calendar button:active { transform: scale(.93); }
-.partner-shell-bg .partner-detail-calendar button.is-selected { background: #E8F3FF; color: #3180F7; font-weight: 700; }
-.partner-shell-bg .partner-detail-picker-time { margin-top: 16px; border-top: 1px solid #F2F4F6; padding-top: 16px; }
+.partner-shell-bg .partner-detail-calendar button.is-selected { background: #2F6FE4; color: #fff; font-weight: 700; }
+.partner-shell-bg .partner-detail-picker-time { margin-top: 16px; border-top: 0; padding-top: 16px; }
 .partner-shell-bg .partner-detail-picker-time span { font-size: 18px; font-weight: 600; letter-spacing: -0.3px; color: #4E5968; }
 .partner-shell-bg .partner-detail-picker-time select { min-width: 120px; min-height: 40px; border: 0; border-radius: 12px; background: #F2F4F6; padding: 0 16px; font-size: 16px; font-weight: 600; color: #191F28; }
 /* 시트가 열리면 바닥 버튼(스케줄변경)이 시트 위에 와야 해서 */
@@ -287,19 +326,19 @@ html[data-pd-scrolled] .partner-page .qd-header::after { opacity: 1; }
 .partner-shell-bg .partner-profile-photo-button { width: 72px; height: 72px; border-radius: 20px; background: #F2F4F6; }
 .partner-shell-bg .partner-profile-edit-field { gap: 8px; }
 .partner-shell-bg .partner-profile-edit-field input,
-.partner-shell-bg .partner-profile-hospital-field > div { height: 56px; min-height: 56px; border: 1.5px solid #E5E8EB; border-radius: 16px; background: #fff; font-size: 16px; color: #191F28; }
+.partner-shell-bg .partner-profile-hospital-field > div { height: 56px; min-height: 56px; border: 0; border-radius: 14px; background: #F2F4F6; font-size: 16px; color: #191F28; transition: background-color .15s; }
 .partner-shell-bg .partner-profile-edit-field input { padding: 0 18px; }
-.partner-shell-bg .partner-profile-edit-field input:focus { border-color: #3180F7; box-shadow: none; }
+.partner-shell-bg .partner-profile-edit-field input:focus { border: 0; background: #EDEFF2; box-shadow: none; }
 .partner-shell-bg .partner-profile-hospital-field > div { padding: 0 18px; }
 .partner-shell-bg .partner-profile-hospital-field button { font-size: 15px; font-weight: 600; }
 .partner-shell-bg .partner-profile-hospital-field button.leave { color: #F04452; }
 .partner-shell-bg .partner-profile-save {
   left: 50%; right: auto; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%);
-  width: calc(100% - 32px); max-width: 608px; height: 56px; border-radius: 17px; background: #3180F7;
-  font-size: 17px; font-weight: 600; letter-spacing: -0.2px; box-shadow: 0 -20px 20px 4px #fff;
+  width: calc(100% - 32px); max-width: 608px; height: 56px; border-radius: 18px; background: #4A82EE;
+  font-size: 17px; font-weight: 700; letter-spacing: -0.2px; box-shadow: 0 -20px 20px 4px #fff;
   transition: background-color .15s;
 }
-.partner-shell-bg .partner-profile-save:active:not(:disabled) { background: #2270E6; }
+.partner-shell-bg .partner-profile-save:active:not(:disabled) { background: #3D74DE; }
 
 /* ─── 병원관리 수정 화면(hospital-info EditHeader) ─── */
 .partner-shell-bg .partner-edit-screen > .qd-header,
@@ -327,15 +366,18 @@ html[data-pd-scrolled] .partner-page .qd-header::after { opacity: 1; }
 .pd-sheet-title { margin: 0 0 20px; font-size: 22px; font-weight: 700; line-height: 1.42; letter-spacing: -0.4px; color: #191F28; }
 .partner-shell-bg .partner-page .pd-sheet-title { font-size: 22px; }
 .pd-sheet-btn {
-  display: flex; align-items: center; justify-content: center; height: 56px; padding: 0 16px; border: 0; border-radius: 17px;
-  background: #3180F7; color: #fff; font-family: inherit; font-size: 17px; font-weight: 600; letter-spacing: -0.2px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; height: 56px; padding: 0 16px; border: 0; border-radius: 18px;
+  background: #4A82EE; color: #fff; font-family: inherit; font-size: 17px; font-weight: 700; letter-spacing: -0.2px; cursor: pointer;
   transition: transform .1s ease, background-color .15s ease, opacity .15s ease;
 }
-.pd-sheet-btn:active:not(:disabled) { transform: scale(.97); background: #2270E6; }
+.pd-sheet-btn:active:not(:disabled) { transform: scale(.98); background: #3D74DE; }
 .pd-sheet-btn:disabled { opacity: .5; cursor: default; }
 .pd-sheet-btn.is-ghost { background: #F2F4F6; color: #4E5968; }
 .pd-sheet-btn.is-ghost:active:not(:disabled) { background: #E5E8EB; }
-.partner-shell-bg .pd-sheet input, .partner-shell-bg .pd-sheet textarea { border: 1.5px solid #E5E8EB !important; border-radius: 16px !important; font-size: 16px !important; }
+.partner-shell-bg .pd-sheet input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+.partner-shell-bg .pd-sheet textarea { border: 0 !important; border-radius: 14px !important; background: #F2F4F6 !important; font-size: 16px !important; box-shadow: none !important; }
+.partner-shell-bg .pd-sheet input:not([type="checkbox"]):not([type="radio"]):focus,
+.partner-shell-bg .pd-sheet textarea:focus { background: #EDEFF2 !important; }
 
 /* PartnerModal(tds) — 폰에선 아래 시트, 넓으면 가운데 팝 */
 .partner-shell-bg .partner-modal-backdrop { z-index: 100; align-items: flex-end; padding: 0; background: rgba(0, 0, 0, .4); -webkit-backdrop-filter: blur(0); backdrop-filter: blur(0); animation: pdFade .22s ease; }
@@ -350,7 +392,7 @@ html[data-pd-scrolled] .partner-page .qd-header::after { opacity: 1; }
 .partner-shell-bg .partner-modal-header button:active { transform: scale(.92); background: #E5E8EB; }
 .partner-shell-bg .partner-modal-body { flex: 1 1 auto; max-height: none; padding: 8px 24px 20px; }
 .partner-shell-bg .partner-modal-footer { gap: 8px; border-top: 0; padding: 8px 24px calc(24px + env(safe-area-inset-bottom, 0px)); }
-.partner-shell-bg .partner-modal-footer .partner-button { flex: 1 1 0; min-height: 56px; border-radius: 17px; font-size: 17px; font-weight: 600; }
+.partner-shell-bg .partner-modal-footer .partner-button { flex: 1 1 0; min-height: 56px; border-radius: 18px; font-size: 17px; font-weight: 700; }
 
 /* 상품 추가·수정 시트(partner/page.tsx productModal) */
 .partner-shell-bg .partner-product-sheet-backdrop { background: rgba(0, 0, 0, .4); animation: pdFade .22s ease; }
@@ -365,22 +407,24 @@ html[data-pd-scrolled] .partner-page .qd-header::after { opacity: 1; }
 .partner-shell-bg .partner-product-sheet label,
 .partner-shell-bg .partner-product-tag-field { gap: 8px; font-size: 14px; font-weight: 600; color: #4E5968; }
 .partner-shell-bg .partner-product-sheet input,
-.partner-shell-bg .partner-product-sheet select { height: 52px; min-height: 52px; border: 1.5px solid #E5E8EB; border-radius: 14px; background: #fff; padding: 0 16px; font-size: 16px; font-weight: 500; color: #191F28; }
+.partner-shell-bg .partner-product-sheet select { height: 56px; min-height: 56px; border: 0; border-radius: 14px; background: #F2F4F6; padding: 0 16px; font-size: 16px; font-weight: 500; color: #191F28; transition: background-color .15s; }
 .partner-shell-bg .partner-product-sheet input:focus,
 .partner-shell-bg .partner-product-sheet select:focus,
-.partner-shell-bg .partner-product-description:focus { border-color: #3180F7; box-shadow: none; }
-.partner-shell-bg .partner-product-sheet input[readonly] { background: #F9FAFB; color: #6B7684; }
-.partner-shell-bg .partner-product-description { border: 1.5px solid #E5E8EB; border-radius: 16px; padding: 14px 16px; font-size: 16px; }
+.partner-shell-bg .partner-product-description:focus { border: 0; background: #EDEFF2; box-shadow: none; outline: 0; }
+.partner-shell-bg .partner-product-sheet input[readonly] { background: #EFF5FE; color: #1E3A78; font-weight: 700; }
+.partner-shell-bg .partner-product-sheet input::placeholder,
+.partner-shell-bg .partner-product-description::placeholder { color: #B0B8C1; font-weight: 500; }
+.partner-shell-bg .partner-product-description { border: 0; border-radius: 14px; background: #F2F4F6; padding: 14px 16px; font-size: 16px; }
 .partner-shell-bg .partner-product-description-hint { font-size: 13px; color: #8B95A1; }
-.partner-shell-bg .partner-product-upload { border: 1.5px dashed #D1D6DB; border-radius: 16px; background: #F9FAFB; color: #6B7684; font-size: 15px; font-weight: 600; }
-.partner-shell-bg .partner-product-tag-field > div { grid-template-columns: minmax(0, 1fr) 52px; }
-.partner-shell-bg .partner-product-tag-field > div button { width: 52px; height: 52px; border-radius: 14px; background: #3180F7; }
-.partner-shell-bg .partner-product-tag-field li { height: auto; padding: 4px 10px; background: #F2F4F6; color: #4E5968; font-size: 13px; font-weight: 600; }
+.partner-shell-bg .partner-product-upload { border: 0; border-radius: 14px; background: #F2F4F6; color: #6B7684; font-size: 15px; font-weight: 600; }
+.partner-shell-bg .partner-product-tag-field > div { grid-template-columns: minmax(0, 1fr) 56px; }
+.partner-shell-bg .partner-product-tag-field > div button { width: 56px; height: 56px; border-radius: 14px; background: #EFF5FE; color: #2F6FE4; }
+.partner-shell-bg .partner-product-tag-field li { height: 28px; padding: 0 8px; border-radius: 6px; background: #EFF5FE; color: #2F6FE4; font-size: 13.5px; font-weight: 600; }
 .partner-shell-bg .partner-product-tag-field li button { color: #8B95A1; font-size: 13px; }
 .partner-shell-bg .partner-product-sheet-actions { gap: 8px; padding-top: 8px; }
-.partner-shell-bg .partner-product-sheet-actions button { height: 56px; border-radius: 17px; background: #F2F4F6; color: #4E5968; font-size: 17px; font-weight: 600; letter-spacing: -0.2px; transition: transform .1s ease, background-color .15s ease; }
-.partner-shell-bg .partner-product-sheet-actions button + button { background: #3180F7; color: #fff; }
-.partner-shell-bg .partner-product-sheet-actions button:active:not(:disabled) { transform: scale(.97); }
+.partner-shell-bg .partner-product-sheet-actions button { flex: 1 1 0; height: 56px; border-radius: 18px; background: #F2F4F6; color: #4E5968; font-size: 17px; font-weight: 700; letter-spacing: -0.2px; transition: transform .1s ease, background-color .15s ease; }
+.partner-shell-bg .partner-product-sheet-actions button + button { background: #4A82EE; color: #fff; }
+.partner-shell-bg .partner-product-sheet-actions button:active:not(:disabled) { transform: scale(.98); }
 
 /* 넓은 화면 — 시트를 가운데 팝으로(고객 시트와 같은 640 기준) */
 @media (min-width: 640px) {
@@ -413,16 +457,55 @@ html[data-pd-scrolled] .partner-page .qd-header::after { opacity: 1; }
 .partner-shell-bg .partner-figma-alert-copy h2 { font-size: 20px; font-weight: 700; line-height: 1.4; letter-spacing: -0.4px; color: #191F28; }
 .partner-shell-bg .partner-figma-alert-copy p { font-size: 15px; font-weight: 400; line-height: 1.6; color: #6B7684; }
 .partner-shell-bg .partner-figma-alert-actions { gap: 8px; }
-.partner-shell-bg .partner-figma-alert-actions button { height: 52px; border-radius: 16px; font-size: 16px; font-weight: 600; letter-spacing: -0.2px; transition: transform .15s, background-color .15s; }
+.partner-shell-bg .partner-figma-alert-actions button { flex: 1 1 0; height: 52px; border-radius: 16px; background: #4A82EE; color: #fff; font-size: 16px; font-weight: 700; letter-spacing: -0.2px; transition: transform .15s, background-color .15s; }
 .partner-shell-bg .partner-figma-alert-actions button:active:not(:disabled) { transform: scale(.98); }
 .partner-shell-bg .partner-figma-alert-actions button + button { background: #F2F4F6; color: #4E5968; }
 .partner-shell-bg .partner-memo-dialog,
 .partner-shell-bg .partner-assign-dialog { gap: 0; padding-bottom: 20px; }
-.partner-shell-bg .partner-memo-dialog textarea { width: 100%; min-height: 140px; margin: 0 0 20px; border: 1.5px solid #E5E8EB; border-radius: 16px; background: #fff; padding: 14px 16px; font-size: 16px; color: #191F28; }
-.partner-shell-bg .partner-memo-dialog textarea:focus { border-color: #3180F7; box-shadow: none; }
+.partner-shell-bg .partner-memo-dialog textarea { width: 100%; min-height: 140px; margin: 0 0 20px; border: 0; border-radius: 14px; background: #F2F4F6; padding: 14px 16px; font-size: 16px; color: #191F28; }
+.partner-shell-bg .partner-memo-dialog textarea:focus { border: 0; background: #EDEFF2; box-shadow: none; outline: 0; }
 .partner-shell-bg .partner-memo-dialog textarea::placeholder { color: #B0B8C1; }
 .partner-shell-bg .partner-assign-field { padding: 0 0 20px; }
-.partner-shell-bg .partner-assign-field select { height: 52px; border-radius: 14px; background: #F2F4F6; padding: 0 16px; font-size: 16px; color: #191F28; }
+.partner-shell-bg .partner-assign-field select { height: 56px; border: 0; border-radius: 14px; background: #F2F4F6; padding: 0 16px; font-size: 16px; color: #191F28; }
+
+/* 입력 칸 공통(globals .partner-page input) — 회색 면, focus 는 한 톤 진하게(파랑 테두리·고리 없음) */
+.partner-shell-bg .partner-page input:not([type="checkbox"]):not([type="radio"]):focus,
+.partner-shell-bg .partner-page select:focus,
+.partner-shell-bg .partner-page textarea:focus { border-color: transparent; background: #EDEFF2; box-shadow: none; outline: 0; }
+.partner-shell-bg .partner-page :is(input, textarea)::placeholder { color: #B0B8C1; }
+
+/* ─── 분할(.pd-seg)·칩(.pd-chip)·옛 분할(.partner-inline-segment) — 261031 톤(globals 값을 의사 화면 안에서 덮는다) ─── */
+.partner-shell-bg .pd-seg { padding: 4px; border-radius: 12px; background: #F2F4F6; }
+.partner-shell-bg .pd-seg-thumb { top: 4px; bottom: 4px; left: 4px; width: calc((100% - 8px) / var(--n)); border-radius: 10px; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06); }
+.partner-shell-bg .pd-seg > a, .partner-shell-bg .pd-seg > button { font-size: 14.5px; font-weight: 600; color: #8B95A1; }
+.partner-shell-bg .pd-seg > .is-active { font-weight: 700; color: #191F28; }
+.partner-shell-bg .pd-seg.is-wide > a, .partner-shell-bg .pd-seg.is-wide > button { height: 40px; font-size: 15px; }
+.partner-shell-bg .partner-page .pd-chips { gap: 6px; padding: 4px 20px 12px; }
+.partner-shell-bg .partner-page .pd-chip {
+  height: 36px; padding: 0 12px; border-radius: 8px; background: #F2F4F6; color: #333D4B;
+  font-size: 14.5px; font-weight: 600;
+}
+.partner-shell-bg .partner-page .pd-chip.is-active { background: #EFF5FE; color: #2F6FE4; }
+.partner-shell-bg .partner-page .pd-chip em { color: #8B95A1; font-weight: 600; }
+.partner-shell-bg .partner-page .pd-chip.is-active em { color: #2F6FE4; }
+.partner-shell-bg .partner-page .partner-inline-segment { padding: 4px; border-radius: 12px; background: #F2F4F6; }
+.partner-shell-bg .partner-page .partner-inline-segment::before { top: 4px; bottom: 4px; left: 4px; border-radius: 10px; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06); }
+.partner-shell-bg .partner-page .partner-inline-segment a,
+.partner-shell-bg .partner-page .partner-inline-segment button { border-radius: 10px; font-size: 14.5px; }
+
+/* 바닥 고정 버튼 칸(PartnerBottomCTA) — 위 선 대신 흰 그라데이션 */
+.partner-shell-bg .partner-bottom-cta {
+  border-top: 0; border-radius: 0; background: #fff; padding: 8px 20px calc(12px + env(safe-area-inset-bottom, 0px));
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+}
+.partner-shell-bg .partner-bottom-cta::before {
+  content: ''; position: absolute; left: 0; right: 0; bottom: 100%; height: 32px; pointer-events: none;
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0), #fff);
+}
+.partner-shell-bg .partner-bottom-cta > * { flex: 1 1 0; }
+
+/* 모달 닫기(×) — 회색 둥근 칸 */
+.partner-shell-bg .partner-modal-header button { border-radius: 12px; }
 
 @media (prefers-reduced-motion: reduce) {
   .partner-shell-bg .partner-route-detail-enter,

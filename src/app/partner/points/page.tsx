@@ -1,19 +1,13 @@
 'use client';
 
+// 병원포인트 — 상품 상세(261031) 톤: 연파랑 잔액 카드(남색 숫자) · 회색 금액 칩 · 회색 입력 칸 · 테두리 없는 내역 줄.
+
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Coins, Plus } from 'lucide-react';
+import TopBar from '@/components/common/TopBar';
+import MonoIcon from '@/components/common/MonoIcon';
 import { useStore } from '@/store';
 import { useSession } from '@/lib/supabase/SessionProvider';
-import {
-  PartnerButton,
-  PartnerEmpty,
-  PartnerInput,
-  PartnerListRow,
-  PartnerPanel,
-  PartnerStatusBadge,
-  PartnerTop,
-} from '@/components/partner/tds';
 
 type Tx = {
   id: string;
@@ -26,10 +20,11 @@ type Tx = {
 
 const PRESET = [50000, 100000, 300000, 500000, 1000000, 3000000];
 
-const TYPE_META: Record<Tx['type'], { label: string; color: string; tone: 'success' | 'danger' | 'info' }> = {
-  charge: { label: '충전', color: '#15803D', tone: 'success' },
-  spend: { label: '사용', color: '#E5484D', tone: 'danger' },
-  refund: { label: '환불', color: '#3180F7', tone: 'info' },
+// 거래 배지 — 충전=파랑 · 사용=회색 · 환불=초록
+const TYPE_META: Record<Tx['type'], { label: string; tone: string }> = {
+  charge: { label: '충전', tone: 'bg-[#E8F3FF] text-[#3180F7]' },
+  spend: { label: '사용', tone: 'bg-[#F2F4F6] text-[#6B7684]' },
+  refund: { label: '환불', tone: 'bg-[#E6F7EE] text-[#03A94D]' },
 };
 
 export default function PartnerPointsPage() {
@@ -100,9 +95,12 @@ export default function PartnerPointsPage() {
 
   if (!authUser) {
     return (
-      <div className="bg-white rounded-xl p-10 text-center">
-        <p className="text-sm text-gray-500 mb-4">로그인이 필요합니다.</p>
-        <Link href="/login" className="inline-block px-5 py-2.5 bg-[#3180F7] text-white text-sm font-bold rounded-xl">
+      <div className="flex min-h-[60vh] flex-col items-center justify-center px-6 py-10 text-center">
+        <span className="flex h-[72px] w-[72px] items-center justify-center rounded-[24px] bg-[#F2F4F6]">
+          <MonoIcon name="lock" size={34} color="#B0B8C1" />
+        </span>
+        <p className="mt-5 text-[19px] font-bold tracking-[-0.4px] text-[#191F28]">로그인이 필요해요</p>
+        <Link href="/login" className="mt-5 inline-flex h-[46px] items-center rounded-[12px] bg-[#E8F3FF] px-5 text-[16px] font-bold text-[#3180F7]">
           로그인
         </Link>
       </div>
@@ -110,116 +108,107 @@ export default function PartnerPointsPage() {
   }
 
   return (
-    <div className="pd-sub space-y-5">
-      <PartnerTop
-        eyebrow="포인트"
-        title="병원포인트"
-        description="광고와 이벤트 노출에 쓰는 병원 전용 포인트를 관리합니다."
-        icon={<Coins size={28} />}
-      />
+    <div className="bg-white pb-12">
+      <TopBar title="병원포인트" sub="광고와 이벤트 노출에 쓰는 병원 전용 포인트를 관리해요." />
 
-      <PartnerPanel className="p-5">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-[13px] leading-[19.5px] text-[rgba(0,19,43,0.58)]">현재 사용 가능 포인트</p>
-            <p className="mt-2 text-[36px] font-bold leading-none text-[#191F28]">
-              {loading ? '—' : balance.toLocaleString()}
-              <span className="ml-1 text-[18px] font-bold text-[rgba(0,19,43,0.58)]">P</span>
-            </p>
-          </div>
-          <div className="flex h-[60px] w-[60px] items-center justify-center rounded-[18px] bg-[#EDF4FF] text-[#3180F7]">
-            <Coins size={28} />
+      {/* ─── 잔액 카드 ─── */}
+      <div className="qd-a-item px-5 pb-7 pt-1">
+        <div className="rounded-[14px] bg-[#EFF5FE] px-5 pb-5 pt-4">
+          <span className="rounded-[6px] bg-[#2F6FE4] px-2 py-1 text-[13.5px] font-bold text-white">병원포인트</span>
+          <p className="mt-3 text-[15px] font-semibold text-[#1E3A78]">현재 사용 가능 포인트</p>
+          <p className="mt-0.5 text-[30px] font-bold tracking-[-0.8px] text-[#1E3A78]">
+            {loading ? '—' : balance.toLocaleString()}P
+          </p>
+          <div className="mt-4 flex items-center justify-between border-t border-[#1E3A78]/10 pt-3.5">
+            <span className="text-[15px] text-[#1E3A78]/70">누적 사용 · 거래 {txs.length.toLocaleString()}건</span>
+            <span className="text-[17px] font-bold text-[#1E3A78]">{totalSpent.toLocaleString()}P</span>
           </div>
         </div>
-        <div className="mt-5 grid grid-cols-2 gap-2">
-          <div className="rounded-[14px] bg-[#F9FAFB] p-4">
-            <p className="text-[12px] text-[rgba(0,19,43,0.58)]">누적 사용</p>
-            <p className="mt-1 text-[17px] font-bold text-[#191F28]">{totalSpent.toLocaleString()}P</p>
-          </div>
-          <div className="rounded-[14px] bg-[#F9FAFB] p-4">
-            <p className="text-[12px] text-[rgba(0,19,43,0.58)]">거래 내역</p>
-            <p className="mt-1 text-[17px] font-bold text-[#191F28]">{txs.length.toLocaleString()}건</p>
-          </div>
-        </div>
-      </PartnerPanel>
+      </div>
 
-      <PartnerPanel className="p-5">
-        <h2 className="mb-4">포인트 충전</h2>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-          {PRESET.map((preset) => {
-            const selected = amount === String(preset);
+      <Band />
+
+      {/* ─── 충전 ─── */}
+      <div className="qd-a-item px-5 py-7" style={{ animationDelay: '.06s' }}>
+        <h2 className="!text-[20px] font-bold !leading-[1.3] tracking-[-0.4px] text-[#191F28]">포인트 충전</h2>
+        <div className="mt-4 grid grid-cols-3 gap-2">
+          {PRESET.map((amt) => {
+            const on = amount === String(amt);
             return (
               <button
-                key={preset}
-                onClick={() => setAmount(String(preset))}
-                className="rounded-full border px-3 py-2 text-[13px] font-semibold"
-                style={{
-                  backgroundColor: selected ? '#EDF4FF' : '#F9FAFB',
-                  borderColor: selected ? '#3180F7' : 'rgba(0,27,55,0.1)',
-                  color: selected ? '#3180F7' : 'rgba(3,18,40,0.7)',
-                }}
+                key={amt}
+                type="button"
+                onClick={() => setAmount(String(amt))}
+                className={`flex h-11 items-center justify-center rounded-[12px] text-[15px] font-semibold transition-colors ${on ? 'bg-[#EFF5FE] text-[#2F6FE4]' : 'bg-[#F2F4F6] text-[#333D4B]'}`}
               >
-                {preset.toLocaleString()}원
+                {amt.toLocaleString()}원
               </button>
             );
           })}
         </div>
         <div className="mt-3 flex gap-2">
-          <PartnerInput
+          <input
             type="number"
+            inputMode="numeric"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             placeholder="직접 입력"
-            className="flex-1"
+            className="!h-14 !min-h-0 min-w-0 flex-1 !rounded-[14px] !border-0 !bg-[#F2F4F6] !py-0 !px-4 !text-[16px] !font-medium !text-[#191F28] outline-none transition-colors placeholder:!text-[#B0B8C1] focus:!bg-[#EDEFF2] focus:!shadow-none"
           />
-          <PartnerButton
+          <button
             type="button"
             onClick={charge}
             disabled={charging || !amount}
-            size="l"
-            leftIcon={<Plus size={16} />}
+            className="flex h-14 w-[96px] shrink-0 items-center justify-center rounded-[14px] bg-[#4A82EE] text-[16px] font-bold text-white transition-all active:scale-[0.98] disabled:bg-[#E5E8EB] disabled:text-[#B0B8C1]"
           >
-            {charging ? '처리 중' : '충전'}
-          </PartnerButton>
+            {charging ? '처리 중…' : '충전'}
+          </button>
         </div>
-        <p className="mt-2 text-[13px] text-[rgba(3,24,50,0.46)]">충전 요청은 포인트 잔액과 거래 내역에 반영됩니다.</p>
-      </PartnerPanel>
+        <p className="mt-3 flex gap-2 rounded-[14px] bg-[#F2F4F6] px-4 py-3.5 text-[14px] leading-[1.5] text-[#4E5968]">
+          <MonoIcon name="info-circle" size={18} color="#B0B8C1" className="mt-px" />
+          충전 요청은 포인트 잔액과 거래 내역에 반영돼요.
+        </p>
+      </div>
 
-      <PartnerPanel className="overflow-hidden">
-        <div className="px-5 py-4 border-b border-gray-100">
-          <h2>포인트 내역</h2>
-        </div>
+      <Band />
+
+      {/* ─── 내역 ─── */}
+      <div className="qd-a-item px-5 py-7" style={{ animationDelay: '.12s' }}>
+        <h2 className="!text-[20px] font-bold !leading-[1.3] tracking-[-0.4px] text-[#191F28]">포인트 내역</h2>
         {txs.length === 0 ? (
-          <PartnerEmpty icon={<Coins size={24} />} title="아직 포인트 내역이 없습니다." />
+          <div className="flex flex-col items-center px-6 py-12 text-center">
+            <span className="flex h-[72px] w-[72px] items-center justify-center rounded-[24px] bg-[#F2F4F6]">
+              <MonoIcon name="coin" size={34} color="#B0B8C1" />
+            </span>
+            <p className="mt-5 text-[19px] font-bold tracking-[-0.4px] text-[#191F28]">아직 포인트 내역이 없어요</p>
+          </div>
         ) : (
-          <div>
-            {txs.map((tx) => {
-              const meta = TYPE_META[tx.type];
+          <ul className="-mx-2 mt-2">
+            {txs.map((t) => {
+              const cfg = TYPE_META[t.type];
               return (
-                <PartnerListRow
-                  key={tx.id}
-                  title={tx.description ?? '포인트 거래'}
-                  description={
-                    <span className="flex items-center gap-2">
-                      <PartnerStatusBadge tone={meta.tone}>{meta.label}</PartnerStatusBadge>
-                      <span>{new Date(tx.created_at).toLocaleString('ko-KR')}</span>
-                    </span>
-                  }
-                  meta={
-                    <span className="flex flex-col items-end">
-                      <span className="text-[17px] font-bold" style={{ color: meta.color }}>
-                      {tx.amount > 0 ? '+' : ''}
-                      {tx.amount.toLocaleString()}P
-                      </span>
-                      <span className="mt-1 text-[13px] text-[rgba(3,24,50,0.46)]">잔액 {tx.balance_after.toLocaleString()}P</span>
-                    </span>
-                  }
-                />
+                <li key={t.id} className="flex items-center gap-3 rounded-[16px] px-2 py-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className={`inline-flex h-6 shrink-0 items-center rounded-[6px] px-2 text-[13.5px] font-semibold ${cfg.tone}`}>{cfg.label}</span>
+                      <span className="min-w-0 truncate text-[16px] font-semibold text-[#333D4B]">{t.description ?? '포인트 거래'}</span>
+                    </div>
+                    <p className="mt-1 text-[13.5px] text-[#8B95A1]">{new Date(t.created_at).toLocaleString('ko-KR')}</p>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <p className={`text-[17px] font-bold ${t.amount > 0 ? 'text-[#3180F7]' : 'text-[#333D4B]'}`}>
+                      {t.amount > 0 ? '+' : ''}{t.amount.toLocaleString()}P
+                    </p>
+                    <p className="mt-0.5 text-[13.5px] text-[#8B95A1]">잔액 {t.balance_after.toLocaleString()}P</p>
+                  </div>
+                </li>
               );
             })}
-          </div>
+          </ul>
         )}
-      </PartnerPanel>
+      </div>
     </div>
   );
 }
+
+const Band = () => <div className="h-2.5 bg-[#F2F4F6]" />;

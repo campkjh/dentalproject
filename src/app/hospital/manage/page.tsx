@@ -1,21 +1,12 @@
 'use client';
 
+// 병원관리 — 상품 상세(261031 쿠팡 견본) 톤: 세그먼트 탭 · 20 굵은 제목 · 회색 이름 정보 줄 · 회색 띠로 칸 나눔.
 import { useState, useEffect } from 'react';
-import {
-  Camera,
-  ChevronRight,
-  Clock,
-  Edit3,
-  MapPin,
-  Phone,
-  Star,
-} from 'lucide-react';
+import { ChevronRight, Star } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import Avatar from '@/components/common/Avatar';
-import TabBar from '@/components/common/TabBar';
-import EmptyState from '@/components/common/EmptyState';
 import LoginRequired from '@/components/common/LoginRequired';
+import MonoIcon from '@/components/common/MonoIcon';
 import { useStore } from '@/store';
 import { useSession } from '@/lib/supabase/SessionProvider';
 import { resolveHospitalImageUrl } from '@/lib/images';
@@ -55,7 +46,6 @@ type ReviewRow = {
 };
 
 export default function HospitalManagePage() {
-  const router = useRouter();
   const { authUser, loading: sessionLoading } = useSession();
   const { showModal, showToast } = useStore();
   const [activeTab, setActiveTab] = useState('병원');
@@ -89,18 +79,16 @@ export default function HospitalManagePage() {
 
   if (sessionLoading || loading) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <p className="text-sm text-gray-400">불러오는 중…</p>
+      <div className="flex min-h-screen items-center justify-center bg-white">
+        <p className="text-[15px] text-[#8B95A1]">불러오는 중…</p>
       </div>
     );
   }
 
   if (!authUser) {
     return (
-      <div className="min-h-screen bg-white max-w-[500px] mx-auto pt-12">
-        <div className="fixed left-1/2 top-0 z-50 flex h-12 w-full max-w-[500px] -translate-x-1/2 items-center bg-white px-2.5 lg:top-[112px]">
-          <h1 className="text-lg font-bold">병원관리</h1>
-        </div>
+      <div className="mx-auto min-h-screen max-w-[500px] bg-white pt-14">
+        <ManageHead />
         <LoginRequired />
       </div>
     );
@@ -108,25 +96,16 @@ export default function HospitalManagePage() {
 
   if (!hospital) {
     return (
-      <div className="min-h-screen bg-white max-w-[500px] mx-auto pt-12">
-        <div className="fixed left-1/2 top-0 z-50 flex h-12 w-full max-w-[500px] -translate-x-1/2 items-center bg-white px-2.5 lg:top-[112px]">
-          <h1 className="text-lg font-bold">병원관리</h1>
-        </div>
-        <div className="flex flex-col items-center justify-center py-20 px-6">
-          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-            <MapPin size={28} className="text-gray-400" />
-          </div>
-          <h2 className="text-base font-bold text-gray-900 mb-2">등록된 병원이 없어요</h2>
-          <p className="text-sm text-gray-500 text-center mb-6">
-            병원 등록 신청을 먼저 진행해주세요.
-          </p>
+      <div className="mx-auto min-h-screen max-w-[500px] bg-white pt-14">
+        <ManageHead />
+        <EmptyBlock icon="hospital" title="등록된 병원이 없어요" sub="병원 등록 신청을 먼저 진행해 주세요.">
           <Link
             href="/hospital/register"
-            className="px-6 py-3 bg-[#8037FF] text-white rounded-xl text-sm font-bold btn-press"
+            className="mt-5 inline-flex h-[46px] items-center rounded-[12px] bg-[#E8F3FF] px-5 text-[16px] font-bold tracking-[-0.3px] text-[#3180F7] transition active:scale-[0.97] active:bg-[#DCEBFF]"
           >
             병원 등록하기
           </Link>
-        </div>
+        </EmptyBlock>
       </div>
     );
   }
@@ -154,18 +133,11 @@ export default function HospitalManagePage() {
   };
 
   return (
-    <div className="pb-[86px] pt-12 bg-white min-h-screen">
-      <div className="fixed left-1/2 top-0 z-50 flex h-12 w-full max-w-[500px] -translate-x-1/2 items-center justify-between bg-white px-2.5 lg:top-[112px]">
-        <h1 className="text-lg font-bold">병원관리</h1>
-        {hospital.status === 'pending' && (
-          <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-[#FFF4E6] text-[#FFA04E]">
-            승인대기
-          </span>
-        )}
-      </div>
+    <div className="mx-auto min-h-screen max-w-[500px] bg-white pb-[86px] pt-14 page-enter">
+      <ManageHead badge={hospital.status === 'pending'} />
 
-      <div className="bg-white">
-        <TabBar tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} variant="underline" />
+      <div className="sticky top-14 z-40 bg-white px-5 pb-2 pt-1 lg:top-[168px]">
+        <SegTabs tabs={tabs} active={activeTab} onChange={setActiveTab} />
       </div>
 
       {activeTab === '병원' && <HospitalTab hospital={hospital} />}
@@ -182,6 +154,98 @@ export default function HospitalManagePage() {
   );
 }
 
+function ManageHead({ badge }: { badge?: boolean }) {
+  return (
+    <div className="fixed left-1/2 top-0 z-50 flex h-14 w-full max-w-[500px] -translate-x-1/2 items-center justify-between bg-white px-5 lg:top-[112px]">
+      <h1 className="text-[20px] font-bold tracking-[-0.4px] text-[#191F28]">병원관리</h1>
+      {badge && <span className="inline-flex h-6 items-center rounded-[6px] bg-[#F2F4F6] px-2 text-[13.5px] font-semibold text-[#6B7684]">승인대기</span>}
+    </div>
+  );
+}
+
+/* ==================== 공통 조각 ==================== */
+const Band = () => <div className="h-2.5 bg-[#F2F4F6]" />;
+
+/** 세그먼트 탭 — 회색 트랙 + 미끄러지는 흰 알약 */
+function SegTabs({ tabs, active, onChange }: { tabs: string[]; active: string; onChange: (t: string) => void }) {
+  const idx = Math.max(0, tabs.indexOf(active));
+  const n = tabs.length;
+  return (
+    <div className="relative flex rounded-[12px] bg-[#F2F4F6] p-1">
+      <span
+        aria-hidden
+        className="absolute bottom-1 top-1 rounded-[10px] bg-white shadow-[0_1px_4px_rgba(0,0,0,0.06)] transition-all duration-500"
+        style={{
+          left: `calc(4px + ${(idx * 100) / n}% - ${(idx * 8) / n}px)`,
+          width: `calc(${100 / n}% - ${8 / n}px)`,
+          transitionTimingFunction: 'cubic-bezier(0.22, 1, 0.36, 1)',
+        }}
+      />
+      {tabs.map((tab) => (
+        <button
+          key={tab}
+          type="button"
+          onClick={() => onChange(tab)}
+          className={`relative h-9 flex-1 rounded-[10px] text-[15px] transition-colors duration-300 ${active === tab ? 'font-bold text-[#191F28]' : 'font-semibold text-[#8B95A1]'}`}
+        >
+          {tab}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/** 칸 제목 줄 — 20 굵은 제목 + 오른쪽 파란 행동 글자 */
+function SectionHead({ title, href, action = '편집' }: { title: React.ReactNode; href?: string; action?: string }) {
+  return (
+    <div className="flex items-center justify-between">
+      <h2 className="text-[20px] font-bold leading-tight tracking-[-0.4px] text-[#191F28]">{title}</h2>
+      {href && (
+        <Link href={href} className="-mr-1 inline-flex h-9 items-center gap-0.5 rounded-[10px] pl-2 pr-1 text-[15px] font-semibold text-[#3180F7] active:bg-[#F2F4F6]">
+          {action}
+          <ChevronRight size={16} />
+        </Link>
+      )}
+    </div>
+  );
+}
+
+function InfoRows({ rows }: { rows: { label: string; value: React.ReactNode }[] }) {
+  return (
+    <div>
+      {rows.map((r) => (
+        <p key={r.label} className="flex min-h-11 items-center py-1.5">
+          <span className="w-[86px] shrink-0 text-[17px] text-[#8B95A1]">{r.label}</span>
+          <span className="min-w-0 flex-1 break-keep text-[17px] text-[#333D4B]">{r.value}</span>
+        </p>
+      ))}
+    </div>
+  );
+}
+
+function EmptyBlock({ icon, title, sub, children }: { icon: string; title: string; sub?: string; children?: React.ReactNode }) {
+  return (
+    <div className="flex flex-col items-center justify-center px-6 py-20 text-center">
+      <span className="qd-a-item flex h-[72px] w-[72px] items-center justify-center rounded-[24px] bg-[#F2F4F6]">
+        <MonoIcon name={icon} size={34} color="#B0B8C1" />
+      </span>
+      <p className="qd-a-item mt-5 break-keep text-[19px] font-bold tracking-[-0.4px] text-[#191F28]" style={{ animationDelay: '.06s' }}>{title}</p>
+      {sub && <p className="qd-a-item mt-1.5 break-keep text-[15px] leading-[1.6] text-[#8B95A1]" style={{ animationDelay: '.12s' }}>{sub}</p>}
+      {children}
+    </div>
+  );
+}
+
+function Stars({ value, size }: { value: number; size: number }) {
+  return (
+    <span className="flex items-center gap-0.5">
+      {[1, 2, 3, 4, 5].map((i) => (
+        <Star key={i} size={size} fill={i <= value ? '#FFC342' : '#E5E8EB'} stroke="none" />
+      ))}
+    </span>
+  );
+}
+
 /* ==================== Hospital Tab ==================== */
 function HospitalTab({ hospital }: { hospital: HospitalRow }) {
   const dayOrder = ['월', '화', '수', '목', '금', '토', '일'];
@@ -191,118 +255,93 @@ function HospitalTab({ hospital }: { hospital: HospitalRow }) {
   const hospitalImage = resolveHospitalImageUrl(hospital);
 
   return (
-    <div className="space-y-3 py-3">
-      {/* Cover photo */}
-      <div className="bg-white">
-        <div className="flex items-center justify-between px-2.5 py-3">
-          <h2 className="font-bold text-base">대문사진</h2>
-          <Link href="/hospital/manage/photos" className="text-[#8037FF] text-sm font-medium flex items-center gap-1">
-            편집 <ChevronRight size={16} />
-          </Link>
-        </div>
-        <div className="h-40 bg-gray-200 relative mx-4 rounded-xl overflow-hidden mb-4">
+    <div className="pt-3">
+      {/* 대문사진 */}
+      <section className="px-5 pb-7 pt-4">
+        <SectionHead title="대문사진" href="/hospital/manage/photos" />
+        <div className="relative mt-3 aspect-[16/9] overflow-hidden rounded-[16px] bg-[#F2F4F6]">
           {hospital.cover_images?.[0] ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={hospital.cover_images[0]} alt="" className="w-full h-full object-cover" />
+            <img src={hospital.cover_images[0]} alt="" className="h-full w-full object-cover" />
           ) : (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <Camera size={32} className="text-gray-400" />
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
+              <MonoIcon name="camera" size={30} color="#B0B8C1" />
+              <span className="text-[14px] text-[#8B95A1]">대문사진을 올려 주세요</span>
             </div>
           )}
         </div>
-      </div>
+      </section>
 
-      {/* Hospital Profile */}
-      <div className="bg-white px-2.5 py-4 space-y-3">
-        <div className="flex items-center gap-3">
-          <div className="w-14 h-14 rounded-full bg-gray-100 overflow-hidden flex-shrink-0">
-            <img src={hospitalImage} alt="" className="w-full h-full object-cover" />
+      {/* 병원 프로필 */}
+      <Band />
+      <section className="px-5 py-7">
+        <h2 className="text-[20px] font-bold leading-tight tracking-[-0.4px] text-[#191F28]">병원 정보</h2>
+        <div className="mt-3 flex items-center gap-3.5 py-2">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={hospitalImage} alt="" className="h-[52px] w-[52px] shrink-0 rounded-[14px] bg-[#F2F4F6] object-cover" />
+          <div className="min-w-0 flex-1">
+            {hospital.category && (
+              <span className="inline-flex h-6 items-center rounded-[6px] bg-[#EFF5FE] px-2 text-[13px] font-semibold text-[#2F6FE4]">{hospital.category}</span>
+            )}
+            <p className="mt-0.5 truncate text-[17px] font-bold text-[#191F28]">{hospital.name}</p>
           </div>
-          <div className="flex-1">
-            <span className="inline-block px-2 py-0.5 bg-[#F4EFFF] text-[#8037FF] text-xs rounded-full font-medium mb-1">
-              {hospital.category}
-            </span>
-            <h3 className="font-bold text-base">{hospital.name}</h3>
-          </div>
         </div>
+        <div className="mt-2">
+          <InfoRows
+            rows={[
+              ...(hospital.address ? [{ label: '주소', value: hospital.address }] : []),
+              ...(hospital.phone ? [{ label: '전화', value: hospital.phone }] : []),
+              ...((hospital.tags ?? []).length > 0 ? [{ label: '키워드', value: hospital.tags.map((t) => t.replace(/^#/, '')).join(', ') }] : []),
+            ]}
+          />
+        </div>
+      </section>
 
-        <div className="space-y-2 text-sm">
-          {hospital.address && (
-            <div className="flex items-center gap-2 text-gray-600">
-              <MapPin size={16} className="text-gray-400 flex-shrink-0" />
-              <span>{hospital.address}</span>
-            </div>
-          )}
-          {hospital.phone && (
-            <div className="flex items-center gap-2 text-gray-600">
-              <Phone size={16} className="text-gray-400 flex-shrink-0" />
-              <span>{hospital.phone}</span>
-            </div>
-          )}
-        </div>
-
-        <div className="flex flex-wrap gap-2 pt-1">
-          {(hospital.tags ?? []).map((tag) => (
-            <span
-              key={tag}
-              className="px-3 py-1 bg-gray-100 text-gray-600 text-xs rounded-full"
-            >
-              {tag}
-            </span>
-          ))}
-        </div>
-      </div>
-
-      {/* Operating hours */}
-      <div className="bg-white px-2.5 py-4">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="font-bold text-base">운영일 및 시간</h2>
-          <Link href="/hospital/manage/hours" className="text-[#8037FF] text-sm font-medium flex items-center gap-1">
-            편집 <ChevronRight size={16} />
-          </Link>
-        </div>
-        <div className="space-y-2">
+      {/* 운영시간 */}
+      <Band />
+      <section className="px-5 py-7">
+        <SectionHead title="운영일 및 시간" href="/hospital/manage/hours" />
+        <dl className="mt-3">
           {orderedHours.map((oh) => (
-            <div key={oh.day} className="flex items-center text-sm">
-              <span className="w-8 text-gray-500 font-medium">{oh.day}</span>
-              <Clock size={14} className="text-gray-400 mr-2" />
-              <span className="text-gray-700">
-                {oh.is_closed ? '휴진' : `${oh.start_time ?? ''} - ${oh.end_time ?? ''}`}
-              </span>
+            <div key={oh.day} className="flex min-h-11 items-center justify-between py-1.5 text-[16px]">
+              <dt className={oh.day === '토' || oh.day === '일' ? 'text-[#8B95A1]' : 'text-[#6B7684]'}>{oh.day}요일</dt>
+              <dd className={`tabular-nums ${oh.is_closed ? 'text-[#B0B8C1]' : 'text-[#333D4B]'}`}>
+                {oh.is_closed ? '휴진' : `${oh.start_time ?? ''} – ${oh.end_time ?? ''}`}
+              </dd>
             </div>
           ))}
-        </div>
+        </dl>
         {hospital.holiday_notice && (
-          <p className="text-xs text-gray-400 mt-2">{hospital.holiday_notice}</p>
+          <p className="mt-3 flex items-start gap-2 rounded-[14px] bg-[#F2F4F6] px-4 py-3.5 text-[14px] leading-[1.5] text-[#4E5968]">
+            <MonoIcon name="exclamation-circle" size={17} color="#B0B8C1" className="mt-0.5" />
+            {hospital.holiday_notice}
+          </p>
         )}
-      </div>
+      </section>
 
-      {/* Hospital intro */}
-      <div className="bg-white px-2.5 py-4">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="font-bold text-base">병원소개</h2>
-          <Link href="/hospital/manage/intro" className="text-[#8037FF] text-sm font-medium flex items-center gap-1">
-            편집 <ChevronRight size={16} />
-          </Link>
-        </div>
-        <p className="text-sm text-gray-600 leading-relaxed">
-          {hospital.introduction || '병원 소개가 아직 등록되지 않았습니다.'}
+      {/* 병원소개 */}
+      <Band />
+      <section className="px-5 py-7">
+        <SectionHead title="병원소개" href="/hospital/manage/intro" />
+        <p className={`mt-3 whitespace-pre-wrap break-words text-[16px] leading-[1.7] ${hospital.introduction ? 'text-[#333D4B]' : 'text-[#B0B8C1]'}`}>
+          {hospital.introduction || '병원 소개가 아직 등록되지 않았어요.'}
         </p>
-      </div>
+      </section>
 
-      {/* Hospital location */}
-      <div className="bg-white px-2.5 py-4">
-        <h2 className="font-bold text-base mb-3">병원위치</h2>
-        <div className="h-40 bg-gray-200 rounded-xl flex items-center justify-center mb-3">
-          <MapPin size={32} className="text-gray-400" />
+      {/* 병원위치 */}
+      <Band />
+      <section className="px-5 py-7">
+        <SectionHead title="병원위치" />
+        <div className="mt-3 flex aspect-[16/10] items-center justify-center rounded-[16px] bg-[#F2F4F6]">
+          <MonoIcon name="pin-location" size={30} color="#B0B8C1" />
         </div>
-        <p className="text-sm text-gray-700 font-medium">{hospital.address}</p>
+        <p className="mt-3 text-[15px] leading-[1.5] text-[#191F28]">{hospital.address}</p>
         {hospital.address_detail && (
-          <p className="text-xs text-gray-500 mt-1 whitespace-pre-line">
+          <p className="mt-1.5 whitespace-pre-line rounded-[14px] bg-[#F2F4F6] px-4 py-3 text-[14px] leading-[1.6] text-[#4E5968]">
             {hospital.address_detail}
           </p>
         )}
-      </div>
+      </section>
     </div>
   );
 }
@@ -323,47 +362,40 @@ function MemberTab({
   const doctors = hospital.doctors ?? [];
 
   return (
-    <div className="py-3 space-y-3">
-      {/* Active members */}
-      <div className="bg-white">
-        <div className="px-2.5 py-3 flex items-center justify-between">
-          <h2 className="font-bold text-sm text-gray-500">활성 멤버</h2>
-          <Link href="/hospital/manage/doctor" className="text-[#8037FF] text-xs font-bold">
+    <div className="pt-3">
+      <section className="px-5 pb-7 pt-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-[20px] font-bold leading-tight tracking-[-0.4px] text-[#191F28]">
+            활성 멤버 <span className="text-[#3180F7]">{doctors.length}</span>
+          </h2>
+          <Link href="/hospital/manage/doctor" className="-mr-1 inline-flex h-9 items-center rounded-[10px] px-2 text-[15px] font-semibold text-[#3180F7] active:bg-[#F2F4F6]">
             + 의료진 추가
           </Link>
         </div>
-        <div className="divide-y divide-gray-50">
-          {doctors.map((doctor) => (
-            <div key={doctor.id} className="px-2.5 py-3 flex items-center gap-3">
-              <Avatar
-                src={doctor.profile_image}
-                role="doctor"
-                seed={doctor.name}
-                size={44}
-                alt=""
-                className="flex-shrink-0"
-              />
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="font-bold text-sm">{doctor.name}</span>
-                  <span className="text-xs text-gray-500">{doctor.title}</span>
+        <div className="-mx-2 mt-2">
+          {doctors.map((doctor, i) => (
+            <div key={doctor.id} className="qd-a-item flex items-center gap-3.5 rounded-[16px] px-2 py-3" style={{ animationDelay: `${Math.min(i, 8) * 0.04}s` }}>
+              <Avatar src={doctor.profile_image} role="doctor" seed={doctor.name} size={48} alt="" className="shrink-0" />
+              <div className="min-w-0 flex-1">
+                <p className="flex min-w-0 items-center gap-1.5">
+                  <span className="truncate text-[17px] font-bold text-[#191F28]">{doctor.name}</span>
+                  <span className="shrink-0 text-[14px] text-[#6B7684]">{doctor.title}</span>
                   {doctor.is_owner && (
-                    <span className="px-1.5 py-0.5 bg-[#8037FF] text-white text-[10px] rounded font-medium">
-                      My
-                    </span>
+                    <span className="inline-flex h-5 shrink-0 items-center rounded-[5px] bg-[#EFF5FE] px-1.5 text-[12px] font-bold text-[#2F6FE4]">나</span>
                   )}
-                </div>
-                <p className="text-xs text-gray-500 mt-0.5">{doctor.specialty}</p>
+                </p>
+                {doctor.specialty && <p className="mt-0.5 truncate text-[14px] text-[#8B95A1]">{doctor.specialty}</p>}
               </div>
-              <div className="flex-shrink-0">
+              <div className="shrink-0">
                 {doctor.is_owner ? (
-                  <button className="p-2">
-                    <Edit3 size={16} className="text-gray-400" />
+                  <button type="button" aria-label="정보 수정" className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-[#F2F4F6]">
+                    <MonoIcon name="pencil" size={16} color="#6B7684" />
                   </button>
                 ) : (
                   <button
+                    type="button"
                     onClick={() => onRemove(doctor.name)}
-                    className="px-3 py-1.5 text-xs text-red-500 border border-red-200 rounded-lg font-medium"
+                    className="inline-flex h-9 items-center rounded-[10px] bg-[#F2F4F6] px-3 text-[14px] font-semibold text-[#F04452]"
                   >
                     탈퇴
                   </button>
@@ -372,50 +404,47 @@ function MemberTab({
             </div>
           ))}
         </div>
-      </div>
+      </section>
 
       {pendingRequests.length > 0 && (
-        <div className="bg-white">
-          <div className="px-2.5 py-3">
-            <h2 className="font-bold text-sm text-gray-500">새로운 요청</h2>
-          </div>
-          <div className="divide-y divide-gray-50">
-            {pendingRequests.map((request) => (
-              <div key={request.id} className="px-2.5 py-3">
-                <div className="flex items-center gap-3">
-                  <Avatar
-                    role="doctor"
-                    seed={request.name}
-                    size={44}
-                    alt=""
-                    className="flex-shrink-0"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-sm">{request.name}</span>
-                      <span className="text-xs text-gray-500">{request.title}</span>
+        <>
+          <Band />
+          <section className="px-5 py-7">
+            <h2 className="text-[20px] font-bold leading-tight tracking-[-0.4px] text-[#191F28]">새로운 요청</h2>
+            <div className="mt-2 space-y-2">
+              {pendingRequests.map((request) => (
+                <div key={request.id} className="py-3">
+                  <div className="flex items-center gap-3.5">
+                    <Avatar role="doctor" seed={request.name} size={48} alt="" className="shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <p className="flex items-center gap-1.5">
+                        <span className="text-[17px] font-bold text-[#191F28]">{request.name}</span>
+                        <span className="text-[14px] text-[#6B7684]">{request.title}</span>
+                      </p>
+                      <p className="mt-0.5 text-[14px] text-[#8B95A1]">{request.specialty}</p>
                     </div>
-                    <p className="text-xs text-gray-500 mt-0.5">{request.specialty}</p>
+                  </div>
+                  <div className="mt-3 flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => onReject(request.name)}
+                      className="flex h-11 flex-1 items-center justify-center rounded-[12px] bg-[#F2F4F6] text-[15px] font-semibold text-[#4E5968]"
+                    >
+                      거절
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onAccept(request.name)}
+                      className="flex h-11 flex-1 items-center justify-center rounded-[12px] bg-[#4A82EE] text-[15px] font-semibold text-white"
+                    >
+                      수락
+                    </button>
                   </div>
                 </div>
-                <div className="flex gap-2 mt-3 ml-14">
-                  <button
-                    onClick={() => onReject(request.name)}
-                    className="flex-1 py-2 border border-gray-300 text-gray-600 rounded-xl text-sm font-medium"
-                  >
-                    거절
-                  </button>
-                  <button
-                    onClick={() => onAccept(request.name)}
-                    className="flex-1 py-2 bg-[#8037FF] text-white rounded-xl text-sm font-medium"
-                  >
-                    수락
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+              ))}
+            </div>
+          </section>
+        </>
       )}
     </div>
   );
@@ -424,102 +453,72 @@ function MemberTab({
 /* ==================== Review Tab ==================== */
 function ReviewTab({ reviews, reviewCount }: { reviews: ReviewRow[]; reviewCount: number }) {
   if (reviews.length === 0) {
-    return (
-      <div className="py-3">
-        <EmptyState icon="message" message="리뷰가 존재하지 않아요" />
-      </div>
-    );
+    return <EmptyBlock icon="chat-bubble-question" title="리뷰가 아직 없어요" sub="환자가 후기를 남기면 여기에 모여요." />;
   }
 
   const avgRating =
     reviews.reduce((sum, r) => sum + Number(r.rating), 0) / reviews.length;
 
   return (
-    <div className="py-3 space-y-3">
-      <div className="bg-white px-2.5 py-6 flex flex-col items-center">
-        <div className="flex items-center gap-2 mb-1">
-          <Star size={24} fill="#FBBF24" className="text-yellow-400" />
-          <span className="text-3xl font-bold">{avgRating.toFixed(1)}</span>
+    <div className="pt-3">
+      <section className="px-5 pb-7 pt-4">
+        <div className="rounded-[14px] bg-[#EFF5FE] px-5 pb-5 pt-4">
+          <span className="rounded-[6px] bg-[#2F6FE4] px-2 py-1 text-[13.5px] font-bold text-white">평균 평점</span>
+          <div className="mt-3 flex items-end gap-2">
+            <p className="text-[30px] font-bold leading-none tracking-[-0.8px] text-[#1E3A78]">{avgRating.toFixed(1)}</p>
+            <Stars value={Math.round(avgRating)} size={18} />
+          </div>
+          <p className="mt-2 text-[15px] font-semibold text-[#1E3A78]">리뷰 {reviewCount.toLocaleString()}개</p>
         </div>
-        <div className="flex items-center gap-0.5">
-          {[1, 2, 3, 4, 5].map((i) => (
-            <Star
-              key={i}
-              size={16}
-              fill={i <= Math.round(avgRating) ? '#FBBF24' : '#E5E7EB'}
-              className={i <= Math.round(avgRating) ? 'text-yellow-400' : 'text-gray-200'}
-            />
-          ))}
-        </div>
-        <p className="text-xs text-gray-400 mt-1">
-          {reviewCount.toLocaleString()}개의 리뷰
-        </p>
-      </div>
+      </section>
 
-      <div className="space-y-3">
+      <Band />
+      <section className="px-5 py-3">
         {reviews.map((review) => (
-          <div key={review.id} className="bg-white px-2.5 py-4">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <Avatar
-                  src={review.author?.profile_image ?? undefined}
-                  seed={review.author?.name ?? review.id}
-                  size={32}
-                  alt=""
-                  className="flex-shrink-0"
-                />
-                <span className="text-sm font-medium">{review.author?.name ?? '익명'}</span>
+          <div key={review.id} className="py-5">
+            <div className="flex items-center justify-between">
+              <div className="flex min-w-0 items-center gap-2.5">
+                <Avatar src={review.author?.profile_image ?? undefined} seed={review.author?.name ?? review.id} size={36} alt="" className="shrink-0" />
+                <div className="min-w-0">
+                  <p className="truncate text-[15px] font-semibold text-[#191F28]">{review.author?.name ?? '익명'}</p>
+                  <Stars value={review.rating} size={13} />
+                </div>
               </div>
-              <span className="text-xs text-gray-400">
+              <span className="shrink-0 text-[13px] text-[#B0B8C1]">
                 {review.created_at ? new Date(review.created_at).toLocaleDateString('ko-KR') : ''}
               </span>
             </div>
 
-            <div className="flex items-center gap-0.5 mb-2">
-              {[1, 2, 3, 4, 5].map((i) => (
-                <Star
-                  key={i}
-                  size={14}
-                  fill={i <= review.rating ? '#FBBF24' : '#E5E7EB'}
-                  className={i <= review.rating ? 'text-yellow-400' : 'text-gray-200'}
-                />
-              ))}
-            </div>
-
             {(review.before_image || review.after_image) && (
-              <div className="flex gap-2 mb-3">
+              <div className="mt-3 flex gap-2">
                 {review.before_image && (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={review.before_image} alt="Before" className="flex-1 h-32 object-cover rounded-lg" />
+                  <img src={review.before_image} alt="Before" className="h-32 min-w-0 flex-1 rounded-[12px] object-cover" />
                 )}
                 {review.after_image && (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={review.after_image} alt="After" className="flex-1 h-32 object-cover rounded-lg" />
+                  <img src={review.after_image} alt="After" className="h-32 min-w-0 flex-1 rounded-[12px] object-cover" />
                 )}
               </div>
             )}
 
-            <p className="text-sm text-gray-700 leading-relaxed line-clamp-3 mb-3">
-              {review.content}
-            </p>
+            <p className="mt-3 line-clamp-3 text-[15px] leading-[1.6] text-[#333D4B]">{review.content}</p>
 
-            <div className="bg-gray-50 rounded-lg p-3 space-y-1">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-gray-500">시술명</span>
-                <span className="text-gray-700 font-medium">{review.treatment_name ?? '-'}</span>
-              </div>
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-gray-500">총 비용</span>
-                <span className="text-gray-700 font-medium">{(review.total_cost ?? 0).toLocaleString()}원</span>
-              </div>
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-gray-500">시술일</span>
-                <span className="text-gray-700">{review.treatment_date ?? '-'}</span>
-              </div>
+            <div className="mt-3 space-y-1 rounded-[14px] bg-[#F2F4F6] px-4 py-3">
+              {[
+                { label: '시술명', value: review.treatment_name ?? '-' },
+                { label: '총 비용', value: `${(review.total_cost ?? 0).toLocaleString()}원` },
+                { label: '시술일', value: review.treatment_date ?? '-' },
+              ].map((r) => (
+                <p key={r.label} className="flex items-center text-[14px]">
+                  <span className="w-[64px] shrink-0 text-[#8B95A1]">{r.label}</span>
+                  <span className="min-w-0 flex-1 truncate text-[#333D4B]">{r.value}</span>
+                </p>
+              ))}
             </div>
           </div>
         ))}
-      </div>
+      </section>
     </div>
   );
 }

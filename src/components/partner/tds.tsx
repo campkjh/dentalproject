@@ -8,8 +8,11 @@ import type {
   SelectHTMLAttributes,
   TextareaHTMLAttributes,
 } from 'react';
-import { ChevronRight, Search } from 'lucide-react';
+import { ChevronRight, Search, X } from 'lucide-react';
 import TopBar from '@/components/common/TopBar';
+import MonoIcon from '@/components/common/MonoIcon';
+
+// 의사 화면 공용 조각 — 261031 상품 상세 톤: 모양은 partner-v2.css(.partner-*)가 그린다(테두리 없음·회색 면·#4A82EE 버튼·r6 배지·r8 칩).
 
 type Tone = 'brand' | 'neutral' | 'danger';
 type ButtonSize = 's' | 'm' | 'l' | 'xl';
@@ -172,7 +175,7 @@ export function PartnerSearchField({
   return (
     <div className={cn('partner-search-shell', className)}>
       <div className="partner-search">
-        <Search size={24} />
+        <Search size={20} strokeWidth={2.2} />
         <input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} />
       </div>
     </div>
@@ -241,7 +244,7 @@ export function PartnerListRow({
         {description && <div className="partner-list-sub">{description}</div>}
       </div>
       {meta && <div className="partner-list-meta">{meta}</div>}
-      {action ?? (href ? <ChevronRight size={18} className="partner-list-chevron" /> : null)}
+      {action ?? (href ? <ChevronRight size={20} className="partner-list-chevron" /> : null)}
     </>
   );
 
@@ -269,10 +272,11 @@ export function PartnerEmpty({
 }) {
   return (
     <div className="partner-empty">
-      {icon && <div className="partner-empty-icon">{icon}</div>}
-      <p className="partner-empty-title">{title}</p>
-      {description && <p className="partner-empty-desc">{description}</p>}
-      {action && <div className="partner-empty-action">{action}</div>}
+      {/* 아이콘을 안 주면 LoginRequired 결의 옅은 안내 아이콘 */}
+      <div className="partner-empty-icon qd-a-item">{icon ?? <MonoIcon name="info-circle" size={34} color="#B0B8C1" />}</div>
+      <p className="partner-empty-title qd-a-item" style={{ animationDelay: '.06s' }}>{title}</p>
+      {description && <p className="partner-empty-desc qd-a-item" style={{ animationDelay: '.12s' }}>{description}</p>}
+      {action && <div className="partner-empty-action qd-a-item" style={{ animationDelay: '.18s' }}>{action}</div>}
     </div>
   );
 }
@@ -322,8 +326,8 @@ export function PartnerModal({
       <div className="partner-modal" onClick={(e) => e.stopPropagation()}>
         <div className="partner-modal-header">
           <h3>{title}</h3>
-          <button type="button" onClick={onClose} aria-label="닫기">
-            ×
+          <button type="button" onClick={onClose} aria-label="닫기" className="flex items-center justify-center">
+            <X size={20} strokeWidth={2.2} />
           </button>
         </div>
         <div className="partner-modal-body">{children}</div>

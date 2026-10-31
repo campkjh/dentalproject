@@ -7,6 +7,7 @@ import TopBar from '@/components/common/TopBar';
 import { createClient, hasSupabaseEnv } from '@/lib/supabase/client';
 import { compressImage } from '@/lib/compressImage';
 import { resolveDoctorImageUrl } from '@/lib/images';
+import MonoIcon from '@/components/common/MonoIcon';
 
 const MAX_PROFILE_IMAGE_SIZE = 10 * 1024 * 1024;
 const PROFILE_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/avif'];
@@ -191,19 +192,26 @@ export default function DoctorEditPage() {
       {loading ? (
         <div className="partner-loading small">불러오는 중...</div>
       ) : (
-        <main className="partner-profile-edit-content">
-          <section className="partner-profile-photo-section">
-            <h2>프로필사진</h2>
-            <p>1:1규격의 jpg, png, jpeg, avif 10mb이하 이미지 파일</p>
+        <main className="px-5 pb-8 pt-2">
+          {/* 프로필 사진 — 가운데 동그라미 + 카메라 배지 */}
+          <section className="qd-a-item flex flex-col items-center">
             <button
               type="button"
-              className="partner-profile-photo-button"
+              className="relative h-[96px] w-[96px] rounded-full bg-[#F2F4F6] transition-transform active:scale-[0.97] disabled:opacity-70"
               onClick={() => fileInputRef.current?.click()}
               disabled={uploading}
               aria-label="프로필사진 변경"
             >
-              <img src={resolveDoctorImageUrl(form.profile_image)} alt="" />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={resolveDoctorImageUrl(form.profile_image)} alt="" className="h-full w-full rounded-full object-cover" />
+              <span className="absolute bottom-0 right-0 flex h-8 w-8 items-center justify-center rounded-full border-[3px] border-white bg-[#4E5968]">
+                <MonoIcon name="camera" size={15} color="#FFFFFF" />
+              </span>
+              {uploading && (
+                <span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/45 text-[12px] font-semibold text-white">올리는 중</span>
+              )}
             </button>
+            <p className="mt-3 text-center text-[14px] leading-[1.5] text-[#8B95A1]">1:1 비율의 jpg, png, jpeg, avif · 10MB 이하</p>
             <input
               ref={fileInputRef}
               type="file"
@@ -213,41 +221,58 @@ export default function DoctorEditPage() {
             />
           </section>
 
-          <label className="partner-profile-edit-field">
-            <span>이름</span>
+          <label className="qd-a-item mt-7 block" style={{ animationDelay: '.06s' }}>
+            <span className="mb-2 block text-[15px] font-semibold text-[#4E5968]">이름</span>
             <input
               value={form.name}
               onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
               placeholder="이름"
+              className={FIELD}
             />
           </label>
 
-          <label className="partner-profile-edit-field">
-            <span>전문의 타이틀</span>
+          <label className="qd-a-item mt-5 block" style={{ animationDelay: '.12s' }}>
+            <span className="mb-2 block text-[15px] font-semibold text-[#4E5968]">전문의 타이틀</span>
             <input
               value={form.specialty}
               onChange={(event) => setForm((current) => ({ ...current, specialty: event.target.value }))}
               placeholder="치과교정과 전문의"
+              className={FIELD}
             />
           </label>
 
-          <section className="partner-profile-hospital-field" aria-label="병원설정">
-            <h2>병원설정</h2>
-            <div>
-              <span>{hospitalName || '소속 병원 미등록'}</span>
-              <button type="button" className="change" onClick={() => showToast('병원 변경은 관리자 승인이 필요합니다.')}>변경</button>
+          <section className="qd-a-item mt-5" aria-label="병원설정" style={{ animationDelay: '.18s' }}>
+            <h2 className="mb-2 text-[15px] font-semibold text-[#4E5968]">병원설정</h2>
+            <div className="flex min-h-14 items-center gap-3 rounded-[14px] bg-[#F2F4F6] py-2 pl-4 pr-2">
+              <MonoIcon name="hospital" size={20} color="#8B95A1" />
+              <span className="min-w-0 flex-1 truncate text-[16px] text-[#333D4B]">{hospitalName || '소속 병원 미등록'}</span>
+              <button type="button" className="h-9 shrink-0 rounded-[10px] bg-white px-3 text-[14px] font-semibold text-[#333D4B]" onClick={() => showToast('병원 변경은 관리자 승인이 필요합니다.')}>변경</button>
               {!isNew && (
-                <button type="button" className="leave" onClick={handleLeave}>탈퇴</button>
+                <button type="button" className="h-9 shrink-0 rounded-[10px] bg-white px-3 text-[14px] font-semibold text-[#F04452]" onClick={handleLeave}>탈퇴</button>
               )}
             </div>
           </section>
         </main>
       )}
 
-      <button className="partner-profile-save" type="button" onClick={handleSave} disabled={saving || loading || uploading}>
-        {saving ? '저장 중...' : '저장하기'}
-      </button>
+      {/* 바닥 저장 버튼 — 위 선 대신 흰 그라데이션 */}
+      <div className="fixed inset-x-0 bottom-0 z-[75] bg-white px-4 pt-2" style={{ paddingBottom: 'max(calc(env(safe-area-inset-bottom, 0px) + 12px), 16px)' }}>
+        <div className="pointer-events-none absolute inset-x-0 bottom-full h-8 bg-gradient-to-b from-white/0 to-white" />
+        <div className="mx-auto max-w-[608px]">
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={saving || loading || uploading}
+            className="flex h-14 w-full items-center justify-center rounded-[18px] bg-[#4A82EE] text-[17px] font-bold text-white transition-all active:scale-[0.98] disabled:opacity-60"
+          >
+            {saving ? '저장 중...' : '저장하기'}
+          </button>
+        </div>
+      </div>
 
     </div>
   );
 }
+
+/* 입력 칸 — 회색 면 · 테두리 없음 · 16 글자. .partner-page input 전역 결(테두리·15px)을 ! 로 덮는다 */
+const FIELD = 'block w-full !min-h-14 !rounded-[14px] !border-0 !bg-[#F2F4F6] !px-4 !text-[16px] !font-normal !text-[#191F28] outline-none transition-colors focus:!bg-[#EDEFF2] focus:!shadow-none';

@@ -10,6 +10,7 @@ import { useSession } from '@/lib/supabase/SessionProvider';
 import { useReservationRealtimeRefresh } from '@/lib/realtime/reservations';
 import { useStore } from '@/store';
 import { HeaderBellIcon } from '@/components/icons/HeaderIcons';
+import MonoIcon from '@/components/common/MonoIcon';
 
 type ScheduleHistoryItem = {
   id: string;
@@ -433,16 +434,62 @@ function getStatus(row: ReservationRow) {
   return { label: '예약확인중...', tone: 'pending' as const };
 }
 
+// ─── 261031 상품 상세 톤 조각 — 테두리 카드 없이 흰 칸 + 회색 띠, 배지 r6, 회색 이름 정보 줄 ───
+const Band = () => <div className="h-2.5 bg-[#F2F4F6]" />;
+
+const BADGE = 'inline-flex h-6 shrink-0 items-center rounded-[6px] px-2 text-[13.5px] font-semibold';
+
+/** 예약 상태 배지 — 대기 회색 · 확정 파랑 · 완료 초록 · 취소 빨강(고객 예약내역과 같은 색) */
+function reservationTone(tone: ReturnType<typeof getStatus>['tone']) {
+  if (tone === 'completed') return 'bg-[#E6F7EE] text-[#03A94D]';
+  if (tone === 'confirmed') return 'bg-[#E8F3FF] text-[#3180F7]';
+  if (tone === 'cancelled') return 'bg-[#FFEEEF] text-[#F04452]';
+  return 'bg-[#F2F4F6] text-[#6B7684]';
+}
+
+/** 상품 노출 배지 — 노출중 파랑 · 반려 빨강 · 심사중/비노출 회색 */
+function productTone(tone: ReturnType<typeof productCardStatus>['tone']) {
+  if (tone === 'live') return 'bg-[#E8F3FF] text-[#3180F7]';
+  if (tone === 'danger') return 'bg-[#FFEEEF] text-[#F04452]';
+  return 'bg-[#F2F4F6] text-[#6B7684]';
+}
+
+/** 회색 이름 정보 줄 — 좁은 관리 화면이라 15px */
+function InfoRow({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex min-h-10 items-center py-1">
+      <span className="w-[72px] shrink-0 text-[15px] text-[#8B95A1]">{label}</span>
+      <span className="min-w-0 flex-1 break-keep text-[15px] text-[#333D4B]">{children}</span>
+    </div>
+  );
+}
+
+/** 빈 화면 — LoginRequired 결 */
+function EmptyBlock({ icon, title, sub, children }: { icon: string; title: string; sub?: string; children?: React.ReactNode }) {
+  return (
+    <div className="flex flex-col items-center px-6 py-16 text-center">
+      <span className="qd-a-item flex h-[72px] w-[72px] items-center justify-center rounded-[24px] bg-[#F2F4F6]">
+        <MonoIcon name={icon} size={34} color="#B0B8C1" />
+      </span>
+      <p className="qd-a-item mt-5 break-keep text-[19px] font-bold tracking-[-0.4px] text-[#191F28]" style={{ animationDelay: '.06s' }}>{title}</p>
+      {sub && <p className="qd-a-item mt-1.5 break-keep text-[15px] leading-[1.6] tracking-[-0.2px] text-[#8B95A1]" style={{ animationDelay: '.12s' }}>{sub}</p>}
+      {children}
+    </div>
+  );
+}
+
 function ReservationCard({
   row,
   hospital,
   onConfirmRequest,
   onDetailRequest,
+  index = 0,
 }: {
   row: ReservationRow;
   hospital: HospitalRow | null;
   onConfirmRequest: (action: { id: string; status: ReservationRow['status'] }) => void;
   onDetailRequest: (id: string) => void;
+  index?: number;
 }) {
   const status = getStatus(row);
   const customerName = row.user?.name ?? row.customer_name ?? '예약자 정보 없음';
@@ -453,66 +500,87 @@ function ReservationCard({
   const address = hospital?.address ?? hospital?.location ?? '';
   const payment = paymentLabels(row);
   const scheduleHistory = latestScheduleHistory(row);
+  const paymentTone = payment.status === '결제완료'
+    ? 'bg-[#E8F3FF] text-[#3180F7]'
+    : payment.status === '결제취소'
+      ? 'bg-[#FFEEEF] text-[#F04452]'
+      : 'bg-[#F2F4F6] text-[#6B7684]';
 
   return (
-    <article className="partner-reservation-card">
-      <div className="partner-reservation-card-head" onClick={() => onDetailRequest(row.id)} style={{ cursor: 'pointer' }}>
-        <strong className={`is-${status.tone}`}>{status.label}</strong>
-        <span>
-          {formatDate(row.reservation_at ?? row.visit_at)}
-          <ChevronRight size={22} strokeWidth={2.2} />
+    <article className="qd-a-item px-5 py-6" style={{ animationDelay: `${Math.min(index, 5) * 0.05}s` }}>
+      {/* 상태 · 예약일 — 누르면 상세 */}
+      <button
+        type="button"
+        onClick={() => onDetailRequest(row.id)}
+        className="-mx-2 flex w-[calc(100%+16px)] items-center gap-2 rounded-[12px] px-2 py-1 text-left transition-colors active:bg-[#F9FAFB]"
+      >
+        <span className={`${BADGE} ${reservationTone(status.tone)}`}>{status.label}</span>
+        <span className="min-w-0 flex-1" />
+        <span className="text-[14px] text-[#8B95A1]">{formatDate(row.reservation_at ?? row.visit_at)}</span>
+        <ChevronRight size={18} strokeWidth={2.2} className="shrink-0 text-[#B0B8C1]" />
+      </button>
+
+      {/* 상품 줄 */}
+      <button
+        type="button"
+        onClick={() => onDetailRequest(row.id)}
+        className="-mx-2 mt-3 flex w-[calc(100%+16px)] items-center gap-3.5 rounded-[16px] px-2 py-2 text-left transition-colors active:bg-[#F9FAFB]"
+      >
+        {productImage ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={productImage} alt="" className="h-14 w-14 shrink-0 rounded-[14px] bg-[#F2F4F6] object-cover" />
+        ) : (
+          <span className="h-14 w-14 shrink-0 rounded-[14px] bg-[#F2F4F6]" aria-hidden="true" />
+        )}
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-[17px] font-bold tracking-[-0.3px] text-[#191F28]">{title}</span>
+          <span className="mt-0.5 block truncate text-[14px] text-[#8B95A1]">{hospitalName}</span>
+          <span className={`block truncate text-[14px] ${address ? 'text-[#B0B8C1]' : 'text-[#D1D6DB]'}`}>{address || '주소 미등록'}</span>
         </span>
+      </button>
+
+      {/* 정보 줄 */}
+      <div className="mt-2">
+        <InfoRow label="예약자">{customerName}</InfoRow>
+        <InfoRow label="예약일시">{formatVisit(row.reservation_at ?? row.visit_at)}</InfoRow>
+        <InfoRow label="금액">
+          <span className="flex flex-wrap items-center gap-1.5">
+            <strong className="mr-0.5 text-[16px] font-bold text-[#191F28]">{money(row.amount)}</strong>
+            <span className={`${BADGE} ${paymentTone}`}>{payment.status}</span>
+            <span className={`${BADGE} bg-[#F2F4F6] text-[#6B7684]`}>{payment.method}</span>
+          </span>
+        </InfoRow>
       </div>
-      <div className="partner-reservation-card-body">
-        <div className="partner-reservation-product">
-          {productImage ? (
-            <img src={productImage} alt="" />
-          ) : (
-            <div className="partner-reservation-image-empty" aria-hidden="true" />
-          )}
-          <div className="partner-reservation-product-copy">
-            <h2>{title}</h2>
-            <p>{hospitalName}</p>
-            {address ? <p>{address}</p> : <p className="partner-info-placeholder">주소 미등록</p>}
-          </div>
+
+      {/* 일정 변경 — 회색 안내 칸 */}
+      {scheduleHistory && (
+        <p className="mt-3 flex gap-2 rounded-[14px] bg-[#F2F4F6] px-4 py-3.5 text-[14px] leading-[1.5] text-[#4E5968]">
+          <MonoIcon name="info-circle" size={18} color="#B0B8C1" className="mt-px" />
+          <span className="min-w-0 flex-1 break-keep">
+            <span className="font-semibold text-[#333D4B]">변경내역</span> · {scheduleHistory.content}
+          </span>
+        </p>
+      )}
+
+      {/* 확인 기다리는 예약 — 같은 폭 두 버튼 */}
+      {row.status === 'pending' && (
+        <div className="mt-4 flex gap-2">
+          <button
+            type="button"
+            onClick={() => onConfirmRequest({ id: row.id, status: 'confirmed' })}
+            className="flex h-12 flex-1 items-center justify-center rounded-[14px] bg-[#4A82EE] text-[15px] font-bold text-white transition-all active:scale-[0.98] active:bg-[#3D74DE]"
+          >
+            예약확정
+          </button>
+          <button
+            type="button"
+            onClick={() => onConfirmRequest({ id: row.id, status: 'cancelled' })}
+            className="flex h-12 flex-1 items-center justify-center rounded-[14px] bg-[#F2F4F6] text-[15px] font-semibold text-[#F04452] transition-all active:scale-[0.98] active:bg-[#E5E8EB]"
+          >
+            예약취소
+          </button>
         </div>
-        <dl className="partner-reservation-facts">
-          <div>
-            <dt>예약자</dt>
-            <dd>{customerName}</dd>
-          </div>
-          <div>
-            <dt>예약일시</dt>
-            <dd>{formatVisit(row.reservation_at ?? row.visit_at)}</dd>
-          </div>
-          <div>
-            <dt>금액</dt>
-            <dd className="partner-reservation-payment">
-              <strong>{money(row.amount)}</strong>
-              <span>
-                <em>{payment.status}</em>
-                <em>{payment.method}</em>
-              </span>
-            </dd>
-          </div>
-        </dl>
-        {scheduleHistory && (
-          <div className="partner-reservation-change">
-            <span>변경내역</span>
-            <p>{scheduleHistory.content}</p>
-          </div>
-        )}
-        {row.status === 'pending' && (
-          <div className="partner-reservation-actions">
-            <button type="button" onClick={() => onConfirmRequest({ id: row.id, status: 'confirmed' })}>
-              예약확정
-            </button>
-            <button type="button" onClick={() => onConfirmRequest({ id: row.id, status: 'cancelled' })}>
-              예약취소
-            </button>
-          </div>
-        )}
-      </div>
+      )}
     </article>
   );
 }
@@ -522,11 +590,13 @@ function ProductRequestCard({
   hospital,
   onEdit,
   onDelete,
+  index = 0,
 }: {
   product: ProductRow;
   hospital: HospitalRow | null;
   onEdit: (product: ProductRow) => void;
   onDelete: (product: ProductRow) => void;
+  index?: number;
 }) {
   const meta = approvalMeta(product);
   const approvalStatus = effectiveApprovalStatus(product);
@@ -541,54 +611,64 @@ function ProductRequestCard({
   const address = product.location || hospital?.address || hospital?.location || '주소 미등록';
 
   return (
-    <article className={`partner-product-card is-${meta.tone}`}>
-      <div className="partner-product-card-top">
-        <span className={`partner-product-status is-${status.tone}`}>
-          {status.label}
-        </span>
-        <span>게시일 {publishedAt}</span>
+    <article data-tone={meta.tone} className="qd-a-item px-5 py-6" style={{ animationDelay: `${Math.min(index, 5) * 0.05}s` }}>
+      <div className="flex items-center gap-2">
+        <span className={`${BADGE} ${productTone(status.tone)}`}>{status.label}</span>
+        <span className="min-w-0 flex-1" />
+        <span className="text-[14px] text-[#8B95A1]">게시일 {publishedAt}</span>
       </div>
 
-      <div className="partner-product-content">
-        <div className="partner-product-thumb">
-          {productImage ? <img src={productImage} alt="" /> : <span aria-hidden="true" />}
-        </div>
-        <div className="partner-product-main">
-          <div className="partner-product-main-copy">
-            <h2>{product.title}</h2>
-            <p>{hospital?.name || '병원명 미등록'}</p>
-            <p>{address}</p>
-          </div>
+      <div className="mt-3 flex items-center gap-3.5 py-2">
+        {productImage ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={productImage} alt="" className="h-14 w-14 shrink-0 rounded-[14px] bg-[#F2F4F6] object-cover" />
+        ) : (
+          <span className="h-14 w-14 shrink-0 rounded-[14px] bg-[#F2F4F6]" aria-hidden="true" />
+        )}
+        <div className="min-w-0 flex-1">
+          <h2 className="truncate text-[17px] font-bold tracking-[-0.3px] text-[#191F28]">{product.title}</h2>
+          <p className="mt-0.5 truncate text-[14px] text-[#8B95A1]">{hospital?.name || '병원명 미등록'}</p>
+          <p className="truncate text-[14px] text-[#B0B8C1]">{address}</p>
         </div>
       </div>
 
-      <dl className="partner-product-stats">
-        <div>
-          <dt>리뷰수</dt>
-          <dd>
-            <span className="partner-product-stars" aria-hidden="true">
-              {Array.from({ length: 5 }).map((_, index) => (
-                <Star key={index} size={17} strokeWidth={0} fill={index < Math.round(rating) ? '#3180F7' : '#c8ced9'} />
-              ))}
-            </span>
-            <strong>{rating.toFixed(1)}{reviewCount > 0 ? `(${reviewCount.toLocaleString('ko-KR')})` : ''}</strong>
+      {/* 리뷰 · 예약 · 금액 — 회색 면 한 칸 */}
+      <dl className="mt-3 grid grid-cols-3 rounded-[14px] bg-[#F2F4F6] px-4 py-3.5">
+        <div className="min-w-0">
+          <dt className="text-[13.5px] text-[#8B95A1]">리뷰</dt>
+          <dd className="mt-1 flex items-center gap-1">
+            <Star size={14} strokeWidth={0} fill={rating > 0 ? '#2F6FE4' : '#D1D6DB'} aria-hidden="true" />
+            <strong className="truncate text-[15px] font-semibold text-[#333D4B]">
+              {rating.toFixed(1)}{reviewCount > 0 ? `(${reviewCount.toLocaleString('ko-KR')})` : ''}
+            </strong>
           </dd>
         </div>
-        <div>
-          <dt>예약수</dt>
-          <dd>{reservationCount.toLocaleString('ko-KR')}건</dd>
+        <div className="min-w-0">
+          <dt className="text-[13.5px] text-[#8B95A1]">예약</dt>
+          <dd className="mt-1 truncate text-[15px] font-semibold text-[#333D4B]">{reservationCount.toLocaleString('ko-KR')}건</dd>
         </div>
-        <div>
-          <dt>금액</dt>
-          <dd>{productPrice(product.price)}</dd>
+        <div className="min-w-0">
+          <dt className="text-[13.5px] text-[#8B95A1]">금액</dt>
+          <dd className="mt-1 truncate text-[15px] font-bold text-[#1E3A78]">{productPrice(product.price)}</dd>
         </div>
       </dl>
 
-      <div className="partner-product-actions">
-        <button type="button" onClick={() => onEdit(product)}>
+      <div className="mt-4 flex gap-2">
+        <button
+          type="button"
+          onClick={() => onEdit(product)}
+          className="flex h-12 flex-1 items-center justify-center gap-1.5 rounded-[14px] bg-[#F2F4F6] text-[15px] font-semibold text-[#333D4B] transition-all active:scale-[0.98] active:bg-[#E5E8EB]"
+        >
+          <MonoIcon name="pencil" size={18} color="#6B7684" />
           {pending ? '요청수정' : '수정'}
         </button>
-        <button type="button" onClick={() => onDelete(product)} disabled={deleteDisabled}>
+        <button
+          type="button"
+          onClick={() => onDelete(product)}
+          disabled={deleteDisabled}
+          className="flex h-12 flex-1 items-center justify-center gap-1.5 rounded-[14px] bg-[#F2F4F6] text-[15px] font-semibold text-[#F04452] transition-all active:scale-[0.98] active:bg-[#E5E8EB] disabled:text-[#B0B8C1] disabled:active:scale-100"
+        >
+          <MonoIcon name="bin" size={18} color={deleteDisabled ? '#B0B8C1' : '#F04452'} />
           {approvalStatus === 'pending_create' ? '요청취소' : deleteDisabled ? '삭제대기' : '삭제'}
         </button>
       </div>
@@ -892,13 +972,33 @@ export default function PartnerHomePage() {
 
   if (!hospital) {
     return (
-      <div className="partner-empty-state">
-        <p>등록된 병원이 없습니다.</p>
-        <span>병원 등록 후 파트너센터를 이용할 수 있습니다.</span>
-        <Link href="/hospital/register">병원 등록하기</Link>
-      </div>
+      <EmptyBlock icon="hospital" title="등록된 병원이 없어요" sub="병원을 등록하면 파트너센터를 이용할 수 있어요">
+        <Link
+          href="/hospital/register"
+          className="qd-a-item mt-6 inline-flex h-12 items-center rounded-[14px] bg-[#4A82EE] px-6 text-[16px] font-bold text-white transition-all active:scale-[0.98] active:bg-[#3D74DE]"
+          style={{ animationDelay: '.18s' }}
+        >
+          병원 등록하기
+        </Link>
+      </EmptyBlock>
     );
   }
+
+  const onConfirmRequest = (action: { id: string; status: ReservationRow['status'] }) => {
+    if (action.status === 'cancelled') {
+      router.push(`/partner/reservations/${action.id}/cancel`);
+      return;
+    }
+    const title = action.status === 'confirmed'
+      ? '정말로 예약을 확정 하시겠습니까?'
+      : '정말로 예약을 취소 하시겠습니까?';
+    const message = action.status === 'confirmed'
+      ? '예약이 확정되며 스케줄에 표시됩니다'
+      : '예약이 취소되며 취소 내역에 표시됩니다';
+    showConfirm(title, message, () => {
+      void updateStatus(action.id, action.status);
+    });
+  };
 
   return (
     <div className="partner-mobile-screen has-fixed-title">
@@ -916,8 +1016,8 @@ export default function PartnerHomePage() {
         </div>
       </header>
 
-      {/* 예약 · 상품 — 회색 트랙 위 흰 알약 */}
-      <div className="px-4 pb-2 pt-1">
+      {/* 예약 · 상품 — 회색 트랙 위 미끄러지는 흰 알약 */}
+      <div className="px-5 pb-3 pt-1">
         <nav className="pd-seg is-wide" aria-label="홈 탭" style={{ ['--n' as string]: HOME_TABS.length, ['--i' as string]: HOME_TABS.indexOf(homeTab) }}>
           <span className="pd-seg-thumb" aria-hidden />
           {HOME_TABS.map((tab) => (
@@ -935,61 +1035,81 @@ export default function PartnerHomePage() {
       </div>
 
       {homeTab === 'products' ? (
-        <section className="partner-product-management">
-          <div className="partner-product-section-head">
-            <h2>등록 상품</h2>
-            <button type="button" onClick={openProductCreate}>
-              <Plus size={16} />
+        <section>
+          {/* 제목 + 상품 추가 */}
+          <div className="flex items-center justify-between px-5 pb-3 pt-4">
+            <h2 className="text-[20px] font-bold tracking-[-0.4px] text-[#191F28]">등록 상품</h2>
+            <button
+              type="button"
+              onClick={openProductCreate}
+              className="inline-flex h-9 items-center gap-1 rounded-[8px] bg-[#EFF5FE] pl-2.5 pr-3 text-[14.5px] font-bold text-[#2F6FE4] transition-all active:scale-[0.97]"
+            >
+              <Plus size={16} strokeWidth={2.4} />
               상품 추가
             </button>
           </div>
 
-          <div className="partner-product-summary" role="tablist" aria-label="상품 승인 현황">
-            <span
-              className="partner-product-summary-indicator"
-              style={{ transform: `translateX(${PRODUCT_APPROVAL_TABS.indexOf(productApprovalTab) * 100}%)` }}
-              aria-hidden="true"
-            />
-            {PRODUCT_APPROVAL_TABS.map((tab) => (
-              <button
-                key={tab}
-                type="button"
-                role="tab"
-                aria-selected={productApprovalTab === tab}
-                className={productApprovalTab === tab ? 'is-active' : undefined}
-                onClick={() => setProductApprovalTab(tab)}
-              >
-                {PRODUCT_APPROVAL_TAB_LABEL[tab]}({productApprovalCounts[tab]})
-              </button>
-            ))}
+          {/* 승인 현황 — 분할 탭 */}
+          <div className="px-5 pb-2">
+            <nav
+              className="pd-seg is-wide"
+              role="tablist"
+              aria-label="상품 승인 현황"
+              style={{ ['--n' as string]: PRODUCT_APPROVAL_TABS.length, ['--i' as string]: PRODUCT_APPROVAL_TABS.indexOf(productApprovalTab) }}
+            >
+              <span className="pd-seg-thumb" aria-hidden />
+              {PRODUCT_APPROVAL_TABS.map((tab) => (
+                <button
+                  key={tab}
+                  type="button"
+                  role="tab"
+                  aria-selected={productApprovalTab === tab}
+                  className={productApprovalTab === tab ? 'is-active' : undefined}
+                  onClick={() => setProductApprovalTab(tab)}
+                >
+                  {PRODUCT_APPROVAL_TAB_LABEL[tab]}
+                  <em className={`not-italic ${productApprovalTab === tab ? 'text-[#3180F7]' : 'text-[#B0B8C1]'}`}>{productApprovalCounts[tab]}</em>
+                </button>
+              ))}
+            </nav>
           </div>
 
           {products.length === 0 ? (
-            <button type="button" className="partner-product-empty" onClick={openProductCreate}>
-              <Plus size={18} />
-              등록된 상품이 없습니다
+            <button type="button" onClick={openProductCreate} className="block w-full rounded-[16px] transition-colors active:bg-[#F9FAFB]">
+              <EmptyBlock icon="tag" title="등록된 상품이 없어요" sub="상품을 추가하면 승인 후 고객 화면에 보여요">
+                <span
+                  className="qd-a-item mt-6 inline-flex h-12 items-center gap-1 rounded-[14px] bg-[#4A82EE] px-5 text-[16px] font-bold text-white"
+                  style={{ animationDelay: '.18s' }}
+                >
+                  <Plus size={18} strokeWidth={2.4} />
+                  상품 추가하기
+                </span>
+              </EmptyBlock>
             </button>
           ) : visibleProducts.length === 0 ? (
-            <div key={productApprovalTab} className="partner-product-empty partner-product-empty-static">
-              {PRODUCT_APPROVAL_TAB_LABEL[productApprovalTab]} 상품이 없습니다
+            <div key={productApprovalTab}>
+              <EmptyBlock icon="tag" title={`${PRODUCT_APPROVAL_TAB_LABEL[productApprovalTab]} 상품이 없어요`} />
             </div>
           ) : (
-            <div key={productApprovalTab} className="partner-product-list partner-product-list-animated">
-              {visibleProducts.map((product) => (
-                <ProductRequestCard
-                  key={product.id}
-                  product={product}
-                  hospital={hospital}
-                  onEdit={openProductEdit}
-                  onDelete={requestProductDelete}
-                />
+            <div key={productApprovalTab}>
+              {visibleProducts.map((product, index) => (
+                <div key={product.id}>
+                  {index > 0 && <Band />}
+                  <ProductRequestCard
+                    product={product}
+                    hospital={hospital}
+                    onEdit={openProductEdit}
+                    onDelete={requestProductDelete}
+                    index={index}
+                  />
+                </div>
               ))}
             </div>
           )}
         </section>
       ) : (
         <>
-          {/* 예약 상태 — 프리티풀 정렬 칩(고르면 검정) */}
+          {/* 예약 상태 — 거르기 칩(고르면 연파랑) */}
           <div className="pd-chips" role="tablist" aria-label="예약 상태">
             {FILTERS.map((item) => (
               <button
@@ -1009,38 +1129,21 @@ export default function PartnerHomePage() {
             ))}
           </div>
 
-          <section className="partner-reservation-stack">
+          <section key={filter}>
             {visible.length === 0 ? (
-              <div className="partner-empty-state compact">
-                <div className="partner-empty-calendar">
-                  <img src="/partner-template/calendar-empty.svg" alt="" />
-                </div>
-                <p>표시할 예약이 없습니다.</p>
-                <span>예약이 접수되면 이 화면에 바로 표시됩니다.</span>
-              </div>
+              <EmptyBlock icon="calendar-x" title="표시할 예약이 없어요" sub="예약이 들어오면 이 화면에 바로 보여요" />
             ) : (
-              visible.map((row) => (
-            <ReservationCard
-              key={row.id}
-              row={row}
-              hospital={hospital}
-              onConfirmRequest={(action) => {
-                if (action.status === 'cancelled') {
-                  router.push(`/partner/reservations/${action.id}/cancel`);
-                  return;
-                }
-                const title = action.status === 'confirmed'
-                  ? '정말로 예약을 확정 하시겠습니까?'
-                  : '정말로 예약을 취소 하시겠습니까?';
-                const message = action.status === 'confirmed'
-                  ? '예약이 확정되며 스케줄에 표시됩니다'
-                  : '예약이 취소되며 취소 내역에 표시됩니다';
-                showConfirm(title, message, () => {
-                  void updateStatus(action.id, action.status);
-                });
-              }}
-              onDetailRequest={(id) => router.push(`/partner/reservations/${id}`)}
-            />
+              visible.map((row, index) => (
+                <div key={row.id}>
+                  {index > 0 && <Band />}
+                  <ReservationCard
+                    row={row}
+                    hospital={hospital}
+                    index={index}
+                    onConfirmRequest={onConfirmRequest}
+                    onDetailRequest={(id) => router.push(`/partner/reservations/${id}`)}
+                  />
+                </div>
               ))
             )}
           </section>

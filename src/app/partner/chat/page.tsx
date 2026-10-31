@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import TopBar from '@/components/common/TopBar';
-import { Search, Send } from 'lucide-react';
+import MonoIcon from '@/components/common/MonoIcon';
 import Avatar from '@/components/common/Avatar';
 import { useSession } from '@/lib/supabase/SessionProvider';
 import { createClient, hasSupabaseEnv } from '@/lib/supabase/client';
@@ -43,7 +43,7 @@ function timeStr(iso?: string) {
 
 export default function PartnerChatPageWrapper() {
   return (
-    <Suspense fallback={<div className="text-center py-20 text-sm text-gray-400">불러오는 중…</div>}>
+    <Suspense fallback={<p className="py-20 text-center text-[15px] text-[#8B95A1]">불러오는 중…</p>}>
       <PartnerChatPage />
     </Suspense>
   );
@@ -173,106 +173,104 @@ function PartnerChatPage() {
 
   if (!authUser) {
     return (
-      <div className="bg-white rounded-xl p-10 text-center">
-        <p className="text-sm text-gray-500 mb-4">로그인이 필요합니다.</p>
-        <Link href="/login" className="inline-block px-5 py-2.5 bg-[#3180F7] text-white text-sm font-bold rounded-xl">
+      <div className="flex min-h-[60vh] flex-col items-center justify-center px-6 py-10 text-center">
+        <span className="qd-a-item flex h-[72px] w-[72px] items-center justify-center rounded-[24px] bg-[#F2F4F6]">
+          <MonoIcon name="lock" size={34} color="#B0B8C1" />
+        </span>
+        <p className="qd-a-item mt-5 text-[19px] font-bold tracking-[-0.4px] text-[#191F28]" style={{ animationDelay: '.06s' }}>로그인이 필요해요</p>
+        <Link href="/login" className="qd-a-item mt-5 inline-flex h-[46px] items-center rounded-[12px] bg-[#E8F3FF] px-5 text-[16px] font-bold text-[#3180F7] transition active:scale-[0.97]" style={{ animationDelay: '.12s' }}>
           로그인
         </Link>
       </div>
     );
   }
 
-  return (
-    <div className="pd-sub space-y-4">
-      <TopBar title="채팅 상담" sub="환자가 보낸 1:1 상담 메시지에 응답합니다." />
+  const canSend = Boolean(input.trim()) && !pending;
 
-      <div className="grid md:grid-cols-[300px_1fr] gap-4 h-[calc(100dvh-220px)] min-h-[480px]">
-        {/* Thread list */}
-        <aside className="bg-white rounded-xl border border-gray-200 flex flex-col overflow-hidden">
-          <div className="p-3 border-b border-gray-100">
-            <div className="relative">
-              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input
-                value={q}
-                onChange={(e) => setQ(e.target.value)}
-                placeholder="고객명 또는 메시지 검색"
-                className="w-full pl-8 pr-3 py-2 text-[12px] bg-gray-50 rounded-lg outline-none"
-              />
-            </div>
-          </div>
+  return (
+    <div className="min-h-full bg-white pb-6 page-enter">
+      <TopBar title="채팅 상담" sub="환자가 보낸 1:1 상담 메시지에 답할 수 있어요" />
+
+      <div className="grid h-[calc(100dvh-220px)] min-h-[480px] grid-rows-[minmax(0,220px)_minmax(0,1fr)] gap-4 px-5 md:grid-cols-[300px_1fr] md:grid-rows-1">
+        {/* 상담 목록 */}
+        <aside className="flex min-h-0 flex-col">
+          <label className="m-0 flex h-12 shrink-0 items-center gap-2 rounded-[14px] bg-[#F2F4F6] px-4 transition-colors focus-within:bg-[#EDEFF2]">
+            <MonoIcon name="search" size={18} color="#8B95A1" />
+            <input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="고객명 또는 메시지 검색"
+              className="min-w-0 flex-1 text-[#191F28] outline-none placeholder:text-[#B0B8C1] min-h-0! border-0! bg-transparent! p-0! text-[16px]! font-normal! leading-normal! shadow-none! focus:bg-transparent! focus:shadow-none!"
+            />
+          </label>
           {filteredThreads.length === 0 ? (
-            <div className="flex-1 flex items-center justify-center text-[12px] text-gray-400">
-              상담 내역이 없습니다.
+            <div className="flex flex-1 flex-col items-center justify-center py-6 text-center">
+              <span className="flex h-14 w-14 items-center justify-center rounded-[20px] bg-[#F2F4F6]">
+                <MonoIcon name="chat-bubble" size={26} color="#B0B8C1" />
+              </span>
+              <p className="mt-3 text-[15px] font-semibold text-[#8B95A1]">상담 내역이 없어요</p>
             </div>
           ) : (
-            <ul className="flex-1 overflow-y-auto divide-y divide-gray-100">
-              {filteredThreads.map((t) => (
-                <li key={t.id}>
-                  <button
-                    onClick={() => setActiveId(t.id)}
-                    className="w-full text-left p-3 flex items-start gap-2 hover:bg-gray-50 transition-colors"
-                    style={{ backgroundColor: activeId === t.id ? '#EDF4FF' : undefined }}
-                  >
-                    <Avatar seed={t.user_id} size={36} className="flex-shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between mb-0.5">
-                        <span className="text-[13px] font-bold text-gray-900 truncate">
-                          {t.user?.name ?? '익명'}
+            <ul className="-mx-2 mt-2 min-h-0 flex-1 overflow-y-auto">
+              {filteredThreads.map((t) => {
+                const on = activeId === t.id;
+                return (
+                  <li key={t.id}>
+                    <button
+                      type="button"
+                      onClick={() => setActiveId(t.id)}
+                      className={`flex w-full items-center gap-3 rounded-[16px] px-2 py-2.5 text-left transition-colors ${on ? 'bg-[#EFF5FE]' : 'active:bg-[#F9FAFB]'}`}
+                    >
+                      <Avatar seed={t.user_id} size={40} className="flex-shrink-0" />
+                      <span className="min-w-0 flex-1">
+                        <span className="flex items-center gap-2">
+                          <span className={`min-w-0 flex-1 truncate text-[16px] font-bold ${on ? 'text-[#2F6FE4]' : 'text-[#191F28]'}`}>{t.user?.name ?? '익명'}</span>
+                          <span className="shrink-0 text-[12.5px] text-[#B0B8C1]">{relTime(t.last_at)}</span>
                         </span>
-                        <span className="text-[10px] text-gray-400 flex-shrink-0">
-                          {relTime(t.last_at)}
-                        </span>
-                      </div>
-                      <p className="text-[11px] text-gray-500 truncate">{t.last_message ?? '대화를 시작해 보세요'}</p>
-                    </div>
-                  </button>
-                </li>
-              ))}
+                        <span className="mt-0.5 block truncate text-[14px] text-[#6B7684]">{t.last_message ?? '대화를 시작해 보세요'}</span>
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </aside>
 
-        {/* Conversation */}
-        <section className="bg-white rounded-xl border border-gray-200 flex flex-col overflow-hidden">
+        {/* 대화 — 회색 면 칸 · 흰/파랑 말풍선 */}
+        <section className="flex min-h-0 flex-col overflow-hidden rounded-[20px] bg-[#F2F4F6]">
           {active ? (
             <>
-              <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-2">
-                <Avatar seed={active.user_id} size={32} />
-                <div className="flex-1 min-w-0">
-                  <p className="text-[14px] font-bold text-gray-900 truncate">{active.user?.name ?? '익명'}</p>
-                  <p className="text-[11px] text-gray-400">실시간 채팅</p>
+              <div className="flex shrink-0 items-center gap-2.5 px-4 pb-2 pt-3.5">
+                <Avatar seed={active.user_id} size={36} />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[16px] font-bold text-[#191F28]">{active.user?.name ?? '익명'}</p>
+                  <p className="text-[13px] text-[#8B95A1]">실시간 채팅</p>
                 </div>
               </div>
 
-              <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 bg-[#FAFBFC]">
+              <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
                 <div className="space-y-3">
-                  {messages.map((m) => (
-                    <div
-                      key={m.id}
-                      className={`flex items-end gap-2 ${m.from === 'me' ? 'flex-row-reverse' : ''} fade-in-up`}
-                    >
-                      <div className="max-w-[78%]">
+                  {messages.map((m) =>
+                    m.from === 'system' ? (
+                      <p key={m.id} className="fade-in-up mx-auto w-fit max-w-[90%] rounded-[10px] bg-white/70 px-3 py-1.5 text-center text-[13px] leading-[1.5] text-[#6B7684]">
+                        {m.text}
+                      </p>
+                    ) : (
+                      <div key={m.id} className={`fade-in-up flex items-end gap-1.5 ${m.from === 'me' ? 'flex-row-reverse' : ''}`}>
                         <div
-                          className="rounded-2xl px-3.5 py-2.5 text-[13px] leading-relaxed whitespace-pre-wrap"
-                          style={{
-                            backgroundColor: m.from === 'me' ? '#3180F7' : '#fff',
-                            color: m.from === 'me' ? '#fff' : '#2B313D',
-                            border: m.from === 'me' ? 'none' : '1px solid #F2F3F5',
-                            borderTopRightRadius: m.from === 'me' ? 4 : 16,
-                            borderTopLeftRadius: m.from === 'me' ? 16 : 4,
-                          }}
+                          className={`max-w-[78%] whitespace-pre-wrap break-words px-3.5 py-2.5 text-[15px] leading-[1.5] ${
+                            m.from === 'me'
+                              ? 'rounded-[18px] rounded-tr-[6px] bg-[#4A82EE] text-white'
+                              : 'rounded-[18px] rounded-tl-[6px] bg-white text-[#333D4B]'
+                          }`}
                         >
                           {m.text}
                         </div>
-                        <p
-                          className="text-[10px] text-gray-400 mt-1"
-                          style={{ textAlign: m.from === 'me' ? 'right' : 'left' }}
-                        >
-                          {m.time}
-                        </p>
+                        <span className="shrink-0 pb-0.5 text-[11.5px] text-[#B0B8C1]">{m.time}</span>
                       </div>
-                    </div>
-                  ))}
+                    )
+                  )}
                 </div>
               </div>
 
@@ -281,7 +279,7 @@ function PartnerChatPage() {
                   e.preventDefault();
                   send();
                 }}
-                className="flex items-end gap-2 px-3 py-3 border-t border-gray-100"
+                className="flex shrink-0 items-end gap-2 px-3 pb-3 pt-2"
               >
                 <textarea
                   value={input}
@@ -294,25 +292,26 @@ function PartnerChatPage() {
                   }}
                   rows={1}
                   placeholder="메시지 입력 (Enter 전송, Shift+Enter 줄바꿈)"
-                  className="flex-1 text-[13px] px-3 py-2 bg-gray-50 rounded-xl outline-none resize-none"
+                  className="min-h-11! flex-1 resize-none rounded-[14px]! border-0! bg-white! px-4! py-2.5! text-[16px]! font-normal! leading-[1.5]! text-[#191F28]! shadow-none! outline-none placeholder:text-[#B0B8C1] focus:bg-white! focus:shadow-none!"
                   style={{ maxHeight: 100 }}
                 />
                 <button
                   type="submit"
-                  disabled={!input.trim() || pending}
-                  className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
-                  style={{
-                    backgroundColor: input.trim() && !pending ? '#3180F7' : '#E5E7EB',
-                    color: '#fff',
-                  }}
+                  disabled={!canSend}
+                  aria-label="보내기"
+                  className={`flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full p-0! transition-all active:scale-[0.94] ${canSend ? 'bg-[#4A82EE]' : 'bg-[#E5E8EB]'}`}
                 >
-                  <Send size={15} />
+                  <MonoIcon name="paper-plane" size={20} color="#fff" />
                 </button>
               </form>
             </>
           ) : (
-            <div className="flex-1 flex items-center justify-center text-[12px] text-gray-400">
-              왼쪽에서 상담 스레드를 선택하세요.
+            <div className="flex flex-1 flex-col items-center justify-center px-6 text-center">
+              <span className="flex h-[72px] w-[72px] items-center justify-center rounded-[24px] bg-white">
+                <MonoIcon name="chat-bubble" size={34} color="#B0B8C1" />
+              </span>
+              <p className="mt-5 text-[19px] font-bold tracking-[-0.4px] text-[#191F28]">상담을 골라 주세요</p>
+              <p className="mt-1.5 text-[15px] text-[#8B95A1]">목록에서 상담을 누르면 대화가 열려요</p>
             </div>
           )}
         </section>

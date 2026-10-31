@@ -1,9 +1,11 @@
 'use client';
 
+// 앱결제 내역 — 상품 상세(261031) 톤: 연파랑 합계 카드 · 회색 검색 칸 · 테두리 없는 목록 줄 · 상태 배지.
+
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import TopBar from '@/components/common/TopBar';
-import { Search } from 'lucide-react';
+import MonoIcon from '@/components/common/MonoIcon';
 import { useSession } from '@/lib/supabase/SessionProvider';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -20,11 +22,12 @@ type Payment = {
   product?: { title?: string } | null;
 };
 
-const STATUS: Record<Payment['status'], { label: string; color: string }> = {
-  pending: { label: '결제확인중', color: '#B45309' },
-  confirmed: { label: '결제완료', color: '#15803D' },
-  completed: { label: '시술완료', color: '#3180F7' },
-  cancelled: { label: '취소/환불', color: '#E5484D' },
+// 상태 배지 — 대기=회색 · 확정=파랑 · 완료=초록 · 취소=빨강(예약 상세와 같은 결)
+const STATUS: Record<Payment['status'], { label: string; tone: string }> = {
+  pending: { label: '결제확인중', tone: 'bg-[#F2F4F6] text-[#6B7684]' },
+  confirmed: { label: '결제완료', tone: 'bg-[#E8F3FF] text-[#3180F7]' },
+  completed: { label: '시술완료', tone: 'bg-[#E6F7EE] text-[#03A94D]' },
+  cancelled: { label: '취소/환불', tone: 'bg-[#FFEEEF] text-[#F04452]' },
 };
 
 export default function AppPayPaymentsPage() {
@@ -68,80 +71,84 @@ export default function AppPayPaymentsPage() {
 
   if (!authUser) {
     return (
-      <div className="bg-white rounded-xl p-10 text-center">
-        <p className="text-sm text-gray-500 mb-4">로그인이 필요합니다.</p>
-        <Link href="/login" className="inline-block px-5 py-2.5 bg-[#3180F7] text-white text-sm font-bold rounded-xl">
+      <div className="flex min-h-[60vh] flex-col items-center justify-center px-6 py-10 text-center">
+        <span className="flex h-[72px] w-[72px] items-center justify-center rounded-[24px] bg-[#F2F4F6]">
+          <MonoIcon name="lock" size={34} color="#B0B8C1" />
+        </span>
+        <p className="mt-5 text-[19px] font-bold tracking-[-0.4px] text-[#191F28]">로그인이 필요해요</p>
+        <Link href="/login" className="mt-5 inline-flex h-[46px] items-center rounded-[12px] bg-[#E8F3FF] px-5 text-[16px] font-bold text-[#3180F7]">
           로그인
         </Link>
       </div>
     );
   }
 
-  return (
-    <div className="pd-sub space-y-4">
-      <TopBar title="앱결제 내역" sub="앱 안에서 결제된 모든 거래를 확인합니다." />
+  // 화면 표시용 합계 — 취소·환불은 빼고 지금 보이는 목록만
+  const shownTotal = filtered.filter((p) => p.status !== 'cancelled').reduce((sum, p) => sum + p.amount, 0);
 
-      <div className="bg-white rounded-xl border border-gray-200 p-3">
-        <div className="relative">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+  return (
+    <div className="bg-white pb-12">
+      <TopBar title="앱결제 내역" sub="앱 안에서 결제된 모든 거래를 확인해요." />
+
+      <div className="qd-a-item px-5 pt-1">
+        <div className="rounded-[14px] bg-[#EFF5FE] px-5 pb-5 pt-4">
+          <span className="rounded-[6px] bg-[#2F6FE4] px-2 py-1 text-[13.5px] font-bold text-white">{q ? '검색 결과' : '전체'}</span>
+          <p className="mt-3 text-[15px] font-semibold text-[#1E3A78]">결제 금액 합계 · {filtered.length.toLocaleString()}건</p>
+          <p className="mt-0.5 text-[30px] font-bold tracking-[-0.8px] text-[#1E3A78]">{loading ? '—' : shownTotal.toLocaleString()}원</p>
+          <p className="mt-1 text-[13px] text-[#1E3A78]/60">취소·환불 건은 빼고 더했어요</p>
+        </div>
+
+        <div className="relative mt-4">
+          <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2">
+            <MonoIcon name="search" size={20} color="#8B95A1" />
+          </span>
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="고객명 또는 시술명 검색"
-            className="w-full pl-9 pr-3 py-2 text-sm bg-gray-50 rounded-lg outline-none"
+            className="!h-12 !min-h-0 w-full !rounded-[14px] !border-0 !bg-[#F2F4F6] !py-0 !pl-11 !pr-4 !text-[16px] !font-medium !text-[#191F28] outline-none transition-colors placeholder:!text-[#B0B8C1] focus:!bg-[#EDEFF2] focus:!shadow-none"
           />
         </div>
       </div>
 
-      {loading ? (
-        <div className="text-center py-20 text-sm text-gray-400">불러오는 중…</div>
-      ) : filtered.length === 0 ? (
-        <div className="bg-white rounded-xl border border-gray-200 py-16 text-center">
-          <p className="text-sm text-gray-400">결제 내역이 없습니다.</p>
-        </div>
-      ) : (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <table className="w-full">
-            <thead>
-              <tr className="bg-gray-50 border-b border-gray-100">
-                <th className="px-4 py-3 text-left text-[11px] font-bold text-gray-500 uppercase">결제일</th>
-                <th className="px-4 py-3 text-left text-[11px] font-bold text-gray-500 uppercase">고객</th>
-                <th className="px-4 py-3 text-left text-[11px] font-bold text-gray-500 uppercase">시술</th>
-                <th className="px-4 py-3 text-left text-[11px] font-bold text-gray-500 uppercase">결제수단</th>
-                <th className="px-4 py-3 text-right text-[11px] font-bold text-gray-500 uppercase">금액</th>
-                <th className="px-4 py-3 text-left text-[11px] font-bold text-gray-500 uppercase">상태</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {filtered.map((p) => {
-                const s = STATUS[p.status];
-                return (
-                  <tr key={p.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-4 py-3 text-[12px] text-gray-600">
-                      {new Date(p.created_at).toLocaleDateString('ko-KR')}
-                    </td>
-                    <td className="px-4 py-3 text-[12px] text-gray-900 font-medium">
-                      {p.user?.name ?? p.customer_name}
-                    </td>
-                    <td className="px-4 py-3 text-[12px] text-gray-600">
-                      {p.product?.title ?? '-'}
-                    </td>
-                    <td className="px-4 py-3 text-[12px] text-gray-600">
-                      {p.payment_method ?? '현장결제'}
-                    </td>
-                    <td className="px-4 py-3 text-[13px] font-bold text-gray-900 text-right">
+      <div className="qd-a-item px-3 pb-4 pt-3" style={{ animationDelay: '.06s' }}>
+        {loading ? (
+          <p className="py-20 text-center text-[15px] text-[#8B95A1]">불러오는 중…</p>
+        ) : filtered.length === 0 ? (
+          <div className="flex flex-col items-center px-6 py-16 text-center">
+            <span className="flex h-[72px] w-[72px] items-center justify-center rounded-[24px] bg-[#F2F4F6]">
+              <MonoIcon name="receipt" size={34} color="#B0B8C1" />
+            </span>
+            <p className="mt-5 text-[19px] font-bold tracking-[-0.4px] text-[#191F28]">결제 내역이 없어요</p>
+            <p className="mt-1.5 text-[15px] leading-[1.6] text-[#8B95A1]">{q ? '다른 이름이나 시술명으로 찾아보세요' : '환자가 앱에서 결제하면 여기에 보여요'}</p>
+          </div>
+        ) : (
+          <ul>
+            {filtered.map((p) => {
+              const s = STATUS[p.status];
+              return (
+                <li key={p.id} className="rounded-[16px] px-2 py-3.5 transition-colors active:bg-[#F9FAFB]">
+                  <div className="flex items-center gap-2">
+                    <span className={`inline-flex h-6 items-center rounded-[6px] px-2 text-[13.5px] font-semibold ${s.tone}`}>{s.label}</span>
+                    <span className="text-[14px] text-[#8B95A1]">{new Date(p.created_at).toLocaleDateString('ko-KR')}</span>
+                  </div>
+                  <div className="mt-2 flex items-start gap-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-[17px] font-bold text-[#191F28]">{p.user?.name ?? p.customer_name}</p>
+                      <p className="mt-0.5 truncate text-[14px] text-[#6B7684]">
+                        {p.product?.title ?? '-'} · {p.payment_method ?? '현장결제'}
+                      </p>
+                    </div>
+                    <p className={`shrink-0 text-[17px] font-bold ${p.status === 'cancelled' ? 'text-[#B0B8C1] line-through' : 'text-[#1E3A78]'}`}>
                       {p.amount.toLocaleString()}원
-                    </td>
-                    <td className="px-4 py-3 text-[12px]" style={{ color: s.color }}>
-                      {s.label}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
+                    </p>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
     </div>
   );
 }

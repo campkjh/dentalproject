@@ -6,8 +6,9 @@ import { useSession } from '@/lib/supabase/SessionProvider';
 import { useMyHospitalData } from '@/lib/partner/my-hospital-cache';
 import { useStore } from '@/store';
 import { createClient, hasSupabaseEnv } from '@/lib/supabase/client';
-import { EyeOff, Eye, Plus, Star } from 'lucide-react';
 import Avatar from '@/components/common/Avatar';
+import MonoIcon from '@/components/common/MonoIcon';
+import CommunityModal from '@/components/community/CommunityModal';
 import { ImageUploader } from '@/components/admin/ImageUploader';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -109,7 +110,7 @@ export default function PartnerReviewsPage() {
       showToast((j as any).error || '저장에 실패했습니다.');
       return;
     }
-    showToast(willHide ? '리뷰를 숨겼습니다.' : '리뷰를 다시 표시합니다.');
+    showToast(willHide ? '리뷰를 숨겼어요.' : '리뷰를 다시 보여 드려요.');
   };
 
   const handleAddReview = async () => {
@@ -134,7 +135,7 @@ export default function PartnerReviewsPage() {
         after_image: addForm.type === 'image' ? addForm.afterImage.trim() || null : null,
       });
       if (error) throw error;
-      showToast('초기 리뷰가 등록되었습니다.');
+      showToast('초기 리뷰를 등록했어요.');
       setShowAddModal(false);
       setAddForm({ type: 'image', content: '', rating: 5, treatmentName: '', beforeImage: '', afterImage: '' });
       await refreshHospital({ force: true, showLoading: false });
@@ -146,130 +147,172 @@ export default function PartnerReviewsPage() {
   };
 
   if (!authUser) return (
-    <div className="bg-white rounded-xl p-10 text-center">
-      <p className="text-sm text-gray-500 mb-4">로그인이 필요합니다.</p>
-      <Link href="/partner/login" className="inline-block px-5 py-2.5 bg-[#3180F7] text-white text-sm font-bold rounded-xl">로그인</Link>
+    <div className="flex min-h-[60vh] flex-col items-center justify-center px-6 py-10 text-center">
+      <span className="qd-a-item flex h-[72px] w-[72px] items-center justify-center rounded-[24px] bg-[#F2F4F6]">
+        <MonoIcon name="lock" size={34} color="#B0B8C1" />
+      </span>
+      <p className="qd-a-item mt-5 text-[19px] font-bold tracking-[-0.4px] text-[#191F28]" style={{ animationDelay: '.06s' }}>로그인이 필요해요</p>
+      <Link href="/partner/login" className="qd-a-item mt-5 inline-flex h-[46px] items-center rounded-[12px] bg-[#E8F3FF] px-5 text-[16px] font-bold text-[#3180F7] transition active:scale-[0.97]" style={{ animationDelay: '.12s' }}>로그인</Link>
     </div>
   );
 
+  const tabs = [
+    { key: 'image', label: '이미지 리뷰', count: imageReviews.length },
+    { key: 'text', label: '텍스트 리뷰', count: textReviews.length },
+  ] as const;
+  const tabIdx = tab === 'image' ? 0 : 1;
+  const fullStars = Math.round(avgRating);
+
   return (
-    <div className="partner-mobile-screen has-fixed-title">
-      <section className="partner-review-content">
-        {/* Score */}
-        <div className="partner-review-score">
-          <img src="/partner-template/review-star.svg" alt="" />
-          <strong>{avgRating.toFixed(1)}</strong>
-          <span>({items.length})</span>
+    <div className="partner-mobile-screen has-fixed-title page-enter">
+      <section className="px-5 pb-8 pt-4">
+        {/* 평균 별점 — 상품 상세 가격 카드 결(연파랑 면 · 남색 큰 숫자) */}
+        <div className="rounded-[14px] bg-[#EFF5FE] px-5 pb-5 pt-4">
+          <span className="rounded-[6px] bg-[#2F6FE4] px-2 py-1 text-[13.5px] font-bold text-white">평균 별점</span>
+          <div className="mt-3 flex items-end gap-2">
+            <p className="text-[30px] font-bold leading-none tracking-[-0.8px] text-[#1E3A78]">{avgRating.toFixed(1)}</p>
+            <span className="mb-0.5 flex gap-0.5" aria-hidden>
+              {[1, 2, 3, 4, 5].map((n) => (
+                <MonoIcon key={n} name="star" size={18} color={n <= fullStars ? '#FFC342' : '#D6E4FA'} />
+              ))}
+            </span>
+          </div>
+          <p className="mt-2 text-[15px] font-semibold text-[#1E3A78]">리뷰 {items.length.toLocaleString()}개</p>
         </div>
 
-        {/* Review type tabs */}
-        <div className="partner-review-tabs" role="tablist" aria-label="리뷰 유형">
+        {/* 리뷰 종류 — 회색 트랙 위 흰 알약 */}
+        <div className="relative mt-5 flex rounded-[12px] bg-[#F2F4F6] p-1" role="tablist" aria-label="리뷰 유형">
           <span
-            className="partner-review-tabs-indicator"
-            style={{ transform: `translateX(${tab === 'image' ? 0 : 100}%)` }}
-            aria-hidden="true"
+            aria-hidden
+            className="absolute bottom-1 top-1 rounded-[10px] bg-white shadow-[0_1px_4px_rgba(0,0,0,0.06)] transition-transform duration-300"
+            style={{ left: 4, width: 'calc((100% - 8px) / 2)', transform: `translateX(${tabIdx * 100}%)`, transitionTimingFunction: 'cubic-bezier(0.22, 1, 0.36, 1)' }}
           />
-          {([
-            { key: 'image', label: '이미지 리뷰', count: imageReviews.length },
-            { key: 'text', label: '텍스트 리뷰', count: textReviews.length },
-          ] as const).map((t) => (
+          {tabs.map((t) => (
             <button
               key={t.key}
               type="button"
               role="tab"
               aria-selected={tab === t.key}
               onClick={() => setTab(t.key)}
-              className={tab === t.key ? 'is-active' : undefined}
+              className={`relative z-[1] flex h-10 flex-1 items-center justify-center gap-1 text-[15.5px] transition-colors ${tab === t.key ? 'font-bold text-[#191F28]' : 'font-semibold text-[#8B95A1]'}`}
             >
-              {t.label} ({t.count})
+              {t.label}
+              <span className="tabular-nums">{t.count}</span>
             </button>
           ))}
         </div>
 
         {loading ? (
-          <div className="partner-loading small">불러오는 중...</div>
+          <p className="py-16 text-center text-[15px] text-[#8B95A1]">불러오는 중…</p>
         ) : displayList.length === 0 ? (
-          <div className="partner-review-empty">
-            <span><img src="/partner-template/review-empty.svg" alt="" /></span>
-            <p>리뷰가 없습니다</p>
-            {canAddInitial && (
-              <p style={{ fontSize: 12, color: '#6B7280', marginTop: 4 }}>
-                가입 후 1개월 내 초기 리뷰 등록 가능
-              </p>
-            )}
+          <div className="flex flex-col items-center py-14 text-center">
+            <span className="qd-a-item flex h-[72px] w-[72px] items-center justify-center rounded-[24px] bg-[#F2F4F6]">
+              <MonoIcon name="star" size={34} color="#B0B8C1" />
+            </span>
+            <p className="qd-a-item mt-5 text-[19px] font-bold tracking-[-0.4px] text-[#191F28]" style={{ animationDelay: '.06s' }}>아직 리뷰가 없어요</p>
+            <p className="qd-a-item mt-1.5 text-[15px] leading-[1.6] text-[#8B95A1]" style={{ animationDelay: '.12s' }}>
+              {canAddInitial ? '가입 후 1개월 안에는 초기 리뷰를 등록할 수 있어요' : '환자가 리뷰를 남기면 여기에 보여요'}
+            </p>
           </div>
         ) : (
-          <ul className="partner-review-list">
-            {displayList.map((r) => (
-              <li key={r.id} className="partner-review-card" style={{ opacity: hiddenIds.has(r.id) ? 0.4 : 1 }}>
-                <div className="partner-review-card-head">
-                  <div className="partner-review-author">
-                    <div>
-                      <Avatar src={r.author?.profile_image} seed={r.author?.name ?? r.id} size={36} alt="" />
+          <ul className="mt-3">
+            {displayList.map((r, i) => {
+              const before = reviewImageUrl(r.before_image);
+              const after = reviewImageUrl(r.after_image);
+              const hidden = hiddenIds.has(r.id);
+              return (
+                <li key={r.id} className="qd-a-item py-4 transition-opacity" style={{ opacity: hidden ? 0.4 : 1, animationDelay: `${Math.min(i, 6) * 0.04}s` }}>
+                  <div className="flex items-center gap-3">
+                    <Avatar src={r.author?.profile_image} seed={r.author?.name ?? r.id} size={40} alt="" />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-[16px] font-bold text-[#191F28]">{r.author?.name ?? '익명'}</p>
+                      <p className="mt-0.5 truncate text-[13.5px] text-[#8B95A1]">
+                        {new Date(r.created_at).toLocaleDateString('ko-KR')}{r.doctor?.name ? ` · ${r.doctor.name} 원장` : ''}
+                      </p>
                     </div>
-                    <div>
-                      <strong>{r.author?.name ?? '익명'}</strong>
-                      <p>{new Date(r.created_at).toLocaleDateString('ko-KR')}{r.doctor?.name ? ` · ${r.doctor.name} 원장` : ''}</p>
-                    </div>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 2, fontSize: 13, fontWeight: 600 }}>
-                      <Star size={13} fill="#FBBF24" stroke="none" />{Number(r.rating).toFixed(1)}
+                    <span className="flex shrink-0 items-center gap-0.5 text-[15px] font-bold tabular-nums text-[#333D4B]">
+                      <MonoIcon name="star" size={15} color="#FFC342" />
+                      {Number(r.rating).toFixed(1)}
                     </span>
                     <button
                       type="button"
                       onClick={() => toggleHide(r.id)}
-                      title={hiddenIds.has(r.id) ? '표시하기' : '숨기기'}
-                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9CA3AF', padding: 4 }}
+                      title={hidden ? '표시하기' : '숨기기'}
+                      aria-label={hidden ? '리뷰 표시하기' : '리뷰 숨기기'}
+                      className="-mr-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] transition-colors active:bg-[#F2F4F6]"
                     >
-                      {hiddenIds.has(r.id) ? <Eye size={16} /> : <EyeOff size={16} />}
+                      <MonoIcon name={hidden ? 'eye-on' : 'eye-off'} size={18} color="#B0B8C1" />
                     </button>
                   </div>
-                </div>
-                {r.treatment_name && (
-                  <div className="partner-review-meta">
-                    <span>시술: {r.treatment_name}</span>
-                    {r.total_cost > 0 && <span> · {r.total_cost.toLocaleString()}원</span>}
-                  </div>
-                )}
-                {(reviewImageUrl(r.before_image) || reviewImageUrl(r.after_image)) && (
-                  <div className="partner-review-images">
-                    {reviewImageUrl(r.before_image) && <img src={reviewImageUrl(r.before_image) ?? ''} alt="Before" />}
-                    {reviewImageUrl(r.after_image) && <img src={reviewImageUrl(r.after_image) ?? ''} alt="After" />}
-                  </div>
-                )}
-                <p>{r.content}</p>
-              </li>
-            ))}
+
+                  {r.treatment_name && (
+                    <p className="mt-3 flex flex-wrap gap-1">
+                      <span className="inline-flex h-6 items-center rounded-[6px] bg-[#F2F4F6] px-2 text-[13px] font-semibold text-[#4E5968]">{r.treatment_name}</span>
+                      {r.total_cost > 0 && (
+                        <span className="inline-flex h-6 items-center rounded-[6px] bg-[#F2F4F6] px-2 text-[13px] font-semibold tabular-nums text-[#4E5968]">{r.total_cost.toLocaleString()}원</span>
+                      )}
+                    </p>
+                  )}
+
+                  {(before || after) && (
+                    <div className="mt-3 grid grid-cols-2 gap-2">
+                      {before && (
+                        <div className="relative overflow-hidden rounded-[14px] bg-[#F2F4F6]">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={before} alt="Before" className="aspect-square w-full object-cover" />
+                          <span className="absolute left-2 top-2 rounded-[6px] bg-black/45 px-1.5 py-0.5 text-[12px] font-semibold text-white">Before</span>
+                        </div>
+                      )}
+                      {after && (
+                        <div className="relative overflow-hidden rounded-[14px] bg-[#F2F4F6]">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={after} alt="After" className="aspect-square w-full object-cover" />
+                          <span className="absolute left-2 top-2 rounded-[6px] bg-black/45 px-1.5 py-0.5 text-[12px] font-semibold text-white">After</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <p className="mt-3 whitespace-pre-line break-keep text-[16px] leading-[1.6] text-[#333D4B]">{r.content}</p>
+                </li>
+              );
+            })}
           </ul>
         )}
 
-        {/* 초기 리뷰 등록 버튼 */}
+        {/* 초기 리뷰 등록 */}
         {canAddInitial && (
-          <div style={{ padding: '16px 0' }}>
+          <div className="pt-4">
             <button
               type="button"
               onClick={() => setShowAddModal(true)}
-              style={{ width: '100%', height: 48, borderRadius: 14, border: '1.5px dashed #C8CEDA', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 14, color: '#3180F7', cursor: 'pointer', fontWeight: 600 }}
+              className="flex h-12 w-full items-center justify-center gap-1.5 rounded-[14px] bg-[#F2F4F6] text-[15px] font-semibold text-[#333D4B] transition-all active:scale-[0.98] active:bg-[#E5E8EB]"
             >
-              <Plus size={16} />
-              초기 리뷰 등록 ({initialImageCount}/{MAX_INITIAL_IMAGE} 이미지 · {initialTextCount}/{MAX_INITIAL_TEXT} 텍스트)
+              <MonoIcon name="plus" size={18} color="#6B7684" />
+              초기 리뷰 등록
+              <span className="font-medium tabular-nums text-[#8B95A1]">이미지 {initialImageCount}/{MAX_INITIAL_IMAGE} · 텍스트 {initialTextCount}/{MAX_INITIAL_TEXT}</span>
             </button>
-            <p style={{ textAlign: 'center', fontSize: 11, color: '#9CA3AF', marginTop: 6 }}>가입 후 1개월 내에만 등록 가능합니다</p>
+            <p className="mt-3 flex gap-2 rounded-[14px] bg-[#F2F4F6] px-4 py-3.5 text-[14px] leading-[1.5] text-[#4E5968]">
+              <MonoIcon name="info-circle" size={18} color="#B0B8C1" className="mt-px" />
+              초기 리뷰는 가입 후 1개월 안에만 등록할 수 있어요
+            </p>
           </div>
         )}
       </section>
 
-      {/* 초기 리뷰 등록 모달 */}
+      {/* 초기 리뷰 등록 시트 */}
       {showAddModal && (
-        // 시트 = 고객 예약 시트(flow .scrim/.sheet) 결 — 딤 페이드 + 아래에서 스프링으로 올라옴(partner-v2.css .pd-scrim/.pd-sheet)
-        <div className="pd-scrim">
-          <div className="pd-sheet" role="dialog" aria-modal="true" aria-label="초기 리뷰 등록">
-            <span className="pd-grab" aria-hidden="true" />
-            <h2 className="pd-sheet-title">초기 리뷰 등록</h2>
+        <CommunityModal label="초기 리뷰 등록" onClose={() => { if (!saving) setShowAddModal(false); }}>
+          <div className="overflow-y-auto px-5 pb-5 pt-1">
+            <h2 className="text-[20px] font-bold tracking-[-0.4px] text-[#191F28]">초기 리뷰 등록</h2>
 
-            {/* 리뷰 타입 */}
-            <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+            {/* 리뷰 종류 */}
+            <div className="relative mt-5 flex rounded-[12px] bg-[#F2F4F6] p-1">
+              <span
+                aria-hidden
+                className="absolute bottom-1 top-1 rounded-[10px] bg-white shadow-[0_1px_4px_rgba(0,0,0,0.06)] transition-transform duration-300"
+                style={{ left: 4, width: 'calc((100% - 8px) / 2)', transform: `translateX(${addForm.type === 'image' ? 0 : 100}%)`, transitionTimingFunction: 'cubic-bezier(0.22, 1, 0.36, 1)' }}
+              />
               {([{ v: 'image', label: '이미지 리뷰' }, { v: 'text', label: '텍스트 리뷰' }] as const).map((t) => (
                 <button
                   key={t.v}
@@ -279,30 +322,41 @@ export default function PartnerReviewsPage() {
                     type: t.v,
                     ...(t.v === 'text' ? { beforeImage: '', afterImage: '' } : {}),
                   }))}
-                  style={{ flex: 1, padding: '10px', borderRadius: 10, border: `1.5px solid ${addForm.type === t.v ? '#3180F7' : '#E5E7EB'}`, background: addForm.type === t.v ? '#EDF4FF' : 'white', color: addForm.type === t.v ? '#3180F7' : '#6B7280', fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>
+                  className={`relative z-[1] flex h-10 flex-1 items-center justify-center text-[15.5px] transition-colors ${addForm.type === t.v ? 'font-bold text-[#191F28]' : 'font-semibold text-[#8B95A1]'}`}
+                >
                   {t.label}
                 </button>
               ))}
             </div>
 
             {/* 별점 */}
-            <div style={{ display: 'flex', gap: 4, marginBottom: 12 }}>
-              {[1,2,3,4,5].map((s) => (
-                <button key={s} type="button" onClick={() => setAddForm((f) => ({ ...f, rating: s }))} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2 }}>
-                  <Star size={24} fill={s <= addForm.rating ? '#FBBF24' : 'none'} stroke={s <= addForm.rating ? '#FBBF24' : '#D1D5DB'} />
+            <p className="mt-5 text-[15px] font-semibold text-[#4E5968]">별점</p>
+            <div className="mt-1.5 flex gap-1">
+              {[1, 2, 3, 4, 5].map((n) => (
+                <button key={n} type="button" onClick={() => setAddForm((f) => ({ ...f, rating: n }))} aria-label={`${n}점`} className="flex h-10 w-10 items-center justify-center rounded-[10px] transition-transform active:scale-[0.9]">
+                  <MonoIcon name="star" size={30} color={n <= addForm.rating ? '#FFC342' : '#E5E8EB'} />
                 </button>
               ))}
             </div>
 
-            <input value={addForm.treatmentName} onChange={(e) => setAddForm((f) => ({ ...f, treatmentName: e.target.value }))}
-              placeholder="시술명 (선택)" style={{ width: '100%', border: '1.5px solid #E5E7EB', borderRadius: 10, padding: '10px 12px', fontSize: 14, marginBottom: 10, boxSizing: 'border-box' }} />
-            <textarea value={addForm.content} onChange={(e) => setAddForm((f) => ({ ...f, content: e.target.value }))}
-              rows={4} placeholder="리뷰 내용을 입력하세요" style={{ width: '100%', border: '1.5px solid #E5E7EB', borderRadius: 10, padding: '10px 12px', fontSize: 14, resize: 'none', marginBottom: addForm.type === 'image' ? 10 : 16, boxSizing: 'border-box' }} />
+            <input
+              value={addForm.treatmentName}
+              onChange={(e) => setAddForm((f) => ({ ...f, treatmentName: e.target.value }))}
+              placeholder="시술명 (선택)"
+              className="mt-4 h-14 w-full rounded-[14px] bg-[#F2F4F6] px-4 text-[16px] text-[#191F28] outline-none transition-colors placeholder:text-[#B0B8C1] focus:bg-[#EDEFF2]"
+            />
+            <textarea
+              value={addForm.content}
+              onChange={(e) => setAddForm((f) => ({ ...f, content: e.target.value }))}
+              rows={4}
+              placeholder="리뷰 내용을 입력하세요"
+              className="mt-2 w-full resize-none rounded-[14px] bg-[#F2F4F6] px-4 py-3.5 text-[16px] leading-[1.6] text-[#191F28] outline-none transition-colors placeholder:text-[#B0B8C1] focus:bg-[#EDEFF2]"
+            />
 
             {addForm.type === 'image' && (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
+              <div className="mt-3 grid grid-cols-2 gap-2.5">
                 <div>
-                  <p style={{ fontSize: 12, fontWeight: 600, color: '#4E5968', marginBottom: 6 }}>Before</p>
+                  <p className="mb-1.5 text-[14px] font-semibold text-[#4E5968]">Before</p>
                   <ImageUploader
                     value={addForm.beforeImage}
                     onChange={(url) => setAddForm((f) => ({ ...f, beforeImage: url }))}
@@ -312,7 +366,7 @@ export default function PartnerReviewsPage() {
                   />
                 </div>
                 <div>
-                  <p style={{ fontSize: 12, fontWeight: 600, color: '#4E5968', marginBottom: 6 }}>After</p>
+                  <p className="mb-1.5 text-[14px] font-semibold text-[#4E5968]">After</p>
                   <ImageUploader
                     value={addForm.afterImage}
                     onChange={(url) => setAddForm((f) => ({ ...f, afterImage: url }))}
@@ -324,16 +378,16 @@ export default function PartnerReviewsPage() {
               </div>
             )}
 
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button type="button" onClick={() => setShowAddModal(false)} className="pd-sheet-btn is-ghost" style={{ flex: 1 }}>
+            <div className="mt-5 flex gap-2">
+              <button type="button" onClick={() => setShowAddModal(false)} className="flex h-14 flex-1 items-center justify-center rounded-[18px] bg-[#F2F4F6] text-[17px] font-bold text-[#4E5968] transition-all active:scale-[0.98]">
                 취소
               </button>
-              <button type="button" onClick={handleAddReview} disabled={saving} className="pd-sheet-btn" style={{ flex: 2 }}>
-                {saving ? '등록 중...' : '등록하기'}
+              <button type="button" onClick={handleAddReview} disabled={saving} className="flex h-14 flex-1 items-center justify-center rounded-[18px] bg-[#4A82EE] text-[17px] font-bold text-white transition-all active:scale-[0.98]">
+                {saving ? '등록 중…' : '등록하기'}
               </button>
             </div>
           </div>
-        </div>
+        </CommunityModal>
       )}
     </div>
   );

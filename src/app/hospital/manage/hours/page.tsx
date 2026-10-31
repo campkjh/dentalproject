@@ -129,125 +129,76 @@ export default function HoursEditPage() {
     }
   };
 
+  const cell = 'flex h-12 w-full items-center justify-center rounded-[12px] text-[16px] tabular-nums';
+
+  const timeCell = (s: DaySchedule, idx: number, field: 'startTime' | 'endTime') =>
+    s.isClosed ? (
+      <div className={`${cell} bg-[#F9FAFB] text-[#D1D6DB]`}>-</div>
+    ) : editingCell?.dayIndex === idx && editingCell?.field === field ? (
+      <select
+        value={s[field]}
+        onChange={(e) => handleTimeChange(idx, field, e.target.value)}
+        onBlur={() => setEditingCell(null)}
+        autoFocus
+        className={`${cell} appearance-none bg-[#EFF5FE] text-center font-semibold text-[#2F6FE4] outline-none`}
+      >
+        {timeOptions.map((t) => (
+          <option key={t} value={t}>
+            {t}
+          </option>
+        ))}
+      </select>
+    ) : (
+      <button
+        type="button"
+        onClick={() => setEditingCell({ dayIndex: idx, field })}
+        className={`${cell} bg-[#F2F4F6] text-[#333D4B] transition-colors active:bg-[#E5E8EB]`}
+      >
+        {s[field]}
+      </button>
+    );
+
   return (
-    <div className="bg-white min-h-screen flex flex-col">
+    <div className="flex min-h-screen flex-col bg-white" style={{ paddingBottom: 'max(calc(env(safe-area-inset-bottom, 0px) + 96px), 104px)' }}>
       <TopBar title="운영일 및 시간" />
 
-      <div className="flex-1 px-2.5 py-4 space-y-6">
-        {/* Holiday notice */}
-        <div>
-          <label className="text-sm font-bold text-gray-900 block mb-2">
-            기타 휴진일 안내
-          </label>
-          <textarea
-            value={holidayNotice}
-            onChange={(e) => setHolidayNotice(e.target.value)}
-            placeholder="예) 공휴일 휴진, 설/추석 연휴 휴진"
-            className="w-full h-20 p-3 bg-gray-50 rounded-xl text-sm border border-gray-200 resize-none focus:outline-none focus:ring-1 focus:ring-[#8037FF] focus:border-[#8037FF]"
-          />
-        </div>
+      <div className="flex-1 px-5 pb-6 pt-2">
+        {/* 기타 휴진일 안내 */}
+        <label className="mb-2 block text-[15px] font-semibold text-[#4E5968]">기타 휴진일 안내</label>
+        <textarea
+          value={holidayNotice}
+          onChange={(e) => setHolidayNotice(e.target.value)}
+          placeholder="예) 공휴일 휴진, 설/추석 연휴 휴진"
+          className="block h-[96px] w-full resize-none rounded-[14px] bg-[#F2F4F6] px-4 py-3.5 text-[16px] leading-[1.5] text-[#191F28] outline-none transition-colors placeholder:text-[#B0B8C1] focus:bg-[#EDEFF2]"
+        />
 
-        {/* Schedule table */}
-        <div>
-          <div className="grid grid-cols-[48px_1fr_1fr_48px] gap-2 mb-2">
-            <div className="text-xs text-gray-500 font-medium text-center">일</div>
-            <div className="text-xs text-gray-500 font-medium text-center">시작시간</div>
-            <div className="text-xs text-gray-500 font-medium text-center">마감시간</div>
-            <div className="text-xs text-gray-500 font-medium text-center">휴진</div>
+        {/* 요일별 시간 */}
+        <div className="mt-7">
+          <div className="mb-1.5 grid grid-cols-[36px_1fr_1fr_52px] items-center gap-2 text-[14px] text-[#8B95A1]">
+            <span className="text-center">요일</span>
+            <span className="text-center">시작</span>
+            <span className="text-center">마감</span>
+            <span className="text-center">휴진</span>
           </div>
 
           <div className="space-y-2">
             {schedule.map((s, idx) => (
-              <div
-                key={s.day}
-                className="grid grid-cols-[48px_1fr_1fr_48px] gap-2 items-center"
-              >
-                <div className="text-sm font-medium text-center text-gray-700">
-                  {s.day}
-                </div>
-
-                {/* Start time */}
-                <div className="relative">
-                  {s.isClosed ? (
-                    <div className="py-2.5 text-center text-sm text-gray-300 bg-gray-50 rounded-lg">
-                      -
-                    </div>
-                  ) : editingCell?.dayIndex === idx &&
-                    editingCell?.field === 'startTime' ? (
-                    <select
-                      value={s.startTime}
-                      onChange={(e) =>
-                        handleTimeChange(idx, 'startTime', e.target.value)
-                      }
-                      onBlur={() => setEditingCell(null)}
-                      autoFocus
-                      className="w-full py-2 text-center text-sm bg-white border border-[#8037FF] rounded-lg focus:outline-none appearance-none"
-                    >
-                      {timeOptions.map((t) => (
-                        <option key={t} value={t}>
-                          {t}
-                        </option>
-                      ))}
-                    </select>
-                  ) : (
-                    <button
-                      onClick={() =>
-                        setEditingCell({ dayIndex: idx, field: 'startTime' })
-                      }
-                      className="w-full py-2.5 text-center text-sm bg-gray-50 rounded-lg border border-gray-200 hover:border-[#8037FF] transition-colors"
-                    >
-                      {s.startTime}
-                    </button>
-                  )}
-                </div>
-
-                {/* End time */}
-                <div className="relative">
-                  {s.isClosed ? (
-                    <div className="py-2.5 text-center text-sm text-gray-300 bg-gray-50 rounded-lg">
-                      -
-                    </div>
-                  ) : editingCell?.dayIndex === idx &&
-                    editingCell?.field === 'endTime' ? (
-                    <select
-                      value={s.endTime}
-                      onChange={(e) =>
-                        handleTimeChange(idx, 'endTime', e.target.value)
-                      }
-                      onBlur={() => setEditingCell(null)}
-                      autoFocus
-                      className="w-full py-2 text-center text-sm bg-white border border-[#8037FF] rounded-lg focus:outline-none appearance-none"
-                    >
-                      {timeOptions.map((t) => (
-                        <option key={t} value={t}>
-                          {t}
-                        </option>
-                      ))}
-                    </select>
-                  ) : (
-                    <button
-                      onClick={() =>
-                        setEditingCell({ dayIndex: idx, field: 'endTime' })
-                      }
-                      className="w-full py-2.5 text-center text-sm bg-gray-50 rounded-lg border border-gray-200 hover:border-[#8037FF] transition-colors"
-                    >
-                      {s.endTime}
-                    </button>
-                  )}
-                </div>
-
-                {/* Closed toggle */}
+              <div key={s.day} className="grid grid-cols-[36px_1fr_1fr_52px] items-center gap-2">
+                <div className={`text-center text-[16px] font-semibold ${s.day === '토' || s.day === '일' ? 'text-[#8B95A1]' : 'text-[#333D4B]'}`}>{s.day}</div>
+                <div className="relative">{timeCell(s, idx, 'startTime')}</div>
+                <div className="relative">{timeCell(s, idx, 'endTime')}</div>
                 <div className="flex justify-center">
                   <button
+                    type="button"
+                    role="switch"
+                    aria-checked={s.isClosed}
+                    aria-label={`${s.day}요일 휴진`}
                     onClick={() => toggleClosed(idx)}
-                    className={`w-10 h-6 rounded-full transition-colors relative ${
-                      s.isClosed ? 'bg-[#8037FF]' : 'bg-gray-200'
-                    }`}
+                    className={`relative h-[30px] w-[50px] rounded-full transition-colors duration-300 ${s.isClosed ? 'bg-[#2F6FE4]' : 'bg-[#E5E8EB]'}`}
                   >
-                    <div
-                      className={`w-4 h-4 rounded-full bg-white absolute top-1 transition-all ${
-                        s.isClosed ? 'right-1' : 'left-1'
-                      }`}
+                    <span
+                      className="absolute top-[3px] h-6 w-6 rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,0.15)] transition-all duration-300"
+                      style={{ left: s.isClosed ? 23 : 3, transitionTimingFunction: 'cubic-bezier(0.34, 1.56, 0.64, 1)' }}
                     />
                   </button>
                 </div>
@@ -257,19 +208,21 @@ export default function HoursEditPage() {
         </div>
       </div>
 
-      {/* Save button */}
-      <div className="sticky bottom-0 bg-white px-2.5 py-4 border-t border-gray-100">
-        <button
-          onClick={handleSave}
-          disabled={saving || loading}
-          className={`w-full py-3.5 rounded-xl text-base font-bold transition-colors ${
-            saving || loading
-              ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-              : 'bg-[#8037FF] text-white'
-          }`}
-        >
-          {saving ? '저장 중…' : loading ? '불러오는 중…' : '저장하기'}
-        </button>
+      {/* 바닥 저장 버튼 — 위 선 대신 흰 그라데이션 */}
+      <div className="fixed inset-x-0 bottom-0 z-40 bg-white px-4 pt-2" style={{ paddingBottom: 'max(calc(env(safe-area-inset-bottom, 0px) + 12px), 16px)' }}>
+        <div className="pointer-events-none absolute inset-x-0 bottom-full h-8 bg-gradient-to-b from-white/0 to-white" />
+        <div className="mx-auto max-w-[608px]">
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={saving || loading}
+            className={`flex h-14 w-full items-center justify-center rounded-[18px] text-[17px] font-bold transition-all active:scale-[0.98] ${
+              saving || loading ? 'cursor-not-allowed bg-[#F2F4F6] text-[#B0B8C1]' : 'bg-[#4A82EE] text-white'
+            }`}
+          >
+            {saving ? '저장 중…' : loading ? '불러오는 중…' : '저장하기'}
+          </button>
+        </div>
       </div>
     </div>
   );

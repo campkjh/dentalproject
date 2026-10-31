@@ -1,18 +1,13 @@
 'use client';
 
+// 이벤트 목록 — 상품 상세(261031) 톤: 회색 검색 칸 · 테두리 없는 목록 줄(누름 r16) · 상태 배지 · 남색 가격 · 같은 폭 작은 버튼.
+
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import { Gift, ImageIcon, Plus } from 'lucide-react';
+import TopBar from '@/components/common/TopBar';
+import MonoIcon from '@/components/common/MonoIcon';
 import { useStore } from '@/store';
 import { useSession } from '@/lib/supabase/SessionProvider';
-import {
-  PartnerButton,
-  PartnerEmpty,
-  PartnerPanel,
-  PartnerSearchField,
-  PartnerStatusBadge,
-  PartnerTop,
-} from '@/components/partner/tds';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type EventRow = {
@@ -31,13 +26,17 @@ type EventRow = {
   reject_reason: string | null;
 };
 
-const STATUS_LABEL: Record<EventRow['status'], { text: string; tone: 'neutral' | 'success' | 'warning' | 'danger' }> = {
-  draft: { text: '임시저장', tone: 'neutral' },
-  pending: { text: '검수 중', tone: 'warning' },
-  approved: { text: '승인됨', tone: 'success' },
-  active: { text: '노출 중', tone: 'success' },
-  rejected: { text: '거절됨', tone: 'danger' },
-  ended: { text: '종료', tone: 'neutral' },
+// 상태 배지 — 대기=회색 · 승인/노출=파랑 · 거절=빨강
+const GRAY = 'bg-[#F2F4F6] text-[#6B7684]';
+const BLUE = 'bg-[#E8F3FF] text-[#3180F7]';
+const RED = 'bg-[#FFEEEF] text-[#F04452]';
+const STATUS_LABEL: Record<EventRow['status'], { text: string; tone: string }> = {
+  draft: { text: '임시저장', tone: GRAY },
+  pending: { text: '검수 중', tone: GRAY },
+  approved: { text: '승인됨', tone: BLUE },
+  active: { text: '노출 중', tone: BLUE },
+  rejected: { text: '거절됨', tone: RED },
+  ended: { text: '종료', tone: GRAY },
 };
 
 export default function EventsListPage() {
@@ -86,9 +85,12 @@ export default function EventsListPage() {
 
   if (!authUser) {
     return (
-      <div className="bg-white rounded-xl p-10 text-center">
-        <p className="text-sm text-gray-500 mb-4">로그인이 필요합니다.</p>
-        <Link href="/login" className="inline-block px-5 py-2.5 bg-[#3180F7] text-white text-sm font-bold rounded-xl">
+      <div className="flex min-h-[60vh] flex-col items-center justify-center px-6 py-10 text-center">
+        <span className="flex h-[72px] w-[72px] items-center justify-center rounded-[24px] bg-[#F2F4F6]">
+          <MonoIcon name="lock" size={34} color="#B0B8C1" />
+        </span>
+        <p className="mt-5 text-[19px] font-bold tracking-[-0.4px] text-[#191F28]">로그인이 필요해요</p>
+        <Link href="/login" className="mt-5 inline-flex h-[46px] items-center rounded-[12px] bg-[#E8F3FF] px-5 text-[16px] font-bold text-[#3180F7]">
           로그인
         </Link>
       </div>
@@ -96,82 +98,101 @@ export default function EventsListPage() {
   }
 
   return (
-    <div className="pd-sub space-y-5">
-      <PartnerTop
-        eyebrow="이벤트 관리"
+    <div className="bg-white pb-12">
+      <TopBar
         title="이벤트 목록"
-        description={`총 ${items.length}건의 이벤트를 관리합니다.`}
-        icon={<Gift size={28} />}
-        action={
-          <PartnerButton href="/partner/events/new" size="m" leftIcon={<Plus size={16} />}>
+        sub={`총 ${items.length}건의 이벤트를 관리해요.`}
+        rightContent={
+          <Link href="/partner/events/new" className="pd-head-text-btn inline-flex items-center gap-1">
+            <MonoIcon name="plus" size={16} color="#3180F7" />
             등록
-          </PartnerButton>
+          </Link>
         }
       />
 
-      <PartnerSearchField value={q} onChange={setQ} placeholder="이벤트명 검색" />
-
-      {loading ? (
-        <div className="text-center py-20 text-sm text-gray-400">불러오는 중…</div>
-      ) : filtered.length === 0 ? (
-        <PartnerEmpty
-          icon={<Gift size={24} />}
-          title="등록된 이벤트가 없습니다."
-          action={<PartnerButton href="/partner/events/new" variant="weak" size="m">첫 이벤트 등록하기</PartnerButton>}
+      <div className="qd-a-item relative mx-5 mt-1">
+        <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2">
+          <MonoIcon name="search" size={20} color="#8B95A1" />
+        </span>
+        <input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="이벤트명 검색"
+          className="!h-12 !min-h-0 w-full !rounded-[14px] !border-0 !bg-[#F2F4F6] !py-0 !pl-11 !pr-4 !text-[16px] !font-medium !text-[#191F28] outline-none transition-colors placeholder:!text-[#B0B8C1] focus:!bg-[#EDEFF2] focus:!shadow-none"
         />
-      ) : (
-        <PartnerPanel className="overflow-hidden">
-          {filtered.map((e) => {
-            const s = STATUS_LABEL[e.status];
-            return (
-              <article key={e.id} className="partner-list-row items-start">
-                <div className="h-[64px] w-[64px] flex-shrink-0 overflow-hidden rounded-[16px] bg-[#EDF4FF] text-[#3180F7] flex items-center justify-center">
-                  {e.image_url ? (
-                    /* eslint-disable-next-line @next/next/no-img-element */
-                    <img src={e.image_url} alt="" className="w-full h-full object-cover" />
-                  ) : (
-                    <ImageIcon size={24} />
-                  )}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-start gap-2">
-                    <h3 className="flex-1 truncate text-[17px] font-bold leading-[23px] text-[#191F28]">{e.title}</h3>
-                    <PartnerStatusBadge tone={s.tone}>{s.text}</PartnerStatusBadge>
-                  </div>
-                  {e.description && (
-                    <p className="mt-1 line-clamp-2 text-[13px] leading-[18px] text-[rgba(3,24,50,0.46)]">{e.description}</p>
-                  )}
-                  <div className="mt-3 flex items-center justify-between gap-3 text-[12px] text-[rgba(0,19,43,0.58)]">
-                    {e.sale_price ? (
-                      <span className="text-[17px] font-bold text-[#3180F7]">
-                        {e.sale_price.toLocaleString()}원
-                      </span>
+      </div>
+
+      <div className="qd-a-item px-3 pt-3" style={{ animationDelay: '.06s' }}>
+        {loading ? (
+          <p className="py-20 text-center text-[15px] text-[#8B95A1]">불러오는 중…</p>
+        ) : filtered.length === 0 ? (
+          <div className="flex flex-col items-center px-6 py-16 text-center">
+            <span className="flex h-[72px] w-[72px] items-center justify-center rounded-[24px] bg-[#F2F4F6]">
+              <MonoIcon name="gift" size={34} color="#B0B8C1" />
+            </span>
+            <p className="mt-5 text-[19px] font-bold tracking-[-0.4px] text-[#191F28]">등록된 이벤트가 없어요</p>
+            <p className="mt-1.5 text-[15px] leading-[1.6] text-[#8B95A1]">이벤트를 올리면 검수 뒤 환자에게 보여요</p>
+            <Link href="/partner/events/new" className="mt-5 inline-flex h-[46px] items-center rounded-[12px] bg-[#E8F3FF] px-5 text-[16px] font-bold text-[#3180F7]">
+              첫 이벤트 등록하기
+            </Link>
+          </div>
+        ) : (
+          <ul>
+            {filtered.map((e) => {
+              const s = STATUS_LABEL[e.status];
+              return (
+                <li key={e.id} className="flex items-start gap-3.5 rounded-[16px] px-2 py-4">
+                  <div className="flex h-[64px] w-[64px] shrink-0 items-center justify-center overflow-hidden rounded-[14px] bg-[#F2F4F6]">
+                    {e.image_url ? (
+                      /* eslint-disable-next-line @next/next/no-img-element */
+                      <img src={e.image_url} alt="" className="h-full w-full object-cover" />
                     ) : (
-                      <span>—</span>
-                    )}
-                    {e.start_at && e.end_at && (
-                      <span>
-                        {new Date(e.start_at).toLocaleDateString('ko-KR')} ~ {new Date(e.end_at).toLocaleDateString('ko-KR')}
-                      </span>
+                      <MonoIcon name="picture" size={26} color="#B0B8C1" />
                     )}
                   </div>
-                  {e.reject_reason && (
-                    <p className="mt-2 text-[12px] text-[#E5484D]">반려 사유: {e.reject_reason}</p>
-                  )}
-                  <div className="mt-3 flex gap-2">
-                    <PartnerButton href={`/partner/events/${e.id}/edit`} variant="weak" tone="neutral" size="s" className="flex-1">
-                      편집
-                    </PartnerButton>
-                    <PartnerButton type="button" onClick={() => handleDelete(e.id)} variant="weak" tone="danger" size="s" className="flex-1">
-                      삭제
-                    </PartnerButton>
+                  <div className="min-w-0 flex-1">
+                    <span className={`inline-flex h-6 items-center rounded-[6px] px-2 text-[13.5px] font-semibold ${s.tone}`}>{s.text}</span>
+                    <h3 className="mt-1.5 truncate text-[17px] font-bold leading-[1.35] text-[#191F28]">{e.title}</h3>
+                    {e.description && (
+                      <p className="mt-0.5 line-clamp-2 text-[14px] leading-[1.5] text-[#6B7684]">{e.description}</p>
+                    )}
+                    <div className="mt-2 flex items-center justify-between gap-3">
+                      {e.sale_price ? (
+                        <span className="text-[17px] font-bold text-[#1E3A78]">{e.sale_price.toLocaleString()}원</span>
+                      ) : (
+                        <span className="text-[15px] text-[#B0B8C1]">—</span>
+                      )}
+                      {e.start_at && e.end_at && (
+                        <span className="truncate text-[13.5px] text-[#8B95A1]">
+                          {new Date(e.start_at).toLocaleDateString('ko-KR')} ~ {new Date(e.end_at).toLocaleDateString('ko-KR')}
+                        </span>
+                      )}
+                    </div>
+                    {e.reject_reason && (
+                      <p className="mt-2 rounded-[12px] bg-[#FFEEEF] px-3 py-2.5 text-[14px] leading-[1.5] text-[#F04452]">반려 사유: {e.reject_reason}</p>
+                    )}
+                    <div className="mt-3 flex gap-2">
+                      <Link
+                        href={`/partner/events/${e.id}/edit`}
+                        className="flex h-10 flex-1 items-center justify-center rounded-[12px] bg-[#F2F4F6] text-[15px] font-semibold text-[#333D4B] transition-all active:scale-[0.98] active:bg-[#E5E8EB]"
+                      >
+                        편집
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(e.id)}
+                        className="flex h-10 flex-1 items-center justify-center rounded-[12px] bg-[#F2F4F6] text-[15px] font-semibold text-[#F04452] transition-all active:scale-[0.98] active:bg-[#E5E8EB]"
+                      >
+                        삭제
+                      </button>
+                    </div>
                   </div>
-                </div>
-              </article>
-            );
-          })}
-        </PartnerPanel>
-      )}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
     </div>
   );
 }

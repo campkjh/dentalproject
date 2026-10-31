@@ -60,60 +60,48 @@ export default function IntroEditPage() {
     }
   };
 
+  const disabled = isOverLimit || saving || loading;
+
   return (
-    <div className="bg-white min-h-screen flex flex-col">
-      <TopBar title="병원소개" />
+    <div className="flex min-h-screen flex-col bg-white" style={{ paddingBottom: 'max(calc(env(safe-area-inset-bottom, 0px) + 96px), 104px)' }}>
+      <TopBar title="병원소개" sub="환자에게 보이는 병원 소개 글이에요." />
 
-      <div className="flex-1 px-2.5 py-4 space-y-4">
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <label className="text-sm font-bold text-gray-900">병원소개</label>
-            <span
-              className={`text-sm font-medium ${
-                isOverLimit ? 'text-red-500' : 'text-gray-400'
-              }`}
-            >
-              {charCount}/{MAX_LENGTH}
-              {isOverLimit && (
-                <span className="ml-2 text-red-500 text-xs font-bold">
-                  저장불가
-                </span>
-              )}
-            </span>
-          </div>
-          <textarea
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            placeholder={loading ? '불러오는 중…' : '병원소개를 입력해주세요'}
-            disabled={loading}
-            className={`w-full h-48 p-4 bg-gray-50 rounded-xl text-sm leading-relaxed border resize-none focus:outline-none focus:ring-1 ${
-              isOverLimit
-                ? 'border-red-300 focus:ring-red-400 focus:border-red-400'
-                : 'border-gray-200 focus:ring-[#8037FF] focus:border-[#8037FF]'
-            }`}
-          />
-        </div>
-
-        {isOverLimit && (
-          <p className="text-xs text-red-500">
-            글자 수가 {MAX_LENGTH}자를 초과했습니다. {charCount - MAX_LENGTH}자를 줄여주세요.
+      <div className="flex-1 px-5 pb-6 pt-2">
+        <textarea
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder={loading ? '불러오는 중…' : '병원소개를 입력해 주세요'}
+          disabled={loading}
+          className={`block h-[240px] w-full resize-none rounded-[14px] px-4 py-3.5 text-[16px] leading-[1.6] text-[#191F28] outline-none transition-colors placeholder:text-[#B0B8C1] ${
+            isOverLimit ? 'bg-[#FFEEEF]' : 'bg-[#F2F4F6] focus:bg-[#EDEFF2]'
+          }`}
+        />
+        <div className="mt-2 flex items-center justify-between gap-3">
+          <p className="min-w-0 text-[14px] text-[#F04452]">
+            {isOverLimit && `${MAX_LENGTH}자를 넘었어요. ${charCount - MAX_LENGTH}자를 줄여 주세요.`}
           </p>
-        )}
+          <p className="shrink-0 text-[14px] tabular-nums text-[#8B95A1]">
+            <span className={`font-semibold ${isOverLimit ? 'text-[#F04452]' : 'text-[#333D4B]'}`}>{charCount}</span>/{MAX_LENGTH}
+            {isOverLimit && <span className="ml-1.5 font-semibold text-[#F04452]">저장불가</span>}
+          </p>
+        </div>
       </div>
 
-      {/* Save button */}
-      <div className="sticky bottom-0 bg-white px-2.5 py-4 border-t border-gray-100">
-        <button
-          onClick={handleSave}
-          disabled={isOverLimit || saving || loading}
-          className={`w-full py-3.5 rounded-xl text-base font-bold transition-colors ${
-            isOverLimit || saving || loading
-              ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-              : 'bg-[#8037FF] text-white'
-          }`}
-        >
-          {saving ? '저장 중…' : '저장하기'}
-        </button>
+      {/* 바닥 저장 버튼 — 위 선 대신 흰 그라데이션 */}
+      <div className="fixed inset-x-0 bottom-0 z-40 bg-white px-4 pt-2" style={{ paddingBottom: 'max(calc(env(safe-area-inset-bottom, 0px) + 12px), 16px)' }}>
+        <div className="pointer-events-none absolute inset-x-0 bottom-full h-8 bg-gradient-to-b from-white/0 to-white" />
+        <div className="mx-auto max-w-[608px]">
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={disabled}
+            className={`flex h-14 w-full items-center justify-center rounded-[18px] text-[17px] font-bold transition-all active:scale-[0.98] ${
+              disabled ? 'cursor-not-allowed bg-[#F2F4F6] text-[#B0B8C1]' : 'bg-[#4A82EE] text-white'
+            }`}
+          >
+            {saving ? '저장 중…' : '저장하기'}
+          </button>
+        </div>
       </div>
     </div>
   );

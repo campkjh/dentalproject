@@ -2,9 +2,9 @@
 
 import { useState, Suspense, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Check, Phone } from 'lucide-react';
 import Avatar from '@/components/common/Avatar';
 import TopBar from '@/components/common/TopBar';
+import MonoIcon from '@/components/common/MonoIcon';
 import { useStore } from '@/store';
 
 interface DoctorOption {
@@ -19,7 +19,7 @@ interface DoctorOption {
 
 export default function DoctorAssignPageWrapper() {
   return (
-    <Suspense fallback={<div className="flex items-center justify-center min-h-screen">로딩중...</div>}>
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center text-[15px] text-[#8B95A1]">불러오는 중…</div>}>
       <DoctorAssignPage />
     </Suspense>
   );
@@ -121,145 +121,121 @@ function DoctorAssignPage() {
     router.back();
   };
 
+  // 체크 동그라미 — 켤 때 톡 튀며 체크가 그려진다(globals .chk-dot)
+  const checkDot = (on: boolean) => (
+    <span key={String(on)} className={`chk-dot flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${on ? 'is-on bg-[#2F6FE4]' : 'is-off border-2 border-[#E5E8EB]'}`}>
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={on ? '#fff' : '#D1D6DB'} strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
+    </span>
+  );
+
   return (
-    <div className="bg-white min-h-screen flex flex-col">
+    <div className="flex min-h-screen flex-col bg-white" style={{ paddingBottom: 'max(calc(env(safe-area-inset-bottom, 0px) + 96px), 104px)' }}>
       <TopBar title="담당지정" />
 
-      {/* Patient info */}
+      {/* 예약 정보 */}
       {appointment ? (
-        <div className="px-2.5 py-4 bg-gray-50 border-b border-gray-100">
-          <div className="space-y-2">
-            <div className="flex items-center gap-3">
-              {appointment.time && (
-                <span className="text-sm font-bold text-[#8037FF]">{appointment.time}</span>
-              )}
-              <span className="font-bold text-sm">{appointment.patientName}</span>
-            </div>
-            {appointment.phone && (
-              <div className="flex items-center gap-1 text-xs text-gray-500">
-                <Phone size={12} />
-                <span>{appointment.phone}</span>
-              </div>
+        <div className="px-5 pb-7 pt-2">
+          <div className="flex items-center gap-2">
+            {appointment.time && (
+              <span className="inline-flex h-7 items-center rounded-[6px] bg-[#E8F3FF] px-2 text-[14px] font-bold tabular-nums text-[#3180F7]">{appointment.time}</span>
             )}
-            {appointment.treatmentName && (
-              <p className="text-sm text-gray-700 font-medium">{appointment.treatmentName}</p>
+            <span className="min-w-0 truncate text-[19px] font-bold tracking-[-0.4px] text-[#191F28]">{appointment.patientName}</span>
+          </div>
+          <div className="mt-3">
+            {[
+              ...(appointment.phone ? [{ label: '전화', value: appointment.phone }] : []),
+              ...(appointment.treatmentName ? [{ label: '시술', value: appointment.treatmentName }] : []),
+            ].map((r) => (
+              <p key={r.label} className="flex min-h-11 items-center py-1.5">
+                <span className="w-[86px] shrink-0 text-[17px] text-[#8B95A1]">{r.label}</span>
+                <span className="min-w-0 flex-1 break-keep text-[17px] text-[#333D4B]">{r.value}</span>
+              </p>
+            ))}
+          </div>
+          <div className="mt-2 flex gap-1.5">
+            {appointment.paymentType && (
+              <span className="inline-flex h-6 items-center rounded-[6px] bg-[#EFF5FE] px-2 text-[13.5px] font-semibold text-[#2F6FE4]">{appointment.paymentType}</span>
             )}
-            <div className="flex gap-2">
-              {appointment.paymentType && (
-                <span className="px-2 py-0.5 bg-purple-50 text-purple-600 text-xs rounded-full font-medium">
-                  {appointment.paymentType}
-                </span>
-              )}
-              <span className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded-full font-medium">
-                {appointment.bookingType}
-              </span>
-            </div>
+            <span className="inline-flex h-6 items-center rounded-[6px] bg-[#F2F4F6] px-2 text-[13.5px] font-semibold text-[#6B7684]">{appointment.bookingType}</span>
           </div>
         </div>
       ) : (
-        <div className="px-2.5 py-3 bg-gray-50 border-b border-gray-100">
-          <p className="text-xs text-gray-500">의료진을 선택해주세요</p>
+        <div className="px-5 pb-5 pt-2">
+          <p className="flex gap-2 rounded-[14px] bg-[#F2F4F6] px-4 py-3.5 text-[14px] leading-[1.5] text-[#4E5968]">
+            <MonoIcon name="info-circle" size={18} color="#B0B8C1" className="mt-px" />
+            담당할 의료진을 골라 주세요.
+          </p>
         </div>
       )}
 
-      {/* Doctor list */}
-      <div className="flex-1 px-2.5 py-4">
-        <h3 className="text-sm font-bold text-gray-900 mb-3">의사 선택</h3>
-        <div className="space-y-2">
-          {doctorOptions.map((doctor) => {
+      <div className="h-2.5 bg-[#F2F4F6]" />
+
+      {/* 의사 선택 */}
+      <div className="flex-1 px-5 py-7">
+        <h2 className="text-[20px] font-bold leading-tight tracking-[-0.4px] text-[#191F28]">
+          의사 선택 <span className="text-[#3180F7]">{doctorOptions.length}</span>
+        </h2>
+        {loading && <p className="mt-4 text-[15px] text-[#8B95A1]">불러오는 중…</p>}
+        <div className="-mx-1 mt-3 space-y-1">
+          {doctorOptions.map((doctor, i) => {
             const isSelected = selectedDoctor === doctor.id;
             const isUnavailable = !doctor.available;
 
             return (
               <button
                 key={doctor.id}
+                type="button"
                 onClick={() => handleSelectDoctor(doctor)}
-                className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-colors text-left ${
-                  isSelected
-                    ? 'border-[#8037FF] bg-[#F4EFFF]/30'
-                    : isUnavailable
-                      ? 'border-gray-100 bg-gray-50'
-                      : 'border-gray-200 bg-white hover:border-[#8037FF]/50'
+                className={`qd-a-item flex w-full items-center gap-3.5 rounded-[16px] px-3 py-3 text-left transition-colors ${
+                  isSelected ? 'bg-[#EFF5FE]' : 'bg-white active:bg-[#F9FAFB]'
                 }`}
+                style={{ animationDelay: `${Math.min(i, 8) * 0.04}s` }}
               >
-                <div className="relative w-10 h-10 flex-shrink-0">
-                  <Avatar
-                    src={doctor.profileImage ?? undefined}
-                    role="doctor"
-                    seed={doctor.name}
-                    size={40}
-                    alt=""
-                    className={isUnavailable ? 'opacity-40' : ''}
-                  />
-                  {isSelected && (
-                    <span className="absolute inset-0 rounded-full bg-[#8037FF]/85 flex items-center justify-center">
-                      <Check size={18} className="text-white" />
-                    </span>
-                  )}
-                </div>
-
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={`font-bold text-sm ${
-                        isUnavailable ? 'text-gray-300' : 'text-gray-900'
-                      }`}
-                    >
+                <Avatar
+                  src={doctor.profileImage ?? undefined}
+                  role="doctor"
+                  seed={doctor.name}
+                  size={48}
+                  alt=""
+                  className={`shrink-0 ${isUnavailable ? 'opacity-40' : ''}`}
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="flex min-w-0 items-center gap-1.5">
+                    <span className={`truncate text-[17px] font-bold ${isUnavailable ? 'text-[#B0B8C1]' : isSelected ? 'text-[#3180F7]' : 'text-[#191F28]'}`}>
                       {doctor.name}
                     </span>
-                    <span
-                      className={`text-xs ${
-                        isUnavailable ? 'text-gray-300' : 'text-gray-500'
-                      }`}
-                    >
-                      {doctor.title}
-                    </span>
+                    <span className={`shrink-0 text-[14px] ${isUnavailable ? 'text-[#B0B8C1]' : 'text-[#6B7684]'}`}>{doctor.title}</span>
                     {doctor.isOwner && (
-                      <span className="px-1.5 py-0.5 bg-[#8037FF] text-white text-[10px] rounded font-medium">
-                        대표
-                      </span>
+                      <span className="inline-flex h-5 shrink-0 items-center rounded-[5px] bg-[#DCE9FD] px-1.5 text-[12px] font-bold text-[#2F6FE4]">대표</span>
                     )}
-                  </div>
-                  <p
-                    className={`text-xs mt-0.5 ${
-                      isUnavailable ? 'text-gray-300' : 'text-gray-500'
-                    }`}
-                  >
-                    {doctor.specialty}
                   </p>
-                  {isUnavailable && (
-                    <p className="text-xs text-red-400 mt-0.5">
-                      해당 시간 스케줄 있음
-                    </p>
+                  {doctor.specialty && (
+                    <p className={`mt-0.5 truncate text-[14px] ${isUnavailable ? 'text-[#B0B8C1]' : 'text-[#8B95A1]'}`}>{doctor.specialty}</p>
                   )}
+                  {isUnavailable && <p className="mt-0.5 text-[13px] text-[#F04452]">해당 시간 스케줄 있음</p>}
                 </div>
-
-                {isSelected && (
-                  <div className="flex-shrink-0">
-                    <div className="w-5 h-5 bg-[#8037FF] rounded-full flex items-center justify-center">
-                      <Check size={12} className="text-white" />
-                    </div>
-                  </div>
-                )}
+                {checkDot(isSelected)}
               </button>
             );
           })}
         </div>
       </div>
 
-      {/* Bottom button */}
-      <div className="sticky bottom-0 bg-white px-2.5 py-4 border-t border-gray-100">
-        <button
-          onClick={handleComplete}
-          disabled={!selectedDoctor}
-          className={`w-full py-3.5 rounded-xl text-base font-bold transition-colors ${
-            selectedDoctor
-              ? 'bg-[#8037FF] text-white'
-              : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-          }`}
-        >
-          {isChanging ? '변경완료' : '지정완료'}
-        </button>
+      {/* 바닥 버튼 — 위 선 대신 흰 그라데이션 */}
+      <div className="fixed inset-x-0 bottom-0 z-40 bg-white px-4 pt-2" style={{ paddingBottom: 'max(calc(env(safe-area-inset-bottom, 0px) + 12px), 16px)' }}>
+        <div className="pointer-events-none absolute inset-x-0 bottom-full h-8 bg-gradient-to-b from-white/0 to-white" />
+        <div className="mx-auto max-w-[608px]">
+          <button
+            type="button"
+            onClick={handleComplete}
+            disabled={!selectedDoctor}
+            className={`flex h-14 w-full items-center justify-center rounded-[18px] text-[17px] font-bold transition-all active:scale-[0.98] ${
+              selectedDoctor ? 'bg-[#4A82EE] text-white' : 'cursor-not-allowed bg-[#F2F4F6] text-[#B0B8C1]'
+            }`}
+          >
+            {isChanging ? '변경완료' : '지정완료'}
+          </button>
+        </div>
       </div>
     </div>
   );

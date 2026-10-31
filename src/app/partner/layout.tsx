@@ -7,6 +7,7 @@ import { useSession } from '@/lib/supabase/SessionProvider';
 import { useStore } from '@/store';
 import { useMyHospitalData } from '@/lib/partner/my-hospital-cache';
 import appStyles from '@/components/common/app-ui.module.css';
+import MonoIcon from '@/components/common/MonoIcon';
 import { CommunityTabIcon, HomeTabIcon, HospitalTabIcon, MyTabIcon, ReservationTabIcon, TabBarNav } from '@/components/common/BottomNav';
 // 상세·하위 화면·모달 덮어쓰기(고객 화면 결) — globals 는 건드리지 않고 여기 한 파일에
 import './partner-v2.css';
@@ -64,61 +65,36 @@ function ApprovalPendingScreen({ status, hospitalName }: { status: string | null
       : '병원 승인을 기다리고 있어요';
   const desc =
     status === 'rejected'
-      ? '관리자가 신청 내용을 확인한 결과 일부 보완이 필요합니다. 고객센터로 문의해 주세요.'
+      ? '관리자가 신청 내용을 확인했는데 일부 보완이 필요해요. 고객센터로 문의해 주세요.'
       : status === 'suspended'
       ? '운영 정지 상태에서는 병원/상품 정보를 관리할 수 없어요. 자세한 내용은 고객센터로 문의해 주세요.'
       : '제출하신 입점 신청을 관리자가 심사 중이에요. 승인이 완료되면 병원 정보와 상품을 등록·관리할 수 있어요.';
 
+  // 빈 화면 결(LoginRequired): 72 회색 둥근 칸 안 옅은 시계 · 19 굵은 제목 · 15 회색 부제 · 같은 폭 큰 버튼
   return (
-    <div style={{ padding: '64px 24px 32px', textAlign: 'center' }}>
-      <div
-        style={{
-          width: 88,
-          height: 88,
-          margin: '0 auto 20px',
-          borderRadius: 24,
-          background: 'rgba(51,60,74,0.08)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
-          <circle cx="12" cy="12" r="9" stroke="#333C4A" strokeWidth="1.6" />
-          <path d="M12 7v6l3.5 2" stroke="#333C4A" strokeWidth="1.6" strokeLinecap="round" />
-        </svg>
-      </div>
-      <h2 style={{ fontSize: 22, fontWeight: 700, color: '#191F28', margin: '0 0 8px' }}>{title}</h2>
+    <div className="flex min-h-[calc(100dvh-160px)] flex-col items-center justify-center px-6 py-12 text-center">
+      <span className="qd-a-item flex h-[72px] w-[72px] items-center justify-center rounded-[24px] bg-[#F2F4F6]">
+        <MonoIcon name={status === 'rejected' || status === 'suspended' ? 'exclamation-circle' : 'clock'} size={34} color="#B0B8C1" />
+      </span>
+      <h2 className="qd-a-item mt-5 break-keep text-[19px] font-bold tracking-[-0.4px] text-[#191F28]" style={{ animationDelay: '.06s' }}>{title}</h2>
       {hospitalName && (
-        <p style={{ fontSize: 14, color: '#8B95A1', margin: '0 0 14px' }}>{hospitalName}</p>
+        <p className="qd-a-item mt-1 text-[15px] font-semibold text-[#6B7684]" style={{ animationDelay: '.09s' }}>{hospitalName}</p>
       )}
-      <p style={{ fontSize: 15, lineHeight: 1.55, color: '#4E5968', margin: '0 0 28px' }}>
+      <p className="qd-a-item mt-1.5 max-w-[320px] break-keep text-[15px] leading-[1.6] tracking-[-0.2px] text-[#8B95A1]" style={{ animationDelay: '.12s' }}>
         {desc}
       </p>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxWidth: 320, margin: '0 auto' }}>
+      <div className="qd-a-item mt-7 flex w-full max-w-[320px] flex-col gap-2" style={{ animationDelay: '.18s' }}>
         <button
+          type="button"
           onClick={() => router.push('/partner/account')}
-          style={{
-            height: 52,
-            borderRadius: 12,
-            background: '#333C4A',
-            color: '#fff',
-            fontSize: 16,
-            fontWeight: 600,
-          }}
+          className="flex h-14 w-full items-center justify-center rounded-[18px] bg-[#4A82EE] text-[17px] font-bold text-white transition-all active:scale-[0.98] active:bg-[#3D74DE]"
         >
           내 계정 보기
         </button>
         <button
+          type="button"
           onClick={() => router.push('/')}
-          style={{
-            height: 52,
-            borderRadius: 12,
-            background: 'rgba(7,25,76,0.05)',
-            color: '#4E5968',
-            fontSize: 16,
-            fontWeight: 600,
-          }}
+          className="flex h-14 w-full items-center justify-center rounded-[18px] bg-[#F2F4F6] text-[17px] font-bold text-[#4E5968] transition-all active:scale-[0.98] active:bg-[#E5E8EB]"
         >
           서비스 홈으로
         </button>

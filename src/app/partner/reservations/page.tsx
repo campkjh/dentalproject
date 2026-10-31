@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ChevronRight } from 'lucide-react';
+import CommunityModal from '@/components/community/CommunityModal';
+import MonoIcon from '@/components/common/MonoIcon';
 import { useMyHospitalData } from '@/lib/partner/my-hospital-cache';
 import { useSession } from '@/lib/supabase/SessionProvider';
 import { useReservationRealtimeRefresh } from '@/lib/realtime/reservations';
@@ -69,13 +71,127 @@ function timeOf(value?: string | null) {
   return d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false });
 }
 
+const STATUS_LABEL: Record<ReservationRow['status'], string> = {
+  pending: '확인 대기',
+  confirmed: '예약확정',
+  completed: '진료완료',
+  cancelled: '취소',
+};
+
+/** 상태 배지 색 — 대기=회색 · 확정=파랑 · 완료=초록 · 취소=빨강 */
+function statusTone(status: ReservationRow['status']) {
+  if (status === 'completed') return 'bg-[#E6F7EE] text-[#03A94D]';
+  if (status === 'confirmed') return 'bg-[#E8F3FF] text-[#3180F7]';
+  if (status === 'cancelled') return 'bg-[#FFEEEF] text-[#F04452]';
+  return 'bg-[#F2F4F6] text-[#6B7684]';
+}
+
+/** 달력 — 회색 요일 줄 · 고른 날 파랑 칸 · 예약 있는 날 아래 점 */
+function MonthCalendar({
+  month,
+  cells,
+  selected,
+  onToday,
+  onSelect,
+  hasDot,
+  isOff,
+}: {
+  month: number;
+  cells: Array<{ date: Date; muted: boolean }>;
+  selected: string;
+  onToday: () => void;
+  onSelect: (date: Date) => void;
+  hasDot: (key: string) => boolean;
+  isOff?: (key: string) => boolean;
+}) {
+  return (
+    <section className="px-5 pb-6 pt-1">
+      <button
+        type="button"
+        onClick={onToday}
+        className="-ml-1 inline-flex h-9 items-center gap-0.5 rounded-[10px] px-1 text-[20px] font-bold tracking-[-0.4px] text-[#191F28] transition-opacity active:opacity-60"
+        aria-label="오늘로 돌아가기"
+      >
+        {month + 1}월
+      </button>
+      <div className="mt-3 grid grid-cols-7 text-center">
+        {WEEKDAYS.map((day) => (
+          <span key={day} className="text-[13px] font-medium text-[#8B95A1]">{day}</span>
+        ))}
+      </div>
+      <div className="mt-2 grid grid-cols-7 gap-y-1">
+        {cells.map(({ date, muted }) => {
+          const key = dateKey(date);
+          const active = key === selected;
+          const off = isOff?.(key) ?? false;
+          const dot = hasDot(key);
+          return (
+            <button
+              key={key}
+              type="button"
+              onClick={() => onSelect(date)}
+              className="flex h-12 flex-col items-center justify-center transition-transform active:scale-[0.93]"
+            >
+              <span
+                className={`flex h-9 w-9 items-center justify-center rounded-[12px] text-[16px] tabular-nums transition-colors ${
+                  active
+                    ? 'bg-[#2F6FE4] font-bold text-white'
+                    : off
+                      ? 'bg-[#F2F4F6] text-[#B0B8C1] line-through'
+                      : muted
+                        ? 'text-[#D1D6DB]'
+                        : 'font-medium text-[#333D4B]'
+                }`}
+              >
+                {date.getDate()}
+              </span>
+              <span className={`mt-0.5 h-1 w-1 rounded-full ${dot ? (active ? 'bg-[#2F6FE4]' : 'bg-[#3180F7]') : 'bg-transparent'}`} />
+            </button>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+/** 병원예약 · 예약설정 — 회색 트랙 위 흰 알약이 미끄러진다 */
+function ReservationTabs({ active, onChange }: { active: 'reservations' | 'settings'; onChange: (tab: 'reservations' | 'settings') => void }) {
+  const tabs = [
+    { key: 'reservations', label: '병원예약' },
+    { key: 'settings', label: '예약설정' },
+  ] as const;
+  const idx = tabs.findIndex((t) => t.key === active);
+  return (
+    <nav className="relative flex w-[176px] rounded-[12px] bg-[#F2F4F6] p-1" aria-label="예약관리 탭">
+      <span
+        aria-hidden
+        className="absolute bottom-1 top-1 rounded-[10px] bg-white shadow-[0_1px_4px_rgba(0,0,0,0.06)] transition-transform duration-300"
+        style={{ left: 4, width: 'calc((100% - 8px) / 2)', transform: `translateX(${idx * 100}%)`, transitionTimingFunction: 'cubic-bezier(0.22, 1, 0.36, 1)' }}
+      />
+      {tabs.map((t) => (
+        <button
+          key={t.key}
+          type="button"
+          onClick={() => onChange(t.key)}
+          aria-current={active === t.key ? 'page' : undefined}
+          className={`relative z-[1] flex h-9 flex-1 items-center justify-center text-[14.5px] transition-colors ${active === t.key ? 'font-bold text-[#191F28]' : 'font-semibold text-[#8B95A1]'}`}
+        >
+          {t.label}
+        </button>
+      ))}
+    </nav>
+  );
+}
+
 function ReservationScheduleCard({
   row,
+  index,
   onAssignRequest,
   onDetailRequest,
   onMemoRequest,
 }: {
   row: ReservationRow;
+  index: number;
   onAssignRequest: (row: ReservationRow) => void;
   onDetailRequest: (id: string) => void;
   onMemoRequest: (row: ReservationRow) => void;
@@ -87,31 +203,57 @@ function ReservationScheduleCard({
   const isPaid = row.payment_type === 'app' || row.payment_method === 'app' || row.payment_method === '앱결제';
 
   return (
-    <article className="partner-schedule-card">
-      <div className="partner-schedule-row top" onClick={() => onDetailRequest(row.id)} style={{ cursor: 'pointer' }}>
-        <div>
-          <strong>{timeOf(row.visit_at)}</strong>
-          <span>{name}</span>
-          {phone ? <span>{phone}</span> : null}
-        </div>
-        <ChevronRight size={22} strokeWidth={2.2} />
-      </div>
-      <div className="partner-schedule-row">
-        <strong>{row.product?.title ?? '상품 정보 없음'}</strong>
-        <div className="partner-badge-row">
-          {isPaid && <span className="blue">앱결제</span>}
-          <span>앱예약</span>
-        </div>
-      </div>
-      <div className="partner-schedule-row">
-        <p>
-          담당 <em className={assigned ? 'purple' : undefined}>{doctor}</em>
-        </p>
-        <button type="button" onClick={() => onAssignRequest(row)}>{assigned ? '변경' : '지정'}</button>
-      </div>
-      <button type="button" className="partner-schedule-memo" onClick={() => onMemoRequest(row)}>
-        {row.memo || '메모 없음'}
+    <article className="qd-a-item py-3" style={{ animationDelay: `${Math.min(index, 6) * 0.04}s` }}>
+      <button
+        type="button"
+        onClick={() => onDetailRequest(row.id)}
+        className="-mx-2 flex w-[calc(100%+16px)] items-center gap-3 rounded-[16px] px-2 py-2 text-left transition-colors active:bg-[#F9FAFB]"
+      >
+        <span className="w-[58px] shrink-0 text-[20px] font-bold tabular-nums tracking-[-0.4px] text-[#191F28]">{timeOf(row.visit_at)}</span>
+        <span className="min-w-0 flex-1">
+          <span className="flex items-center gap-1.5">
+            <span className="truncate text-[17px] font-bold text-[#191F28]">{name}</span>
+            <span className={`inline-flex h-6 shrink-0 items-center rounded-[6px] px-2 text-[13.5px] font-semibold ${statusTone(row.status)}`}>{STATUS_LABEL[row.status]}</span>
+          </span>
+          <span className="mt-0.5 block truncate text-[14px] text-[#8B95A1]">
+            {row.product?.title ?? '상품 정보 없음'}
+            {phone ? ` · ${phone}` : ''}
+          </span>
+        </span>
+        <ChevronRight size={20} className="shrink-0 text-[#B0B8C1]" />
       </button>
+
+      <div className="mt-2 rounded-[14px] bg-[#F2F4F6] px-4 py-1.5">
+        <div className="flex min-h-11 items-center gap-2">
+          <span className="w-[52px] shrink-0 text-[15px] text-[#8B95A1]">결제</span>
+          <span className="flex min-w-0 flex-1 flex-wrap gap-1">
+            {isPaid && <span className="inline-flex h-6 items-center rounded-[6px] bg-[#2F6FE4] px-2 text-[13px] font-bold text-white">앱결제</span>}
+            <span className="inline-flex h-6 items-center rounded-[6px] bg-white px-2 text-[13px] font-semibold text-[#6B7684]">앱예약</span>
+          </span>
+        </div>
+        <div className="flex min-h-11 items-center gap-2">
+          <span className="w-[52px] shrink-0 text-[15px] text-[#8B95A1]">담당</span>
+          <span className={`min-w-0 flex-1 truncate text-[15px] ${assigned ? 'font-semibold text-[#333D4B]' : 'text-[#B0B8C1]'}`}>{doctor}</span>
+          <button
+            type="button"
+            onClick={() => onAssignRequest(row)}
+            className="h-8 shrink-0 rounded-[10px] bg-white px-3 text-[14px] font-semibold text-[#3180F7] transition-all active:scale-[0.96] active:bg-[#EFF5FE]"
+          >
+            {assigned ? '변경' : '지정'}
+          </button>
+        </div>
+        <button
+          type="button"
+          onClick={() => onMemoRequest(row)}
+          className="flex min-h-11 w-full items-start gap-2 py-2.5 text-left transition-opacity active:opacity-60"
+        >
+          <span className="w-[52px] shrink-0 text-[15px] leading-[1.5] text-[#8B95A1]">메모</span>
+          <span className={`min-w-0 flex-1 whitespace-pre-line break-keep text-[15px] leading-[1.5] ${row.memo ? 'text-[#333D4B]' : 'text-[#B0B8C1]'}`}>
+            {row.memo || '메모를 남겨 보세요'}
+          </span>
+          <MonoIcon name="pencil" size={16} color="#B0B8C1" className="mt-[3px]" />
+        </button>
+      </div>
     </article>
   );
 }
@@ -259,7 +401,7 @@ function ScheduleSettingsView({
         disabledSlots: payload.disabledSlots ?? {},
       });
       const target = action.kind === 'day' ? '진료일' : '진료시간';
-      showToast(`${target}이 ${action.disabled ? '비활성화' : '활성화'} 되었습니다.`);
+      showToast(`${target}을 ${action.disabled ? '비활성화' : '활성화'}했어요.`);
     } catch (error) {
       setSettings(previous);
       showToast(error instanceof Error ? error.message : '저장에 실패했습니다.');
@@ -282,88 +424,64 @@ function ScheduleSettingsView({
   };
 
   return (
-    <div className="partner-mobile-screen has-fixed-title partner-reservation-settings">
+    <div className="partner-mobile-screen has-fixed-title page-enter">
       <header className="partner-screen-title with-action">
         <h1>예약관리</h1>
-        <nav className="partner-inline-segment" aria-label="예약관리 탭">
-          <button type="button" onClick={onShowReservations}>병원예약</button>
-          <button type="button" className="is-active">예약설정</button>
-        </nav>
+        <ReservationTabs active="settings" onChange={(tab) => { if (tab === 'reservations') onShowReservations(); }} />
       </header>
 
-      <section className="partner-settings-calendar">
-        <button
-          type="button"
-          className="partner-settings-month"
-          onClick={() => {
-            setYear(today.getFullYear());
-            setMonth(today.getMonth());
-            setSelected(dateKey(today));
-          }}
-        >
-          {month + 1}월
-        </button>
+      <MonthCalendar
+        month={month}
+        cells={cells}
+        selected={selected}
+        onToday={() => {
+          setYear(today.getFullYear());
+          setMonth(today.getMonth());
+          setSelected(dateKey(today));
+        }}
+        onSelect={(date) => {
+          setSelected(dateKey(date));
+          setYear(date.getFullYear());
+          setMonth(date.getMonth());
+        }}
+        hasDot={(key) => reservationDates.has(key)}
+        isOff={(key) => disabledDaySet.has(key)}
+      />
 
-        <div className="partner-settings-weekdays">
-          {WEEKDAYS.map((day, index) => (
-            <span key={day} className={index === 0 || index === 6 ? 'is-weekend' : undefined}>
-              {day}
-            </span>
-          ))}
+      <div className="h-2.5 bg-[#F2F4F6]" />
+
+      <section className="px-5 pb-10 pt-7">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-[20px]! font-bold leading-tight! tracking-[-0.4px] text-[#191F28]">{selectedTitle}</h2>
+          <button
+            type="button"
+            onClick={() => promptScheduleAction({ kind: 'day', date: selected, disabled: !selectedDayDisabled })}
+            disabled={loadingSettings || savingAction}
+            className={`h-9 shrink-0 rounded-[10px] px-3 text-[14.5px] font-semibold transition-all active:scale-[0.97] disabled:opacity-40 ${
+              selectedDayDisabled ? 'bg-[#EFF5FE] text-[#2F6FE4]' : 'bg-[#F2F4F6] text-[#F04452]'
+            }`}
+          >
+            {selectedDayDisabled ? '진료일 활성화' : '진료일 비활성화'}
+          </button>
         </div>
 
-        <div className="partner-settings-grid">
-          {cells.map(({ date, muted }) => {
-            const key = dateKey(date);
-            const isActive = key === selected;
-            const isWeekend = date.getDay() === 0 || date.getDay() === 6;
-            const isDisabledDay = disabledDaySet.has(key);
-            const hasReservation = reservationDates.has(key);
-            return (
-              <button
-                key={key}
-                type="button"
-                className={[
-                  isActive ? 'is-active' : '',
-                  muted ? 'is-muted' : '',
-                  isWeekend ? 'is-weekend' : '',
-                  isDisabledDay ? 'is-disabled-day' : '',
-                  hasReservation ? 'has-reservation' : '',
-                ].filter(Boolean).join(' ')}
-                onClick={() => {
-                  setSelected(key);
-                  setYear(date.getFullYear());
-                  setMonth(date.getMonth());
-                }}
-              >
-                <span>{date.getDate()}</span>
-              </button>
-            );
-          })}
-        </div>
-      </section>
+        <p className="mt-4 flex gap-2 rounded-[14px] bg-[#F2F4F6] px-4 py-3.5 text-[14px] leading-[1.5] text-[#4E5968]">
+          <MonoIcon name="info-circle" size={18} color="#B0B8C1" className="mt-px" />
+          {selectedDayDisabled ? '이 날은 진료를 쉬어요. 다시 열면 예약을 받을 수 있어요.' : '시간을 누르면 그 시간만 예약을 닫거나 다시 열 수 있어요.'}
+        </p>
 
-      <section className="partner-settings-time">
-        <h2>{selectedTitle}</h2>
-        <button
-          type="button"
-          className={selectedDayDisabled ? 'is-restore' : undefined}
-          onClick={() => promptScheduleAction({ kind: 'day', date: selected, disabled: !selectedDayDisabled })}
-          disabled={loadingSettings || savingAction}
-        >
-          {selectedDayDisabled ? '진료일 활성화' : '진료일 비활성화'}
-        </button>
-
-        <div className="partner-settings-slots" aria-label={`${selectedTitle} 예약 시간 설정`}>
+        <div className="mt-4 grid grid-cols-4 gap-2" aria-label={`${selectedTitle} 예약 시간 설정`}>
           {SETTING_TIME_SLOTS.map((time) => {
             const disabled = selectedDayDisabled || selectedSlotSet.has(time);
             return (
               <button
                 key={time}
                 type="button"
-                className={disabled ? 'is-disabled' : undefined}
                 disabled={loadingSettings || savingAction || selectedDayDisabled}
                 onClick={() => promptScheduleAction({ kind: 'time', date: selected, time, disabled: !selectedSlotSet.has(time) })}
+                className={`flex h-12 items-center justify-center rounded-[14px] text-[15.5px] font-semibold tabular-nums transition-all active:scale-[0.96] ${
+                  disabled ? 'bg-[#F9FAFB] text-[#B0B8C1] line-through' : 'bg-[#EFF5FE] text-[#2F6FE4]'
+                }`}
               >
                 {time}
               </button>
@@ -371,7 +489,6 @@ function ScheduleSettingsView({
           })}
         </div>
       </section>
-
     </div>
   );
 }
@@ -477,9 +594,9 @@ export default function PartnerReservationsPage() {
         : current
       );
       setAssignTarget(null);
-      showToast('담당의를 저장했습니다.');
+      showToast('담당의를 저장했어요.');
     } catch {
-      showToast('네트워크 오류가 발생했습니다.');
+      showToast('네트워크 오류로 저장하지 못했어요.');
     } finally {
       setAssigning(false);
     }
@@ -510,9 +627,9 @@ export default function PartnerReservationsPage() {
         : current
       );
       setMemoTarget(null);
-      showToast('메모를 저장했습니다.');
+      showToast('메모를 저장했어요.');
     } catch {
-      showToast('네트워크 오류가 발생했습니다.');
+      showToast('네트워크 오류로 저장하지 못했어요.');
     } finally {
       setMemoSaving(false);
     }
@@ -520,9 +637,14 @@ export default function PartnerReservationsPage() {
 
   if (!authUser) {
     return (
-      <div className="partner-empty-state">
-        <p>로그인이 필요합니다.</p>
-        <Link href="/partner/login">로그인</Link>
+      <div className="flex min-h-[60vh] flex-col items-center justify-center px-6 py-10 text-center">
+        <span className="qd-a-item flex h-[72px] w-[72px] items-center justify-center rounded-[24px] bg-[#F2F4F6]">
+          <MonoIcon name="lock" size={34} color="#B0B8C1" />
+        </span>
+        <p className="qd-a-item mt-5 text-[19px] font-bold tracking-[-0.4px] text-[#191F28]" style={{ animationDelay: '.06s' }}>로그인이 필요해요</p>
+        <Link href="/partner/login" className="qd-a-item mt-5 inline-flex h-[46px] items-center rounded-[12px] bg-[#E8F3FF] px-5 text-[16px] font-bold text-[#3180F7] transition active:scale-[0.97]" style={{ animationDelay: '.12s' }}>
+          로그인
+        </Link>
       </div>
     );
   }
@@ -537,85 +659,67 @@ export default function PartnerReservationsPage() {
     );
   }
 
+  const memoName = memoTarget ? memoTarget.user?.name ?? memoTarget.customer_name ?? '환자' : '';
+  const assignName = assignTarget ? assignTarget.user?.name ?? assignTarget.customer_name ?? '환자' : '';
+  const doctorOptions = [{ id: '', name: '미지정', title: null as string | null | undefined }, ...doctors];
+
   return (
-    <div className="partner-mobile-screen has-fixed-title partner-reservations-screen">
+    <div className="partner-mobile-screen has-fixed-title page-enter">
       <header className="partner-screen-title with-action">
         <h1>예약관리</h1>
-        <nav className="partner-inline-segment" aria-label="예약관리 탭">
-          <a className="is-active" onClick={() => setActiveTab('reservations')} style={{ cursor: 'pointer' }}>병원예약</a>
-          <a onClick={() => setActiveTab('settings')} style={{ cursor: 'pointer' }}>예약설정</a>
-        </nav>
+        <ReservationTabs active="reservations" onChange={setActiveTab} />
       </header>
 
-      <section className="partner-settings-calendar partner-reservation-calendar">
-        <button
-          type="button"
-          className="partner-settings-month"
-          onClick={() => {
-            setYear(now.getFullYear());
-            setMonth(now.getMonth());
-            setSelected(dateKey(now));
-          }}
-        >
-          {month + 1}월
-        </button>
+      <MonthCalendar
+        month={month}
+        cells={cells}
+        selected={selected}
+        onToday={() => {
+          setYear(now.getFullYear());
+          setMonth(now.getMonth());
+          setSelected(dateKey(now));
+        }}
+        onSelect={(date) => {
+          setSelected(dateKey(date));
+          setYear(date.getFullYear());
+          setMonth(date.getMonth());
+        }}
+        hasDot={(key) => (countByDate[key] ?? 0) > 0}
+      />
 
-        <div className="partner-settings-weekdays">
-          {WEEKDAYS.map((day, index) => (
-            <span key={day} className={index === 0 || index === 6 ? 'is-weekend' : undefined}>
-              {day}
-            </span>
-          ))}
+      <div className="h-2.5 bg-[#F2F4F6]" />
+
+      <section className="px-5 pb-10 pt-7">
+        <div className="flex items-baseline justify-between">
+          <h2 className="text-[20px]! font-bold leading-tight! tracking-[-0.4px] text-[#191F28]">
+            {isToday ? '오늘 ' : ''}
+            {Number.isNaN(selectedDate.getTime()) ? month + 1 : selectedDate.getMonth() + 1}월
+            {' '}
+            {Number.isNaN(selectedDate.getTime()) ? now.getDate() : selectedDate.getDate()}일
+          </h2>
+          {!loading && dayItems.length > 0 && (
+            <p className="text-[15px] text-[#6B7684]">
+              예약 <b className="font-bold tabular-nums text-[#191F28]">{dayItems.length}</b>건
+            </p>
+          )}
         </div>
-
-        <div className="partner-settings-grid partner-reservation-grid">
-          {cells.map(({ date, muted }) => {
-            const key = dateKey(date);
-            const active = key === selected;
-            const count = countByDate[key] ?? 0;
-            const weekend = date.getDay() === 0 || date.getDay() === 6;
-            return (
-              <button
-                key={key}
-                type="button"
-                className={[
-                  active ? 'is-active' : '',
-                  count > 0 ? 'has-reservation' : '',
-                  muted ? 'is-muted' : '',
-                  weekend ? 'is-weekend' : '',
-                ].filter(Boolean).join(' ')}
-                onClick={() => {
-                  setSelected(key);
-                  setYear(date.getFullYear());
-                  setMonth(date.getMonth());
-                }}
-              >
-                <span>{date.getDate()}</span>
-              </button>
-            );
-          })}
-        </div>
-      </section>
-
-      <section className="partner-schedule-section">
-        <h2>
-          {isToday ? '오늘 ' : ''}
-          {Number.isNaN(selectedDate.getTime()) ? month + 1 : selectedDate.getMonth() + 1}월
-          {Number.isNaN(selectedDate.getTime()) ? now.getDate() : selectedDate.getDate()}일
-        </h2>
         {loading ? (
-          <div className="partner-loading small">불러오는 중...</div>
+          <p className="py-16 text-center text-[15px] text-[#8B95A1]">불러오는 중…</p>
         ) : dayItems.length === 0 ? (
-          <div className="partner-empty-state compact">
-            <p>해당 날짜에 예약이 없습니다.</p>
-            <span>예약이 등록되면 시간순으로 표시됩니다.</span>
+          <div className="flex flex-col items-center py-14 text-center">
+            <span className="qd-a-item flex h-[72px] w-[72px] items-center justify-center rounded-[24px] bg-[#F2F4F6]">
+              <MonoIcon name="calendar-x" size={34} color="#B0B8C1" />
+            </span>
+            <p className="qd-a-item mt-5 text-[19px] font-bold tracking-[-0.4px] text-[#191F28]" style={{ animationDelay: '.06s' }}>이 날은 예약이 없어요</p>
+            <p className="qd-a-item mt-1.5 text-[15px] leading-[1.6] text-[#8B95A1]" style={{ animationDelay: '.12s' }}>예약이 들어오면 시간 순서로 보여 드려요</p>
           </div>
         ) : (
-          <div className="partner-schedule-list">
-            {dayItems.map((row) => (
+          <div className="mt-2">
+            {dayItems.map((row, index) => (
               <ReservationScheduleCard
                 key={row.id}
                 row={row}
+                index={index}
                 onAssignRequest={openAssign}
                 onMemoRequest={openMemo}
                 onDetailRequest={(id) => router.push(`/partner/reservations/${id}`)}
@@ -626,49 +730,70 @@ export default function PartnerReservationsPage() {
       </section>
 
       {memoTarget && (
-        <div className="partner-figma-dialog-backdrop" role="presentation">
-          <div className="partner-figma-alert partner-memo-dialog" role="dialog" aria-modal="true">
-            <div className="partner-figma-alert-copy">
-              <h2>메모 수정</h2>
-              <p>{memoTarget.user?.name ?? memoTarget.customer_name ?? '환자'} 예약 메모를 수정합니다.</p>
-            </div>
+        <CommunityModal label="메모 수정" onClose={() => { if (!memoSaving) setMemoTarget(null); }}>
+          <div className="overflow-y-auto px-5 pb-5 pt-2">
+            <h2 className="text-[20px]! font-bold leading-tight! tracking-[-0.4px] text-[#191F28]">메모 수정</h2>
+            <p className="mt-1.5 text-[15px] leading-[1.6] text-[#6B7684]">{memoName}님 예약에 남길 메모예요</p>
             <textarea
               value={memoDraft}
               onChange={(event) => setMemoDraft(event.target.value)}
-              placeholder="메모를 입력해주세요"
+              placeholder="메모를 입력해 주세요"
               autoFocus
+              rows={5}
+              className="mt-5 w-full resize-none rounded-[14px] bg-[#F2F4F6] px-4 py-3.5 text-[16px] leading-[1.6] text-[#191F28] outline-none transition-colors placeholder:text-[#B0B8C1] focus:bg-[#EDEFF2]"
             />
-            <div className="partner-figma-alert-actions">
-              <button type="button" onClick={saveMemo} disabled={memoSaving}>저장</button>
-              <button type="button" onClick={() => setMemoTarget(null)} disabled={memoSaving}>취소</button>
+            <div className="mt-5 flex gap-2">
+              <button type="button" onClick={() => setMemoTarget(null)} disabled={memoSaving} className="flex h-14 flex-1 items-center justify-center rounded-[18px] bg-[#F2F4F6] text-[17px] font-bold text-[#4E5968] transition-all active:scale-[0.98]">
+                취소
+              </button>
+              <button type="button" onClick={saveMemo} disabled={memoSaving} className="flex h-14 flex-1 items-center justify-center rounded-[18px] bg-[#4A82EE] text-[17px] font-bold text-white transition-all active:scale-[0.98]">
+                {memoSaving ? '저장 중…' : '저장'}
+              </button>
             </div>
           </div>
-        </div>
+        </CommunityModal>
       )}
 
       {assignTarget && (
-        <div className="partner-figma-dialog-backdrop" role="presentation">
-          <div className="partner-figma-alert partner-assign-dialog" role="dialog" aria-modal="true">
-            <div className="partner-figma-alert-copy">
-              <h2>담당의 지정</h2>
-              <p>{assignTarget.user?.name ?? assignTarget.customer_name ?? '환자'} 예약에 담당의를 연결합니다.</p>
+        <CommunityModal label="담당의 지정" onClose={() => { if (!assigning) setAssignTarget(null); }}>
+          <div className="overflow-y-auto px-5 pb-5 pt-2">
+            <h2 className="text-[20px]! font-bold leading-tight! tracking-[-0.4px] text-[#191F28]">담당의 지정</h2>
+            <p className="mt-1.5 text-[15px] leading-[1.6] text-[#6B7684]">{assignName}님 예약을 맡을 의료진을 골라 주세요</p>
+            <div className="mt-4" role="radiogroup" aria-label="담당의">
+              {doctorOptions.map((doctor) => {
+                const on = assignDoctorId === doctor.id;
+                return (
+                  <button
+                    key={doctor.id || 'none'}
+                    type="button"
+                    role="radio"
+                    aria-checked={on}
+                    onClick={() => setAssignDoctorId(doctor.id)}
+                    className="-mx-2 flex w-[calc(100%+16px)] items-center gap-3 rounded-[16px] px-2 py-3 text-left transition-colors active:bg-[#F9FAFB]"
+                  >
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#F2F4F6]">
+                      <MonoIcon name="user" size={20} color={doctor.id ? '#6B7684' : '#B0B8C1'} />
+                    </span>
+                    <span className={`min-w-0 flex-1 truncate text-[17px] ${on ? 'font-semibold text-[#191F28]' : 'text-[#333D4B]'}`}>
+                      {doctor.name}{doctor.title ? ` ${doctor.title}` : ''}
+                    </span>
+                    <span key={String(on)} className={`chk-dot flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${on ? 'is-on bg-[#2F6FE4]' : 'is-off border-2 border-[#E5E8EB]'}`}>
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={on ? '#fff' : '#D1D6DB'} strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
+                    </span>
+                  </button>
+                );
+              })}
             </div>
-            <div className="partner-assign-field">
-              <select value={assignDoctorId} onChange={(event) => setAssignDoctorId(event.target.value)}>
-                <option value="">미지정</option>
-                {doctors.map((doctor) => (
-                  <option key={doctor.id} value={doctor.id}>
-                    {doctor.name}{doctor.title ? ` ${doctor.title}` : ''}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="partner-figma-alert-actions">
-              <button type="button" onClick={saveAssign} disabled={assigning}>저장</button>
-              <button type="button" onClick={() => setAssignTarget(null)} disabled={assigning}>취소</button>
+            <div className="mt-5 flex gap-2">
+              <button type="button" onClick={() => setAssignTarget(null)} disabled={assigning} className="flex h-14 flex-1 items-center justify-center rounded-[18px] bg-[#F2F4F6] text-[17px] font-bold text-[#4E5968] transition-all active:scale-[0.98]">
+                취소
+              </button>
+              <button type="button" onClick={saveAssign} disabled={assigning} className="flex h-14 flex-1 items-center justify-center rounded-[18px] bg-[#4A82EE] text-[17px] font-bold text-white transition-all active:scale-[0.98]">
+                {assigning ? '저장 중…' : '저장'}
+              </button>
             </div>
           </div>
-        </div>
+        </CommunityModal>
       )}
     </div>
   );
