@@ -3,14 +3,13 @@
 // 마이닥 매거진 글 — 홈 배너를 누르면 열리는 이야기(프리티풀 공지·이벤트 결, 매거진 톤).
 //  · 머리 = TopBar(맨 위에선 사진 위에 투명, 내려가면 흰 줄).
 //  · 히어로 = 배너 사진 + 사진 키 컬러(lib/image-tone) 바탕·아래 그라데이션, 배지 + 큰 제목 + 부제가 아래→위로 떠오른다.
-//  · 본문 = 리드 · 섹션(h2 + 문단) · 에디터 팁(연파랑 칸) · 체크리스트(.chk-dot) · 회색 각주 → 이 주제의 인기 상품 → 다른 이야기.
+//  · 본문 = 리드 · 섹션(h2 + 문단) · 에디터 팁 · 기억할 것(모두 칸 없이 글로만) · 회색 각주 → 이 주제의 인기 상품 → 다른 이야기.
 //  · 바닥 = '관련 시술 보러가기'(배너 targetUrl, 없으면 숨김).
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import TopBar from '@/components/common/TopBar';
 import ProductCard from '@/components/common/ProductCard';
-import MonoIcon from '@/components/common/MonoIcon';
 import { EmptyBlock } from '@/components/mypage/screens/ScreenKit';
 import type { HomeBanner } from '@/types';
 import { useStore } from '@/store';
@@ -19,14 +18,6 @@ import { bannerCategory, bannerDateLabel, storyForBanner, useHomeBannerList } fr
 
 const RISE = (delay: number) => ({ animation: `fadeSlideUp 0.7s cubic-bezier(0.22, 1, 0.36, 1) ${delay}s both` });
 const item = (i: number) => ({ animationDelay: `${0.18 + Math.min(i, 12) * 0.05}s` });
-
-function CheckDot() {
-  return (
-    <span className="chk-dot is-on mt-[1px] flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#2F6FE4]">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
-    </span>
-  );
-}
 
 function Hero({ banner }: { banner: HomeBanner }) {
   const imageUrl = banner.mobileImageUrl || banner.imageUrl;
@@ -42,9 +33,10 @@ function Hero({ banner }: { banner: HomeBanner }) {
           // eslint-disable-next-line @next/next/no-img-element
           <img src={imageUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
         )}
-        <div aria-hidden className="absolute inset-x-0 bottom-0 h-[62%]" style={{ background: `linear-gradient(to top, ${key} 0%, ${key} 32%, transparent 100%)` }} />
+        {/* 사진 → 글 사이는 흰 그라데이션(261101 사장 요청) — 아래 흰 본문과 이어진다 */}
+        <div aria-hidden className="absolute inset-x-0 bottom-0 h-[64%]" style={{ background: 'linear-gradient(to top, #fff 0%, #fff 30%, rgba(255,255,255,0.85) 52%, rgba(255,255,255,0) 100%)' }} />
         <div className="absolute inset-x-0 bottom-0 px-6 pb-7 pc:px-8 pc:pb-8">
-          <span className="inline-flex h-6 items-center rounded-[6px] bg-white/80 px-2 text-[13.5px] font-semibold text-[#2F6FE4]" style={RISE(0.05)}>
+          <span className="inline-flex h-6 items-center rounded-[6px] bg-[#EFF5FE] px-2 text-[13.5px] font-semibold text-[#2F6FE4]" style={RISE(0.05)}>
             {banner.badgeText || '마이닥 매거진'}
           </span>
           <h1 className="mt-3 whitespace-pre-line break-keep text-[clamp(26px,7.6vw,30px)] font-bold leading-[1.3] tracking-[-0.7px] text-[#191F28]" style={RISE(0.12)}>
@@ -156,29 +148,24 @@ export default function MagazineStoryPage() {
           </section>
         ))}
 
+        {/* 팁·체크리스트도 칸·체크 없이 글로만(261101 사장 요청) */}
         {story.tip && (
-          <div className="qd-a-item mt-10 rounded-[16px] bg-[#EFF5FE] px-5 pb-5 pt-4" style={item(n++)}>
-            <span className="inline-flex items-center rounded-[6px] bg-[#2F6FE4] px-2 py-1 text-[13.5px] font-bold text-white">에디터 팁</span>
-            <p className="mt-3 break-keep text-[16px] font-medium leading-[1.65] tracking-[-0.2px] text-[#1E3A78]">{story.tip}</p>
-          </div>
+          <section className="qd-a-item mt-10" style={item(n++)}>
+            <h2 className="text-[20px] font-bold leading-[1.4] tracking-[-0.4px] text-[#191F28]">에디터 팁</h2>
+            <p className="mt-3 break-keep text-[16.5px] leading-[1.75] tracking-[-0.2px] text-[#4E5968]">{story.tip}</p>
+          </section>
         )}
 
         {story.checklist && story.checklist.length > 0 && (
           <section className="qd-a-item mt-10" style={item(n++)}>
-            <h2 className="text-[20px] font-bold tracking-[-0.4px] text-[#191F28]">{story.checklistTitle || '체크리스트'}</h2>
-            <ul className="mt-4 space-y-1 rounded-[16px] bg-[#F2F4F6] px-4 py-3">
-              {story.checklist.map((c) => (
-                <li key={c} className="flex min-h-11 items-start gap-3 py-2">
-                  <CheckDot />
-                  <span className="break-keep text-[16px] leading-[1.5] text-[#333D4B]">{c}</span>
-                </li>
-              ))}
-            </ul>
+            <h2 className="break-keep text-[20px] font-bold leading-[1.4] tracking-[-0.4px] text-[#191F28]">{story.checklistTitle || '이것만 기억해요'}</h2>
+            {story.checklist.map((c) => (
+              <p key={c} className="mt-3 break-keep text-[16.5px] leading-[1.75] tracking-[-0.2px] text-[#4E5968]">{c}</p>
+            ))}
           </section>
         )}
 
-        <p className="qd-a-item mt-8 flex items-start gap-1.5 text-[13px] leading-[1.5] text-[#8B95A1]" style={item(n++)}>
-          <MonoIcon name="info-circle" size={15} color="#B0B8C1" className="mt-[2px]" />
+        <p className="qd-a-item mt-10 text-[13.5px] leading-[1.6] text-[#8B95A1]" style={item(n++)}>
           개인에 따라 결과가 다를 수 있어요. 시술 전 의료진과 상담하세요.
         </p>
       </article>

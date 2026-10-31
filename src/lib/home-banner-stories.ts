@@ -44,7 +44,7 @@ export const homeBannerStories: Record<string, BannerStory> = {
       },
     ],
     tip: '톤 관리 시술을 받았다면 그 뒤 몇 주는 자외선 차단에 특히 신경 써 주세요. 관리한 만큼 지키는 게 더 중요해요.',
-    checklistTitle: '맑은 피부 톤 체크리스트',
+    checklistTitle: '맑은 피부 톤 습관',
     checklist: ['매일 아침 자외선 차단제 바르기', '각질 제거는 주 1~2회만', '비타민 C 는 낮은 농도부터 천천히', '잠은 충분히, 수분은 넉넉히'],
   },
   'default-hydration-aloe-2026': {
@@ -72,7 +72,7 @@ export const homeBannerStories: Record<string, BannerStory> = {
       },
     ],
     tip: '실내가 건조한 계절엔 가습기나 젖은 수건만으로도 피부 당김이 한결 덜해요.',
-    checklistTitle: '촉촉한 피부 체크리스트',
+    checklistTitle: '촉촉한 피부 습관',
     checklist: ['세안은 미지근한 물로 짧게', '물기 남았을 때 바로 보습', '크림으로 마무리해 수분 지키기', '실내 습도 챙기기'],
   },
   'default-dental-2026': {
@@ -101,7 +101,7 @@ export const homeBannerStories: Record<string, BannerStory> = {
       },
     ],
     tip: '미백이나 교정 전에는 스케일링과 충치 치료를 먼저 받아 두면 좋아요. 깨끗한 상태에서 시작해야 결과도 고르게 보여요.',
-    checklistTitle: '건강한 미소 체크리스트',
+    checklistTitle: '건강한 미소 습관',
     checklist: ['하루 세 번, 3분 양치', '치실·치간칫솔로 사이까지', '진한 음료 뒤엔 물로 헹구기', '정기 검진·스케일링 챙기기'],
   },
   'default-health-checkup-2026': {
@@ -129,7 +129,7 @@ export const homeBannerStories: Record<string, BannerStory> = {
       },
     ],
     tip: '가족력이 있다면 검진 상담 때 꼭 이야기해 주세요. 나에게 맞는 추가 검사를 안내받을 수 있어요.',
-    checklistTitle: '검진 준비 체크리스트',
+    checklistTitle: '검진 준비 습관',
     checklist: ['검진 날짜 미리 예약하기', '금식 시간 확인하기', '복용 중인 약 목록 챙기기', '지난 검진 결과 함께 보기'],
   },
   'default-eye-care-2026': {
@@ -157,7 +157,7 @@ export const homeBannerStories: Record<string, BannerStory> = {
       },
     ],
     tip: '건조함이 심한 편이라면 상담 때 꼭 말해 주세요. 눈 상태에 맞는 교정 방법과 관리법을 함께 안내받을 수 있어요.',
-    checklistTitle: '눈 건강 체크리스트',
+    checklistTitle: '눈 건강 습관',
     checklist: ['20분마다 먼 곳 바라보기', '화면 밝기 주변과 맞추기', '렌즈 착용 시간 지키기', '1년에 한 번 안과 검진'],
   },
   'default-rehabilitation-2026': {
@@ -186,7 +186,7 @@ export const homeBannerStories: Record<string, BannerStory> = {
       },
     ],
     tip: '치료만큼 중요한 건 치료 사이의 습관이에요. 치료사가 알려 준 운동을 하루 몇 분이라도 이어 가 보세요.',
-    checklistTitle: '굳은 몸 풀기 체크리스트',
+    checklistTitle: '굳은 몸 풀기 습관',
     checklist: ['한 시간마다 일어나 움직이기', '모니터는 눈높이에 맞추기', '반동 없이 천천히 스트레칭', '통증이 계속되면 진료 받기'],
   },
   'default-doctor-2026': {
@@ -213,7 +213,7 @@ export const homeBannerStories: Record<string, BannerStory> = {
       },
     ],
     tip: '상담 전에 궁금한 걸 미리 메모해 가면, 놓치는 것 없이 이야기할 수 있어요.',
-    checklistTitle: '좋은 병원 고르기 체크리스트',
+    checklistTitle: '좋은 병원 고르기 습관',
     checklist: ['내 고민과 맞는 전문 분야인지', '후기 내용까지 꼼꼼히', '부작용·회복 기간 설명 듣기', '궁금한 건 미리 메모하기'],
   },
 };
