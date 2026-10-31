@@ -210,7 +210,7 @@ export default function ProductDetailPage() {
 
   const share = () => {
     if (navigator.share) navigator.share({ title: product.title, url: window.location.href }).catch(() => {});
-    else { navigator.clipboard.writeText(window.location.href); showToast('링크가 복사되었어요.'); }
+    else navigator.clipboard?.writeText(window.location.href).then(() => showToast('링크가 복사되었어요.')).catch(() => showToast('링크를 복사하지 못했어요.'));
   };
   const wish = () => {
     if (!user) { window.dispatchEvent(new Event('dental:login')); return; }

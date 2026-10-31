@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useMemo, Suspense, useEffect, useLayoutEffect, useRef } from 'react';
+import { useState, useMemo, Suspense, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Search, XCircle, ChevronLeft, ChevronDown, MapPin, Locate, Check, X, SlidersHorizontal, DollarSign, CalendarCheck, Star, Heart } from 'lucide-react';
+import { Search, XCircle, ChevronLeft, ChevronRight, ChevronDown, MapPin, Locate, Check, X, SlidersHorizontal, DollarSign, CalendarCheck, Star, Heart } from 'lucide-react';
 import { useStore } from '@/store';
 import { regions, dentalSubCategories } from '@/lib/mock-data';
 import type { Product } from '@/types';
@@ -49,14 +49,16 @@ const relatedTags: Record<string, string[]> = {
 // Preset price ranges. Each preset translates to a [min, max] interval —
 // max=null means "and up". When the user types into the inputs, the same
 // {min, max} are written; clicking a preset fills the inputs.
-const PRICE_PRESETS: { label: string; min: number | null; max: number | null }[] = [
-  { label: '50,000원 이하', min: null, max: 50000 },
-  { label: '50,000원 ~ 110,000원', min: 50000, max: 110000 },
-  { label: '110,000원 ~ 200,000원', min: 110000, max: 200000 },
-  { label: '200,000원 ~ 320,000원', min: 200000, max: 320000 },
-  { label: '320,000원 이상', min: 320000, max: null },
-];
 const bookingMethods = ['전체', '앱결제', '현장결제', '상담 후 결제'];
+/** 예약방법 컬러 아이콘(public/icons/color — 사장 제공 토스 컬러 아이콘, 261031) */
+const BOOKING_ICONS: Record<string, string> = {
+  '전체': '/icons/color/grid.svg',
+  '앱결제': '/icons/color/phone-check.svg',
+  '현장결제': '/icons/color/card.svg',
+  '상담 후 결제': '/icons/color/chat-dots.svg',
+};
+const PRICE_STEP = 5000;
+const PRICE_CAP = 2000000;
 const sortOptions = ['추천순', '가격 낮은순', '가격 높은순', '평점 높은순', '리뷰 많은순'];
 
 export default function SearchPageWrapper() {
@@ -976,28 +978,11 @@ function FiltersBottomSheet({
     setSelectedBooking('전체');
   };
 
+  // 체크 동그라미 — 켤 때 톡 튀며 체크가 그려지고, 끌 때 살짝 움츠렸다 돌아온다(globals .chk-dot)
   const checkDot = (on: boolean) => (
-    <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full transition-colors ${on ? 'bg-[#2F6FE4]' : 'border-2 border-[#E5E8EB]'}`}>
+    <span key={String(on)} className={`chk-dot flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${on ? 'is-on bg-[#2F6FE4]' : 'is-off border-2 border-[#E5E8EB]'}`}>
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={on ? '#fff' : '#D1D6DB'} strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
     </span>
-  );
-
-  const priceInput = (label: string, value: number | null, set: (n: number | null) => void, placeholder: string) => (
-    <label className="flex h-14 items-center rounded-[14px] bg-[#F2F4F6] px-4 transition-colors focus-within:bg-[#EDEFF2]">
-      <span className="mr-3 shrink-0 text-[15px] text-[#8B95A1]">{label}</span>
-      <input
-        type="text"
-        inputMode="numeric"
-        value={value == null ? '' : value.toLocaleString()}
-        onChange={(e) => {
-          const digits = e.target.value.replace(/[^\d]/g, '');
-          set(digits ? Number(digits) : null);
-        }}
-        placeholder={placeholder}
-        className="min-w-0 flex-1 bg-transparent text-right text-[17px] font-semibold text-[#191F28] outline-none placeholder:font-normal placeholder:text-[#B0B8C1]"
-      />
-      <span className="ml-1.5 text-[16px] text-[#333D4B]">원</span>
-    </label>
   );
 
   // Portal to document.body so the modal isn't trapped by any transformed
@@ -1065,23 +1050,7 @@ function FiltersBottomSheet({
           {/* ----- 지역 ----- */}
           {activeTab === 'region' && (
             <div className="flex h-full overflow-hidden">
-              <div className="w-[112px] shrink-0 overflow-y-auto bg-[#F9FAFB] hide-scrollbar">
-                {provinceKeys.map((prov) => {
-                  const isActive = activeProvince === prov;
-                  const hasSelection = selectedRegions.some((r) => r.split(' ')[0] === prov);
-                  return (
-                    <button
-                      key={prov}
-                      type="button"
-                      onClick={() => setActiveProvince(prov)}
-                      className={`flex w-full items-center gap-1.5 px-5 py-4 text-left text-[16.5px] transition-colors ${isActive ? 'bg-white font-bold text-[#191F28]' : 'text-[#8B95A1]'}`}
-                    >
-                      {prov}
-                      {hasSelection && <span className="h-1.5 w-1.5 rounded-full bg-[#3180F7]" />}
-                    </button>
-                  );
-                })}
-              </div>
+              <ProvinceDial provinces={provinceKeys} active={activeProvince} onChange={setActiveProvince} marked={(prov) => selectedRegions.some((r) => r.split(' ')[0] === prov)} />
               <div className="flex-1 overflow-y-auto px-5">
                 <button type="button" onClick={onLocate} className="mt-2 flex h-11 w-full items-center justify-center gap-1.5 rounded-[12px] bg-[#EFF5FE] text-[15px] font-bold text-[#2F6FE4] transition-all active:scale-[0.98]">
                   <MonoIcon name="pin-location" size={17} color="#2F6FE4" />
@@ -1107,27 +1076,9 @@ function FiltersBottomSheet({
           {activeTab === 'price' && (
             <div className="h-full overflow-y-auto px-5 pt-3">
               <div className="flex flex-col gap-2">
-                {priceInput('최소', priceMin, setPriceMin, '0')}
-                {priceInput('최대', priceMax, setPriceMax, '제한 없음')}
-              </div>
-              <p className="mt-6 text-[15px] text-[#8B95A1]">자주 찾는 가격</p>
-              <div className="mt-2.5 flex flex-wrap gap-1.5">
-                {PRICE_PRESETS.map((preset) => {
-                  const isActive = preset.min === priceMin && preset.max === priceMax;
-                  return (
-                    <button
-                      key={preset.label}
-                      type="button"
-                      onClick={() => {
-                        if (isActive) { setPriceMin(null); setPriceMax(null); }
-                        else { setPriceMin(preset.min); setPriceMax(preset.max); }
-                      }}
-                      className={`inline-flex h-9 items-center whitespace-nowrap rounded-[8px] px-3 text-[14.5px] font-semibold transition-all active:scale-[0.97] ${isActive ? 'bg-[#EFF5FE] text-[#2F6FE4]' : 'bg-[#F2F4F6] text-[#333D4B]'}`}
-                    >
-                      {preset.label}
-                    </button>
-                  );
-                })}
+                <PriceScrubField label="최소" value={priceMin} onChange={setPriceMin} placeholder="0" />
+                <PriceScrubField label="최대" value={priceMax} onChange={setPriceMax} placeholder="제한 없음" />
+                <p className="px-1 text-[13px] text-[#B0B8C1]">칸을 꾹 누른 채 좌우로 밀면 5천 원씩 바뀌어요</p>
               </div>
             </div>
           )}
@@ -1139,8 +1090,10 @@ function FiltersBottomSheet({
                 const isChecked = selectedBooking === m;
                 return (
                   <button key={m} type="button" onClick={() => setSelectedBooking(m)} className="flex w-full items-center gap-3 py-3.5 text-left">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={BOOKING_ICONS[m]} alt="" width={22} height={22} className="shrink-0" />
+                    <span className={`min-w-0 flex-1 text-[17px] transition-colors ${isChecked ? 'font-semibold text-[#2F6FE4]' : 'text-[#333D4B]'}`}>{m}</span>
                     {checkDot(isChecked)}
-                    <span className={`text-[17px] ${isChecked ? 'font-semibold text-[#2F6FE4]' : 'text-[#333D4B]'}`}>{m}</span>
                   </button>
                 );
               })}
@@ -1149,8 +1102,10 @@ function FiltersBottomSheet({
         </div>
 
         {/* 바닥 — 초기화 · 결과 보기(고르는 즉시 반영되고, 여기서는 닫기만) */}
-        <div className="flex shrink-0 gap-2 border-t border-[#F2F4F6] px-5 pt-3" style={{ paddingBottom: 'max(calc(env(safe-area-inset-bottom, 0px) + 12px), 16px)' }}>
-          <button type="button" onClick={resetAll} className="flex h-14 w-[34%] items-center justify-center rounded-[18px] bg-[#F2F4F6] text-[17px] font-bold text-[#4E5968] transition-all active:scale-[0.98]">
+        <div className="relative flex shrink-0 gap-2 bg-white px-5 pt-2" style={{ paddingBottom: 'max(calc(env(safe-area-inset-bottom, 0px) + 12px), 16px)' }}>
+          {/* 선 대신 위로 흰 그라데이션 — 목록이 버튼 밑으로 녹아든다 */}
+          <span aria-hidden className="pointer-events-none absolute inset-x-0 bottom-full h-8 bg-gradient-to-b from-white/0 to-white" />
+          <button type="button" onClick={resetAll} className="flex h-14 flex-1 items-center justify-center rounded-[18px] bg-[#F2F4F6] text-[17px] font-bold text-[#4E5968] transition-all active:scale-[0.98]">
             초기화
           </button>
           <button type="button" onClick={requestClose} className="flex h-14 flex-1 items-center justify-center rounded-[18px] bg-[#4A82EE] text-[17px] font-bold text-white transition-all active:scale-[0.98]">
@@ -1160,6 +1115,156 @@ function FiltersBottomSheet({
       </div>
     </div>,
     document.body,
+  );
+}
+
+/** 지역 시·도 다이얼 — 가운데(초점) 줄이 가장 진하고 크며, 멀어질수록 흐려지고 작아지고 살짝 눕는다(휠 피커).
+ *  굴리다 멈추면 가운데 줄이 골라지고, 줄을 누르면 그 줄이 가운데로 굴러온다. 위아래 여백으로 첫·끝 줄도 가운데에 설 수 있다. */
+function ProvinceDial({ provinces, active, onChange, marked }: { provinces: string[]; active: string; onChange: (p: string) => void; marked: (p: string) => boolean }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const settle = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const ROW = 52;
+
+  // 줄마다 가운데와의 거리로 투명도·크기·기울기·흐림을 바로 칠한다(렌더 없이)
+  const paint = useCallback(() => {
+    const el = ref.current;
+    if (!el) return;
+    const mid = el.scrollTop + el.clientHeight / 2;
+    el.querySelectorAll<HTMLElement>('[data-dial-row]').forEach((row) => {
+      const c = row.offsetTop + row.offsetHeight / 2;
+      const d = Math.min(Math.abs(c - mid) / ROW, 4);
+      row.style.opacity = String(Math.max(0.28, 1 - d * 0.22));
+      row.style.transform = `perspective(400px) rotateX(${Math.max(-50, Math.min(50, ((mid - c) / ROW) * 14))}deg) scale(${1 - d * 0.07})`;
+      row.style.filter = d > 0.6 ? `blur(${Math.min(1.6, (d - 0.6) * 0.7)}px)` : 'none';
+    });
+  }, []);
+
+  // 고른 줄을 가운데로
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const i = provinces.indexOf(active);
+    if (i < 0) return;
+    const top = i * ROW;
+    if (Math.abs(el.scrollTop - top) > 2) el.scrollTo({ top, behavior: 'smooth' });
+    paint();
+  }, [active, provinces, paint]);
+
+  const onScroll = () => {
+    paint();
+    if (settle.current) clearTimeout(settle.current);
+    settle.current = setTimeout(() => {
+      const el = ref.current;
+      if (!el) return;
+      const i = Math.max(0, Math.min(provinces.length - 1, Math.round(el.scrollTop / ROW)));
+      if (provinces[i] !== active) {
+        onChange(provinces[i]);
+        navigator.vibrate?.(4);
+      }
+    }, 140);
+  };
+
+  return (
+    <div className="relative w-[112px] shrink-0 bg-[#F9FAFB]">
+      {/* 초점 줄 — 흰 알약 */}
+      <span aria-hidden className="pointer-events-none absolute inset-x-2 top-1/2 h-[44px] -translate-y-1/2 rounded-[12px] bg-white shadow-[0_1px_6px_rgba(0,0,0,0.05)]" />
+      <div
+        ref={ref}
+        onScroll={onScroll}
+        className="relative h-full snap-y snap-mandatory overflow-y-auto hide-scrollbar"
+      >
+        {/* 위 여백 — 칸 높이의 반(첫 줄도 가운데에 선다) */}
+        <div aria-hidden style={{ height: `calc(50% - ${ROW / 2}px)` }} />
+        {provinces.map((prov) => {
+          const on = prov === active;
+          return (
+            <button
+              key={prov}
+              data-dial-row
+              type="button"
+              onClick={() => onChange(prov)}
+              className={`flex w-full snap-center items-center justify-center gap-1.5 text-[16.5px] transition-colors duration-200 ${on ? 'font-bold text-[#191F28]' : 'text-[#6B7684]'}`}
+              style={{ height: ROW, transformOrigin: 'center', willChange: 'transform, opacity' }}
+            >
+              {prov}
+              {marked(prov) && <span className="h-1.5 w-1.5 rounded-full bg-[#3180F7]" />}
+            </button>
+          );
+        })}
+        <div aria-hidden style={{ height: `calc(50% - ${ROW / 2}px)` }} />
+      </div>
+    </div>
+  );
+}
+
+/** 가격 칸 — 누르면 숫자 입력, 꾹(0.35초) 누른 채 좌우로 밀면 5천 원씩 오르내린다(10px = 한 칸).
+ *  밀기 중엔 칸이 연파랑으로 바뀌고 좌우 화살표가 보이며, 한 칸 바뀔 때마다 짧은 진동(지원 기기만). */
+function PriceScrubField({ label, value, onChange, placeholder }: { label: string; value: number | null; onChange: (n: number | null) => void; placeholder: string }) {
+  const [scrubbing, setScrubbing] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const press = useRef<{ x: number; y: number; base: number; timer: ReturnType<typeof setTimeout> | null; active: boolean; last: number } | null>(null);
+
+  const end = () => {
+    if (press.current?.timer) clearTimeout(press.current.timer);
+    const wasActive = press.current?.active;
+    press.current = null;
+    if (wasActive) setScrubbing(false);
+    return wasActive;
+  };
+
+  return (
+    <label
+      className={`relative flex h-14 select-none items-center rounded-[14px] px-4 transition-all duration-200 ${scrubbing ? 'scale-[1.02] bg-[#EFF5FE] shadow-[0_0_0_2px_#2F6FE4_inset]' : 'bg-[#F2F4F6] focus-within:bg-[#EDEFF2]'}`}
+      style={{ touchAction: 'pan-y', WebkitTouchCallout: 'none' }}
+      onPointerDown={(e) => {
+        end();
+        const st = { x: e.clientX, y: e.clientY, base: value ?? 0, timer: null as ReturnType<typeof setTimeout> | null, active: false, last: 0 };
+        st.timer = setTimeout(() => {
+          st.active = true;
+          setScrubbing(true);
+          inputRef.current?.blur();
+          navigator.vibrate?.(8);
+        }, 350);
+        press.current = st;
+      }}
+      onPointerMove={(e) => {
+        const st = press.current;
+        if (!st) return;
+        if (!st.active) {
+          // 꾹 누르기 전에 움직이면(스크롤 등) 밀기 취소
+          if (Math.abs(e.clientX - st.x) > 8 || Math.abs(e.clientY - st.y) > 8) end();
+          return;
+        }
+        e.preventDefault();
+        const steps = Math.round((e.clientX - st.x) / 10);
+        if (steps === st.last) return;
+        st.last = steps;
+        const next = Math.max(0, Math.min(PRICE_CAP, st.base + steps * PRICE_STEP));
+        onChange(next === 0 && label === '최대' ? null : next);
+        navigator.vibrate?.(3);
+      }}
+      onPointerUp={(e) => { if (end()) e.preventDefault(); }}
+      onPointerCancel={end}
+      onContextMenu={(e) => e.preventDefault()}
+    >
+      <span className={`mr-3 shrink-0 text-[15px] transition-colors ${scrubbing ? 'font-semibold text-[#2F6FE4]' : 'text-[#8B95A1]'}`}>{label}</span>
+      {scrubbing && <ChevronLeft size={18} strokeWidth={2.4} className="scrub-hint-l shrink-0 text-[#2F6FE4]" />}
+      <input
+        ref={inputRef}
+        type="text"
+        inputMode="numeric"
+        value={value == null ? '' : value.toLocaleString()}
+        onChange={(e) => {
+          const digits = e.target.value.replace(/[^\d]/g, '');
+          onChange(digits ? Number(digits) : null);
+        }}
+        placeholder={placeholder}
+        readOnly={scrubbing}
+        className={`min-w-0 flex-1 bg-transparent text-right text-[17px] font-semibold tabular-nums outline-none placeholder:font-normal placeholder:text-[#B0B8C1] ${scrubbing ? 'text-[#2F6FE4]' : 'text-[#191F28]'}`}
+      />
+      <span className={`ml-1.5 text-[16px] ${scrubbing ? 'text-[#2F6FE4]' : 'text-[#333D4B]'}`}>원</span>
+      {scrubbing && <ChevronRight size={18} strokeWidth={2.4} className="scrub-hint-r ml-1 shrink-0 text-[#2F6FE4]" />}
+    </label>
   );
 }
 

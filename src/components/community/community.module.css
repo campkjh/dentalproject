@@ -337,7 +337,10 @@ button.tagBadge:hover { border-color: #d1d5db; }
 .modal[data-variant=drawer][data-leaving] .sheet { animation: drawerOut .22s ease-in forwards; }
 .modal[data-variant=drawer] .handle { display: none; }
 .modal[data-variant=alert][open] { align-items: center; padding: 20px; }
-.modal[data-variant=alert] .sheet { width: 360px; border-radius: 24px; padding: 24px; animation: modalIn .25s ease-out; }
+.modal[data-variant=alert] .sheet { width: min(100%, 340px); border-radius: 28px; padding: 26px 22px 20px; box-shadow: 0 24px 64px rgba(15,23,42,.18); animation: alertSheetIn .46s cubic-bezier(.34, 1.36, .64, 1) both; }
+.modal[data-variant=alert][data-leaving] .sheet { animation: alertSheetOut .2s ease-in forwards; }
+@keyframes alertSheetIn { 0% { opacity: 0; transform: scale(.82) translateY(10px); } 50% { opacity: 1; } 100% { opacity: 1; transform: scale(1) translateY(0); } }
+@keyframes alertSheetOut { to { opacity: 0; transform: scale(.94); } }
 .modal[data-variant=alert] .handle { display: none; }
 .standaloneCompose { min-height: 100dvh; max-width: 640px; margin: auto; }
 

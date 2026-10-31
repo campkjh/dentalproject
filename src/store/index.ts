@@ -186,7 +186,12 @@ interface AppState {
 
   // Toast
   toast: string | null;
+  /** 같은 문구를 다시 띄워도 새로 튀어나오게 — 띄울 때마다 1씩 오른다 */
+  toastKey: number;
+  /** 닫히는 중(가라앉는 움직임) — 끝나면 toast 가 null 이 된다 */
+  toastLeaving: boolean;
   showToast: (message: string) => void;
+  hideToast: () => void;
 
   // Modal
   modal: {
@@ -597,9 +602,19 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   toast: null,
+  toastKey: 0,
+  toastLeaving: false,
   showToast: (message) => {
-    set({ toast: message });
-    setTimeout(() => set({ toast: null }), 3000);
+    const key = get().toastKey + 1;
+    set({ toast: message, toastKey: key, toastLeaving: false });
+    // 뒤에 띄운 문구가 있으면 그쪽 타이머가 닫는다
+    setTimeout(() => { if (get().toastKey === key) get().hideToast(); }, 2800);
+  },
+  hideToast: () => {
+    const key = get().toastKey;
+    if (!get().toast) return;
+    set({ toastLeaving: true });
+    setTimeout(() => { if (get().toastKey === key) set({ toast: null, toastLeaving: false }); }, 280);
   },
 
   modal: null,

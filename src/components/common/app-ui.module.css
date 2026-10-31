@@ -86,9 +86,16 @@
 .myDetailPanelContent { height: 100%; overflow-y: auto; overscroll-behavior: contain; }
 .myDetailPanelContent > div { min-height: 100%; }
 .logoutButton { color: #f04452; }
-.alertTitle { font-size: 20px; font-weight: 700; color: #191f28; line-height: 28px; }
-.alertMessage { margin-top: 10px; font-size: 15px; color: #6b7684; white-space: pre-line; line-height: 1.6; }
-.alertActions { display: flex; gap: 8px; margin-top: 24px; }.alertActions button { flex: 1; min-width: 0; }
+.alertIcon { display: block; margin-bottom: 14px; animation: alertIconPop .62s cubic-bezier(.34, 1.56, .64, 1) .08s both; }
+.alertTitle { font-size: 20px; font-weight: 700; color: #191f28; line-height: 28px; letter-spacing: -0.4px; word-break: keep-all; animation: alertUp .42s cubic-bezier(.22, .61, .36, 1) .1s both; }
+.alertMessage { margin-top: 8px; font-size: 15px; color: #6b7684; white-space: pre-line; line-height: 1.6; letter-spacing: -0.2px; word-break: keep-all; animation: alertUp .42s cubic-bezier(.22, .61, .36, 1) .16s both; }
+.alertActions { display: flex; gap: 8px; margin-top: 24px; animation: alertUp .42s cubic-bezier(.22, .61, .36, 1) .22s both; }.alertActions button { flex: 1; min-width: 0; }
+.alertPrimary, .alertSecondary { display: flex; align-items: center; justify-content: center; height: 56px; border-radius: 17px; font-size: 17px; font-weight: 700; letter-spacing: -0.3px; cursor: pointer; transition: transform .15s, background .15s; }
+.alertPrimary { background: #3182f6; color: #fff; }.alertSecondary { background: #f2f4f6; color: #4e5968; }
+.alertPrimary:active, .alertSecondary:active { transform: scale(.97); }
+@keyframes alertIconPop { 0% { opacity: 0; transform: scale(.3) rotate(-16deg); } 100% { opacity: 1; transform: scale(1) rotate(0); } }
+@keyframes alertUp { 0% { opacity: 0; transform: translateY(8px); } 100% { opacity: 1; transform: translateY(0); } }
+@media (prefers-reduced-motion: reduce) { .alertIcon, .alertTitle, .alertMessage, .alertActions { animation: none !important; } }
 .pullIndicator { position: fixed; z-index: 90; top: 56px; left: 50%; margin-left: -94px; min-width: 188px; padding: 6px 16px 6px 6px; display: flex; align-items: center; gap: 9px; border-radius: 30px; background: #fff; color: #51535c; box-shadow: 0 8px 24px #191f2824; font-size: 13px; font-weight: 600; pointer-events: none; }
 .pullIndicator img { border-radius: 50%; }
 @media (max-width: 359px) { .myRow { padding: 12px; gap: 9px; }.myRowLabel { font-size: 15px; }.myRowDesc { font-size: 12px; }.myProfileActions { gap: 5px; font-size: 12px; } }

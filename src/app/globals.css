@@ -7585,3 +7585,51 @@ html[data-pd-scrolled] .partner-page .partner-screen-title.partner-home-title::a
 @keyframes allCatsIn { from { transform: translateX(28%); opacity: .4; } to { transform: none; opacity: 1; } }
 @keyframes allCatsOut { from { transform: none; opacity: 1; } to { transform: translateX(28%); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .all-cats, .all-cats.is-out { animation: none; } }
+
+/* ═══ 체크 동그라미 인터랙션(261031) — 켤 때 톡 튀며 체크가 그려지고, 끌 때 살짝 움츠렸다 돌아온다 ═══ */
+.chk-dot { transition: background-color .2s ease, border-color .2s ease; }
+.chk-dot.is-on { animation: chkPop .42s cubic-bezier(.34, 1.56, .64, 1) both; }
+.chk-dot.is-on path { stroke-dasharray: 24; stroke-dashoffset: 24; animation: chkDraw .32s cubic-bezier(.22, 1, .36, 1) .08s forwards; }
+.chk-dot.is-off { animation: chkOff .3s cubic-bezier(.22, 1, .36, 1) both; }
+@keyframes chkPop { 0% { transform: scale(.6); } 60% { transform: scale(1.14); } 100% { transform: scale(1); } }
+@keyframes chkDraw { to { stroke-dashoffset: 0; } }
+@keyframes chkOff { 0% { transform: scale(.82); } 100% { transform: scale(1); } }
+/* 가격 칸 밀기 — 좌우 화살표가 바깥으로 살짝 숨 쉰다 */
+.scrub-hint-l { animation: scrubL .9s ease-in-out infinite; }
+.scrub-hint-r { animation: scrubR .9s ease-in-out infinite; }
+@keyframes scrubL { 50% { transform: translateX(-3px); opacity: .55; } }
+@keyframes scrubR { 50% { transform: translateX(3px); opacity: .55; } }
+@media (prefers-reduced-motion: reduce) {
+  .chk-dot, .chk-dot path, .scrub-hint-l, .scrub-hint-r { animation: none !important; stroke-dashoffset: 0 !important; }
+}
+
+/* ═══ 시스템 안내 토스트(261031) — 프리티풀 말풍선 결: 흰 유리 알약 · 톡 튀어 오르는 팝 · 가라앉으며 사라짐 ═══ */
+.sys-toast-wrap {
+  position: fixed; left: 0; right: 0; z-index: 10000; display: flex; justify-content: center; padding: 0 16px; pointer-events: none;
+  /* 위쪽 — 바닥 버튼·탭바·말풍선과 겹치지 않게 머리 줄 바로 아래에서 내려온다 */
+  top: calc(env(safe-area-inset-top, 0px) + 64px);
+}
+@media (min-width: 1024px) { .sys-toast-wrap { top: 88px; } }
+.sys-toast {
+  pointer-events: auto; display: flex; align-items: center; gap: 10px; max-width: min(100%, 420px);
+  padding: 13px 20px 13px 16px; border: 0; border-radius: 999px; text-align: left; cursor: pointer;
+  background: rgba(255, 255, 255, 0.86);
+  -webkit-backdrop-filter: blur(20px) saturate(1.6); backdrop-filter: blur(20px) saturate(1.6);
+  box-shadow: 0 16px 44px rgba(15, 23, 42, 0.16), 0 2px 8px rgba(15, 23, 42, 0.06), inset 0 0 0 1px rgba(255, 255, 255, 0.7);
+  transform-origin: 50% 0%;
+  animation: sysToastIn .52s cubic-bezier(.34, 1.4, .64, 1) both;
+}
+.sys-toast.is-leaving { animation: sysToastOut .28s cubic-bezier(.4, 0, .7, .2) both; }
+.sys-toast:active { transform: scale(.97); }
+.sys-toast-ic { flex: none; animation: sysToastIc .6s cubic-bezier(.34, 1.56, .64, 1) .12s both; }
+.sys-toast-text { min-width: 0; font-size: 15px; font-weight: 600; line-height: 1.45; letter-spacing: -0.3px; color: #191F28; word-break: keep-all; }
+@keyframes sysToastIn {
+  0% { opacity: 0; transform: translateY(-18px) scale(.86); filter: blur(4px); }
+  45% { opacity: 1; filter: blur(0); }
+  100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+}
+@keyframes sysToastOut { to { opacity: 0; transform: translateY(-14px) scale(.92); filter: blur(2px); } }
+@keyframes sysToastIc { 0% { transform: scale(.4) rotate(-20deg); opacity: 0; } 100% { transform: scale(1) rotate(0); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .sys-toast, .sys-toast-ic { animation: none !important; } }
+
+
