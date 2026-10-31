@@ -548,7 +548,7 @@ function monthDayOf(value?: string | null) {
 }
 
 /** 고객관리 — 이 병원 예약을 고객별로 묶어 방문·결제를 한눈에 */
-function CustomersView({ hospitalId, onTabChange }: { hospitalId: string | null; onTabChange: (tab: ReservationTabKey) => void }) {
+function CustomersView({ hospitalId, onTabChange, reloadKey }: { hospitalId: string | null; onTabChange: (tab: ReservationTabKey) => void; reloadKey: number }) {
   const router = useRouter();
   const showToast = useStore((s) => s.showToast);
   const [customers, setCustomers] = useState<CustomerRow[]>([]);
@@ -557,13 +557,8 @@ function CustomersView({ hospitalId, onTabChange }: { hospitalId: string | null;
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState<CustomerSort>('recent');
   const [openKey, setOpenKey] = useState<string | null>(null);
-  const [reloadTick, setReloadTick] = useState(0);
-
-  useReservationRealtimeRefresh({
-    enabled: Boolean(hospitalId),
-    hospitalId,
-    onChange: () => setReloadTick((n) => n + 1),
-  });
+  // 실시간 갱신은 부모(예약관리)의 구독 하나만 쓴다 — 같은 채널을 두 번 열면 supabase 가 'subscribe() 뒤 callback 추가' 오류를 던져 화면이 죽었다(261101)
+  const reloadTick = reloadKey;
 
   useEffect(() => {
     if (!hospitalId) return;
@@ -788,10 +783,12 @@ export default function PartnerReservationsPage() {
   const items = hospitalData?.reservations ?? [];
   const doctors = hospitalData?.hospital?.doctors ?? [];
 
+  const [customersReload, setCustomersReload] = useState(0);
   useReservationRealtimeRefresh({
     enabled: Boolean(authUser && hospitalId),
     hospitalId,
     onChange: () => {
+      setCustomersReload((n) => n + 1);
       void refreshHospital({ force: true, showLoading: false });
     },
   });
@@ -930,7 +927,7 @@ export default function PartnerReservationsPage() {
   }
 
   if (activeTab === 'customers') {
-    return <CustomersView hospitalId={hospitalId} onTabChange={setActiveTab} />;
+    return <CustomersView hospitalId={hospitalId} onTabChange={setActiveTab} reloadKey={customersReload} />;
   }
 
   const memoName = memoTarget ? memoTarget.user?.name ?? memoTarget.customer_name ?? '환자' : '';
