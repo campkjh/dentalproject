@@ -3,18 +3,19 @@
 // 홈 배너 — 사장 견본: 가운데 큰 정사각 카드(모서리 28) + 양옆 카드가 작게 살짝 보이는 넘기기.
 //  · 카드 아래쪽은 그 배너 사진의 키 컬러(lib/image-tone)로 그라데이션이 차오르고, 그 위에 제목(굵게 2줄)·부제.
 //  · 제목·부제는 프리티풀 배너처럼 가운데로 온 장에서만 다시 그려 아래→위로 흐림→선명(fadeSlideUp), 부제는 조금 늦게.
-//  · 끝없이 돈다 — 목록을 세 벌 이어 붙이고 가운데 벌에 머물게, 스크롤이 멈추면 앞·뒤 벌에서 같은 장 자리로 소리 없이 옮긴다.
+//  · 넘기기(261101 다시) = 손가락을 따라 움직이는 자리(pos, 소수) 하나로 그린다 — 옛 '세 벌 이어 붙이고 몰래 옮기기'(가로 스크롤+스냅)는
+//    관성·스냅·몰래 옮기기가 엇갈려 튀었다. 이제 가운데 ±2 장만 그리고 끝없이 돈다(장 번호는 나머지). 놓으면 빠르기 보고 한 장씩 착 붙는다.
+//  · 누르면 매거진(/magazine/<id>)으로. 민 뒤 손을 떼는 건 누름으로 치지 않는다.
 //  · 'N | 전체' 알약은 카드에 붙지 않고 가운데 카드 오른쪽 아래 자리에 고정.
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import type { HomeBanner } from '@/types';
 import { defaultHomeBanners } from '@/lib/home-banners';
 import { useImageTone } from '@/lib/image-tone';
 
 /** 카드 폭 — 모바일 화면의 76%(옆 카드가 보이게), 넓은 화면은 420 */
-const CARD_W = 'min(76vw, 420px)';
+const cardWidth = (w: number) => Math.min(w * 0.76, 420);
 const GAP = 12;
-const COPIES = 3;
 
 function BannerCard({ banner, index, active, turn }: { banner: HomeBanner; index: number; active: boolean; turn: number }) {
   const imageUrl = banner.mobileImageUrl || banner.imageUrl;
@@ -48,16 +49,9 @@ function BannerCard({ banner, index, active, turn }: { banner: HomeBanner; index
     </div>
   );
   return (
-    <div
-      className="shrink-0 snap-center transition-transform duration-500"
-      style={{ width: CARD_W, aspectRatio: '1 / 1', transform: `scale(${active ? 1 : 0.92})`, transitionTimingFunction: 'cubic-bezier(0.22, 1, 0.36, 1)' }}
-    >
-      {banner.targetUrl ? (
-        <Link href={banner.targetUrl} className="block h-full w-full" aria-label={banner.title} draggable={false} tabIndex={active ? 0 : -1}>
-          {body}
-        </Link>
-      ) : body}
-    </div>
+    <Link href={`/magazine/${banner.id}`} className="block h-full w-full" aria-label={banner.title} draggable={false} tabIndex={active ? 0 : -1}>
+      {body}
+    </Link>
   );
 }
 
@@ -80,22 +74,22 @@ function BannerWash({ banner, active }: { banner: HomeBanner; active: boolean })
 
 export default function HomeBannerSlider() {
   const [banners, setBanners] = useState<HomeBanner[]>(defaultHomeBanners);
-  /** 세 벌 이어 붙인 줄에서의 자리(가운데 벌 = count ~ 2count-1) */
-  const [slot, setSlot] = useState(0);
-  const [turn, setTurn] = useState(0);
-  const trackRef = useRef<HTMLDivElement>(null);
-  const slotRef = useRef(0);
-  const pausedUntil = useRef(0);
-  const settleTimer = useRef(0);
-  /** 벌 사이 순간 이동 중 — 같은 장이라 제목을 다시 띄우지 않는다 */
-  const jumping = useRef(false);
-  /** 손가락이 닿아 있는 동안 — 이때 순간 이동하면 손 밑에서 줄이 튄다 */
-  const touching = useRef(false);
-
   const visibleBanners = useMemo(() => banners.filter((banner) => banner.imageUrl || banner.title), [banners]);
   const count = visibleBanners.length;
   const loop = count > 1;
-  const items = useMemo(() => (loop ? Array.from({ length: COPIES }, () => visibleBanners).flat() : visibleBanners), [visibleBanners, loop]);
+
+  const boxRef = useRef<HTMLDivElement>(null);
+  const [boxW, setBoxW] = useState(0);
+  /** 지금 자리(장 단위 소수, 끝없이 커지거나 작아진다) — 그리기용 state + 손·애니용 ref */
+  const [pos, setPosState] = useState(0);
+  const posRef = useRef(0);
+  const [settled, setSettled] = useState(true);
+  const anim = useRef(0);
+  const drag = useRef<{ id: number; x: number; y: number; t: number; start: number; moved: boolean; lastX: number; lastT: number; v: number } | null>(null);
+  const suppressClick = useRef(false);
+  const pausedUntil = useRef(0);
+
+  const setPos = useCallback((v: number) => { posRef.current = v; setPosState(v); }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -109,98 +103,132 @@ export default function HomeBannerSlider() {
     return () => { cancelled = true; };
   }, []);
 
-  /** 줄 안 i 번째 카드를 가운데로 */
-  const centerOn = (i: number, behavior: ScrollBehavior) => {
-    const el = trackRef.current;
-    const card = el?.children[i] as HTMLElement | undefined;
-    if (!el || !card) return;
-    el.scrollTo({ left: card.offsetLeft - (el.clientWidth - card.offsetWidth) / 2, behavior });
-  };
+  // 폭 재기
+  useEffect(() => {
+    const el = boxRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setBoxW(el.clientWidth));
+    ro.observe(el);
+    setBoxW(el.clientWidth);
+    return () => ro.disconnect();
+  }, []);
 
-  // 처음·배너가 바뀌면 가운데 벌 첫 장에서 시작
-  useLayoutEffect(() => {
-    const start = loop ? count : 0;
-    slotRef.current = start;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- 줄 길이가 바뀐 직후 자리 맞춤
-    setSlot(start);
-    centerOn(start, 'instant');
-  }, [count, loop]);
+  /** to 자리로 부드럽게(easeOutCubic) */
+  const animateTo = useCallback((to: number, ms = 420) => {
+    cancelAnimationFrame(anim.current);
+    const from = posRef.current;
+    if (Math.abs(to - from) < 0.001) { setPos(to); setSettled(true); return; }
+    setSettled(false);
+    const t0 = performance.now();
+    const tick = (now: number) => {
+      const k = Math.min(1, (now - t0) / ms);
+      const e = 1 - (1 - k) ** 3;
+      setPos(from + (to - from) * e);
+      if (k < 1) anim.current = requestAnimationFrame(tick);
+      else setSettled(true);
+    };
+    anim.current = requestAnimationFrame(tick);
+  }, [setPos]);
 
-  // 자동 넘김 — 다음 장으로 부드럽게. 손으로 민 뒤 4초는 쉬고, 움직임 줄이기면 멈춤
+  useEffect(() => () => cancelAnimationFrame(anim.current), []);
+
+  // 자동 넘김 — 손으로 민 뒤 4초는 쉬고, 움직임 줄이기면 멈춤, 화면 밖 탭이면 쉼
   useEffect(() => {
     if (!loop) return;
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const timer = window.setInterval(() => {
-      if (Date.now() < pausedUntil.current) return;
-      centerOn(slotRef.current + 1, 'smooth');
+      if (drag.current || document.hidden || Date.now() < pausedUntil.current) return;
+      animateTo(Math.round(posRef.current) + 1, 620);
     }, 3400);
     return () => window.clearInterval(timer);
-  }, [loop]);
+  }, [loop, animateTo]);
 
   if (count === 0) return null;
-  const real = ((slot % count) + count) % count;
+  const cardW = boxW ? cardWidth(boxW) : 0;
+  const step = cardW + GAP;
+  const mod = (k: number) => ((k % count) + count) % count;
+  const center = Math.round(pos);
+  const real = mod(center);
+  const ks = loop ? [center - 2, center - 1, center, center + 1, center + 2] : [0];
+
+  const onPointerDown = (e: React.PointerEvent) => {
+    if (!loop || !step) return;
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    cancelAnimationFrame(anim.current);
+    setSettled(false);
+    suppressClick.current = false;
+    drag.current = { id: e.pointerId, x: e.clientX, y: e.clientY, t: performance.now(), start: posRef.current, moved: false, lastX: e.clientX, lastT: performance.now(), v: 0 };
+    pausedUntil.current = Date.now() + 4000;
+  };
+  const onPointerMove = (e: React.PointerEvent) => {
+    const d = drag.current;
+    if (!d || d.id !== e.pointerId) return;
+    const dx = e.clientX - d.x;
+    const dy = e.clientY - d.y;
+    if (!d.moved) {
+      if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return;
+      // 세로로 먼저 움직이면 화면 스크롤에 양보
+      if (Math.abs(dy) > Math.abs(dx)) { drag.current = null; animateTo(Math.round(posRef.current)); return; }
+      d.moved = true;
+      suppressClick.current = true;
+      (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+    }
+    const now = performance.now();
+    if (now > d.lastT) d.v = 0.8 * ((e.clientX - d.lastX) / (now - d.lastT)) + 0.2 * d.v;
+    d.lastX = e.clientX; d.lastT = now;
+    setPos(d.start - dx / step);
+  };
+  const onPointerEnd = (e: React.PointerEvent) => {
+    const d = drag.current;
+    if (!d || d.id !== e.pointerId) return;
+    drag.current = null;
+    pausedUntil.current = Date.now() + 4000;
+    if (!d.moved) { setSettled(true); return; }
+    // 빠르게 튕기면 그쪽으로 한 장, 아니면 가까운 장 — 한 번에 한 장까지만
+    const flick = Math.abs(d.v) > 0.35 ? -Math.sign(d.v) * 0.5 : 0;
+    const target = Math.max(Math.round(d.start) - 1, Math.min(Math.round(d.start) + 1, Math.round(posRef.current + flick)));
+    animateTo(target, 380);
+  };
 
   return (
     <section aria-label="홈 배너" className="relative mb-4 pc:-mx-8">
       {visibleBanners.map((banner, i) => <BannerWash key={banner.id} banner={banner} active={i === real} />)}
       <div
-        ref={trackRef}
-        className="relative flex snap-x snap-mandatory overflow-x-auto hide-scrollbar py-1"
-        style={{ gap: GAP, paddingInline: `calc((100% - ${CARD_W}) / 2)` }}
-        onPointerDown={() => { pausedUntil.current = Date.now() + 4000; }}
-        onTouchStart={() => { touching.current = true; pausedUntil.current = Date.now() + 4000; }}
-        onTouchEnd={() => { touching.current = false; pausedUntil.current = Date.now() + 4000; }}
-        onTouchCancel={() => { touching.current = false; }}
-        onScroll={(e) => {
-          const el = e.currentTarget;
-          const center = el.scrollLeft + el.clientWidth / 2;
-          let best = 0;
-          let bestDist = Infinity;
-          Array.from(el.children).forEach((child, i) => {
-            const c = child as HTMLElement;
-            const dist = Math.abs(c.offsetLeft + c.offsetWidth / 2 - center);
-            if (dist < bestDist) { bestDist = dist; best = i; }
-          });
-          if (jumping.current) { jumping.current = false; return; }
-          if (best !== slotRef.current) {
-            slotRef.current = best;
-            setSlot(best);
-            setTurn(t => t + 1);
-          }
-          // 멈추면 앞·뒤 벌에서 가운데 벌 같은 장으로 소리 없이 옮긴다(끝없이 도는 것처럼).
-          //  · 폰은 관성 스크롤이 느려지며 스크롤 신호가 잠깐 끊기는데, 그때 옮기면 미끄러지던 줄이 어긋나 멈췄다(배너가 한쪽으로 치우침)
-          //    → 손을 뗐고 · 카드가 정확히 가운데에 붙어 멈춘 뒤에만 옮긴다. 아직이면 조금 뒤 다시 본다
-          const settle = () => {
-            window.clearTimeout(settleTimer.current);
-            settleTimer.current = window.setTimeout(() => {
-              if (!loop) return;
-              const track = trackRef.current;
-              const s = slotRef.current;
-              const card = track?.children[s] as HTMLElement | undefined;
-              if (!track || !card) return;
-              const off = card.offsetLeft + card.offsetWidth / 2 - (track.scrollLeft + track.clientWidth / 2);
-              if (touching.current || Math.abs(off) > 1) { settle(); return; }
-              if (s < count || s >= count * 2) {
-                const mid = count + (((s % count) + count) % count);
-                slotRef.current = mid;
-                setSlot(mid);
-                jumping.current = true;
-                centerOn(mid, 'instant');
-              }
-            }, 220);
-          };
-          settle();
-        }}
+        ref={boxRef}
+        className="relative select-none overflow-hidden py-1"
+        style={{ height: cardW ? cardW + 8 : `calc(min(76vw, 420px) + 8px)`, touchAction: 'pan-y' }}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerEnd}
+        onPointerCancel={onPointerEnd}
+        onClickCapture={(e) => { if (suppressClick.current) { e.preventDefault(); e.stopPropagation(); suppressClick.current = false; } }}
+        onDragStart={(e) => e.preventDefault()}
       >
-        {items.map((banner, i) => (
-          <BannerCard key={`${banner.id}-${i}`} banner={banner} index={i % count} active={i === slot} turn={turn} />
-        ))}
+        {cardW > 0 && ks.map((k) => {
+          const dist = Math.abs(k - pos);
+          const isActive = settled && k === center;
+          return (
+            <div
+              key={k}
+              className="absolute top-1"
+              style={{
+                width: cardW,
+                height: cardW,
+                left: (boxW - cardW) / 2,
+                transform: `translate3d(${(k - pos) * step}px,0,0) scale(${1 - 0.08 * Math.min(1, dist)})`,
+                willChange: 'transform',
+              }}
+            >
+              <BannerCard banner={visibleBanners[mod(k)]} index={mod(k)} active={isActive} turn={k} />
+            </div>
+          );
+        })}
       </div>
       {/* 페이지 번호 — 카드에 붙지 않고 가운데 카드 오른쪽 아래 자리에 고정 */}
-      {count > 1 && (
+      {count > 1 && cardW > 0 && (
         <span
           className="pointer-events-none absolute bottom-[calc(0.25rem+24px)] z-[1] rounded-full bg-black/25 px-3 py-1 text-[12.5px] font-semibold tabular-nums text-white backdrop-blur"
-          style={{ right: `calc((100% - ${CARD_W}) / 2 + 24px)` }}
+          style={{ right: (boxW - cardW) / 2 + 24 }}
           aria-label={`${count}장 중 ${real + 1}번째`}
         >
           {real + 1}<span className="mx-1 opacity-60">|</span>{count}
