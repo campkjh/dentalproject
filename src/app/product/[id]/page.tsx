@@ -71,26 +71,13 @@ const OPTION_CHECKS = [
 
 /** 적립 줄 앞 동전 두 개(노랑 뒤 · 주황 P 앞) — 견본 아이콘 */
 
-/** 견본 오른쪽 위 물음표 말풍선 */
-function QuestionIcon() {
-  return (
-    <svg width="36" height="36" viewBox="0 0 36 36" fill="none" aria-hidden>
-      <path d="M18 4.5c7.6 0 13.5 5.6 13.5 12.8S25.6 30 18 30c-1.6 0-3.1-.2-4.5-.7L7.6 31.6l1.3-5.4C6.3 23.9 4.5 20.8 4.5 17.3 4.5 10.1 10.4 4.5 18 4.5z" stroke="#8B95A1" strokeWidth="2.2" strokeLinejoin="round" />
-      <path d="M14.6 13.8a3.5 3.5 0 0 1 6.9.8c0 2.3-3.5 2.8-3.5 5" stroke="#8B95A1" strokeWidth="2.4" strokeLinecap="round" />
-      <circle cx="18" cy="23.4" r="1.5" fill="#8B95A1" />
-    </svg>
-  );
-}
-
 /** 요일 표 순서(월→일) */
 const WEEK_ORDER = ['월', '화', '수', '목', '금', '토', '일'];
 
-/** 바로 하기 버튼 아이콘(선 1.8 · 22) */
-function QuickIcon({ name }: { name: 'phone' | 'map' | 'home' }) {
-  const p = { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: '#4E5968', strokeWidth: 1.8, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const, 'aria-hidden': true };
-  if (name === 'phone') return <svg {...p}><path d="M5 4h3.2l1.6 4-2 1.3a11 11 0 0 0 6.9 6.9l1.3-2 4 1.6V19a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z" /></svg>;
-  if (name === 'map') return <svg {...p}><path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11z" /><circle cx="12" cy="10" r="2.4" /></svg>;
-  return <svg {...p}><path d="M4 10.3L12 4l8 6.3V19a1.6 1.6 0 0 1-1.6 1.6H5.6A1.6 1.6 0 0 1 4 19z" /><path d="M9.5 20.5v-5h5v5" /></svg>;
+/** 토스 흑백 아이콘(public/icons/mono, 사장 제공 261031) — 마스크로 칠해 색을 고른다 */
+function MonoIcon({ name, size = 20, color = '#4E5968', className = '' }: { name: string; size?: number; color?: string; className?: string }) {
+  const url = `url(/icons/mono/${name}.svg)`;
+  return <i aria-hidden className={`inline-block shrink-0 ${className}`} style={{ width: size, height: size, backgroundColor: color, WebkitMaskImage: url, maskImage: url, WebkitMaskSize: 'contain', maskSize: 'contain', WebkitMaskRepeat: 'no-repeat', maskRepeat: 'no-repeat', WebkitMaskPosition: 'center', maskPosition: 'center' }} />;
 }
 
 /** 병원 소개 — 4줄까지, 넘치면 '더보기' */
@@ -362,7 +349,7 @@ export default function ProductDetailPage() {
                     <ChevronRight size={16} strokeWidth={2.2} className="shrink-0 text-[#6B7684]" />
                   </Link>
                   <button type="button" aria-label="자주 묻는 질문" onClick={() => document.getElementById('product-faq')?.scrollIntoView({ behavior: 'smooth', block: 'center' })} className="-mr-1 -mt-0.5 shrink-0 p-1 transition-transform active:scale-90">
-                    <QuestionIcon />
+                    <MonoIcon name="chat-bubble-question" size={30} color="#B0B8C1" />
                   </button>
                 </div>
                 <h1 className="mt-3 break-keep text-[20px] font-medium leading-[1.4] tracking-[-0.4px] text-[#191F28]">{product.title}</h1>
@@ -499,7 +486,7 @@ export default function ProductDetailPage() {
                 ))}
               </div>
               <p className="mt-3 flex gap-2 rounded-[14px] bg-[#F2F4F6] px-4 py-3.5 text-[14px] leading-[1.5] text-[#4E5968]">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden className="mt-px shrink-0"><circle cx="12" cy="12" r="9" stroke="#8B95A1" strokeWidth="2" /><path d="M12 11v5.5" stroke="#8B95A1" strokeWidth="2.2" strokeLinecap="round" /><circle cx="12" cy="7.8" r="1.3" fill="#8B95A1" /></svg>
+                <MonoIcon name="info-circle" size={18} color="#B0B8C1" className="mt-px" />
                 시술에 대한 정보는 참고 사항이며, 병원 방문 시 개인의 상태에 따라 달라질 수 있어요.
               </p>
             </Reveal>
@@ -640,9 +627,9 @@ export default function ProductDetailPage() {
                   {/* 바로 하기 — 전화 · 길찾기 · 병원 홈(회색 바탕, 테두리 없음) */}
                   <div className="mt-4 grid grid-cols-3 gap-2">
                     {[
-                      ...(hospital.phone ? [{ label: '전화하기', icon: 'phone', onClick: () => { window.location.href = `tel:${hospital.phone.replace(/[^0-9+]/g, '')}`; } }] : []),
-                      { label: '길찾기', icon: 'map', onClick: () => window.open(`https://map.naver.com/p?q=${encodeURIComponent(hospital.address || hospital.name)}`, '_blank') },
-                      { label: '병원 홈', icon: 'home', onClick: () => router.push(`/hospital/detail/${hospital.id}`) },
+                      ...(hospital.phone ? [{ label: '전화하기', icon: 'call', onClick: () => { window.location.href = `tel:${hospital.phone.replace(/[^0-9+]/g, '')}`; } }] : []),
+                      { label: '길찾기', icon: 'pin-location', onClick: () => window.open(`https://map.naver.com/p?q=${encodeURIComponent(hospital.address || hospital.name)}`, '_blank') },
+                      { label: '병원 홈', icon: 'hospital', onClick: () => router.push(`/hospital/detail/${hospital.id}`) },
                     ].map(btn => (
                       <button
                         key={btn.label}
@@ -650,7 +637,7 @@ export default function ProductDetailPage() {
                         onClick={btn.onClick}
                         className="flex h-12 items-center justify-center gap-1.5 rounded-[14px] bg-[#F2F4F6] text-[15px] font-semibold text-[#333D4B] transition-all active:scale-[0.98] active:bg-[#E5E8EB]"
                       >
-                        <QuickIcon name={btn.icon as 'phone' | 'map' | 'home'} />
+                        <MonoIcon name={btn.icon} size={18} color="#6B7684" />
                         {btn.label}
                       </button>
                     ))}
@@ -744,7 +731,7 @@ export default function ProductDetailPage() {
                   </dl>
                   {hospital.holidayNotice && (
                     <p className="mt-3 flex items-start gap-2 rounded-[14px] bg-[#F2F4F6] px-4 py-3 text-[14px] leading-[1.5] text-[#4E5968]">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden className="mt-0.5 shrink-0"><circle cx="12" cy="12" r="9" stroke="#8B95A1" strokeWidth="1.8" /><path d="M12 8v5M12 16.5v.01" stroke="#8B95A1" strokeWidth="1.8" strokeLinecap="round" /></svg>
+                      <MonoIcon name="exclamation-circle" size={17} color="#B0B8C1" className="mt-0.5" />
                       {hospital.holidayNotice.replace(/^\*/, '')}
                     </p>
                   )}
