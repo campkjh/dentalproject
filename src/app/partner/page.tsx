@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ChevronRight, Plus, Star } from 'lucide-react';
+import { ChevronDown, ChevronRight, Plus, Star } from 'lucide-react';
 import { normalizeProductImageUrl } from '@/lib/images';
 import { useMyHospitalData } from '@/lib/partner/my-hospital-cache';
 import { useSession } from '@/lib/supabase/SessionProvider';
@@ -121,6 +122,15 @@ const FILTER_LABEL: Record<Filter, string> = {
   confirmed: '확정',
   completed: '완료',
   cancelled: '취소',
+};
+
+/** 예약 상태 툴팁 메뉴 아이콘(토스 컬러) */
+const FILTER_ICON: Record<Filter, string> = {
+  all: '/icons/color/grid.svg',
+  pending: '/icons/toss/calendar-new.svg',
+  confirmed: '/icons/toss/calendar-check.svg',
+  completed: '/icons/toss/check-done.svg',
+  cancelled: '/icons/toss/x-circle-red.svg',
 };
 
 const HOME_TAB_LABEL: Record<HomeTab, string> = {
@@ -693,13 +703,8 @@ export default function PartnerHomePage() {
   const [filter, setFilter] = useState<Filter>('all');
   const [homeTab, setHomeTab] = useState<HomeTab>('reservations');
   const [productApprovalTab, setProductApprovalTab] = useState<ProductApprovalTab>('approved');
-  const filterRefs = useRef<Record<Filter, HTMLButtonElement | null>>({
-    all: null,
-    pending: null,
-    confirmed: null,
-    completed: null,
-    cancelled: null,
-  });
+  // 예약 상태 거르기 = 탭 옆 '⊞ 전체 ⌄' 버튼 → 프리티풀 툴팁 메뉴(.pop-menu)
+  const [filterMenuAt, setFilterMenuAt] = useState<{ right: number; top: number } | null>(null);
   const thumbnailInputRef = useRef<HTMLInputElement>(null);
   const detailInputRef = useRef<HTMLInputElement>(null);
   const [productModal, setProductModal] = useState<{ mode: 'create' | 'edit'; product?: ProductRow } | null>(null);
@@ -724,17 +729,14 @@ export default function PartnerHomePage() {
     },
   });
 
-  useLayoutEffect(() => {
-    const updateIndicator = () => {
-      const target = filterRefs.current[filter];
-      if (!target) return;
-      target.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
-    };
-
-    updateIndicator();
-    window.addEventListener('resize', updateIndicator);
-    return () => window.removeEventListener('resize', updateIndicator);
-  }, [filter, homeTab]);
+  useEffect(() => {
+    if (!filterMenuAt) return;
+    const close = () => setFilterMenuAt(null);
+    const key = (e: KeyboardEvent) => { if (e.key === 'Escape') close(); };
+    window.addEventListener('scroll', close, { passive: true, capture: true });
+    window.addEventListener('keydown', key);
+    return () => { window.removeEventListener('scroll', close, { capture: true }); window.removeEventListener('keydown', key); };
+  }, [filterMenuAt]);
 
   const counts = useMemo(() => {
     return {
@@ -1027,8 +1029,8 @@ export default function PartnerHomePage() {
       </header>
 
       {/* 예약 · 상품 — 회색 트랙 위 미끄러지는 흰 알약 */}
-      <div className="px-5 pb-3 pt-1">
-        <nav className="pd-seg is-wide" aria-label="홈 탭" style={{ ['--n' as string]: HOME_TABS.length, ['--i' as string]: HOME_TABS.indexOf(homeTab) }}>
+      <div className="flex items-center gap-2 px-5 pb-3 pt-1">
+        <nav className="pd-seg is-wide min-w-0 flex-1" aria-label="홈 탭" style={{ ['--n' as string]: HOME_TABS.length, ['--i' as string]: HOME_TABS.indexOf(homeTab) }}>
           <span className="pd-seg-thumb" aria-hidden />
           {HOME_TABS.map((tab) => (
             <button
@@ -1042,6 +1044,23 @@ export default function PartnerHomePage() {
             </button>
           ))}
         </nav>
+        {homeTab === 'reservations' && (
+          <button
+            type="button"
+            aria-haspopup="menu"
+            aria-expanded={!!filterMenuAt}
+            onClick={(e) => {
+              const r = e.currentTarget.getBoundingClientRect();
+              setFilterMenuAt(filterMenuAt ? null : { right: Math.max(12, window.innerWidth - r.right), top: r.bottom + 6 });
+            }}
+            className={`inline-flex h-[42px] shrink-0 items-center gap-1.5 rounded-[12px] pl-3 pr-2.5 text-[14.5px] font-bold transition-all active:scale-[0.97] ${filter === 'all' ? 'bg-[#F2F4F6] text-[#333D4B]' : 'bg-[#EFF5FE] text-[#2F6FE4]'}`}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={FILTER_ICON[filter]} alt="" width={20} height={20} />
+            {FILTER_LABEL[filter]}
+            <ChevronDown size={16} strokeWidth={2.4} className={`text-[#8B95A1] transition-transform ${filterMenuAt ? 'rotate-180' : ''}`} />
+          </button>
+        )}
       </div>
 
       {homeTab === 'products' ? (
@@ -1127,25 +1146,30 @@ export default function PartnerHomePage() {
         </section>
       ) : (
         <>
-          {/* 예약 상태 — 거르기 칩(고르면 연파랑) */}
-          <div className="pd-chips" role="tablist" aria-label="예약 상태">
-            {FILTERS.map((item) => (
-              <button
-                key={item}
-                ref={(node) => {
-                  filterRefs.current[item] = node;
-                }}
-                type="button"
-                role="tab"
-                aria-selected={filter === item}
-                onClick={() => setFilter(item)}
-                className={`pd-chip${filter === item ? ' is-active' : ''}`}
-              >
-                {FILTER_LABEL[item]}
-                <em>{counts[item]}</em>
-              </button>
-            ))}
-          </div>
+          {filterMenuAt && typeof document !== 'undefined' && createPortal(
+            <>
+              <div className="fixed inset-0 z-[130]" onClick={() => setFilterMenuAt(null)} aria-hidden="true" />
+              <div role="menu" aria-label="예약 상태" className="pop-menu fixed z-[131]" style={{ right: filterMenuAt.right, top: filterMenuAt.top, transformOrigin: 'top right' }}>
+                {FILTERS.map((item, i) => (
+                  <button
+                    key={item}
+                    type="button"
+                    role="menuitemradio"
+                    aria-checked={filter === item}
+                    className="pop-menu-item"
+                    style={{ animationDelay: `${0.04 + i * 0.05}s`, ...(filter === item ? { color: '#2F6FE4', fontWeight: 700 } : {}) }}
+                    onClick={() => { setFilter(item); setFilterMenuAt(null); }}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={FILTER_ICON[item]} alt="" />
+                    <span className="flex-1">{FILTER_LABEL[item]}</span>
+                    <span className={`ml-4 tabular-nums text-[15px] ${filter === item ? 'text-[#2F6FE4]' : 'text-[#8B95A1]'}`}>{counts[item]}</span>
+                  </button>
+                ))}
+              </div>
+            </>,
+            document.body,
+          )}
 
           <section key={filter}>
             {visible.length === 0 ? (
