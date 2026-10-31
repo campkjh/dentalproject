@@ -16,7 +16,7 @@ import { useStore } from '@/store';
 import { toneAccent, useImageTone } from '@/lib/image-tone';
 import { resolveHospitalImageUrl, resolveProductImageUrl } from '@/lib/images';
 import MonoIcon from '@/components/common/MonoIcon';
-import TossBubble, { BubbleClockIcon, BubbleMoonIcon } from '@/components/common/TossBubble';
+import TossBubble, { BubbleMoonIcon } from '@/components/common/TossBubble';
 
 const faqItems = [
   {
@@ -817,7 +817,7 @@ export default function ProductDetailPage() {
         />
         <div className="pointer-events-auto relative mx-auto max-w-[680px] pt-10">
           {notice && (
-            <TossBubble key={notice.title} className="mx-auto mb-1.5" icon={notice.kind === 'before' ? <BubbleClockIcon /> : <BubbleMoonIcon />} sub={notice.sub}>{notice.title}</TossBubble>
+            <TossBubble key={notice.title} className="mx-auto mb-1.5" icon={<BubbleMoonIcon />} sub={notice.sub}>{notice.title}</TossBubble>
           )}
           {buttons}
         </div>
