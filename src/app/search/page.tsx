@@ -11,6 +11,7 @@ import type { Product } from '@/types';
 import EmptyState from '@/components/common/EmptyState';
 import AllCategoriesSheet, { rememberCategory } from '@/components/search/AllCategoriesSheet';
 import ProductCard from '@/components/common/ProductCard';
+import MonoIcon from '@/components/common/MonoIcon';
 
 const PROVINCES: Record<string, string[]> = {
   '서울': ['전체', '강남구', '서초구', '송파구', '강동구', '마포구', '용산구', '성동구', '광진구', '동대문구', '중랑구', '성북구', '강북구', '도봉구', '노원구', '은평구', '서대문구', '종로구', '중구', '동작구', '관악구', '금천구', '구로구', '영등포구', '양천구'],
@@ -958,17 +959,46 @@ function FiltersBottomSheet({
     touchStartY.current = null;
   };
 
-  const SELECT = '#2B313D';
-  const SELECT_BG = '#F4F5F7';
-  const RED_DOT = '#FF4757';
-
+  // 261031 새 톤 — 상품 상세·칩과 같은 결: 회색 트랙 + 흰 알약 탭 · 파란 체크 동그라미 · 회색 칸 · 모서리 8 칩 · 바닥 초기화/결과 보기
   const tabs: { key: FilterTab; label: string; hasValue: boolean }[] = [
     { key: 'region', label: '지역', hasValue: selectedRegions.length > 0 },
     { key: 'price', label: '가격', hasValue: priceMin != null || priceMax != null },
     { key: 'booking', label: '예약방법', hasValue: selectedBooking !== '전체' },
   ];
+  const tabIdx = Math.max(0, tabs.findIndex((t) => t.key === activeTab));
 
   const transform = `translateY(${open ? dragOffset : 800}px)`;
+
+  const resetAll = () => {
+    setSelectedRegions([]);
+    setPriceMin(null);
+    setPriceMax(null);
+    setSelectedBooking('전체');
+  };
+
+  const checkDot = (on: boolean) => (
+    <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full transition-colors ${on ? 'bg-[#2F6FE4]' : 'border-2 border-[#E5E8EB]'}`}>
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={on ? '#fff' : '#D1D6DB'} strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
+    </span>
+  );
+
+  const priceInput = (label: string, value: number | null, set: (n: number | null) => void, placeholder: string) => (
+    <label className="flex h-14 items-center rounded-[14px] bg-[#F2F4F6] px-4 transition-colors focus-within:bg-[#EDEFF2]">
+      <span className="mr-3 shrink-0 text-[15px] text-[#8B95A1]">{label}</span>
+      <input
+        type="text"
+        inputMode="numeric"
+        value={value == null ? '' : value.toLocaleString()}
+        onChange={(e) => {
+          const digits = e.target.value.replace(/[^\d]/g, '');
+          set(digits ? Number(digits) : null);
+        }}
+        placeholder={placeholder}
+        className="min-w-0 flex-1 bg-transparent text-right text-[17px] font-semibold text-[#191F28] outline-none placeholder:font-normal placeholder:text-[#B0B8C1]"
+      />
+      <span className="ml-1.5 text-[16px] text-[#333D4B]">원</span>
+    </label>
+  );
 
   // Portal to document.body so the modal isn't trapped by any transformed
   // ancestor (e.g. .page-enter applies translateY which would re-anchor
@@ -984,7 +1014,7 @@ function FiltersBottomSheet({
       onClick={requestClose}
     >
       <div
-        className="absolute bottom-0 left-0 right-0 lg:bottom-auto lg:top-1/2 lg:left-1/2 lg:-translate-x-1/2 lg:-translate-y-1/2 lg:max-w-md lg:rounded-2xl bg-white rounded-t-2xl flex flex-col"
+        className="absolute bottom-0 left-0 right-0 mx-auto flex max-w-[640px] flex-col rounded-t-[28px] bg-white lg:bottom-auto lg:left-1/2 lg:top-1/2 lg:max-w-md lg:-translate-x-1/2 lg:-translate-y-1/2 lg:rounded-[28px]"
         style={{
           height: '82vh',
           maxHeight: 740,
@@ -995,133 +1025,76 @@ function FiltersBottomSheet({
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Drag handle — drag down past 110px to dismiss */}
+        {/* 손잡이 — 110px 넘게 끌어내리면 닫힌다 */}
         <div
-          className="flex justify-center pt-3 pb-2 flex-shrink-0 cursor-grab active:cursor-grabbing"
+          className="flex shrink-0 cursor-grab justify-center pb-2 pt-3 active:cursor-grabbing"
           onTouchStart={onTouchStart}
           onTouchMove={onTouchMove}
           onTouchEnd={onTouchEnd}
         >
-          <div className="w-10 h-1 rounded-full bg-gray-300" />
+          <div className="h-1 w-9 rounded-full bg-[#E5E8EB]" />
         </div>
 
-        {/* Filter-type tabs */}
-        <div className="flex items-center gap-5 px-5 pb-3 flex-shrink-0">
-          {tabs.map((t) => {
-            const isActive = activeTab === t.key;
-            return (
-              <button
-                key={t.key}
-                onClick={() => setActiveTab(t.key)}
-                className="relative"
-              >
-                <span
-                  className="text-[20px] font-extrabold whitespace-nowrap"
-                  style={{
-                    color: isActive ? '#2B313D' : '#C5CAD4',
-                    transition: 'color 240ms ease',
-                  }}
+        {/* 탭 — 회색 트랙 위 흰 알약이 미끄러진다 */}
+        <div className="shrink-0 px-5 pb-3 pt-1">
+          <div className="relative flex rounded-[12px] bg-[#F2F4F6] p-1">
+            <span
+              aria-hidden
+              className="absolute bottom-1 top-1 rounded-[10px] bg-white shadow-[0_1px_4px_rgba(0,0,0,0.06)] transition-transform duration-300"
+              style={{ left: 4, width: `calc((100% - 8px) / ${tabs.length})`, transform: `translateX(${tabIdx * 100}%)`, transitionTimingFunction: 'cubic-bezier(0.22, 1, 0.36, 1)' }}
+            />
+            {tabs.map((t) => {
+              const isActive = activeTab === t.key;
+              return (
+                <button
+                  key={t.key}
+                  type="button"
+                  onClick={() => setActiveTab(t.key)}
+                  className={`relative z-[1] flex h-10 flex-1 items-center justify-center gap-1 text-[15.5px] transition-colors ${isActive ? 'font-bold text-[#191F28]' : 'font-semibold text-[#8B95A1]'}`}
                 >
                   {t.label}
-                </span>
-                {t.hasValue && (
-                  <span
-                    className="absolute rounded-full"
-                    style={{
-                      top: 0,
-                      right: -8,
-                      width: 5,
-                      height: 5,
-                      backgroundColor: RED_DOT,
-                    }}
-                  />
-                )}
-              </button>
-            );
-          })}
+                  {t.hasValue && <span className="h-1.5 w-1.5 rounded-full bg-[#3180F7]" />}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
-        {/* Body — switches based on activeTab */}
-        <div className="flex-1 overflow-hidden border-t border-gray-100">
-          {/* ----- REGION ----- */}
+        {/* 본문 — 탭에 따라 바뀐다 */}
+        <div className="min-h-0 flex-1 overflow-hidden">
+          {/* ----- 지역 ----- */}
           {activeTab === 'region' && (
             <div className="flex h-full overflow-hidden">
-              <div
-                className="w-[108px] flex-shrink-0 overflow-y-auto"
-                style={{ backgroundColor: '#FAFAFB' }}
-              >
+              <div className="w-[112px] shrink-0 overflow-y-auto bg-[#F9FAFB] hide-scrollbar">
                 {provinceKeys.map((prov) => {
                   const isActive = activeProvince === prov;
                   const hasSelection = selectedRegions.some((r) => r.split(' ')[0] === prov);
                   return (
                     <button
                       key={prov}
+                      type="button"
                       onClick={() => setActiveProvince(prov)}
-                      className="w-full text-left py-4 px-4 relative"
-                      style={{
-                        backgroundColor: isActive ? SELECT_BG : 'transparent',
-                        color: isActive ? SELECT : '#A4ABBA',
-                        fontWeight: isActive ? 700 : 500,
-                        fontSize: 17,
-                      }}
+                      className={`flex w-full items-center gap-1.5 px-5 py-4 text-left text-[16.5px] transition-colors ${isActive ? 'bg-white font-bold text-[#191F28]' : 'text-[#8B95A1]'}`}
                     >
                       {prov}
-                      {hasSelection && (
-                        <span
-                          className="absolute rounded-full"
-                          style={{
-                            top: 16,
-                            right: 14,
-                            width: 6,
-                            height: 6,
-                            backgroundColor: RED_DOT,
-                          }}
-                        />
-                      )}
+                      {hasSelection && <span className="h-1.5 w-1.5 rounded-full bg-[#3180F7]" />}
                     </button>
                   );
                 })}
               </div>
-              <div className="flex-1 overflow-y-auto bg-white px-4">
-                <button
-                  onClick={onLocate}
-                  className="w-full flex items-center gap-3 py-3.5"
-                  style={{ color: SELECT }}
-                >
-                  <Locate size={18} />
-                  <span className="text-[16px] font-semibold">
-                    {locating ? '위치 찾는 중...' : '현재 위치로 설정'}
-                  </span>
+              <div className="flex-1 overflow-y-auto px-5">
+                <button type="button" onClick={onLocate} className="mt-2 flex h-11 w-full items-center justify-center gap-1.5 rounded-[12px] bg-[#EFF5FE] text-[15px] font-bold text-[#2F6FE4] transition-all active:scale-[0.98]">
+                  <MonoIcon name="pin-location" size={17} color="#2F6FE4" />
+                  {locating ? '위치 찾는 중…' : '현재 위치로 설정'}
                 </button>
                 {(PROVINCES[activeProvince] ?? []).map((district) => {
                   const fullKey = district === '전체' ? activeProvince : `${activeProvince} ${district}`;
                   const isChecked = selectedRegions.includes(fullKey);
                   const label = district === '전체' ? `${activeProvince} 전체` : district;
                   return (
-                    <button
-                      key={district}
-                      onClick={() => toggleRegion(fullKey)}
-                      className="w-full flex items-center gap-3 py-4"
-                    >
-                      <span
-                        className="flex items-center justify-center flex-shrink-0"
-                        style={{
-                          width: 24,
-                          height: 24,
-                          borderRadius: 5,
-                          backgroundColor: isChecked ? SELECT : 'transparent',
-                          border: isChecked ? 'none' : '1.5px solid #D1D5DB',
-                        }}
-                      >
-                        {isChecked && (
-                          <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={3}>
-                            <path d="M20 6 9 17l-5-5" strokeLinecap="round" strokeLinejoin="round" />
-                          </svg>
-                        )}
-                      </span>
-                      <span className="text-[17px]" style={{ color: '#2B313D' }}>
-                        {label}
-                      </span>
+                    <button key={district} type="button" onClick={() => toggleRegion(fullKey)} className="flex w-full items-center gap-3 py-3.5 text-left">
+                      {checkDot(isChecked)}
+                      <span className={`text-[17px] ${isChecked ? 'font-semibold text-[#2F6FE4]' : 'text-[#333D4B]'}`}>{label}</span>
                     </button>
                   );
                 })}
@@ -1130,94 +1103,26 @@ function FiltersBottomSheet({
             </div>
           )}
 
-          {/* ----- PRICE ----- (min/max stacked inputs + toggleable preset pills) */}
+          {/* ----- 가격 ----- 최소·최대 칸 + 미리 정한 칩(다시 누르면 해제) */}
           {activeTab === 'price' && (
-            <div className="h-full overflow-y-auto px-5 pt-5">
-              {/* Min input — top */}
-              <div className="flex flex-col gap-2.5">
-                <div
-                  className="flex items-center px-4"
-                  style={{
-                    height: 52,
-                    borderRadius: 12,
-                    backgroundColor: '#F9F9F9',
-                  }}
-                >
-                  <span className="text-[14px] flex-shrink-0 mr-3" style={{ color: '#A4ABBA' }}>
-                    최소
-                  </span>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    value={priceMin == null ? '' : priceMin.toLocaleString()}
-                    onChange={(e) => {
-                      const digits = e.target.value.replace(/[^\d]/g, '');
-                      setPriceMin(digits ? Number(digits) : null);
-                    }}
-                    placeholder="0"
-                    className="flex-1 outline-none text-[16px] bg-transparent text-right"
-                    style={{ color: '#2B313D' }}
-                  />
-                  <span className="text-[15px] ml-2" style={{ color: '#2B313D' }}>원</span>
-                </div>
-
-                {/* Max input — bottom */}
-                <div
-                  className="flex items-center px-4"
-                  style={{
-                    height: 52,
-                    borderRadius: 12,
-                    backgroundColor: '#F9F9F9',
-                  }}
-                >
-                  <span className="text-[14px] flex-shrink-0 mr-3" style={{ color: '#A4ABBA' }}>
-                    최대
-                  </span>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    value={priceMax == null ? '' : priceMax.toLocaleString()}
-                    onChange={(e) => {
-                      const digits = e.target.value.replace(/[^\d]/g, '');
-                      setPriceMax(digits ? Number(digits) : null);
-                    }}
-                    placeholder="제한 없음"
-                    className="flex-1 outline-none text-[16px] bg-transparent text-right"
-                    style={{ color: '#2B313D' }}
-                  />
-                  <span className="text-[15px] ml-2" style={{ color: '#2B313D' }}>원</span>
-                </div>
+            <div className="h-full overflow-y-auto px-5 pt-3">
+              <div className="flex flex-col gap-2">
+                {priceInput('최소', priceMin, setPriceMin, '0')}
+                {priceInput('최대', priceMax, setPriceMax, '제한 없음')}
               </div>
-
-              {/* Preset pills — clicking the active one again clears the filter */}
-              <div className="flex flex-wrap gap-2 mt-5">
+              <p className="mt-6 text-[15px] text-[#8B95A1]">자주 찾는 가격</p>
+              <div className="mt-2.5 flex flex-wrap gap-1.5">
                 {PRICE_PRESETS.map((preset) => {
                   const isActive = preset.min === priceMin && preset.max === priceMax;
                   return (
                     <button
                       key={preset.label}
+                      type="button"
                       onClick={() => {
-                        if (isActive) {
-                          // Toggle off — clear the filter
-                          setPriceMin(null);
-                          setPriceMax(null);
-                        } else {
-                          setPriceMin(preset.min);
-                          setPriceMax(preset.max);
-                        }
+                        if (isActive) { setPriceMin(null); setPriceMax(null); }
+                        else { setPriceMin(preset.min); setPriceMax(preset.max); }
                       }}
-                      className="rounded-full"
-                      style={{
-                        height: 40,
-                        paddingLeft: 16,
-                        paddingRight: 16,
-                        fontSize: 14,
-                        fontWeight: 600,
-                        whiteSpace: 'nowrap',
-                        backgroundColor: isActive ? SELECT : '#fff',
-                        color: isActive ? '#fff' : '#51535C',
-                        border: isActive ? '1px solid ' + SELECT : '1px solid #E5E7EB',
-                      }}
+                      className={`inline-flex h-9 items-center whitespace-nowrap rounded-[8px] px-3 text-[14.5px] font-semibold transition-all active:scale-[0.97] ${isActive ? 'bg-[#EFF5FE] text-[#2F6FE4]' : 'bg-[#F2F4F6] text-[#333D4B]'}`}
                     >
                       {preset.label}
                     </button>
@@ -1227,34 +1132,15 @@ function FiltersBottomSheet({
             </div>
           )}
 
-          {/* ----- BOOKING ----- (single-select) */}
+          {/* ----- 예약방법 ----- 하나만 */}
           {activeTab === 'booking' && (
             <div className="h-full overflow-y-auto px-5">
               {bookingMethods.map((m) => {
                 const isChecked = selectedBooking === m;
                 return (
-                  <button
-                    key={m}
-                    onClick={() => setSelectedBooking(m)}
-                    className="w-full flex items-center gap-3 py-4"
-                  >
-                    <span
-                      className="flex items-center justify-center flex-shrink-0"
-                      style={{
-                        width: 24,
-                        height: 24,
-                        borderRadius: 12,
-                        backgroundColor: isChecked ? SELECT : 'transparent',
-                        border: isChecked ? 'none' : '1.5px solid #D1D5DB',
-                      }}
-                    >
-                      {isChecked && (
-                        <span style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#fff' }} />
-                      )}
-                    </span>
-                    <span className="text-[17px]" style={{ color: '#2B313D' }}>
-                      {m}
-                    </span>
+                  <button key={m} type="button" onClick={() => setSelectedBooking(m)} className="flex w-full items-center gap-3 py-3.5 text-left">
+                    {checkDot(isChecked)}
+                    <span className={`text-[17px] ${isChecked ? 'font-semibold text-[#2F6FE4]' : 'text-[#333D4B]'}`}>{m}</span>
                   </button>
                 );
               })}
@@ -1262,8 +1148,15 @@ function FiltersBottomSheet({
           )}
         </div>
 
-        {/* Sheet closes via backdrop tap / drag-down / pulling 필터 선택 완료
-            isn't needed since every checkbox toggle commits immediately. */}
+        {/* 바닥 — 초기화 · 결과 보기(고르는 즉시 반영되고, 여기서는 닫기만) */}
+        <div className="flex shrink-0 gap-2 border-t border-[#F2F4F6] px-5 pt-3" style={{ paddingBottom: 'max(calc(env(safe-area-inset-bottom, 0px) + 12px), 16px)' }}>
+          <button type="button" onClick={resetAll} className="flex h-14 w-[34%] items-center justify-center rounded-[18px] bg-[#F2F4F6] text-[17px] font-bold text-[#4E5968] transition-all active:scale-[0.98]">
+            초기화
+          </button>
+          <button type="button" onClick={requestClose} className="flex h-14 flex-1 items-center justify-center rounded-[18px] bg-[#4A82EE] text-[17px] font-bold text-white transition-all active:scale-[0.98]">
+            결과 보기
+          </button>
+        </div>
       </div>
     </div>,
     document.body,
