@@ -133,6 +133,12 @@ const FILTER_ICON: Record<Filter, string> = {
   cancelled: '/icons/toss/x-circle-red.svg',
 };
 
+const PRODUCT_TAB_ICON: Record<ProductApprovalTab, string> = {
+  approved: '/icons/toss/check-done.svg',
+  pending: '/icons/toss/clock.svg',
+  rejected: '/icons/toss/x-circle-red.svg',
+};
+
 const HOME_TAB_LABEL: Record<HomeTab, string> = {
   reservations: '예약목록',
   products: '등록상품',
@@ -600,18 +606,24 @@ function ProductRequestCard({
   hospital,
   onEdit,
   onDelete,
+  onToggleHidden,
   index = 0,
 }: {
   product: ProductRow;
   hospital: HospitalRow | null;
   onEdit: (product: ProductRow) => void;
   onDelete: (product: ProductRow) => void;
+  /** 승인된 상품 가리기(true)·다시 보이기(false) — 지우지 않는다 */
+  onToggleHidden: (product: ProductRow, hide: boolean) => void;
   index?: number;
 }) {
   const meta = approvalMeta(product);
   const approvalStatus = effectiveApprovalStatus(product);
   const pending = approvalStatus.startsWith('pending_');
   const deleteDisabled = approvalStatus === 'pending_delete';
+  // 이미 승인된(고객에게 보였던) 상품 = 삭제 대신 가리기 · 상품마다 인사이트
+  const registered = approvalStatus === 'approved' || approvalStatus === 'pending_update';
+  const live = isActiveProduct(product);
   const productImage = normalizeProductImageUrl(product.image_url);
   const status = productCardStatus(product);
   const rating = Number(product.rating ?? 0);
@@ -672,15 +684,35 @@ function ProductRequestCard({
           <MonoIcon name="pencil" size={18} color="#6B7684" />
           {pending ? '요청수정' : '수정'}
         </button>
-        <button
-          type="button"
-          onClick={() => onDelete(product)}
-          disabled={deleteDisabled}
-          className="flex h-12 flex-1 items-center justify-center gap-1.5 rounded-[14px] bg-[#F2F4F6] text-[15px] font-semibold text-[#F04452] transition-all active:scale-[0.98] active:bg-[#E5E8EB] disabled:text-[#B0B8C1] disabled:active:scale-100"
-        >
-          <MonoIcon name="bin" size={18} color={deleteDisabled ? '#B0B8C1' : '#F04452'} />
-          {approvalStatus === 'pending_create' ? '요청취소' : deleteDisabled ? '삭제대기' : '삭제'}
-        </button>
+        {registered && (
+          <Link
+            href={`/partner/insights?product=${product.id}`}
+            className="flex h-12 flex-1 items-center justify-center gap-1.5 rounded-[14px] bg-[#EFF5FE] text-[15px] font-semibold text-[#2F6FE4] transition-all active:scale-[0.98]"
+          >
+            <MonoIcon name="chart-bar" size={18} color="#2F6FE4" />
+            인사이트
+          </Link>
+        )}
+        {registered ? (
+          <button
+            type="button"
+            onClick={() => onToggleHidden(product, live)}
+            className="flex h-12 flex-1 items-center justify-center gap-1.5 rounded-[14px] bg-[#F2F4F6] text-[15px] font-semibold text-[#333D4B] transition-all active:scale-[0.98] active:bg-[#E5E8EB]"
+          >
+            <MonoIcon name={live ? 'eye-off' : 'eye-on'} size={18} color="#6B7684" />
+            {live ? '가리기' : '다시 보이기'}
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => onDelete(product)}
+            disabled={deleteDisabled}
+            className="flex h-12 flex-1 items-center justify-center gap-1.5 rounded-[14px] bg-[#F2F4F6] text-[15px] font-semibold text-[#F04452] transition-all active:scale-[0.98] active:bg-[#E5E8EB] disabled:text-[#B0B8C1] disabled:active:scale-100"
+          >
+            <MonoIcon name="bin" size={18} color={deleteDisabled ? '#B0B8C1' : '#F04452'} />
+            {approvalStatus === 'pending_create' ? '요청취소' : deleteDisabled ? '삭제대기' : '삭제'}
+          </button>
+        )}
       </div>
     </article>
   );
@@ -705,6 +737,8 @@ export default function PartnerHomePage() {
   const [productApprovalTab, setProductApprovalTab] = useState<ProductApprovalTab>('approved');
   // 예약 상태 거르기 = 탭 옆 '⊞ 전체 ⌄' 버튼 → 프리티풀 툴팁 메뉴(.pop-menu)
   const [filterMenuAt, setFilterMenuAt] = useState<{ right: number; top: number } | null>(null);
+  // 등록 상품 승인 현황 = 제목 '등록 상품 ⌄' → 툴팁 메뉴(승인완료·승인대기·반려)
+  const [productMenuAt, setProductMenuAt] = useState<{ left: number; top: number } | null>(null);
   const thumbnailInputRef = useRef<HTMLInputElement>(null);
   const detailInputRef = useRef<HTMLInputElement>(null);
   const [productModal, setProductModal] = useState<{ mode: 'create' | 'edit'; product?: ProductRow } | null>(null);
@@ -730,13 +764,13 @@ export default function PartnerHomePage() {
   });
 
   useEffect(() => {
-    if (!filterMenuAt) return;
-    const close = () => setFilterMenuAt(null);
+    if (!filterMenuAt && !productMenuAt) return;
+    const close = () => { setFilterMenuAt(null); setProductMenuAt(null); };
     const key = (e: KeyboardEvent) => { if (e.key === 'Escape') close(); };
     window.addEventListener('scroll', close, { passive: true, capture: true });
     window.addEventListener('keydown', key);
     return () => { window.removeEventListener('scroll', close, { capture: true }); window.removeEventListener('keydown', key); };
-  }, [filterMenuAt]);
+  }, [filterMenuAt, productMenuAt]);
 
   const counts = useMemo(() => {
     return {
@@ -942,6 +976,38 @@ export default function PartnerHomePage() {
     }
   };
 
+  // 승인된 상품 가리기 — 대기·확정 예약이 남아 있으면 막고 예약목록으로 안내(서버도 같은 규칙)
+  const requestProductHide = (product: ProductRow, hide: boolean) => {
+    const open = reservations.filter((r) => r.product_id === product.id && (r.status === 'pending' || r.status === 'confirmed')).length;
+    if (hide && open > 0) {
+      showConfirm('아직 가릴 수 없어요', `진행 중인 예약이 ${open}건 있어요. 예약을 모두 취소해야 가릴 수 있어요.`, () => {
+        setHomeTab('reservations');
+        setFilter('all');
+      }, { confirmText: '예약 보러가기', cancelText: '닫기' });
+      return;
+    }
+    const run = async () => {
+      setProductSaving(true);
+      try {
+        const res = await fetch('/api/my-hospital/products/visibility', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: product.id, hidden: hide }),
+        });
+        const payload = await res.json().catch(() => ({}));
+        if (!res.ok) { showToast(payload.error || '상품 노출을 바꾸지 못했어요.'); return; }
+        showToast(hide ? '상품을 가렸어요. 고객 화면에 보이지 않아요.' : '상품을 다시 보이게 했어요.');
+        await refreshHospital({ force: true, showLoading: false });
+      } catch {
+        showToast('네트워크 오류가 발생했어요.');
+      } finally {
+        setProductSaving(false);
+      }
+    };
+    if (hide) showConfirm('상품 가리기', `${product.title}을(를) 고객 화면에서 가릴까요? 지우지 않고 언제든 다시 보이게 할 수 있어요.`, () => { void run(); }, { confirmText: '가리기' });
+    else void run();
+  };
+
   const requestProductDelete = (product: ProductRow) => {
     showConfirm('상품 삭제', `${product.title} 삭제를 요청할까요?`, async () => {
       setProductSaving(true);
@@ -1064,52 +1130,64 @@ export default function PartnerHomePage() {
       </div>
 
       {homeTab === 'products' ? (
-        <section>
-          {/* 제목 + 상품 추가 */}
-          <div className="flex items-center justify-between px-5 pb-3 pt-4">
-            <h2 className="text-[20px] font-bold tracking-[-0.4px] text-[#191F28]">등록 상품</h2>
-            <span className="min-w-0 flex-1" />
-            <Link
-              href="/partner/insights"
-              className="mr-1.5 inline-flex h-9 items-center gap-1 rounded-[8px] bg-[#F2F4F6] pl-2.5 pr-3 text-[14.5px] font-semibold text-[#333D4B] transition-all active:scale-[0.97]"
-            >
-              <MonoIcon name="chart-bar" size={16} color="#6B7684" />
-              인사이트
-            </Link>
+        <section className="pb-28">
+          {/* 제목 '등록 상품 ⌄' — 누르면 승인 현황 툴팁 메뉴 */}
+          <div className="px-5 pb-1 pt-4">
             <button
               type="button"
-              onClick={openProductCreate}
-              className="inline-flex h-9 items-center gap-1 rounded-[8px] bg-[#EFF5FE] pl-2.5 pr-3 text-[14.5px] font-bold text-[#2F6FE4] transition-all active:scale-[0.97]"
+              aria-haspopup="menu"
+              aria-expanded={!!productMenuAt}
+              onClick={(e) => {
+                const r = e.currentTarget.getBoundingClientRect();
+                setProductMenuAt(productMenuAt ? null : { left: Math.max(12, r.left), top: r.bottom + 6 });
+              }}
+              className="-ml-1 inline-flex items-center gap-1 rounded-[10px] px-1 py-1 transition-colors active:bg-[#F2F4F6]"
             >
-              <Plus size={16} strokeWidth={2.4} />
-              상품 추가
+              <span className="text-[22px] font-bold tracking-[-0.5px] text-[#191F28]">등록 상품</span>
+              {productApprovalTab !== 'approved' && (
+                <span className="ml-1 text-[22px] font-bold tracking-[-0.5px] text-[#3180F7]">{PRODUCT_APPROVAL_TAB_LABEL[productApprovalTab]}</span>
+              )}
+              <ChevronDown size={22} strokeWidth={2.4} className={`ml-0.5 text-[#8B95A1] transition-transform ${productMenuAt ? 'rotate-180' : ''}`} />
             </button>
+            <p className="mt-0.5 text-[15px] text-[#8B95A1]">
+              {PRODUCT_APPROVAL_TAB_LABEL[productApprovalTab]} {productApprovalCounts[productApprovalTab]}개
+            </p>
           </div>
+          {productMenuAt && typeof document !== 'undefined' && createPortal(
+            <>
+              <div className="fixed inset-0 z-[130]" onClick={() => setProductMenuAt(null)} aria-hidden="true" />
+              <div role="menu" aria-label="상품 승인 현황" className="pop-menu fixed z-[131]" style={{ left: productMenuAt.left, top: productMenuAt.top, transformOrigin: 'top left' }}>
+                {PRODUCT_APPROVAL_TABS.map((tab, i) => (
+                  <button
+                    key={tab}
+                    type="button"
+                    role="menuitemradio"
+                    aria-checked={productApprovalTab === tab}
+                    className="pop-menu-item"
+                    style={{ animationDelay: `${0.04 + i * 0.05}s`, ...(productApprovalTab === tab ? { color: '#2F6FE4', fontWeight: 700 } : {}) }}
+                    onClick={() => { setProductApprovalTab(tab); setProductMenuAt(null); }}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={PRODUCT_TAB_ICON[tab]} alt="" />
+                    <span className="flex-1">{PRODUCT_APPROVAL_TAB_LABEL[tab]}</span>
+                    <span className={`ml-4 tabular-nums text-[15px] ${productApprovalTab === tab ? 'text-[#2F6FE4]' : 'text-[#8B95A1]'}`}>{productApprovalCounts[tab]}</span>
+                  </button>
+                ))}
+              </div>
+            </>,
+            document.body,
+          )}
 
-          {/* 승인 현황 — 분할 탭 */}
-          <div className="px-5 pb-2">
-            <nav
-              className="pd-seg is-wide"
-              role="tablist"
-              aria-label="상품 승인 현황"
-              style={{ ['--n' as string]: PRODUCT_APPROVAL_TABS.length, ['--i' as string]: PRODUCT_APPROVAL_TABS.indexOf(productApprovalTab) }}
-            >
-              <span className="pd-seg-thumb" aria-hidden />
-              {PRODUCT_APPROVAL_TABS.map((tab) => (
-                <button
-                  key={tab}
-                  type="button"
-                  role="tab"
-                  aria-selected={productApprovalTab === tab}
-                  className={productApprovalTab === tab ? 'is-active' : undefined}
-                  onClick={() => setProductApprovalTab(tab)}
-                >
-                  {PRODUCT_APPROVAL_TAB_LABEL[tab]}
-                  <em className={`not-italic ${productApprovalTab === tab ? 'text-[#3180F7]' : 'text-[#B0B8C1]'}`}>{productApprovalCounts[tab]}</em>
-                </button>
-              ))}
-            </nav>
-          </div>
+          {/* 상품 추가 — 떠 있는 버튼(탭바 위) */}
+          <button
+            type="button"
+            onClick={openProductCreate}
+            className="fixed right-5 z-[60] inline-flex h-14 items-center gap-1.5 rounded-full bg-[#4A82EE] pl-5 pr-6 text-[16px] font-bold text-white shadow-[0_8px_24px_rgba(74,130,238,0.35)] transition-transform active:scale-[0.96] pc:right-10"
+            style={{ bottom: 'calc(env(safe-area-inset-bottom) + 88px)' }}
+          >
+            <Plus size={20} strokeWidth={2.6} />
+            상품 추가
+          </button>
 
           {products.length === 0 ? (
             <button type="button" onClick={openProductCreate} className="block w-full rounded-[16px] transition-colors active:bg-[#F9FAFB]">
@@ -1137,6 +1215,7 @@ export default function PartnerHomePage() {
                     hospital={hospital}
                     onEdit={openProductEdit}
                     onDelete={requestProductDelete}
+                    onToggleHidden={requestProductHide}
                     index={index}
                   />
                 </div>
