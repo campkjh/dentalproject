@@ -3,7 +3,9 @@
 //  · 고른 화면은 이 기기에 기억한다. 고객 화면이면 병원 주인이어도 isDoctor 를 끈다(홈이 /partner 로 보내지 않게).
 'use client';
 
-export const DUAL_MODE_USER_IDS = ['1e4cf602-84ab-4097-a24b-019e46012f83'];
+import { DUAL_MODE_USER_IDS } from './dual-mode-ids';
+
+export { DUAL_MODE_USER_IDS };
 
 export type AccountMode = 'doctor' | 'customer';
 const KEY = 'md-account-mode';

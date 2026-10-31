@@ -2,12 +2,13 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import type { Session, User as SupabaseUser } from '@supabase/supabase-js';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { createClient, hasSupabaseEnv } from './client';
 import { useStore } from '@/store';
 import { clearMyHospitalCache } from '@/lib/partner/my-hospital-cache';
 import { pickCustomerProfileAvatarBySeed } from '@/lib/customer-profile-avatars';
 import { isDualModeUser, readAccountMode } from '@/lib/account-mode';
+import { writeViewCookie } from '@/lib/view-cookie';
 
 type Ctx = {
   session: Session | null;
@@ -79,8 +80,12 @@ function shouldClearSession(error: unknown) {
 
 export function SessionProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const viewAsPartner = useStore((st) => st.isLoggedIn && st.isDoctor && !st.isAdmin);
+  // 의사 화면 쿠키 — proxy 가 '/' 를 곧장 /partner 로 보내는 데 쓴다
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(() => hasSupabaseEnv());
+  useEffect(() => { if (!loading) writeViewCookie(viewAsPartner); }, [viewAsPartner, loading]);
   const mountedRef = useRef(false);
   const sessionRef = useRef<Session | null>(null);
   const syncSeqRef = useRef(0);
@@ -280,7 +285,14 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       if (event === 'INITIAL_SESSION') return;
       window.setTimeout(() => {
         const hasExistingSession = Boolean(sessionRef.current?.user);
-        if (mounted) void syncSession(s, { showLoading: !hasExistingSession });
+        if (!mounted) return;
+        void syncSession(s, { showLoading: !hasExistingSession }).then(({ isDoctor, isAdmin }) => {
+          // 새로 로그인한 의사(네이티브 카카오·애플 등 화면 이동 없는 로그인) — 고객 화면에 남지 말고 곧장 의사 홈으로
+          if (!mounted || hasExistingSession || event !== 'SIGNED_IN' || isAdmin || !isDoctor) return;
+          const path = window.location.pathname;
+          if (path.startsWith('/partner') || path.startsWith('/admin') || path.startsWith('/login') || path.startsWith('/hospital/register')) return;
+          router.replace('/partner');
+        });
       }, 0);
     });
 
@@ -310,7 +322,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       window.clearInterval(recheckTimer);
     };
 
-  }, [supabase, recoverSession, syncSession]);
+  }, [supabase, recoverSession, syncSession, router]);
 
   // 네이티브 카카오 SDK 로그인 브리지 — 안드로이드 WebView 앱이 카카오톡 앱-투-앱
   // 로그인으로 받은 OIDC id_token을 window.onKakaoNativeLogin(idToken)으로 넘기면,
