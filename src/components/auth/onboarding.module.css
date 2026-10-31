@@ -1,10 +1,14 @@
-/* 로그인 온보딩 — 토스 계열 앱 온보딩 견본. 글자 굵기 최대 700 */
+/* 로그인 온보딩 — 261101 상품 상세 톤(테두리 없음·회색 면·h56 r18 버튼) + 파트너 로그인 결 배경(보라·파랑 빛번짐). 글자 굵기 최대 700 */
 .root {
   --ob-blue: #3180f7;
-  --ob-blue-press: #2272eb;
+  --ob-btn: #4a82ee;
+  --ob-btn-press: #3f74db;
   --ob-strong: #191f28;
-  --ob-weak: #6b7684;
-  --ob-border: #e5e8eb;
+  --ob-text: #333d4b;
+  --ob-weak: #4e5968;
+  --ob-label: #8b95a1;
+  --ob-gray: #f2f4f6;
+  --ob-gray-press: #e5e8eb;
   --ob-dot: #d1d6db;
   --ob-ease: cubic-bezier(.22, 1, .36, 1);
   position: fixed;
@@ -29,7 +33,7 @@
   width: 100%;
   height: 100%;
   overflow: hidden;
-  background: linear-gradient(180deg, #e8f1ff 0%, #f4f8ff 45%, #fff 70%);
+  background: linear-gradient(165deg, #ecebff 0%, #e9f1ff 38%, #f6f8ff 62%, #fff 100%);
   outline: none;
   animation: obRise .42s var(--ob-ease) both;
 }
@@ -116,14 +120,38 @@
 .copy[data-active] .title { animation: obCopy .5s var(--ob-ease) .12s both; }
 .copy[data-active] .desc { animation: obCopy .5s var(--ob-ease) .2s both; }
 
-/* ── 닫기 ── */
-.close {
+/* ── 빛번짐(파트너 로그인 결) — 그림 위에 곱하기로 얹어 옅은 보라·파랑을 입힌다 ── */
+.blob {
+  position: absolute;
+  z-index: 2;
+  border-radius: 50%;
+  filter: blur(48px);
+  mix-blend-mode: multiply;
+  pointer-events: none;
+  animation: obBlob 14s ease-in-out infinite alternate;
+}
+.blobA { top: -64px; right: -96px; width: 288px; height: 288px; background: rgba(220, 211, 255, .7); }
+.blobB { top: 176px; left: -80px; width: 256px; height: 256px; background: rgba(196, 216, 255, .55); animation-delay: -4s; }
+.blobC { top: 340px; right: -64px; width: 224px; height: 224px; background: rgba(228, 219, 255, .6); animation-delay: -8s; }
+
+/* ── 머리: 뒤로 · 브랜드 ── */
+.topBar {
   position: absolute;
   z-index: 3;
-  top: calc(env(safe-area-inset-top, 0px) + 10px);
-  right: 12px;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: calc(env(safe-area-inset-top, 0px) + 56px);
+  padding: env(safe-area-inset-top, 0px) 8px 0;
+  pointer-events: none;
+}
+.back {
   width: 44px;
   height: 44px;
+  flex: none;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -132,13 +160,38 @@
   background: transparent;
   color: var(--ob-strong);
   cursor: pointer;
+  pointer-events: auto;
   -webkit-tap-highlight-color: transparent;
   transition: background-color .15s;
 }
-.close:active { background: rgba(25, 31, 40, .06); }
+.back:active { background: rgba(25, 31, 40, .06); }
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -.3px;
+  color: var(--ob-text);
+  animation: obCopy .5s var(--ob-ease) .1s both;
+}
+.brandMark {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(47, 111, 228, .12);
+}
+.brandMark img { width: 20px; height: 20px; object-fit: contain; }
+.topSpacer { width: 44px; flex: none; }
 
 /* ── 페이지 점 ── */
 .dots {
+  position: relative;
+  z-index: 3;
   flex: none;
   display: flex;
   justify-content: center;
@@ -166,24 +219,27 @@
   margin: -4px 0 0 -4px;
   border-radius: 50%;
   background: var(--ob-dot);
-  transition: background-color .3s ease, transform .3s var(--ob-ease);
+  transition: background-color .3s ease, width .3s var(--ob-ease), margin .3s var(--ob-ease);
 }
-.dot[data-active]::before { background: var(--ob-blue); transform: scale(1.06); }
+.dot[data-active]::before { width: 18px; margin-left: -9px; border-radius: 4px; background: var(--ob-btn); }
 
-/* ── 알약 버튼 ── */
+/* ── 큰 버튼(h56 r18) ── */
 .actions {
+  position: relative;
+  z-index: 3;
   flex: none;
   display: flex;
-  flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   padding: 6px 20px calc(env(safe-area-inset-bottom, 0px) + 16px);
   background: #fff;
 }
 .primary,
 .secondary {
-  width: 100%;
+  flex: 1 1 0;
+  min-width: 0;
   height: 56px;
-  border-radius: 999px;
+  border: 0;
+  border-radius: 18px;
   font-family: inherit;
   font-size: 17px;
   font-weight: 700;
@@ -192,10 +248,10 @@
   -webkit-tap-highlight-color: transparent;
   transition: transform .08s ease, background-color .15s ease;
 }
-.primary { border: 0; background: var(--ob-blue); color: #fff; }
-.primary:active { transform: scale(.985); background: var(--ob-blue-press); }
-.secondary { border: 1px solid var(--ob-border); background: #fff; color: var(--ob-strong); }
-.secondary:active { transform: scale(.985); background: #f9fafb; }
+.primary { background: var(--ob-btn); color: #fff; }
+.primary:active { transform: scale(.985); background: var(--ob-btn-press); }
+.secondary { background: var(--ob-gray); color: var(--ob-weak); }
+.secondary:active { transform: scale(.985); background: var(--ob-gray-press); }
 
 /* ── 로그인 시트 ── */
 .sheetBackdrop {
@@ -229,7 +285,7 @@
 }
 .sheetTitle {
   margin: 0 4px;
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 700;
   line-height: 1.4;
   letter-spacing: -.4px;
@@ -239,7 +295,7 @@
   margin: -4px 4px 12px;
   font-size: 15px;
   line-height: 1.5;
-  color: var(--ob-weak);
+  color: var(--ob-label);
 }
 .kakao,
 .email {
@@ -250,7 +306,7 @@
   justify-content: center;
   gap: 8px;
   border: 0;
-  border-radius: 999px;
+  border-radius: 18px;
   font-family: inherit;
   font-size: 17px;
   font-weight: 700;
@@ -259,11 +315,11 @@
   -webkit-tap-highlight-color: transparent;
   transition: transform .08s ease, filter .15s ease, background-color .15s ease;
 }
-.kakao { background: #fee500; color: #191600; }
+.kakao { background: #fee500; color: #191919; }
 .kakao:active:not(:disabled) { transform: scale(.985); filter: brightness(.97); }
 .kakao:disabled { opacity: .6; cursor: default; }
-.email { background: #f2f4f6; color: #333d4b; }
-.email:active { transform: scale(.985); background: #e5e8eb; }
+.email { background: var(--ob-gray); color: var(--ob-weak); }
+.email:active { transform: scale(.985); background: var(--ob-gray-press); }
 .sheetCancel {
   align-self: center;
   margin-top: 2px;
@@ -283,6 +339,7 @@
 @keyframes obSink { from { opacity: 1; transform: none; } to { opacity: 0; transform: translate3d(0, 40px, 0); } }
 @keyframes obCopy { from { opacity: 0; transform: translate3d(0, 12px, 0); } to { opacity: 1; transform: none; } }
 @keyframes obSheetUp { from { transform: translate3d(0, 100%, 0); } to { transform: none; } }
+@keyframes obBlob { 0% { transform: translate3d(0, 0, 0) scale(1); } 50% { transform: translate3d(18px, 14px, 0) scale(1.08); } 100% { transform: translate3d(-14px, -10px, 0) scale(.96); } }
 @keyframes obSheetDown { from { transform: none; } to { transform: translate3d(0, 100%, 0); } }
 
 /* ── PC: 화면 가운데 폰 비율 카드 ── */
@@ -300,11 +357,11 @@
     animation-name: obPop;
   }
   .root[data-leaving] .card { animation-name: obPopOut; }
-  .close { top: 12px; }
-  .close:hover { background: rgba(25, 31, 40, .06); }
-  .primary:hover { background: var(--ob-blue-press); }
-  .secondary:hover { background: #f9fafb; }
-  .email:hover { background: #e5e8eb; }
+  .topBar { height: 60px; padding-top: 4px; }
+  .back:hover { background: rgba(25, 31, 40, .06); }
+  .primary:hover { background: var(--ob-btn-press); }
+  .secondary:hover,
+  .email:hover { background: var(--ob-gray-press); }
   .sheet { border-radius: 24px 24px 0 0; padding-bottom: 20px; }
   .actions { padding-bottom: 20px; }
 }
@@ -321,6 +378,8 @@
   .sheet,
   .sheetBackdrop[data-leaving] .sheet,
   .copy[data-active] .title,
-  .copy[data-active] .desc { animation: none; }
+  .copy[data-active] .desc,
+  .blob,
+  .brand { animation: none; }
   .track { transition: none; }
 }

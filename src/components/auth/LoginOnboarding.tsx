@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type PointerEvent as ReactPointerEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
-import { X } from 'lucide-react';
+import { ChevronLeft } from 'lucide-react';
 import { useSession } from '@/lib/supabase/SessionProvider';
 import { useStore } from '@/store';
 import { startNativeKakaoLogin } from './kakao-login';
@@ -161,6 +161,12 @@ export default function LoginOnboarding({ onClose }: { onClose: () => void }) {
     setDrag(null);
   };
 
+  // 뒤로 = 시트가 떠 있으면 시트만 닫고, 아니면 온보딩 닫기(Esc 와 같음)
+  const goBack = () => {
+    if (sheet === 'open') closeSheet();
+    else if (sheet === 'closed') close();
+  };
+
   const goSignup = () => {
     router.push(`/login?mode=signup&next=${encodeURIComponent(currentPath())}`);
   };
@@ -237,9 +243,25 @@ export default function LoginOnboarding({ onClose }: { onClose: () => void }) {
           </div>
         </div>
 
-        <button type="button" className={styles.close} aria-label="닫기" onClick={close}>
-          <X size={26} strokeWidth={2} />
-        </button>
+
+        {/* 옅은 보라·파랑 빛번짐 — 그림 위에 곱하기로 얹혀 천천히 떠다닌다 */}
+        <span aria-hidden="true" className={`${styles.blob} ${styles.blobA}`} />
+        <span aria-hidden="true" className={`${styles.blob} ${styles.blobB}`} />
+        <span aria-hidden="true" className={`${styles.blob} ${styles.blobC}`} />
+
+        <div className={styles.topBar}>
+          <button type="button" className={styles.back} aria-label="뒤로" onClick={goBack}>
+            <ChevronLeft size={28} strokeWidth={2} />
+          </button>
+          <span className={styles.brand}>
+            <span className={styles.brandMark}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/icons/brand-logo.png" alt="" />
+            </span>
+            마이닥
+          </span>
+          <span className={styles.topSpacer} aria-hidden="true" />
+        </div>
 
         <div className={styles.dots} role="tablist" aria-label="소개 넘기기">
           {SLIDES.map((slide, i) => (
@@ -257,8 +279,8 @@ export default function LoginOnboarding({ onClose }: { onClose: () => void }) {
         </div>
 
         <div className={styles.actions}>
-          <button type="button" className={styles.primary} onClick={goSignup}>회원가입</button>
-          <button type="button" className={styles.secondary} onClick={() => setSheet('open')}>로그인</button>
+          <button type="button" className={`${styles.secondary} qd-a-item`} style={{ animationDelay: '.18s' }} onClick={goSignup}>회원가입</button>
+          <button type="button" className={`${styles.primary} qd-a-item`} style={{ animationDelay: '.24s' }} onClick={() => setSheet('open')}>로그인</button>
         </div>
 
         {sheet !== 'closed' && (
