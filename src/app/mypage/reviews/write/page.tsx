@@ -2,7 +2,8 @@
 
 import { useRef, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Camera, Star, X, Sparkles, Check, Stethoscope } from 'lucide-react';
+import { X } from 'lucide-react';
+import MonoIcon from '@/components/common/MonoIcon';
 import TopBar from '@/components/common/TopBar';
 import { useStore } from '@/store';
 import Avatar from '@/components/common/Avatar';
@@ -159,146 +160,151 @@ ${hasAspectFeedback && aspects.kindness >= 4 ? '원장님과 스태프분들의 
     router.push('/mypage/reviews');
   };
 
+  const canSubmit = rating > 0 && content.length >= 50;
+  const RATING_LABELS = ['별로예요', '그저 그래요', '괜찮아요', '좋아요', '최고예요'];
+  const selectedDoctor = doctors.find((d) => d.id === selectedDoctorId);
+
   return (
     <div className="h-[100dvh] bg-white w-full max-w-[500px] lg:max-w-[560px] mx-auto flex flex-col overflow-hidden">
-      {/* 머리 — 프리티풀 퀵매칭 어법(공통 TopBar) */}
+      {/* 머리 — 공통 TopBar(뒤로 + 큰 제목) */}
       <div className="flex-shrink-0">
-        <TopBar title="리뷰 작성" />
+        <TopBar title="리뷰 쓰기" />
       </div>
 
       {/* Scrollable content */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden pb-4 w-full">
-        {/* Product header */}
-        <div className="px-2.5 py-3 flex items-center gap-3 border-b border-gray-100">
-          <div className="w-14 h-14 rounded-xl bg-gray-100 overflow-hidden flex items-center justify-center flex-shrink-0">
-            <img src={productImage} alt="" className="w-full h-full object-cover" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-[11px] text-gray-500 leading-tight">{product.hospitalName}</p>
-            <p className="text-[14px] font-bold text-gray-900 line-clamp-1 leading-tight mt-0.5">
-              {product.title}
-            </p>
+      <div className="flex-1 overflow-y-auto overflow-x-hidden pb-6 w-full">
+        {/* 상품 요약 줄 — 예약 카드 결 */}
+        <div className="qd-a-item px-5 pt-2 pb-6" style={{ animationDelay: '.05s' }}>
+          <div className="flex items-center gap-3.5 rounded-[16px] bg-[#F2F4F6] p-3">
+            <div className="h-14 w-14 shrink-0 overflow-hidden rounded-[14px] bg-white">
+              <img src={productImage} alt="" className="h-full w-full object-cover" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="line-clamp-1 text-[16px] font-bold leading-[1.35] tracking-[-0.3px] text-[#191F28]">
+                {product.title}
+              </p>
+              <p className="mt-0.5 line-clamp-1 text-[14px] text-[#8B95A1]">{product.hospitalName}</p>
+            </div>
           </div>
         </div>
 
-        <div className="stagger-children">
-          {/* 별점 */}
-          <Section title="이 시술에 만족하셨나요?">
-            <div className="flex justify-center gap-2">
-              {[1, 2, 3, 4, 5].map((v) => (
+        {/* 별점 */}
+        <Section title="이 시술, 만족하셨나요?" delay={0.1}>
+          <div className="flex justify-center gap-1.5">
+            {[1, 2, 3, 4, 5].map((v) => {
+              const on = v <= rating;
+              return (
                 <button
                   key={v}
+                  type="button"
                   onClick={() => setRating(v)}
-                  className="p-1 btn-press"
-                  style={{ transition: 'transform 160ms cubic-bezier(0.34, 1.56, 0.64, 1)' }}
+                  aria-label={`${v}점`}
+                  className="flex h-14 w-14 items-center justify-center rounded-[14px] active:bg-[#F9FAFB]"
                 >
-                  <Star
-                    size={38}
-                    fill={v <= rating ? '#FBBF24' : 'transparent'}
-                    stroke={v <= rating ? '#FBBF24' : '#D1D5DB'}
-                    strokeWidth={2}
-                    style={{
-                      transform: v <= rating ? 'scale(1.1)' : 'scale(1)',
-                      transition: 'all 220ms cubic-bezier(0.34, 1.56, 0.64, 1)',
-                    }}
-                  />
-                </button>
-              ))}
-            </div>
-            {rating > 0 && (
-              <p className="text-center text-[13px] font-bold text-[#8037FF] mt-1 fade-in-up">
-                {['아쉬워요', '괜찮아요', '좋아요', '만족해요', '최고예요'][rating - 1]}
-              </p>
-            )}
-          </Section>
-
-          {/* Aspect ratings */}
-          {rating > 0 && (
-            <Section title="세부 평가 (선택)">
-              <div className="space-y-3">
-                {ASPECTS.map((a) => (
-                  <div
-                    key={a.key}
-                    className="flex items-center gap-3 bg-gray-50 rounded-xl px-3 py-2.5"
+                  <span
+                    key={`${v}-${on}-${rating}`}
+                    className="inline-flex"
+                    style={on ? { animation: `heartPop .44s cubic-bezier(.34,1.56,.64,1) ${(v - 1) * 0.04}s both` } : undefined}
                   >
-                    <span className="text-lg">{a.emoji}</span>
-                    <span className="flex-1 text-[13px] font-semibold text-gray-800">
-                      {a.label}
-                    </span>
+                    <MonoIcon name="star" size={42} color={on ? '#FFC342' : '#E5E8EB'} />
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          <p
+            key={rating}
+            className={`mt-2 text-center text-[16px] font-bold ${rating > 0 ? 'text-[#3180F7] fade-in-up' : 'text-[#B0B8C1]'}`}
+          >
+            {rating > 0 ? RATING_LABELS[rating - 1] : '별을 눌러 평가해 주세요'}
+          </p>
+        </Section>
+
+        {/* 세부 평가 */}
+        {rating > 0 && (
+          <>
+            <Band />
+            <Section title="세부 평가" right={<OptionalTag />} delay={0}>
+              <div className="space-y-1">
+                {ASPECTS.map((a) => (
+                  <div key={a.key} className="flex min-h-12 items-center gap-3 py-1">
+                    <span className="flex-1 text-[17px] text-[#333D4B]">{a.label}</span>
                     <div className="flex gap-0.5">
-                      {[1, 2, 3, 4, 5].map((v) => (
-                        <button
-                          key={v}
-                          onClick={() =>
-                            setAspects((p) => ({ ...p, [a.key]: p[a.key] === v ? 0 : v }))
-                          }
-                          className="p-0.5"
-                        >
-                          <Star
-                            size={18}
-                            fill={v <= aspects[a.key] ? '#FBBF24' : 'transparent'}
-                            stroke={v <= aspects[a.key] ? '#FBBF24' : '#D1D5DB'}
-                            strokeWidth={2}
-                          />
-                        </button>
-                      ))}
+                      {[1, 2, 3, 4, 5].map((v) => {
+                        const on = v <= aspects[a.key];
+                        return (
+                          <button
+                            key={v}
+                            type="button"
+                            onClick={() =>
+                              setAspects((p) => ({ ...p, [a.key]: p[a.key] === v ? 0 : v }))
+                            }
+                            aria-label={`${a.label} ${v}점`}
+                            className="flex h-9 w-9 items-center justify-center"
+                          >
+                            <span
+                              key={`${v}-${on}`}
+                              className="inline-flex"
+                              style={on ? { animation: 'heartPop .4s cubic-bezier(.34,1.56,.64,1) both' } : undefined}
+                            >
+                              <MonoIcon name="star" size={24} color={on ? '#FFC342' : '#E5E8EB'} />
+                            </span>
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
                 ))}
               </div>
             </Section>
-          )}
+          </>
+        )}
 
-          {/* Photos */}
-          <Section
-            title="시술 사진"
-            right={
-              <span className="text-[11px] text-gray-400">리뷰 작성 혜택 +500P</span>
-            }
-          >
-            {/* Mode tabs — sliding pill indicator */}
-            <div
-              className="relative flex mb-3 bg-gray-100 rounded-full p-1"
-              style={{ height: 38 }}
-            >
-              <span
-                aria-hidden
-                className="absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-full bg-white"
-                style={{
-                  left: photoMode === 'before-after' ? 4 : 'calc(50%)',
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-                  transition: 'left 360ms cubic-bezier(0.22, 1, 0.36, 1)',
-                }}
-              />
-              <button
-                onClick={() => setPhotoMode('before-after')}
-                className="relative z-10 flex-1 text-[12px] font-semibold"
-                style={{
-                  color: photoMode === 'before-after' ? '#2B313D' : '#9CA3AF',
-                  transition: 'color 360ms cubic-bezier(0.22, 1, 0.36, 1)',
-                }}
-              >
-                전/후 비교
-              </button>
-              <button
-                onClick={() => setPhotoMode('single')}
-                className="relative z-10 flex-1 text-[12px] font-semibold"
-                style={{
-                  color: photoMode === 'single' ? '#2B313D' : '#9CA3AF',
-                  transition: 'color 360ms cubic-bezier(0.22, 1, 0.36, 1)',
-                }}
-              >
-                단일 사진
-              </button>
-            </div>
+        <Band />
 
-            {/* Directional slide based on tab direction */}
-            <div className="overflow-hidden">
+        {/* 사진 */}
+        <Section
+          title="시술 사진"
+          right={
+            <span className="inline-flex h-6 items-center rounded-[6px] bg-[#E8F3FF] px-2 text-[13.5px] font-semibold text-[#3180F7]">
+              +500P
+            </span>
+          }
+          delay={0.15}
+        >
+          {/* 세그먼트 탭 */}
+          <div className="relative mb-4 flex h-11 rounded-[12px] bg-[#F2F4F6] p-1">
+            <span
+              aria-hidden
+              className="absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-[10px] bg-white shadow-[0_1px_4px_rgba(0,0,0,0.06)]"
+              style={{
+                left: photoMode === 'before-after' ? 4 : '50%',
+                transition: 'left 360ms cubic-bezier(0.22, 1, 0.36, 1)',
+              }}
+            />
+            {([
+              ['before-after', '전후 비교'],
+              ['single', '사진 한 장'],
+            ] as const).map(([mode, label]) => (
+              <button
+                key={mode}
+                type="button"
+                onClick={() => setPhotoMode(mode)}
+                className={`relative z-10 flex-1 text-[15px] transition-colors ${
+                  photoMode === mode ? 'font-bold text-[#191F28]' : 'font-semibold text-[#8B95A1]'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          <div className="overflow-hidden">
             {photoMode === 'before-after' ? (
-              <div key="ba" className="grid grid-cols-2 gap-2 tab-slide-left">
+              <div key="ba" className="grid grid-cols-2 gap-2.5 tab-slide-left">
                 <PhotoSlot
-                  label="BEFORE"
-                  badgeColor="#2B313D"
+                  label="시술 전"
+                  badgeColor="#4E5968"
                   image={beforeImage}
                   date={beforeDate}
                   onPick={() => pickFile(setBeforeImage)}
@@ -309,8 +315,8 @@ ${hasAspectFeedback && aspects.kindness >= 4 ? '원장님과 스태프분들의 
                   onDateChange={setBeforeDate}
                 />
                 <PhotoSlot
-                  label="AFTER"
-                  badgeColor="#8037FF"
+                  label="시술 후"
+                  badgeColor="#2F6FE4"
                   image={afterImage}
                   date={afterDate}
                   onPick={() => pickFile(setAfterImage)}
@@ -325,7 +331,7 @@ ${hasAspectFeedback && aspects.kindness >= 4 ? '원장님과 스태프분들의 
               <div key="single" className="tab-slide-right">
                 <PhotoSlot
                   label="사진"
-                  badgeColor="#8037FF"
+                  badgeColor="#2F6FE4"
                   image={singleImage}
                   date={singleDate}
                   onPick={() => pickFile(setSingleImage)}
@@ -338,273 +344,262 @@ ${hasAspectFeedback && aspects.kindness >= 4 ? '원장님과 스태프분들의 
                 />
               </div>
             )}
-            </div>
+          </div>
 
-            <label className="mt-3 flex items-start gap-2 rounded-lg bg-gray-50 px-3 py-2.5 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={mosaicRequested}
-                onChange={(e) => setMosaicRequested(e.target.checked)}
-                className="w-4 h-4 mt-0.5 flex-shrink-0 accent-[#8037FF]"
-              />
-              <div className="flex-1">
-                <p className="text-[12px] font-semibold text-gray-900">모자이크 처리 요청</p>
-                <p className="text-[11px] text-gray-500 mt-0.5 leading-snug">
-                  눈·문신·기타 개인 식별 부위를 운영팀에서 검토 후 모자이크 처리해드립니다.
-                </p>
-              </div>
-            </label>
-          </Section>
-
-          {/* 담당 의사 */}
-          <Section
-            title="담당 의사"
-            right={<span className="text-[11px] text-gray-400">선택</span>}
+          <button
+            type="button"
+            onClick={() => setMosaicRequested(!mosaicRequested)}
+            aria-pressed={mosaicRequested}
+            className="mt-4 flex w-full items-start gap-3 rounded-[14px] bg-[#F2F4F6] px-4 py-3.5 text-left active:bg-[#EDEFF2]"
           >
-            {doctors.length === 0 ? (
-              <p className="text-[12px] text-gray-400 text-center py-4">
-                등록된 의사가 없습니다.
-              </p>
-            ) : (
-              <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-1">
-                {doctors.map((d) => {
-                  const selected = selectedDoctorId === d.id;
-                  return (
-                    <button
-                      key={d.id}
-                      onClick={() => setSelectedDoctorId(selected ? '' : d.id)}
-                      className="flex-shrink-0 flex flex-col items-center gap-1.5 card-press relative"
-                      style={{ width: 72 }}
+            <span key={String(mosaicRequested)} className={`chk-dot mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${mosaicRequested ? 'is-on bg-[#2F6FE4]' : 'is-off border-2 border-[#E5E8EB] bg-white'}`}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={mosaicRequested ? '#fff' : '#D1D6DB'} strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-[16px] font-semibold text-[#333D4B]">모자이크 처리 요청</span>
+              <span className="mt-0.5 block text-[14px] leading-[1.5] text-[#6B7684]">
+                눈·문신 등 얼굴을 알아볼 수 있는 부위는 운영팀이 확인하고 가려 드려요.
+              </span>
+            </span>
+          </button>
+        </Section>
+
+        <Band />
+
+        {/* 담당 의사 */}
+        <Section title="담당 의사" right={<OptionalTag />} delay={0.2}>
+          {doctors.length === 0 ? (
+            <div className="flex items-center gap-2.5 rounded-[14px] bg-[#F2F4F6] px-4 py-3.5">
+              <MonoIcon name="info-circle" size={18} color="#B0B8C1" />
+              <p className="text-[14px] leading-[1.5] text-[#4E5968]">등록된 의사가 없어요.</p>
+            </div>
+          ) : (
+            <div className="-mx-5 flex gap-1 overflow-x-auto px-4 pb-1 hide-scrollbar">
+              {doctors.map((d) => {
+                const selected = selectedDoctorId === d.id;
+                return (
+                  <button
+                    key={d.id}
+                    type="button"
+                    onClick={() => setSelectedDoctorId(selected ? '' : d.id)}
+                    className="relative flex w-[76px] shrink-0 flex-col items-center gap-1.5 rounded-[16px] py-1.5 active:bg-[#F9FAFB]"
+                  >
+                    <div
+                      className="relative flex h-[60px] w-[60px] items-center justify-center overflow-hidden rounded-full"
+                      style={{
+                        backgroundColor: selected ? '#EFF5FE' : '#F2F4F6',
+                        transform: selected ? 'scale(1.05)' : 'scale(1)',
+                        transition: 'all 240ms cubic-bezier(0.22, 1, 0.36, 1)',
+                      }}
                     >
-                      <div
-                        className="relative w-[60px] h-[60px] rounded-full flex items-center justify-center overflow-hidden"
-                        style={{
-                          backgroundColor: selected ? '#F4EFFF' : '#F3F4F6',
-                          boxShadow: selected
-                            ? '0 4px 12px rgba(49,130,246,0.2)'
-                            : 'none',
-                          transform: selected ? 'scale(1.05)' : 'scale(1)',
-                          transition:
-                            'all 240ms cubic-bezier(0.22, 1, 0.36, 1)',
-                        }}
-                      >
-                        {d.profileImage ? (
-                          <img
-                            src={d.profileImage}
-                            alt={d.name}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <Avatar role="doctor" seed={d.id} size={52} />
-                        )}
-                        {selected && (
-                          <span
-                            className="absolute inset-0 rounded-full border-2 check-pop"
-                            style={{ borderColor: '#8037FF' }}
-                          />
-                        )}
-                      </div>
-                      <p
-                        className="text-[12px] font-semibold line-clamp-1 w-full text-center"
-                        style={{ color: selected ? '#8037FF' : '#2B313D' }}
-                      >
-                        {d.name}
-                      </p>
-                      {d.isOwner && (
-                        <span className="text-[9px] text-gray-500 bg-gray-100 rounded px-1 py-0.5 leading-none">
-                          대표원장
-                        </span>
+                      {d.profileImage ? (
+                        <img src={d.profileImage} alt={d.name} className="h-full w-full object-cover" />
+                      ) : (
+                        <Avatar role="doctor" seed={d.id} size={52} />
                       )}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-            {selectedDoctorId && (
-              <div className="mt-2 flex items-center gap-1.5 rounded-lg bg-[#F4EFFF] px-3 py-2 fade-in-up">
-                <Stethoscope size={12} className="text-[#8037FF]" />
-                <p className="text-[11px] text-[#8037FF] font-semibold">
-                  {doctors.find((d) => d.id === selectedDoctorId)?.name} 원장
-                  지정하여 리뷰합니다.
-                </p>
-              </div>
-            )}
-          </Section>
-
-          {/* 시술 정보 */}
-          <Section title="시술 정보">
-            <Field label="시술받은 시기">
-              <div className="flex flex-wrap gap-1.5 mb-2">
-                {TIME_OPTIONS.map((t) => {
-                  const sel = treatmentTiming === t;
-                  return (
-                    <button
-                      key={t}
-                      onClick={() => {
-                        setTreatmentTiming(sel ? '' : t);
-                        if (!sel) setTreatmentDate('');
-                      }}
-                      className="px-3 py-1.5 rounded-full text-[12px] font-semibold"
-                      style={{
-                        backgroundColor: sel ? '#F4EFFF' : '#fff',
-                        color: sel ? '#8037FF' : '#51535C',
-                        border: `1px solid ${sel ? '#8037FF' : '#E5E7EB'}`,
-                        transition: 'all 200ms ease',
-                      }}
+                      {selected && (
+                        <span className="absolute inset-0 rounded-full ring-[2.5px] ring-inset ring-[#2F6FE4] check-pop" />
+                      )}
+                    </div>
+                    <p
+                      className={`w-full line-clamp-1 text-center text-[14px] ${
+                        selected ? 'font-bold text-[#2F6FE4]' : 'font-semibold text-[#333D4B]'
+                      }`}
                     >
-                      {t}
-                    </button>
-                  );
-                })}
-              </div>
-              <input
-                type="date"
-                value={treatmentDate}
-                onChange={(e) => {
-                  setTreatmentDate(e.target.value);
-                  if (e.target.value) setTreatmentTiming('');
-                }}
-                className="w-full max-w-[180px] px-3 py-2 border border-gray-200 rounded-lg text-[13px] outline-none focus:border-[#8037FF]"
-              />
-              <p className="text-[10px] text-gray-400 mt-1">선택 · 날짜를 정확히 아는 경우 직접 입력</p>
-            </Field>
-
-            <Field label="시술 전체 비용">
-              <div className="flex items-center gap-2">
-                <input
-                  type="number"
-                  value={totalCost}
-                  onChange={(e) => setTotalCost(e.target.value)}
-                  className="flex-1 max-w-[200px] px-3 py-2 border border-gray-200 rounded-lg text-[13px] outline-none focus:border-[#8037FF]"
-                />
-                <span className="text-[12px] text-gray-500">원</span>
-              </div>
-              <p className="text-[10px] text-gray-400 mt-1">
-                결제 내역 기반으로 자동 입력됩니다. 실제 지출 금액으로 수정 가능합니다.
-              </p>
-            </Field>
-
-            <Field label="할인 여부">
-              <div className="flex gap-1.5">
-                {(['받았음', '안 받았음'] as const).map((v) => {
-                  const isActive = (v === '받았음') === hasDiscountCheck;
-                  return (
-                    <button
-                      key={v}
-                      onClick={() => setHasDiscountCheck(v === '받았음')}
-                      className="flex-1 py-2 rounded-lg text-[12px] font-semibold"
-                      style={{
-                        backgroundColor: isActive ? '#F4EFFF' : '#fff',
-                        color: isActive ? '#8037FF' : '#51535C',
-                        border: `1px solid ${isActive ? '#8037FF' : '#E5E7EB'}`,
-                        transition: 'all 200ms ease',
-                      }}
-                    >
-                      {v}
-                    </button>
-                  );
-                })}
-              </div>
-              {hasDiscount && (
-                <p className="text-[10px] text-[#8037FF] mt-1">
-                  결제 상품에 {product.discount}% 할인이 적용되어 자동 체크됩니다.
-                </p>
-              )}
-            </Field>
-          </Section>
-
-          {/* 리뷰 내용 */}
-          <Section
-            title="리뷰 내용"
-            right={
-              <button
-                onClick={aiFill}
-                disabled={aiLoading || rating === 0}
-                className="flex items-center gap-1 text-[11px] font-bold text-[#8037FF] disabled:text-gray-400"
-              >
-                <Sparkles size={12} />
-                {aiLoading ? '작성 중...' : 'AI로 작성'}
-              </button>
-            }
-          >
-            <textarea
-              value={content}
-              onChange={(e) => setContent(e.target.value.slice(0, MAX_CONTENT))}
-              rows={8}
-              placeholder="시술 과정, 결과, 병원 분위기 등을 자유롭게 남겨주세요. (최소 50자)"
-              className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] outline-none focus:border-[#8037FF] transition-colors resize-none"
-            />
-            <div className="flex items-center justify-between mt-1.5">
-              <span
-                className="text-[11px]"
-                style={{ color: content.length < 50 ? '#E5484D' : '#9CA3AF' }}
-              >
-                {content.length < 50
-                  ? `최소 ${50 - content.length}자 더 작성해주세요`
-                  : '충분히 작성되었어요'}
-              </span>
-              <span className="text-[11px] text-gray-400">
-                {content.length}/{MAX_CONTENT}
-              </span>
+                      {d.name}
+                    </p>
+                    {d.isOwner && (
+                      <span className="rounded-[6px] bg-[#F2F4F6] px-1.5 py-0.5 text-[11.5px] font-semibold leading-none text-[#6B7684]">
+                        대표원장
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
-          </Section>
-        </div>
+          )}
+          {selectedDoctorId && (
+            <div className="mt-3 flex items-center gap-2 rounded-[14px] bg-[#EFF5FE] px-4 py-3 fade-in-up">
+              <MonoIcon name="stethoscope" size={18} color="#2F6FE4" />
+              <p className="text-[14px] font-semibold text-[#2F6FE4]">
+                {selectedDoctor?.name} 원장님을 지정해서 리뷰해요
+              </p>
+            </div>
+          )}
+        </Section>
+
+        <Band />
+
+        {/* 시술 정보 */}
+        <Section title="시술 정보" delay={0.25}>
+          <Field label="시술받은 시기">
+            <div className="mb-3 flex flex-wrap gap-2">
+              {TIME_OPTIONS.map((t) => {
+                const sel = treatmentTiming === t;
+                return (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => {
+                      setTreatmentTiming(sel ? '' : t);
+                      if (!sel) setTreatmentDate('');
+                    }}
+                    className={`h-9 rounded-[8px] px-3 text-[14.5px] font-semibold transition-colors ${
+                      sel ? 'bg-[#EFF5FE] text-[#2F6FE4]' : 'bg-[#F2F4F6] text-[#333D4B]'
+                    }`}
+                  >
+                    {t}
+                  </button>
+                );
+              })}
+            </div>
+            <input
+              type="date"
+              value={treatmentDate}
+              onChange={(e) => {
+                setTreatmentDate(e.target.value);
+                if (e.target.value) setTreatmentTiming('');
+              }}
+              className="h-14 w-full rounded-[14px] bg-[#F2F4F6] px-4 text-[16px] text-[#191F28] outline-none transition-colors focus:bg-[#EDEFF2]"
+            />
+            <p className="mt-1.5 text-[13.5px] text-[#8B95A1]">날짜를 정확히 알면 직접 골라 주세요 (선택)</p>
+          </Field>
+
+          <Field label="시술 전체 비용">
+            <div className="flex h-14 items-center rounded-[14px] bg-[#F2F4F6] px-4 transition-colors focus-within:bg-[#EDEFF2]">
+              <input
+                type="number"
+                inputMode="numeric"
+                value={totalCost}
+                onChange={(e) => setTotalCost(e.target.value)}
+                className="min-w-0 flex-1 bg-transparent text-[16px] font-semibold text-[#191F28] outline-none"
+              />
+              <span className="ml-2 text-[16px] text-[#8B95A1]">원</span>
+            </div>
+            <p className="mt-1.5 text-[13.5px] leading-[1.5] text-[#8B95A1]">
+              결제 내역으로 자동 입력했어요. 실제로 쓴 금액으로 고칠 수 있어요.
+            </p>
+          </Field>
+
+          <Field label="할인 여부">
+            <div className="flex gap-2">
+              {(['받았음', '안 받았음'] as const).map((v) => {
+                const isActive = (v === '받았음') === hasDiscountCheck;
+                return (
+                  <button
+                    key={v}
+                    type="button"
+                    onClick={() => setHasDiscountCheck(v === '받았음')}
+                    className={`h-12 flex-1 rounded-[14px] text-[15px] transition-colors ${
+                      isActive ? 'bg-[#EFF5FE] font-bold text-[#2F6FE4]' : 'bg-[#F2F4F6] font-semibold text-[#4E5968]'
+                    }`}
+                  >
+                    {v === '받았음' ? '받았어요' : '안 받았어요'}
+                  </button>
+                );
+              })}
+            </div>
+            {hasDiscount && (
+              <p className="mt-1.5 text-[13.5px] text-[#3180F7]">
+                결제 상품에 {product.discount}% 할인이 적용돼 자동으로 골라 뒀어요.
+              </p>
+            )}
+          </Field>
+        </Section>
+
+        <Band />
+
+        {/* 리뷰 내용 */}
+        <Section
+          title="리뷰 내용"
+          right={
+            <button
+              type="button"
+              onClick={aiFill}
+              disabled={aiLoading || rating === 0}
+              className="inline-flex h-9 items-center gap-1.5 rounded-[8px] bg-[#EFF5FE] px-3 text-[14.5px] font-semibold text-[#2F6FE4] disabled:bg-[#F2F4F6] disabled:text-[#B0B8C1]"
+            >
+              <MonoIcon name="pencil" size={16} color="currentColor" />
+              {aiLoading ? '쓰는 중...' : 'AI로 쓰기'}
+            </button>
+          }
+          delay={0.3}
+        >
+          <textarea
+            value={content}
+            onChange={(e) => setContent(e.target.value.slice(0, MAX_CONTENT))}
+            rows={8}
+            placeholder="시술 과정, 결과, 병원 분위기 등을 자유롭게 남겨 주세요. (최소 50자)"
+            className="w-full resize-none rounded-[14px] bg-[#F2F4F6] px-4 py-3.5 text-[16px] leading-[1.6] text-[#191F28] outline-none transition-colors placeholder:text-[#B0B8C1] focus:bg-[#EDEFF2]"
+          />
+          <div className="mt-2 flex items-center justify-between">
+            <span className={`text-[13.5px] ${content.length < 50 ? 'text-[#F04452]' : 'text-[#3180F7]'}`}>
+              {content.length < 50
+                ? `${50 - content.length}자 더 써 주세요`
+                : '충분히 작성했어요'}
+            </span>
+            <span className="text-[13.5px] text-[#B0B8C1]">
+              {content.length}/{MAX_CONTENT}
+            </span>
+          </div>
+        </Section>
       </div>
 
-      {/* Sticky footer */}
+      {/* 바닥 버튼 — 위에 흰 그라데이션 */}
       <div
-        className="flex-shrink-0 bg-white px-2.5 py-3"
-        style={{
-          borderTop: '1px solid #F2F3F5',
-          boxShadow: '0 -4px 16px rgba(0,0,0,0.04)',
-        }}
+        className="relative flex-shrink-0 bg-white px-4"
+        style={{ paddingTop: 8, paddingBottom: 'max(calc(env(safe-area-inset-bottom, 0px) + 12px), 16px)' }}
       >
+        <div className="pointer-events-none absolute inset-x-0 bottom-full h-8 bg-gradient-to-b from-white/0 to-white" />
         <button
+          type="button"
           onClick={handleSubmit}
           disabled={submitting}
-          className="w-full py-3.5 rounded-xl text-[14px] font-bold btn-press disabled:opacity-60"
-          style={{
-            backgroundColor:
-              rating > 0 && content.length >= 50 ? '#8037FF' : '#E5E7EB',
-            color: rating > 0 && content.length >= 50 ? '#fff' : '#A4ABBA',
-            boxShadow:
-              rating > 0 && content.length >= 50
-                ? '0 6px 16px rgba(49,130,246,0.3)'
-                : 'none',
-            transition: 'all 240ms ease',
-          }}
+          className={`h-14 w-full rounded-[18px] text-[17px] font-bold transition-colors btn-press disabled:opacity-60 ${
+            canSubmit ? 'bg-[#4A82EE] text-white active:bg-[#3D74DF]' : 'bg-[#F2F4F6] text-[#B0B8C1]'
+          }`}
         >
-          {submitting ? '등록 중...' : '리뷰 등록하고 500P 받기'}
+          {submitting ? '등록하는 중...' : '리뷰 등록하고 500P 받기'}
         </button>
       </div>
     </div>
   );
 }
 
+function Band() {
+  return <div className="h-2.5 bg-[#F2F4F6]" />;
+}
+
+function OptionalTag() {
+  return <span className="text-[14px] text-[#8B95A1]">선택</span>;
+}
+
 function Section({
   title,
   right,
+  delay = 0,
   children,
 }: {
   title: string;
   right?: React.ReactNode;
+  delay?: number;
   children: React.ReactNode;
 }) {
   return (
-    <div className="px-2.5 py-4 border-b border-gray-50">
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-[14px] font-bold text-gray-900 leading-tight">{title}</h3>
+    <section className="qd-a-item bg-white px-5 py-7" style={{ animationDelay: `${delay}s` }}>
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <h2 className="text-[20px] font-bold tracking-[-0.4px] text-[#191F28]">{title}</h2>
         {right}
       </div>
       {children}
-    </div>
+    </section>
   );
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="mb-3 last:mb-0">
-      <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">{label}</label>
+    <div className="mb-6 last:mb-0">
+      <label className="mb-2 block text-[15px] font-semibold text-[#4E5968]">{label}</label>
       {children}
     </div>
   );
@@ -633,32 +628,34 @@ function PhotoSlot({
     <div>
       <div
         onClick={image ? undefined : onPick}
-        className="relative rounded-xl overflow-hidden bg-gray-100 cursor-pointer"
+        className={`relative overflow-hidden rounded-[14px] bg-[#F2F4F6] ${image ? '' : 'cursor-pointer active:bg-[#EDEFF2]'}`}
         style={{ aspectRatio: aspect }}
       >
         {image ? (
           <>
-            <img src={image} alt="" className="w-full h-full object-cover" />
+            <img src={image} alt="" className="h-full w-full object-cover" />
             <span
-              className="absolute top-2 left-2 text-[10px] font-bold text-white rounded px-2 py-0.5"
+              className="absolute top-2 left-2 rounded-[6px] px-2 py-1 text-[12.5px] font-bold leading-none text-white"
               style={{ backgroundColor: badgeColor }}
             >
               {label}
             </span>
             <button
+              type="button"
               onClick={(e) => {
                 e.stopPropagation();
                 onRemove();
               }}
-              className="absolute top-2 right-2 w-6 h-6 rounded-full bg-black/60 text-white flex items-center justify-center"
+              aria-label="사진 지우기"
+              className="absolute top-2 right-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/55 text-white"
             >
-              <X size={12} />
+              <X size={14} strokeWidth={2.5} />
             </button>
           </>
         ) : (
-          <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-400">
-            <Camera size={22} />
-            <p className="text-[11px] font-semibold mt-1">{label}</p>
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5">
+            <MonoIcon name="camera" size={28} color="#B0B8C1" />
+            <p className="text-[14px] font-semibold text-[#8B95A1]">{label}</p>
           </div>
         )}
       </div>
@@ -667,7 +664,8 @@ function PhotoSlot({
         value={date}
         onChange={(e) => onDateChange(e.target.value)}
         placeholder="촬영일"
-        className="mt-1.5 w-full px-2 py-1.5 bg-gray-50 border border-gray-100 rounded text-[11px] outline-none focus:border-[#8037FF]"
+        aria-label={`${label} 촬영일`}
+        className="mt-2 h-11 w-full rounded-[12px] bg-[#F2F4F6] px-3 text-[16px] text-[#4E5968] outline-none transition-colors focus:bg-[#EDEFF2]"
       />
     </div>
   );
