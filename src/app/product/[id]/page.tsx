@@ -258,9 +258,7 @@ export default function ProductDetailPage() {
         </svg>
       </button>
       <Link href="/wishlist" aria-label="포켓 보기" className="flex h-14 w-11 shrink-0 items-center justify-center transition-transform active:scale-90">
-        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#9E9E9E" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-          <path d="M5.2 8.5h13.6l-.9 10.2a1.8 1.8 0 0 1-1.8 1.6H7.9a1.8 1.8 0 0 1-1.8-1.6z" /><path d="M8.8 8.5V7a3.2 3.2 0 0 1 6.4 0v1.5" />
-        </svg>
+        <PocketIcon size={30} strokeWidth={1.9} style={{ color: '#9E9E9E' }} />
       </Link>
       <button
         type="button"
@@ -434,37 +432,6 @@ export default function ProductDetailPage() {
                     </span>
                     <ChevronRight size={20} className="shrink-0 text-[#B0B8C1]" />
                   </Link>
-                </div>
-              </div>
-            </Reveal>
-
-            {/* 옵션 고르기 — 고른 줄은 연파랑 바탕 + 파란 체크 */}
-            <Reveal delay={80}>
-              <div className="border-t border-[#E5E8EB] pt-6">
-                <p className="flex min-w-0 items-center gap-2 px-5 text-[16px]">
-                  <span className="shrink-0 text-[#8B95A1]">옵션</span>
-                  <span className="h-3.5 w-px shrink-0 bg-[#E5E8EB]" />
-                  <span className="truncate font-bold text-[#3180F7]">{selected.name}</span>
-                </p>
-                <div className="mt-4">
-                  {optionRows.map(o => {
-                    const on = o.id === selected.id;
-                    return (
-                      <button key={o.id} type="button" onClick={() => setOptionId(o.id)} className={`flex min-h-[80px] w-full items-center gap-4 px-5 py-4 text-left transition-colors ${on ? 'bg-[#EFF5FE]' : 'active:bg-[#F9FAFB]'}`}>
-                        <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-colors ${on ? 'bg-[#2F6FE4]' : 'border-2 border-[#E5E8EB]'}`}>
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={on ? '#fff' : '#D1D6DB'} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
-                        </span>
-                        <span className="min-w-0 flex-1">
-                          <span className={`block truncate text-[17px] ${on ? 'font-bold text-[#3180F7]' : 'text-[#4E5968]'}`}>{o.name}</span>
-                          <span className="mt-0.5 block text-[19px] font-bold tracking-[-0.4px] text-[#191F28]">{o.price.toLocaleString()}원</span>
-                          {o.original > o.price && <span className="mt-0.5 block text-[14px] text-[#8B95A1]">정가 {o.original.toLocaleString()}원</span>}
-                        </span>
-                        {o.id === cheapestId && optionRows.length > 1 && (
-                          <span className="shrink-0 rounded-[6px] bg-[#DCE9FD] px-2 py-1 text-[13px] font-semibold text-[#2F6FE4]">최저가</span>
-                        )}
-                      </button>
-                    );
-                  })}
                 </div>
               </div>
             </Reveal>
