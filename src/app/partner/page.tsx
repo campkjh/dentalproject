@@ -1053,7 +1053,7 @@ export default function PartnerHomePage() {
               const r = e.currentTarget.getBoundingClientRect();
               setFilterMenuAt(filterMenuAt ? null : { right: Math.max(12, window.innerWidth - r.right), top: r.bottom + 6 });
             }}
-            className={`inline-flex h-[42px] shrink-0 items-center gap-1.5 rounded-[12px] pl-3 pr-2.5 text-[14.5px] font-bold transition-all active:scale-[0.97] ${filter === 'all' ? 'bg-[#F2F4F6] text-[#333D4B]' : 'bg-[#EFF5FE] text-[#2F6FE4]'}`}
+            className={`inline-flex h-[42px] shrink-0 items-center gap-1.5 rounded-[12px] px-1.5 text-[14.5px] font-bold transition-all active:scale-[0.97] active:bg-[#F2F4F6] ${filter === 'all' ? 'text-[#333D4B]' : 'text-[#2F6FE4]'}`}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={FILTER_ICON[filter]} alt="" width={20} height={20} />
