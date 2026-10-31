@@ -23,6 +23,7 @@ export interface CommunityPostRow {
   author_id: string;
   is_anonymous?: boolean;
   anonymous_id?: string | null;
+  is_secret?: boolean | null;
   created_at?: string;
   view_count?: number;
   like_count?: number;
@@ -42,7 +43,7 @@ export function communityPostFromRow(p: CommunityPostRow): Post {
     authorName: p.is_anonymous ? '익명' : p.author?.name || '익명',
     authorTitle: !p.is_anonymous && p.author?.is_doctor ? '의사' : undefined,
     authorProfileImage: p.is_anonymous ? undefined : p.author?.profile_image,
-    isAnonymous: p.is_anonymous, anonymousId: p.anonymous_id ?? undefined,
+    isAnonymous: p.is_anonymous, anonymousId: p.anonymous_id ?? undefined, isSecret: Boolean(p.is_secret),
     date: p.created_at ? new Date(p.created_at).toLocaleDateString('ko-KR') : '',
     createdAt: p.created_at, viewCount: p.view_count ?? 0,
     likeCount: p.like_count ?? 0, commentCount: p.comment_count ?? 0,

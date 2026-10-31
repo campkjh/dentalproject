@@ -425,3 +425,11 @@ button.tagBadge:hover { border-color: #d1d5db; }
 .adjTitle { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #333d4b; font-size: 16px; font-weight: 500; letter-spacing: -.3px; }
 .adjMeta { flex: none; color: #b0b8c1; font-size: 13px; }
 .adjEmpty .adjTitle { color: #b0b8c1; }
+
+/* 261101 비밀 댓글 — 입력 막대 왼쪽 자물쇠(켜면 막대가 연파랑) · 댓글 머리 '비밀' 표시 */
+.bar { padding-left: 6px; transition: background .2s ease; }
+.bar[data-secret] { background: #eff5fe; }
+.secretToggle { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 18px; color: #b0b8c1; transition: color .15s ease, background .15s ease, transform .12s ease; }
+.secretToggle:active { transform: scale(.92); }
+.secretToggle[aria-pressed=true] { color: #2f6fe4; background: #fff; }
+.secretMark { display: inline-flex; align-items: center; gap: 3px; height: 20px; padding: 0 6px; border-radius: 5px; background: #f2f4f6; color: #6b7684; font-size: 12px; font-weight: 600; }

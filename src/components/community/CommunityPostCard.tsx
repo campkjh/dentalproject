@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, type KeyboardEvent, type MouseEvent } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import Avatar from '@/components/common/Avatar';
 import { useStore } from '@/store';
@@ -27,6 +28,7 @@ export default function CommunityPostCard({ post, detail = false, basePath = '/c
   const [source, setSource] = useState({ count: post.likeCount, liked: initialLiked });
   // 점 3개 시트: menu(동작 고르기) → reason(신고 사유) → done(접수 결과)
   const [sheet, setSheet] = useState<'menu' | 'reason' | 'done' | null>(null);
+  const [menuAt, setMenuAt] = useState<{ right: number; top?: number; bottom?: number } | null>(null);
   const [reporting, setReporting] = useState(false);
   const [reportError, setReportError] = useState('');
   const busy = useRef(false);
@@ -110,7 +112,41 @@ export default function CommunityPostCard({ post, detail = false, basePath = '/c
   }
 
   const stop = (e: MouseEvent) => e.stopPropagation();
-  const openSheet = (e: MouseEvent) => { e.stopPropagation(); setReportError(''); setSheet('menu'); };
+  // ⋯ = 프리티풀 툴팁 메뉴(.pop-menu) — 누른 자리 오른쪽 위/아래에 작게 시작해 커지고, 항목은 오른쪽→왼쪽 촤라락
+  const openSheet = (e: MouseEvent) => {
+    e.stopPropagation(); setReportError('');
+    const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const up = r.bottom + 220 > window.innerHeight;
+    setMenuAt({ right: Math.max(12, window.innerWidth - r.right), ...(up ? { bottom: window.innerHeight - r.top + 6 } : { top: r.bottom + 6 }) });
+  };
+  useEffect(() => {
+    if (!menuAt) return;
+    const close = () => setMenuAt(null);
+    const key = (e: globalThis.KeyboardEvent) => { if (e.key === 'Escape') close(); };
+    window.addEventListener('scroll', close, { passive: true, capture: true });
+    window.addEventListener('keydown', key);
+    return () => { window.removeEventListener('scroll', close, { capture: true }); window.removeEventListener('keydown', key); };
+  }, [menuAt]);
+  const menuItems: { key: string; label: string; icon: string; danger?: boolean; run: () => void }[] = [
+    ...(mine ? [
+      { key: 'edit', label: '수정하기', icon: '/icons/toss/pencil.svg', run: () => router.push(`/community/${post.id}/edit`) },
+      { key: 'delete', label: '삭제하기', icon: '/icons/toss/bin.svg', danger: true, run: () => remove() },
+    ] : [
+      { key: 'report', label: '신고하기', icon: '/icons/toss/siren.svg', run: () => { if (!user) showToast('로그인이 필요합니다.'); else setSheet('reason'); } },
+    ]),
+    { key: 'share', label: '공유하기', icon: '/icons/toss/share.svg', run: () => void share() },
+  ];
+  const popMenu = menuAt && typeof document !== 'undefined' && createPortal(<>
+    <div className="fixed inset-0 z-[130]" onClick={e => { e.stopPropagation(); setMenuAt(null); }} aria-hidden="true" />
+    <div role="menu" aria-label="게시글 메뉴" className="pop-menu fixed z-[131]"
+      style={{ right: menuAt.right, top: menuAt.top, bottom: menuAt.bottom, transformOrigin: menuAt.bottom !== undefined ? 'bottom right' : 'top right' }}
+      onClick={e => e.stopPropagation()}>
+      {menuItems.map((item, i) => <button key={item.key} type="button" role="menuitem" className={`pop-menu-item${item.danger ? ' danger' : ''}`}
+        style={{ animationDelay: `${0.04 + i * 0.05}s` }} onClick={() => { setMenuAt(null); item.run(); }}>
+        <img src={item.icon} alt="" />{item.label}
+      </button>)}
+    </div>
+  </>, document.body);
   const doctorMark = !post.isAnonymous && post.authorTitle ? <span className={styles.doctorMark}>{post.authorTitle}</span> : null;
 
   const actionSheet = sheet && <CommunityModal label="게시글 메뉴" onClose={() => setSheet(null)}>
@@ -152,7 +188,7 @@ export default function CommunityPostCard({ post, detail = false, basePath = '/c
       <button type="button" className={styles.moreBtn} aria-label="게시글 더보기" onClick={openSheet}><DotsIcon /></button>
     </div>
     <div className={styles.cpdBody}>
-      <h2 className={styles.cpdTitle}>{isQuestion && <QBadge answered={answered} size={22} />}{post.title}</h2>
+      <h2 className={styles.cpdTitle}>{isQuestion && <QBadge answered={answered} size={22} />}{post.isSecret && <SecretBadge />}{post.title}</h2>
       <div className={styles.cpdAuthor}>
         <Avatar src={post.isAnonymous ? undefined : post.authorProfileImage} seed={post.isAnonymous ? `${post.id}-${post.anonymousId}` : post.authorId} role={doctorMark ? 'doctor' : 'user'} size={34} />
         <p className={styles.cpdNameRow}>
@@ -176,6 +212,7 @@ export default function CommunityPostCard({ post, detail = false, basePath = '/c
       <button type="button" className={styles.pill} data-icon="true" aria-label="공유" onClick={share}><TossShareIcon /></button>
     </div>
     {actionSheet}
+    {popMenu}
   </article>;
 
   // 목록 카드: 카드 전체가 눌림 영역(Cmd·Ctrl 클릭은 새 탭)
@@ -195,7 +232,7 @@ export default function CommunityPostCard({ post, detail = false, basePath = '/c
         <p className={styles.date}>{communityRelativeTime(post)}{!post.isAnonymous && post.authorHospital && ` · ${post.authorHospital}`}</p>
       </div>
     </div>
-    <h2 className={styles.cardTitle}>{isQuestion && <QBadge answered={answered} />}{post.title}</h2>
+    <h2 className={styles.cardTitle}>{isQuestion && <QBadge answered={answered} />}{post.isSecret && <SecretBadge />}{post.title}</h2>
     {post.content !== post.title && <p className={styles.cardContent}>{post.content}</p>}
     {post.imageUrl && <div className={styles.imageSingle}><div className={styles.thumb}><img src={post.imageUrl} alt="게시글 첨부 사진" loading="lazy" decoding="async" /></div></div>}
     {tags}
@@ -208,5 +245,13 @@ export default function CommunityPostCard({ post, detail = false, basePath = '/c
     </div>
     {/* 시트는 body 로 포털되지만 React 이벤트는 카드로 올라오므로 여기서 끊는다 */}
     {actionSheet && <div onClick={stop} onKeyDown={e => e.stopPropagation()}>{actionSheet}</div>}
+    {popMenu}
   </article>;
+}
+
+// 비밀 상담글 표시 — 제목 앞 작은 회색 자물쇠 알약
+function SecretBadge() {
+  return <span className="mr-1.5 inline-flex h-[22px] translate-y-[-2px] items-center gap-1 rounded-[6px] bg-[#F2F4F6] px-1.5 align-middle text-[12px] font-semibold text-[#6B7684]">
+    <span aria-hidden="true" className="inline-block h-3 w-3 bg-current [mask:url(/icons/mono/lock.svg)_center/contain_no-repeat] [-webkit-mask:url(/icons/mono/lock.svg)_center/contain_no-repeat]" />비밀
+  </span>;
 }

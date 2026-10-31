@@ -15,7 +15,7 @@ interface CommunityComment {
   id: string; postId: string; authorId: string; authorName: string;
   authorIsDoctor?: boolean; authorTitle?: string; authorHospital?: string;
   authorSpecialty?: string; authorProfileImage?: string; parentCommentId?: string;
-  content: string; isAnonymous?: boolean; anonymousId?: string;
+  content: string; isAnonymous?: boolean; anonymousId?: string; isSecret?: boolean;
   likeCount: number; liked: boolean; createdAt?: string; date: string;
 }
 
@@ -46,6 +46,7 @@ export default function CommunityDetail({ postId, commentsOnly = false, onClose,
   const [commentsError, setCommentsError] = useState('');
   const [text, setText] = useState('');
   const [reply, setReply] = useState<CommunityComment | null>(null);
+  const [secret, setSecret] = useState(false); // 비밀 댓글 — 글쓴이와 나만
   const [sending, setSending] = useState(false);
   const [retry, setRetry] = useState(0);
   const [sort, setSort] = useState<CommentSort>('oldest');
@@ -116,12 +117,13 @@ export default function CommunityDetail({ postId, commentsOnly = false, onClose,
     sendingRef.current = true; setSending(true);
     const content = text.trim();
     try {
-      const response = await fetch(`/api/posts/${postId}/comments`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content, parentCommentId: reply?.id }) });
+      const response = await fetch(`/api/posts/${postId}/comments`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content, parentCommentId: reply?.id, isSecret: secret }) });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || '댓글을 등록하지 못했습니다.');
       if (!alive.current) return;
       setText(''); setReply(null); updatePostCommentCount(1);
-      showToast('댓글이 등록되었습니다.');
+      showToast(secret ? '비밀 댓글을 남겼어요' : '댓글이 등록되었습니다.');
+      setSecret(false);
       if (user.isDoctor && post?.boardType === 'question') {
         void fetch('/api/community/doctor-answered', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ postId }) }).then(r => r.ok ? r.json() : null).then(data => {
           if (!data?.ok || typeof data.answerCount !== 'number') return;
@@ -199,6 +201,7 @@ export default function CommunityDetail({ postId, commentsOnly = false, onClose,
         <div className={styles.cHead}>
           <strong className={styles.cName}>{name}</strong>
           {comment.authorIsDoctor && <span className={styles.cDoctor}>{comment.authorTitle || '의사'}</span>}
+          {comment.isSecret && <span className={styles.secretMark}><LockGlyph />비밀</span>}
           <span className={styles.cTime}>· {communityRelativeTime(comment)}</span>
         </div>
         {(comment.authorHospital || comment.authorSpecialty) && <p className={styles.cHospital}>{[comment.authorHospital, comment.authorSpecialty].filter(Boolean).join(' · ')}</p>}
@@ -230,10 +233,12 @@ export default function CommunityDetail({ postId, commentsOnly = false, onClose,
 
   const form = <form className={styles.compose} onSubmit={e => { e.preventDefault(); void send(); }}>
     <Avatar src={user?.profileImage} seed={user?.id} role={user?.isDoctor ? 'doctor' : 'user'} size={40} />
-    <div className={styles.bar}>
+    <div className={styles.bar} data-secret={secret || undefined}>
+      <button type="button" className={styles.secretToggle} aria-pressed={secret} aria-label={secret ? '비밀 댓글 끄기' : '비밀 댓글로 쓰기'} title="비밀 댓글"
+        onClick={() => { if (!user) { showToast('로그인이 필요합니다.'); return; } setSecret(v => { if (!v) showToast('비밀 댓글은 글쓴이와 나만 볼 수 있어요'); return !v; }); }}><LockGlyph size={18} /></button>
       {reply && <button type="button" className={styles.mention} onClick={() => setReply(null)} aria-label={`${reply.isAnonymous ? '익명' : reply.authorName}님 답글 취소`}>@{reply.isAnonymous ? '익명' : reply.authorName}</button>}
       <input ref={input} className={styles.input} value={text} onChange={e => setText(e.target.value)} maxLength={5000} disabled={sending}
-        placeholder={reply ? '' : user ? '댓글로 의견을 남겨보세요' : '로그인하고 이야기를 나눠보세요'} enterKeyHint="send" aria-label={reply ? '답글 내용' : '댓글 내용'} />
+        placeholder={reply ? '' : !user ? '로그인하고 이야기를 나눠보세요' : secret ? '비밀 댓글 · 글쓴이와 나만 봐요' : '댓글로 의견을 남겨보세요'} enterKeyHint="send" aria-label={reply ? '답글 내용' : '댓글 내용'} />
       <button type="submit" className={styles.send} disabled={!text.trim() || sending} aria-label="댓글 등록"><SendUpIcon /></button>
     </div>
   </form>;
@@ -313,4 +318,9 @@ export function CommunitySkeleton({ count = 4 }: { count?: number }) {
     <div className={styles.skeletonLine} style={{ width: '100%' }} />
     <div className={styles.skeletonLine} style={{ width: '58%' }} />
   </div>)}</div>;
+}
+
+// 자물쇠(토스 mono lock 을 currentColor 로 칠한다)
+function LockGlyph({ size = 13 }: { size?: number }) {
+  return <span aria-hidden="true" style={{ display: 'inline-block', width: size, height: size, background: 'currentColor', WebkitMaskImage: 'url(/icons/mono/lock.svg)', maskImage: 'url(/icons/mono/lock.svg)', WebkitMaskSize: 'contain', maskSize: 'contain', WebkitMaskRepeat: 'no-repeat', maskRepeat: 'no-repeat', WebkitMaskPosition: 'center', maskPosition: 'center', flex: 'none' }} />;
 }

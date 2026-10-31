@@ -38,6 +38,7 @@ export default function CommunityComposer({ initialBoard = 'question', initialCa
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [secret, setSecret] = useState(false); // 비밀 상담글(고객 질문만) — 글쓴이와 의사만
   const [leaving, setLeaving] = useState(false);
   const [error, setError] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
@@ -134,6 +135,7 @@ export default function CommunityComposer({ initialBoard = 'question', initialCa
           authorTitle: user.doctorInfo?.title, authorHospital: user.doctorInfo?.hospitalName,
           authorProfileImage: user.profileImage, isAnonymous: board === 'free',
           anonymousId: board === 'free' ? String(Math.floor(1000 + Math.random() * 9000)) : undefined,
+          isSecret: mode === 'customer' && secret,
           createdAt: new Date().toISOString(), date: new Date().toLocaleDateString('ko-KR'),
           viewCount: 0, likeCount: 0, commentCount: 0, tags: finalTags, imageUrl: image || undefined,
           thumbnailUrl: image || undefined, hasAnswer: false, answerCount: 0,
@@ -201,6 +203,16 @@ export default function CommunityComposer({ initialBoard = 'question', initialCa
           <button type="button" className={styles.cmpAttachBtn} aria-label="사진 첨부" title="사진 첨부" onClick={() => fileRef.current?.click()} disabled={uploading}><img src="/icons/toss/picture.svg" alt="" /></button>
           <span className={styles.cmpCount}>{content.length.toLocaleString()}/5,000</span>
         </div>
+        {!post && mode === 'customer' && <button type="button" onClick={() => setSecret(v => !v)} aria-pressed={secret}
+          className={`mt-3 flex w-full items-center gap-2.5 rounded-[14px] px-3.5 py-3 text-left transition-colors ${secret ? 'bg-[#EFF5FE]' : 'bg-[#F2F4F6]'}`}>
+          <span key={String(secret)} aria-hidden className={`chk-dot flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${secret ? 'is-on bg-[#2F6FE4]' : 'is-off border-2 border-[#D1D6DB] bg-white'}`}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={secret ? '#fff' : '#D1D6DB'} strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-[15px] font-semibold text-[#191F28]">비밀 상담으로 올리기</span>
+            <span className="block text-[13px] text-[#8B95A1]">의사와 나만 볼 수 있어요</span>
+          </span>
+        </button>}
         {!post && <p className="mt-3 flex items-center gap-1.5 text-[13.5px] text-[#8B95A1]">
           <span className="inline-flex h-5 items-center rounded-[5px] bg-[#EFF5FE] px-1.5 text-[11.5px] font-bold text-[#2F6FE4]">AI</span>
           태그는 글을 읽고 자동으로 붙여요

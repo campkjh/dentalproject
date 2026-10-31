@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { communityPostFromRow, TIP_TAG, type CommunityPostRow } from '@/lib/community';
-import { viewerCanSeeDoctorBoards } from '@/lib/community-viewer';
+import { canSeeSecretPost, getCommunityViewer, isMissingSecretColumn } from '@/lib/community-viewer';
 import { autoTags } from '@/lib/community-auto-tag';
 
 export const dynamic = 'force-dynamic';
@@ -14,30 +14,32 @@ export async function GET(req: NextRequest) {
   try {
   const sb = await createClient();
 
-  let query = sb
-    .from('posts')
-    .select(
-      `id, board_type, title, content, author_id, view_count, like_count, comment_count,
-       tags, has_answer, answer_count, is_anonymous, anonymous_id, image_url,
-       thumbnail_url, created_at, author:profiles!posts_author_id_fkey(name, is_doctor, profile_image)`
-    )
-    .order('created_at', { ascending: false })
-    .limit(limit);
-
   // 의사 전용 게시판(자유·과별)은 의사·관리자에게만 — 고객 커뮤니티와 섞이지 않게
-  const doctorView = await viewerCanSeeDoctorBoards(sb);
-  if (board && ['question', 'free', 'dental'].includes(board)) {
-    if (!doctorView && board !== 'question') return NextResponse.json({ posts: [] }, { headers: { 'Cache-Control': 'private, no-store' } });
-    query = query.eq('board_type', board);
-  } else if (!doctorView) {
-    query = query.eq('board_type', 'question');
+  const viewer = await getCommunityViewer(sb);
+  if (board && ['question', 'free', 'dental'].includes(board) && !viewer.doctor && board !== 'question') {
+    return NextResponse.json({ posts: [] }, { headers: { 'Cache-Control': 'private, no-store' } });
   }
-
-  const { data, error } = await query;
+  const run = (secretColumn: boolean) => {
+    let query = sb
+      .from('posts')
+      .select(
+        `id, board_type, title, content, author_id, view_count, like_count, comment_count,
+         tags, has_answer, answer_count, is_anonymous, anonymous_id, image_url,${secretColumn ? ' is_secret,' : ''}
+         thumbnail_url, created_at, author:profiles!posts_author_id_fkey(name, is_doctor, profile_image)`
+      )
+      .order('created_at', { ascending: false })
+      .limit(limit);
+    if (board && ['question', 'free', 'dental'].includes(board)) query = query.eq('board_type', board);
+    else if (!viewer.doctor) query = query.eq('board_type', 'question');
+    return query;
+  };
+  let { data, error } = await run(true);
+  if (isMissingSecretColumn(error)) ({ data, error } = await run(false)); // 0019 적용 전
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   return NextResponse.json(
-    { posts: (data as unknown as CommunityPostRow[] ?? []).map(communityPostFromRow) },
+    // 비밀 상담글은 글쓴이·의사에게만(DB 정책과 같은 규칙을 한 번 더)
+    { posts: ((data as unknown as CommunityPostRow[]) ?? []).filter(row => canSeeSecretPost(row, viewer)).map(communityPostFromRow) },
     {
       headers: {
         'Cache-Control': 'private, no-store',
@@ -73,6 +75,8 @@ export async function POST(req: NextRequest) {
   const sentTags: string[] = Array.isArray(body.tags) ? body.tags.filter((tag: unknown): tag is string => typeof tag === 'string') : [];
   const tip = Boolean(profile?.is_doctor) && requestedBoard === 'question' && sentTags.includes(TIP_TAG);
   const tags = [...(tip ? [TIP_TAG] : []), ...(await autoTags(requestedBoard, String(body.title ?? ''), String(body.content ?? '')))];
+  // 비밀 상담글 = 고객이 쓰는 질문만(꿀팁·의사 라운지는 비밀 없음)
+  const secret = body.isSecret === true && requestedBoard === 'question' && !profile?.is_doctor;
 
   const { data, error } = await sb
     .from('posts')
@@ -86,10 +90,14 @@ export async function POST(req: NextRequest) {
       image_url: body.imageUrl ?? null,
       thumbnail_url: body.thumbnailUrl ?? null,
       tags,
+      ...(secret ? { is_secret: true } : {}),
     })
     .select('id')
     .single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+  if (error) {
+    if (secret && isMissingSecretColumn(error)) return NextResponse.json({ error: '비밀글 기능을 준비하고 있어요. 잠시 뒤 다시 시도해 주세요.' }, { status: 503 });
+    return NextResponse.json({ error: error.message }, { status: 400 });
+  }
   return NextResponse.json({ id: data.id, tags });
 }

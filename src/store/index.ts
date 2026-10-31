@@ -451,6 +451,7 @@ export const useStore = create<AppState>((set, get) => ({
           content: post.content,
           isAnonymous: post.isAnonymous,
           anonymousId: post.anonymousId,
+          isSecret: post.isSecret,
           imageUrl: post.imageUrl,
           thumbnailUrl: post.thumbnailUrl,
           tags: post.tags,

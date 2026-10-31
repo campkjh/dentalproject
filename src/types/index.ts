@@ -149,6 +149,8 @@ export interface Post {
   authorId: string;
   isAnonymous?: boolean;
   anonymousId?: string;
+  /** 비밀 상담글 — 글쓴이와 의사만 본다 */
+  isSecret?: boolean;
   date: string;
   createdAt?: string;
   viewCount: number;
