@@ -516,3 +516,17 @@ html[data-pd-scrolled] .partner-page .qd-header::after { opacity: 1; }
   .partner-shell-bg :is(.partner-modal-backdrop, .partner-modal, .partner-product-sheet-backdrop, .partner-product-sheet, .partner-detail-picker-layer, .partner-detail-picker, .partner-figma-dialog-backdrop, .partner-figma-alert),
   .partner-shell-bg .partner-edit-title :is(h1, p) { animation: none !important; }
 }
+
+/* 261031 파트너 로그인 — 병원관리자 화면 조각이 가로로 흘러가고(행마다 반대 방향), 시트가 아래서 올라온다 */
+.pl-marquee { -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 12%, #000 88%, transparent 100%); mask-image: linear-gradient(90deg, transparent 0, #000 12%, #000 88%, transparent 100%); }
+.pl-row { animation: plSlide linear infinite; will-change: transform; }
+.pl-row:nth-child(2) { margin-left: -120px; }
+.pl-marquee { opacity: 0; animation: plFade .8s .15s ease-out forwards; }
+.pl-sheet { animation: plSheetIn .7s cubic-bezier(.22, 1, .36, 1) both; }
+@keyframes plSlide { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(-50%, 0, 0); } }
+@keyframes plFade { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+@keyframes plSheetIn { from { transform: translateY(48px); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .pl-row { animation: none; }
+  .pl-marquee, .pl-sheet { animation: none; opacity: 1; }
+}

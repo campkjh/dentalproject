@@ -53,45 +53,58 @@ export default function PartnerLoginPage() {
     router.replace('/partner');
   };
 
-  // 261031 상품 상세 톤 — 테두리 카드 없이 흰 화면 · 회색 면 입력 칸(r14) · #4A82EE 큰 버튼(56 · r18) · 회색 안내 칸
+  // 261031 로그인 = 아래 모달 시트(아이디·비번) + 위에서 병원관리자 화면 조각이 흘러가는 장면.
+  // 시트 윗변은 흰 그라데이션이라 흘러가는 카드가 시트 밑으로 스며들어 사라진다.
   return (
-    <div className="flex min-h-[100dvh] items-center justify-center bg-white px-5 py-10 page-enter">
-      <div className="w-full max-w-[400px]">
-        {/* 브랜드 */}
+    <div className="pl-stage relative flex min-h-[100dvh] flex-col overflow-hidden bg-[linear-gradient(180deg,#E6F0FF_0%,#F3F7FF_46%,#FFFFFF_100%)]">
+      {/* 브랜드 · 제목 */}
+      <div className="relative z-10 mx-auto w-full max-w-[440px] px-5 pt-[calc(env(safe-area-inset-top)+28px)]">
         <div className="qd-a-item flex items-center gap-2.5">
-          <span className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-[#EFF5FE]">
+          <span className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-white shadow-[0_2px_8px_rgba(47,111,228,0.12)]">
             <MonoIcon name="stethoscope" size={22} color="#2F6FE4" />
           </span>
           <span className="text-[16px] font-bold tracking-[-0.3px] text-[#333D4B]">마이닥 파트너센터</span>
         </div>
-
-        <h1 className="qd-a-item mt-6 text-[26px] font-bold leading-[1.35] tracking-[-0.6px] text-[#191F28]" style={{ animationDelay: '.06s' }}>
-          병원 관리자 계정으로
+        <h1 className="qd-a-item mt-5 text-[26px] font-bold leading-[1.35] tracking-[-0.6px] text-[#191F28]" style={{ animationDelay: '.06s' }}>
+          예약부터 정산까지
           <br />
-          로그인해 주세요
+          병원 운영을 한곳에서
         </h1>
+      </div>
 
-        <form onSubmit={submit} className="qd-a-item mt-8 space-y-3" style={{ animationDelay: '.12s' }}>
-          <label className="block">
-            <span className="mb-2 block text-[14px] font-semibold text-[#4E5968]">아이디</span>
+      {/* 흘러가는 병원관리자 화면 조각 */}
+      <div aria-hidden className="pl-marquee relative min-h-[300px] flex-1 select-none pt-6">
+        {PL_ROWS.map((row, i) => (
+          <div key={i} className="pl-row mb-3 flex w-max gap-3 pr-3" style={{ animationDuration: `${row.dur}s`, animationDirection: i % 2 ? 'reverse' : 'normal' }}>
+            {[...row.cards, ...row.cards].map((c, j) => <PlCard key={j} card={c} />)}
+          </div>
+        ))}
+      </div>
+
+      {/* 로그인 시트 */}
+      <div className="pl-sheet relative z-20 -mt-20">
+        <div className="pointer-events-none h-20 bg-gradient-to-b from-white/0 via-white/80 to-white" />
+        <div className="mx-auto w-full max-w-[440px] bg-white px-5 pb-[calc(env(safe-area-inset-bottom)+20px)]">
+          <div className="mx-auto mb-5 h-1 w-10 rounded-full bg-[#E5E8EB]" />
+          <h2 className="text-[20px] font-bold tracking-[-0.4px] text-[#191F28]">병원 관리자 계정으로 로그인해 주세요</h2>
+
+          <form onSubmit={submit} className="mt-5 space-y-3">
             <input
               type="text"
               value={userId}
               onChange={(e) => setUserId(e.target.value)}
               placeholder="아이디"
+              aria-label="아이디"
               autoComplete="username"
               className="h-14 w-full rounded-[14px] border-0 bg-[#F2F4F6] px-4 text-[16px] font-medium text-[#191F28] outline-none transition-colors placeholder:text-[#B0B8C1] focus:bg-[#EDEFF2]"
             />
-          </label>
-
-          <label className="block">
-            <span className="mb-2 block text-[14px] font-semibold text-[#4E5968]">비밀번호</span>
             <div className="relative">
               <input
                 type={showPw ? 'text' : 'password'}
                 value={pw}
                 onChange={(e) => setPw(e.target.value)}
                 placeholder="비밀번호"
+                aria-label="비밀번호"
                 autoComplete="current-password"
                 className="h-14 w-full rounded-[14px] border-0 bg-[#F2F4F6] pl-4 pr-12 text-[16px] font-medium text-[#191F28] outline-none transition-colors placeholder:text-[#B0B8C1] focus:bg-[#EDEFF2]"
               />
@@ -104,64 +117,163 @@ export default function PartnerLoginPage() {
                 <MonoIcon name={showPw ? 'eye-off' : 'eye-on'} size={20} color="#8B95A1" />
               </button>
             </div>
-          </label>
 
-          <div className="flex items-center justify-between pt-1">
-            <label className="flex cursor-pointer items-center gap-2 text-[15px] text-[#4E5968]">
-              <input
-                type="checkbox"
-                checked={remember}
-                onChange={(e) => setRemember(e.target.checked)}
-                className="sr-only"
-              />
-              {/* 체크 동그라미 — 전역 .chk-dot(검색 화면 checkDot 과 같은 결) */}
-              <span
-                key={String(remember)}
-                aria-hidden
-                className={`chk-dot flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${remember ? 'is-on bg-[#2F6FE4]' : 'is-off border-2 border-[#E5E8EB]'}`}
+            <div className="flex items-center justify-between pt-1">
+              <label className="flex cursor-pointer items-center gap-2 text-[15px] text-[#4E5968]">
+                <input
+                  type="checkbox"
+                  checked={remember}
+                  onChange={(e) => setRemember(e.target.checked)}
+                  className="sr-only"
+                />
+                <span
+                  key={String(remember)}
+                  aria-hidden
+                  className={`chk-dot flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${remember ? 'is-on bg-[#2F6FE4]' : 'is-off border-2 border-[#E5E8EB]'}`}
+                >
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={remember ? '#fff' : '#D1D6DB'} strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
+                </span>
+                아이디 저장
+              </label>
+              <Link href="#" className="text-[15px] text-[#8B95A1] active:text-[#4E5968]">
+                비밀번호 찾기
+              </Link>
+            </div>
+
+            {error && (
+              <p className="flex gap-2 rounded-[14px] bg-[#FFEEEF] px-4 py-3.5 text-[14px] leading-[1.5] text-[#F04452]">
+                <MonoIcon name="exclamation-circle" size={18} color="#F04452" className="mt-px" />
+                <span className="min-w-0 flex-1">{error}</span>
+              </p>
+            )}
+
+            <div className="!mt-5 flex gap-2">
+              <Link
+                href="/hospital/register"
+                className="flex h-14 flex-1 items-center justify-center rounded-[18px] bg-[#F2F4F6] text-[17px] font-bold text-[#4E5968] transition-all active:scale-[0.98] active:bg-[#E5E8EB]"
               >
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={remember ? '#fff' : '#D1D6DB'} strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
-              </span>
-              아이디 저장
-            </label>
-            <Link href="#" className="text-[15px] text-[#8B95A1] active:text-[#4E5968]">
-              비밀번호 찾기
-            </Link>
-          </div>
+                병원 신청하기
+              </Link>
+              <button
+                type="submit"
+                disabled={loading}
+                className="flex h-14 flex-1 items-center justify-center rounded-[18px] bg-[#4A82EE] text-[17px] font-bold text-white transition-all active:scale-[0.98] active:bg-[#3D74DE] disabled:opacity-60"
+              >
+                {loading ? '로그인 중...' : '로그인'}
+              </button>
+            </div>
+          </form>
 
-          {error && (
-            <p className="flex gap-2 rounded-[14px] bg-[#FFEEEF] px-4 py-3.5 text-[14px] leading-[1.5] text-[#F04452]">
-              <MonoIcon name="exclamation-circle" size={18} color="#F04452" className="mt-px" />
-              <span className="min-w-0 flex-1">{error}</span>
-            </p>
-          )}
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="!mt-5 flex h-14 w-full items-center justify-center rounded-[18px] bg-[#4A82EE] text-[17px] font-bold text-white transition-all active:scale-[0.98] active:bg-[#3D74DE] disabled:opacity-60"
-          >
-            {loading ? '로그인 중...' : '로그인'}
-          </button>
-          <Link
-            href="/hospital/register"
-            className="flex h-14 w-full items-center justify-center rounded-[18px] bg-[#F2F4F6] text-[17px] font-bold text-[#4E5968] transition-all active:scale-[0.98] active:bg-[#E5E8EB]"
-          >
-            병원 신청하기
-          </Link>
-        </form>
-
-        <p className="qd-a-item mt-6 flex gap-2 rounded-[14px] bg-[#F2F4F6] px-4 py-3.5 text-[14px] leading-[1.5] text-[#4E5968]" style={{ animationDelay: '.18s' }}>
-          <MonoIcon name="info-circle" size={18} color="#B0B8C1" className="mt-px" />
-          <span className="min-w-0 flex-1">
-            비밀번호는 안전하게 암호화되어 저장돼요.
-            <br />
-            파트너 고객센터 <span className="font-semibold text-[#333D4B]">1588-0000</span>
-          </span>
-        </p>
-
-        <p className="mt-6 text-center text-[13px] text-[#B0B8C1]">© 2026 마이닥. All rights reserved.</p>
+          <p className="mt-4 text-center text-[13px] text-[#B0B8C1]">파트너 고객센터 1588-0000 · © 2026 마이닥</p>
+        </div>
       </div>
     </div>
   );
+}
+
+// ── 흘러가는 카드(장식) ─────────────────────────────────────────
+type PlCardData =
+  | { kind: 'reserve'; badge: '확정' | '대기' | '완료'; name: string; when: string }
+  | { kind: 'money'; label: string; amount: string }
+  | { kind: 'review'; text: string; score: string }
+  | { kind: 'chat'; text: string }
+  | { kind: 'note'; icon: string; title: string; sub: string }
+  | { kind: 'chart'; label: string; bars: number[] };
+
+const PL_ROWS: { dur: number; cards: PlCardData[] }[] = [
+  {
+    dur: 38,
+    cards: [
+      { kind: 'reserve', badge: '확정', name: '김*연 · 임플란트 상담', when: '오늘 오후 2:30' },
+      { kind: 'money', label: '오늘 앱결제', amount: '1,280,000원' },
+      { kind: 'review', text: '설명을 정말 친절하게 해주셨어요', score: '5.0' },
+      { kind: 'note', icon: 'bell', title: '새 예약 3건', sub: '확정을 기다리고 있어요' },
+    ],
+  },
+  {
+    dur: 46,
+    cards: [
+      { kind: 'chat', text: '내일 오전에도 예약 가능할까요?' },
+      { kind: 'money', label: '이번 주 정산 예정', amount: '3,420,000원' },
+      { kind: 'reserve', badge: '대기', name: '박*수 · 스케일링', when: '내일 오전 10:00' },
+      { kind: 'note', icon: 'gift', title: '이벤트 승인 완료', sub: '치아미백 49,000원' },
+    ],
+  },
+  {
+    dur: 42,
+    cards: [
+      { kind: 'chart', label: '이번 달 예약', bars: [38, 52, 44, 66, 58, 80, 72] },
+      { kind: 'reserve', badge: '완료', name: '이*진 · 라미네이트', when: '어제 오후 4:00' },
+      { kind: 'note', icon: 'star', title: '평균 평점 4.9', sub: '리뷰 128개' },
+      { kind: 'note', icon: 'megaphone', title: '광고 노출 2.4만', sub: '지난 7일' },
+    ],
+  },
+];
+
+const PL_BADGE = {
+  확정: 'bg-[#E8F3FF] text-[#3180F7]',
+  대기: 'bg-[#F2F4F6] text-[#6B7684]',
+  완료: 'bg-[#E6F7EE] text-[#03A94D]',
+} as const;
+
+function PlCard({ card }: { card: PlCardData }) {
+  const base = 'w-[208px] shrink-0 rounded-[18px] bg-white px-4 py-3.5 shadow-[0_6px_20px_rgba(30,58,120,0.08)]';
+  switch (card.kind) {
+    case 'reserve':
+      return (
+        <div className={base}>
+          <span className={`inline-flex h-6 items-center rounded-[6px] px-2 text-[12.5px] font-semibold ${PL_BADGE[card.badge]}`}>{card.badge}</span>
+          <p className="mt-2 truncate text-[15px] font-bold text-[#191F28]">{card.name}</p>
+          <p className="mt-0.5 text-[13.5px] text-[#8B95A1]">{card.when}</p>
+        </div>
+      );
+    case 'money':
+      return (
+        <div className={`${base} !bg-[#EFF5FE]`}>
+          <span className="inline-flex rounded-[6px] bg-[#2F6FE4] px-2 py-0.5 text-[12.5px] font-bold text-white">{card.label}</span>
+          <p className="mt-2.5 text-[22px] font-bold tracking-[-0.6px] text-[#1E3A78]">{card.amount}</p>
+        </div>
+      );
+    case 'review':
+      return (
+        <div className={base}>
+          <p className="flex items-center gap-1 text-[14px] font-bold text-[#191F28]">
+            <span className="text-[#FFC342]">★★★★★</span>{card.score}
+          </p>
+          <p className="mt-1.5 line-clamp-2 text-[14px] leading-[1.45] text-[#4E5968]">{card.text}</p>
+        </div>
+      );
+    case 'chat':
+      return (
+        <div className={`${base} flex items-start gap-2.5`}>
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#F2F4F6]">
+            <MonoIcon name="user" size={18} color="#8B95A1" />
+          </span>
+          <p className="rounded-[14px] rounded-tl-[4px] bg-[#F2F4F6] px-3 py-2 text-[13.5px] leading-[1.45] text-[#333D4B]">{card.text}</p>
+        </div>
+      );
+    case 'note':
+      return (
+        <div className={`${base} flex items-center gap-3`}>
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[#EFF5FE]">
+            <MonoIcon name={card.icon} size={20} color="#2F6FE4" />
+          </span>
+          <span className="min-w-0">
+            <span className="block truncate text-[15px] font-bold text-[#191F28]">{card.title}</span>
+            <span className="block truncate text-[13px] text-[#8B95A1]">{card.sub}</span>
+          </span>
+        </div>
+      );
+    case 'chart':
+      return (
+        <div className={base}>
+          <p className="text-[13.5px] font-semibold text-[#6B7684]">{card.label}</p>
+          <div className="mt-2 flex h-[46px] items-end gap-1.5">
+            {card.bars.map((h, i) => (
+              <span key={i} className="flex-1 rounded-[4px]" style={{ height: `${h}%`, background: i === card.bars.length - 2 ? '#4A82EE' : '#D6E4FB' }} />
+            ))}
+          </div>
+        </div>
+      );
+  }
 }
