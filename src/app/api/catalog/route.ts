@@ -52,6 +52,7 @@ export async function GET() {
       .from('posts')
       .select(`id, board_type, title, content, author_id, view_count, like_count, comment_count, tags, has_answer, answer_count, is_anonymous, anonymous_id, created_at,
          author:profiles!posts_author_id_fkey (name, is_doctor)`)
+      .eq('board_type', 'question') // 의사 전용 게시판은 공용 카탈로그에 싣지 않는다
       .order('created_at', { ascending: false })
       .limit(50),
     sb.from('announcements').select('id, title, content, published_at').order('published_at', { ascending: false }).limit(10),

@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getPost } from '@/lib/db/posts';
-import { communityPostFromRow } from '@/lib/community';
+import { communityPostFromRow, isDoctorOnlyBoard } from '@/lib/community';
+import { viewerCanSeeDoctorBoards } from '@/lib/community-viewer';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,6 +11,9 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     const { id } = await params;
     const post = await getPost(id);
     if (!post) return NextResponse.json({ error: '게시글을 찾을 수 없습니다.' }, { status: 404 });
+    if (isDoctorOnlyBoard(post.board_type) && !(await viewerCanSeeDoctorBoards(await createClient()))) {
+      return NextResponse.json({ error: '의사 회원만 볼 수 있는 글이에요.' }, { status: 403 });
+    }
     return NextResponse.json({ post: communityPostFromRow(post) });
   } catch {
     return NextResponse.json({ error: '게시글을 불러오지 못했습니다.' }, { status: 500 });

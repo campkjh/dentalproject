@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type KeyboardEvent, type MouseEvent } from
 import { useRouter } from 'next/navigation';
 import Avatar from '@/components/common/Avatar';
 import { useStore } from '@/store';
-import { communityRelativeTime } from '@/lib/community';
+import { communityRelativeTime, isTipPost } from '@/lib/community';
 import type { Post } from '@/types';
 import CommunityModal from './CommunityModal';
 import { boardTone, CommentFillIcon, DotsIcon, formatCount, postPillName, QBadge, TossCommentIcon, TossHeartIcon, TossShareIcon } from './StadyIcons';
@@ -35,7 +35,7 @@ export default function CommunityPostCard({ post, detail = false, basePath = '/c
   const name = post.isAnonymous ? `익명 ${post.anonymousId || ''}`.trim() : post.authorName;
   const pill = postPillName(post);
   const tone = boardTone(pill);
-  const isQuestion = post.boardType === 'question';
+  const isQuestion = post.boardType === 'question' && !isTipPost(post); // 의사 꿀팁은 질문 표시·답변 줄 없음
   const answered = Boolean(post.hasAnswer || post.answerCount);
 
   if (source.count !== post.likeCount || source.liked !== initialLiked) {

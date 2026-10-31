@@ -113,6 +113,7 @@ export function boardTone(name: string): BoardTone {
 }
 // 카드 아바타에 겹치는 알약 글자 — 첫 태그, 없으면 게시판 짧은 이름
 export function postPillName(post: Pick<Post, 'tags' | 'boardType'>) {
+  if (post.tags[0] === '의사꿀팁') return '의사 꿀팁';
   return post.tags[0] || (post.boardType === 'question' ? '질문' : post.boardType === 'free' ? '자유' : '치과');
 }
 

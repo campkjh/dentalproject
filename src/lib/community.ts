@@ -1,5 +1,13 @@
 import type { Post } from '@/types';
 
+// 의사 전용 게시판(의사끼리) — 고객에게는 목록·상세·댓글 모두 보이지 않는다(API 에서 거름)
+export const DOCTOR_ONLY_BOARDS: Post['boardType'][] = ['free', 'dental'];
+export const isDoctorOnlyBoard = (board: string | null | undefined) => board === 'free' || board === 'dental';
+// 의사 꿀팁 = 고객 커뮤니티(question 게시판)에 의사가 남기는 글. DB 칸을 늘리지 않고 첫 태그로 표시한다.
+export const TIP_TAG = '의사꿀팁';
+// 예전에 의사 계정이 질문 게시판에 쓴 글(표시 없음)도 꿀팁으로 본다 — 고객 질문 칸·답변 대기에 섞이지 않게
+export const isTipPost = (post: Pick<Post, 'boardType' | 'tags' | 'authorTitle'>) => post.boardType === 'question' && (post.tags.includes(TIP_TAG) || post.authorTitle === '의사');
+
 export const communityCategories = ['전체', '임플란트', '교정', '치아미백', '사랑니', '스케일링', '일반진료'];
 export const communityBoards = [
   { value: 'question', label: '의사에게 질문', icon: '/icons/community-doctor-board-v2.svg' },

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useStore } from '@/store';
 import Avatar from '@/components/common/Avatar';
-import { communityRelativeTime } from '@/lib/community';
+import { communityRelativeTime, isDoctorOnlyBoard, isTipPost } from '@/lib/community';
 import type { Post } from '@/types';
 import CommunityPostCard from './CommunityPostCard';
 import { BackIcon, CloseIcon, EmojiBar, formatCount, ReplyArrowIcon, SendUpIcon, SortArrowsIcon, TossHeartIcon } from './StadyIcons';
@@ -36,6 +36,7 @@ export default function CommunityDetail({ postId, commentsOnly = false, onClose,
   const showToast = useStore(s => s.showToast);
   const showModal = useStore(s => s.showModal);
   const storePost = useStore(s => s.posts.find(p => p.id === postId));
+  const allPosts = useStore(s => s.posts);
   const [fetchedPost, setFetchedPost] = useState<Post | null>(null);
   const post = storePost || fetchedPost;
   const [postLoading, setPostLoading] = useState(!storePost);
@@ -171,6 +172,18 @@ export default function CommunityDetail({ postId, commentsOnly = false, onClose,
     if (!commentsOnly) composer.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 
+  // 이전글·다음글 — 같은 칸(의사 라운지 = 자유·과별 / 고객 커뮤니티 = 질문·꿀팁) 안에서 최신순으로 이웃한 글
+  const adjacent = useMemo(() => {
+    if (!post) return null;
+    const lounge = isDoctorOnlyBoard(post.boardType);
+    const same = allPosts
+      .filter(p => !p.id.startsWith('pending-') && (lounge ? isDoctorOnlyBoard(p.boardType) : p.boardType === 'question'))
+      .sort((a, b) => new Date(b.createdAt || b.date).getTime() - new Date(a.createdAt || a.date).getTime());
+    const i = same.findIndex(p => p.id === post.id);
+    if (i < 0) return null; // 목록을 아직 못 받았으면 줄을 띄우지 않는다
+    return { prev: same[i + 1], next: same[i - 1] }; // 이전글 = 더 오래된 글, 다음글 = 더 새 글
+  }, [allPosts, post]);
+
   const roots = useMemo(() => {
     const list = comments.filter(c => !c.parentCommentId);
     if (sort === 'newest') return [...list].sort((a, b) => commentTime(b) - commentTime(a));
@@ -263,6 +276,19 @@ export default function CommunityDetail({ postId, commentsOnly = false, onClose,
         <div className={styles.commentSortWrap}>{sortMenu}</div>
         {list}
       </section>
+      {adjacent && <><div className={styles.band} aria-hidden="true" style={{ marginTop: 28 }} />
+      <nav className={styles.adjacent} aria-label="이전글 다음글">
+        {([['이전글', adjacent.prev, 'M15 18l-6-6 6-6'], ['다음글', adjacent.next, 'M9 18l6-6-6-6']] as const).map(([label, target, d]) => target
+          ? <Link key={label} href={`${basePath}/${target.id}`} className={styles.adjRow}>
+            <span className={styles.adjLabel}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={d} /></svg>{label}</span>
+            <span className={styles.adjTitle}>{isTipPost(target) ? '[꿀팁] ' : ''}{target.title}</span>
+            <span className={styles.adjMeta}>{communityRelativeTime(target)}</span>
+          </Link>
+          : <div key={label} className={`${styles.adjRow} ${styles.adjEmpty}`}>
+            <span className={styles.adjLabel}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={d} /></svg>{label}</span>
+            <span className={styles.adjTitle}>{label === '이전글' ? '첫 글이에요' : '가장 최근 글이에요'}</span>
+          </div>)}
+      </nav></>}
     </> : postLoading ? <DetailSkeleton /> : <div className={styles.detailState} role="status"><p>{postError || '게시글을 찾을 수 없습니다.'}</p><button type="button" onClick={() => { setPostLoading(true); setPostError(''); setRetry(n => n + 1); }}>다시 시도</button></div>}
   </div>;
 }

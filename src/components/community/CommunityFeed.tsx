@@ -6,7 +6,7 @@ import Link from 'next/link';
 import PullToRefresh from '@/components/common/PullToRefresh';
 import { useStore } from '@/store';
 import { createClient, hasSupabaseEnv } from '@/lib/supabase/client';
-import { communityBoards, communityCategories, getWeeklyPopularPosts } from '@/lib/community';
+import { communityCategories, getWeeklyPopularPosts, isTipPost, TIP_TAG } from '@/lib/community';
 import type { Post } from '@/types';
 import CommunityPostCard from './CommunityPostCard';
 import CommunityModal from './CommunityModal';
@@ -34,11 +34,17 @@ export default function CommunityFeed({ partner = false }: { partner?: boolean }
   const isDoctor = useStore(s => s.isDoctor);
   const user = useStore(s => s.user);
   const basePath = partner ? '/partner/community' : '/community';
-  const [board, setBoard] = useState<Post['boardType']>('question');
-  // 의사 화면(파트너) 커뮤니티는 두 칸으로 나눈다 — 의사끼리(자유·과별) / 고객 질문(의사에게 질문)
+  // 커뮤니티는 둘로 나뉜다(261031):
+  //  · 고객 커뮤니티(/community) = question 게시판만 — 고객 질문 + 의사 꿀팁(의사가 남긴 글, TIP_TAG). 의사는 여기서 댓글로 상담하고 꿀팁을 쓴다.
+  //  · 의사 커뮤니티(/partner/community) = 의사끼리(자유·과별, 고객에겐 API 에서 막힘) + 고객 상담 칸(질문에 답하기·내 꿀팁).
   const doctorSpaces = partner && isDoctor;
   const [space, setSpace] = useState<'doctor' | 'customer'>('doctor');
-  const [doctorBoard, setDoctorBoard] = useState<'free' | 'dental'>('free');
+  type LoungeFilter = 'all' | 'free' | 'dental' | 'mine';
+  type ConsultFilter = 'waiting' | 'all' | 'mytips';
+  type CustomerFilter = 'all' | 'question' | 'tip';
+  const [lounge, setLounge] = useState<LoungeFilter>('all');
+  const [consult, setConsult] = useState<ConsultFilter>('waiting');
+  const [customerView, setCustomerView] = useState<CustomerFilter>('all');
   const [mine, setMine] = useState(false);
   const [category, setCategory] = useState(() => communityCategories.includes(params.get('category') || '') ? params.get('category')! : '전체');
   const [query, setQuery] = useState(params.get('q') || '');
@@ -59,7 +65,25 @@ export default function CommunityFeed({ partner = false }: { partner?: boolean }
   const scrollRestored = useRef(false);
   const [likes, setLikes] = useState<{ userId: string; ids: Set<string> }>({ userId: '', ids: new Set() });
   const likedIds = likes.userId === user?.id ? likes.ids : new Set<string>();
-  const activeBoard: Post['boardType'] = doctorSpaces ? (space === 'customer' ? 'question' : doctorBoard) : isDoctor ? board : 'question';
+  const activeBoard: Post['boardType'] = doctorSpaces && space === 'doctor' ? (lounge === 'dental' ? 'dental' : 'free') : 'question';
+  // 지금 칸에 들어갈 글인지
+  const inView = useCallback((post: Post) => {
+    if (doctorSpaces && space === 'doctor') {
+      if (post.boardType !== 'free' && post.boardType !== 'dental') return false;
+      if (lounge === 'free' || lounge === 'dental') return post.boardType === lounge;
+      if (lounge === 'mine') return post.authorId === user?.id;
+      return true;
+    }
+    if (post.boardType !== 'question') return false;
+    if (doctorSpaces) {
+      if (consult === 'waiting') return !isTipPost(post) && !(post.hasAnswer || post.answerCount);
+      if (consult === 'mytips') return isTipPost(post) && post.authorId === user?.id;
+      return !isTipPost(post);
+    }
+    if (customerView === 'question') return !isTipPost(post);
+    if (customerView === 'tip') return isTipPost(post);
+    return true;
+  }, [doctorSpaces, space, lounge, consult, customerView, user?.id]);
   const searchTerm = query.trim().toLocaleLowerCase();
   const popular = useMemo(() => {
     if (!(doctorSpaces && space === 'doctor')) return getWeeklyPopularPosts(posts);
@@ -72,11 +96,12 @@ export default function CommunityFeed({ partner = false }: { partner?: boolean }
     return [...(current.length ? current : pool)].sort((a, b) => b.viewCount - a.viewCount).slice(0, 5);
   }, [posts, doctorSpaces, space]);
   const visible = useMemo(() => posts.filter(post => {
-    if (post.boardType !== activeBoard || (mine && post.authorId !== user?.id)) return false;
+    if (!inView(post) || (mine && post.authorId !== user?.id)) return false;
     if (category !== '전체' && !post.tags.includes(category)) return false;
     return !searchTerm || [post.title, post.content, post.isAnonymous ? '' : post.authorName, ...post.tags].join(' ').toLocaleLowerCase().includes(searchTerm);
-  }).sort((a, b) => sort === 'popular' ? b.viewCount - a.viewCount : sort === 'comments' ? b.commentCount - a.commentCount : new Date(b.createdAt || b.date).getTime() - new Date(a.createdAt || a.date).getTime()), [posts, activeBoard, mine, user?.id, category, searchTerm, sort]);
-  const showWeeklyTabs = category === '전체' && !searchTerm && (activeBoard === 'question' || doctorSpaces);
+  }).sort((a, b) => sort === 'popular' ? b.viewCount - a.viewCount : sort === 'comments' ? b.commentCount - a.commentCount : new Date(b.createdAt || b.date).getTime() - new Date(a.createdAt || a.date).getTime()), [posts, inView, mine, user?.id, category, searchTerm, sort]);
+  // 주간 인기글·내가 쓴 글 탭은 고객 커뮤니티 첫 화면에만(의사 화면은 칩 하나로 정리)
+  const showWeeklyTabs = !doctorSpaces && category === '전체' && !searchTerm && customerView === 'all';
 
   // 전체 헤더 검색(?q=)이 바뀌면 이 화면 검색어도 따라간다
   if (previousQuery !== params.get('q')) {
@@ -84,7 +109,7 @@ export default function CommunityFeed({ partner = false }: { partner?: boolean }
     if (params.has('q')) { setSearchMounted(true); setSearchOn(true); }
   }
   // 필터가 바뀌면 처음 20개부터 다시 그린다
-  const filterKey = `${activeBoard}|${category}|${searchTerm}|${mine}|${sort}`;
+  const filterKey = `${space}|${lounge}|${consult}|${customerView}|${category}|${searchTerm}|${mine}|${sort}`;
   const [previousFilter, setPreviousFilter] = useState(filterKey);
   if (previousFilter !== filterKey) { setPreviousFilter(filterKey); setRenderCount(20); }
 
@@ -149,13 +174,14 @@ export default function CommunityFeed({ partner = false }: { partner?: boolean }
     setMine(false);
     setCategory(next);
   }
-  function changeBoard(next: Post['boardType']) { setBoard(next); setCategory('전체'); setMine(false); }
   const open = useCallback((post: Post | string) => {
     const id = typeof post === 'string' ? post : post.id;
     if (window.matchMedia(PANEL_QUERY).matches) { setSelected(id); return; }
     try { sessionStorage.setItem(SCROLL_KEY, String(window.scrollY)); } catch { /* 저장소 막힘 */ }
     router.push(`${basePath}/${id}`);
   }, [router, basePath]);
+  // 글쓰기 종류: 의사 라운지 = 자유·과별 / 의사가 고객 쪽에서 = 꿀팁 / 고객 = 질문
+  const composeMode: 'lounge' | 'tip' | 'customer' = doctorSpaces && space === 'doctor' ? 'lounge' : isDoctor ? 'tip' : 'customer';
   function write() {
     if (!user) { window.dispatchEvent(new CustomEvent('dental:login')); return; }
     setCompose(true);
@@ -165,8 +191,8 @@ export default function CommunityFeed({ partner = false }: { partner?: boolean }
     setMine(v => !v);
   }
 
-  // 탭 레일 항목: (의사) 게시판 3개 → 칸막이 → 진료 카테고리
-  const boardItems: RailItem[] = isDoctor && !doctorSpaces ? communityBoards.map(item => ({ key: `b-${item.value}`, label: item.label.replace('게시판', ''), icon: item.icon, on: activeBoard === item.value, onSelect: () => changeBoard(item.value) })) : [];
+  // 탭 레일 = 진료 카테고리만(게시판 섞지 않음). 의사 화면에선 레일 대신 칩 한 줄.
+  const boardItems: RailItem[] = [];
   const categoryItems: RailItem[] = communityCategories.map(cat => ({ key: cat, label: cat, icon: categoryIcons[cat] || categoryIcons['전체'], on: category === cat, onSelect: () => selectCategory(cat) }));
 
   const searchField = (id: string) => <label className={styles.searchInline} htmlFor={id}>
@@ -181,7 +207,9 @@ export default function CommunityFeed({ partner = false }: { partner?: boolean }
       <div className={styles.topbarInner}>
         <div className={styles.titleWrap}><h1 className={styles.title}>커뮤니티</h1></div>
         {/* 모바일: 제목 대신 카테고리 탭이 헤더 한 줄 */}
-        <div className={styles.mobileFilters}><TabRail boards={boardItems} items={categoryItems} /></div>
+        <div className={styles.mobileFilters}>{doctorSpaces
+          ? <h1 className="text-[20px] font-bold tracking-[-0.4px] text-[#191F28]">커뮤니티</h1>
+          : <TabRail boards={boardItems} items={categoryItems} />}</div>
         {searchField('community-search-tablet')}
         <button type="button" className={styles.searchButton} onClick={() => searchOn ? closeSearch() : openSearch()} aria-label="커뮤니티 검색" title="검색"><SearchIcon /></button>
         {/* 검색 버튼 자리에서 헤더 전체로 쭉 펼쳐지는 회색 알약. 탭은 옆으로 비켜 사라진다 */}
@@ -197,25 +225,31 @@ export default function CommunityFeed({ partner = false }: { partner?: boolean }
       </div>
     </header>
 
-    <div className={styles.layout}>
-      <aside className={styles.filterPanel} aria-label="커뮤니티 카테고리"><TabRail boards={boardItems} items={categoryItems} stacked /></aside>
+    <div className={styles.layout} style={doctorSpaces ? { gridTemplateColumns: 'minmax(0,1fr)', maxWidth: 760 } : undefined}>
+      {!doctorSpaces && <aside className={styles.filterPanel} aria-label="커뮤니티 카테고리"><TabRail boards={boardItems} items={categoryItems} stacked /></aside>}
       <main className={styles.feed}>
         <div className={styles.pcTitle}><h1>커뮤니티</h1>{searchField('community-search-pc')}</div>
         {error && <div className={styles.message} role="alert"><span>{error}</span><button type="button" onClick={refresh}>다시 시도</button></div>}
 
-        {doctorSpaces && <div className="px-4 pb-1 pt-2">
+        {doctorSpaces && <div className="pb-1 pt-1">
           <nav className="pd-seg is-wide" aria-label="커뮤니티 나누기" style={{ ['--n' as string]: 2, ['--i' as string]: space === 'doctor' ? 0 : 1 }}>
             <span className="pd-seg-thumb" aria-hidden />
-            <button type="button" className={space === 'doctor' ? 'is-active' : undefined} onClick={() => { setSpace('doctor'); setCategory('전체'); setMine(false); }}>의사 커뮤니티</button>
-            <button type="button" className={space === 'customer' ? 'is-active' : undefined} onClick={() => { setSpace('customer'); setCategory('전체'); setMine(false); }}>고객 질문</button>
+            <button type="button" className={space === 'doctor' ? 'is-active' : undefined} onClick={() => { setSpace('doctor'); setCategory('전체'); setMine(false); }}>의사 라운지</button>
+            <button type="button" className={space === 'customer' ? 'is-active' : undefined} onClick={() => { setSpace('customer'); setCategory('전체'); setMine(false); }}>고객 상담</button>
           </nav>
-          {/* 의사 커뮤니티 — 게시판 칩(자유 · 과별) */}
-          {space === 'doctor' && <div className="mt-2.5 flex gap-1.5">
-            {([['free', '자유 게시판'], ['dental', '과별 게시판']] as const).map(([value, label]) => (
-              <button key={value} type="button" className={`pd-chip${doctorBoard === value ? ' is-active' : ''}`} onClick={() => { setDoctorBoard(value); setCategory('전체'); setMine(false); }}>{label}</button>
-            ))}
-          </div>}
+          <p className="mt-2.5 flex items-center gap-1.5 px-1 text-[13.5px] text-[#8B95A1]">
+            <img src={space === 'doctor' ? '/icons/mono/lock.svg' : '/icons/mono/chat-bubble.svg'} alt="" width={14} height={14} className="opacity-50" />
+            {space === 'doctor' ? '의사 회원끼리만 보는 공간이에요. 고객에게는 보이지 않아요.' : '고객 질문에 댓글로 답하고, 꿀팁을 남겨 보세요.'}
+          </p>
+          <FilterChips
+            items={space === 'doctor'
+              ? [['all', '전체'], ['free', '자유 (익명)'], ['dental', '과별'], ['mine', '내 글']]
+              : [['waiting', '답변 대기'], ['all', '전체 질문'], ['mytips', '내 꿀팁']]}
+            value={space === 'doctor' ? lounge : consult}
+            onChange={v => { if (space === 'doctor') setLounge(v as LoungeFilter); else setConsult(v as ConsultFilter); }}
+          />
         </div>}
+        {!doctorSpaces && !searchTerm && <FilterChips items={[['all', '전체'], ['question', '고객 질문'], ['tip', '의사 꿀팁']]} value={customerView} onChange={v => { setCustomerView(v as CustomerFilter); setMine(false); }} />}
 
         {showWeeklyTabs && <section className={styles.weekly} aria-label="주간 인기글">
           <h2 className={styles.weeklyTitle} role="tablist" aria-label="게시글 보기">
@@ -240,7 +274,7 @@ export default function CommunityFeed({ partner = false }: { partner?: boolean }
           {loading && posts.length === 0 ? <CommunitySkeleton count={2} />
             : visible.length ? visible.slice(0, renderCount).map(post => <CommunityPostCard key={post.id} post={post} basePath={basePath} initialLiked={likedIds.has(post.id)} onOpen={open} onComments={p => setCommentPost(p.id)} onCategory={cat => communityCategories.includes(cat) && selectCategory(cat)} onDeleted={() => { if (selected === post.id) setSelected(null); }} />)
             : !error && <div className={styles.emptyPanel}>
-              <p>{searchTerm ? '검색 결과가 없어요.' : mine ? '내가 쓴 글이 아직 없어요.' : '아직 게시글이 없습니다.'}</p>
+              <p>{searchTerm ? '검색 결과가 없어요.' : mine || lounge === 'mine' && space === 'doctor' && doctorSpaces ? '내가 쓴 글이 아직 없어요.' : doctorSpaces && space === 'customer' && consult === 'waiting' ? '답변을 기다리는 질문이 없어요.' : doctorSpaces && space === 'customer' && consult === 'mytips' ? '아직 남긴 꿀팁이 없어요.' : customerView === 'tip' ? '아직 의사 꿀팁이 없어요.' : '아직 게시글이 없습니다.'}</p>
               <button type="button" onClick={searchTerm ? closeSearch : write}>{searchTerm ? '전체 글 보기' : '첫 이야기 남기기'}</button>
             </div>}
           {!loading && visible.length > renderCount && <div ref={renderMore} style={{ height: 1 }} aria-hidden="true" />}
@@ -249,7 +283,7 @@ export default function CommunityFeed({ partner = false }: { partner?: boolean }
       </main>
     </div>
 
-    <div className={styles.writeDock}><button type="button" className={styles.writeButton} onClick={write}>게시글 +</button></div>
+    <div className={styles.writeDock}><button type="button" className={styles.writeButton} onClick={write}>{composeMode === 'tip' ? '꿀팁 쓰기 +' : composeMode === 'lounge' ? '글쓰기 +' : '질문하기 +'}</button></div>
 
     {/* 넓은 화면 전용 상세 패널 — 목록을 그대로 둔 채 오른쪽을 덮는다 */}
     {selected && <>
@@ -258,7 +292,7 @@ export default function CommunityFeed({ partner = false }: { partner?: boolean }
         <div className={styles.panelBody}><CommunityDetail key={selected} postId={selected} basePath={basePath} onClose={() => setSelected(null)} /></div>
       </aside>
     </>}
-    {compose && <CommunityComposer sheet key={`${activeBoard}-${category}-${user?.id || ''}`} initialBoard={activeBoard} initialCategory={category} onClose={() => setCompose(false)} onPosted={() => { setCompose(false); setMine(false); setCategory('전체'); setQuery(''); refresh(); }} />}
+    {compose && <CommunityComposer sheet mode={composeMode} key={`${composeMode}-${activeBoard}-${category}-${user?.id || ''}`} initialBoard={activeBoard} initialCategory={category} onClose={() => setCompose(false)} onPosted={() => { setCompose(false); setMine(false); setCategory('전체'); setQuery(''); refresh(); }} />}
     {commentPost && <CommunityModal label="게시글 댓글" onClose={() => setCommentPost(null)}><CommunityDetail key={commentPost} postId={commentPost} basePath={basePath} commentsOnly onClose={() => setCommentPost(null)} /></CommunityModal>}
   </div>;
 }
@@ -419,3 +453,11 @@ const WeeklyCards = memo(function WeeklyCards({ posts, onOpen }: { posts: Post[]
     {count > 1 && <div className={styles.weeklyDots} aria-hidden="true">{posts.map((post, index) => <span key={post.id} className={styles.weeklyDot} data-active={index === real || undefined} />)}</div>}
   </>;
 });
+
+// 칩 한 줄(새 톤 r8) — 의사 라운지·고객 상담·고객 커뮤니티 공용
+function FilterChips({ items, value, onChange }: { items: readonly (readonly [string, string])[]; value: string; onChange: (value: string) => void }) {
+  return <div className="no-scrollbar mt-2.5 flex gap-1.5 overflow-x-auto pb-1" role="tablist">
+    {items.map(([key, label]) => <button key={key} type="button" role="tab" aria-selected={value === key} onClick={() => onChange(key)}
+      className={`h-9 shrink-0 rounded-[8px] px-3 text-[14.5px] font-semibold tracking-[-0.2px] transition-colors active:scale-[0.97] ${value === key ? 'bg-[#EFF5FE] text-[#2F6FE4]' : 'bg-[#F2F4F6] text-[#4E5968]'}`}>{label}</button>)}
+  </div>;
+}

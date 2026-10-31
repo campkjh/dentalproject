@@ -24,6 +24,16 @@ export default function NotificationDrawer({ open, onClose }: { open: boolean; o
     return () => window.clearTimeout(t);
   }, [open]);
 
+  // 열려 있는 동안 뒤 화면 스크롤 잠금(의사 화면에서 서랍 뒤 목록이 같이 밀리던 문제)
+  useEffect(() => {
+    if (!open) return;
+    const html = document.documentElement;
+    const prev = { body: document.body.style.overflow, html: html.style.overflow };
+    document.body.style.overflow = 'hidden';
+    html.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = prev.body; html.style.overflow = prev.html; };
+  }, [open]);
+
   // ESC 로 닫기
   useEffect(() => {
     if (!open) return;
@@ -38,7 +48,7 @@ export default function NotificationDrawer({ open, onClose }: { open: boolean; o
       <div
         data-notification-drawer
         onClick={onClose}
-        className={`fixed inset-0 z-[60] bg-black/25 transition-opacity duration-300 ${
+        className={`fixed inset-0 z-[120] bg-black/25 transition-opacity duration-300 ${
           open ? 'opacity-100' : 'pointer-events-none opacity-0'
         }`}
         aria-hidden={!open}
@@ -48,7 +58,7 @@ export default function NotificationDrawer({ open, onClose }: { open: boolean; o
         role="dialog"
         aria-modal={open}
         // 닫히면 슬라이드가 끝난 뒤 invisible — 화면 밖에 걸린 서랍 그림자가 페이지 오른쪽 끝에 회색 띠로 번지지 않게
-        className={`fixed right-0 top-0 z-[61] flex h-full w-screen flex-col bg-white shadow-[-12px_0_40px_rgba(15,23,42,0.12)] ease-out sm:w-[420px] sm:max-w-[92vw] ${
+        className={`fixed right-0 top-0 z-[121] flex h-full w-screen flex-col bg-white shadow-[-12px_0_40px_rgba(15,23,42,0.12)] ease-out sm:w-[420px] sm:max-w-[92vw] ${
           open
             ? 'visible translate-x-0 [transition:transform_300ms_cubic-bezier(0,0,0.2,1),visibility_0s]'
             : 'invisible translate-x-full [transition:transform_300ms_cubic-bezier(0,0,0.2,1),visibility_0s_linear_300ms]'

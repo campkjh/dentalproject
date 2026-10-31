@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { isDoctorOnlyBoard } from '@/lib/community';
+import { viewerCanSeeDoctorBoards } from '@/lib/community-viewer';
 
 export const dynamic = 'force-dynamic';
 type Context = { params: Promise<{ id: string }> };
@@ -11,6 +13,10 @@ export async function GET(_request: Request, { params }: Context) {
   try {
     const { id } = await params;
     const sb = await createClient();
+    const { data: parentPost } = await sb.from('posts').select('board_type').eq('id', id).maybeSingle();
+    if (isDoctorOnlyBoard(parentPost?.board_type) && !(await viewerCanSeeDoctorBoards(sb))) {
+      return NextResponse.json({ error: '의사 회원만 볼 수 있는 글이에요.' }, { status: 403 });
+    }
     const { data: rows, error } = await sb.from('comments')
       .select('id, post_id, author_id, parent_comment_id, content, is_anonymous, anonymous_id, like_count, created_at, author:profiles!comments_author_id_fkey(name, is_doctor, profile_image)')
       .eq('post_id', id).order('created_at', { ascending: true });
@@ -55,6 +61,9 @@ export async function POST(request: Request, { params }: Context) {
     if (!content || content.length > 5000) return NextResponse.json({ error: '댓글은 1~5,000자로 입력해주세요.' }, { status: 400 });
     const { data: post } = await sb.from('posts').select('board_type').eq('id', id).single();
     if (!post) return NextResponse.json({ error: '게시글을 찾을 수 없습니다.' }, { status: 404 });
+    if (isDoctorOnlyBoard(post.board_type) && !(await viewerCanSeeDoctorBoards(sb))) {
+      return NextResponse.json({ error: '의사 회원만 댓글을 남길 수 있어요.' }, { status: 403 });
+    }
     if (body.parentCommentId) {
       const { data: parent } = await sb.from('comments').select('id, parent_comment_id').eq('id', body.parentCommentId).eq('post_id', id).single();
       if (!parent || parent.parent_comment_id) return NextResponse.json({ error: '답글을 작성할 댓글을 찾을 수 없습니다.' }, { status: 400 });

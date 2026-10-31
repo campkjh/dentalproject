@@ -7,15 +7,18 @@ import { useRouter } from 'next/navigation';
 import Avatar from '@/components/common/Avatar';
 import { useStore } from '@/store';
 import { compressImage } from '@/lib/compressImage';
-import { communityBoards, communityCategories } from '@/lib/community';
+import { communityCategories, TIP_TAG } from '@/lib/community';
 import { communityTags } from '@/lib/mock-data';
 import type { Post } from '@/types';
 import { CloseIcon } from './StadyIcons';
 import styles from './community.module.css';
 
 // 스타디 '새로운 스레드' 글쓰기 — sheet 는 목록 위에 뜨는 시트, 아니면 글쓰기·수정 페이지 한 장
-export default function CommunityComposer({ initialBoard = 'question', initialCategory, post, onClose, onPosted, sheet = false }: {
-  initialBoard?: Post['boardType']; initialCategory?: string; post?: Post;
+// 글 종류(261031): lounge = 의사 라운지(자유·과별, 의사끼리) / tip = 고객 커뮤니티에 남기는 의사 꿀팁 / customer = 고객 질문
+type ComposeMode = 'lounge' | 'tip' | 'customer';
+const LOUNGE_CHOICES: { value: Post['boardType']; label: string }[] = [{ value: 'free', label: '자유 (익명)' }, { value: 'dental', label: '과별' }];
+export default function CommunityComposer({ initialBoard = 'question', initialCategory, post, mode: modeProp, onClose, onPosted, sheet = false }: {
+  initialBoard?: Post['boardType']; initialCategory?: string; post?: Post; mode?: ComposeMode;
   onClose: () => void; onPosted: (postId: string) => void;
   sheet?: boolean;
 }) {
@@ -26,7 +29,8 @@ export default function CommunityComposer({ initialBoard = 'question', initialCa
   const showToast = useStore(s => s.showToast);
   const showModal = useStore(s => s.showModal);
   const mounted = useSyncExternalStore(() => () => {}, () => true, () => false);
-  const [board, setBoard] = useState<Post['boardType']>(post?.boardType || (isDoctor ? initialBoard : 'question'));
+  const mode: ComposeMode = post ? (post.boardType === 'question' ? (post.tags.includes(TIP_TAG) ? 'tip' : 'customer') : 'lounge') : modeProp ?? (isDoctor ? 'tip' : 'customer');
+  const [board, setBoard] = useState<Post['boardType']>(post?.boardType || (mode === 'lounge' ? (initialBoard === 'dental' ? 'dental' : 'free') : 'question'));
   const [content, setContent] = useState(post?.content ?? '');
   const [title, setTitle] = useState(post?.title ?? '');
   const [tags, setTags] = useState(post?.tags ?? (initialCategory && initialCategory !== '전체' ? [initialCategory] : []));
@@ -40,10 +44,10 @@ export default function CommunityComposer({ initialBoard = 'question', initialCa
   const textarea = useRef<HTMLTextAreaElement>(null);
   const busy = useRef(false);
   const alive = useRef(true);
-  const choices = isDoctor ? communityBoards : communityBoards.slice(0, 1);
+  const choices = mode === 'lounge' ? LOUNGE_CHOICES : [{ value: 'question' as const, label: mode === 'tip' ? '의사 꿀팁' : '고객 질문' }];
   const availableTags = board === 'question' ? communityCategories.slice(1) : communityTags;
   const dirty = content !== (post?.content ?? '') || image !== (post?.imageUrl ?? '') || title !== (post?.title ?? '');
-  const boardLabel = choices.find(item => item.value === board)?.label || communityBoards[0].label;
+  const boardLabel = choices.find(item => item.value === board)?.label || choices[0].label;
   const anonymous = board === 'free';
 
   useEffect(() => {
@@ -107,15 +111,20 @@ export default function CommunityComposer({ initialBoard = 'question', initialCa
     setSubmitting(true);
     setError('');
     try {
+      // 꿀팁은 첫 태그로 표시(카드 알약이 '의사꿀팁'), 그 밖의 글엔 붙지 않게
+      const finalTags = post
+        ? (mode === 'tip' ? [TIP_TAG, ...tags.filter(t => t !== TIP_TAG)] : tags.filter(t => t !== TIP_TAG))
+        : (mode === 'tip' ? [TIP_TAG] : []); // 새 글 태그는 서버에서 AI 가 고른다
+
       const nextTitle = (post ? title.trim() : content.trim().split('\n')[0].slice(0, 60)) || '새 글';
       if (post) {
         const response = await fetch(`/api/posts/${post.id}`, {
           method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ title: nextTitle, content: content.trim(), tags, imageUrl: image || null }),
+          body: JSON.stringify({ title: nextTitle, content: content.trim(), tags: finalTags, imageUrl: image || null }),
         });
         const result = await response.json();
         if (!response.ok) throw new Error(result.error || '게시글 수정에 실패했습니다.');
-        useStore.setState(state => ({ posts: state.posts.map(p => p.id === post.id ? { ...p, title: nextTitle, content: content.trim(), tags, imageUrl: image || undefined, thumbnailUrl: image || undefined } : p) }));
+        useStore.setState(state => ({ posts: state.posts.map(p => p.id === post.id ? { ...p, title: nextTitle, content: content.trim(), tags: finalTags, imageUrl: image || undefined, thumbnailUrl: image || undefined } : p) }));
         showToast('게시글이 수정되었습니다.');
         onPosted(post.id);
       } else {
@@ -126,7 +135,7 @@ export default function CommunityComposer({ initialBoard = 'question', initialCa
           authorProfileImage: user.profileImage, isAnonymous: board === 'free',
           anonymousId: board === 'free' ? String(Math.floor(1000 + Math.random() * 9000)) : undefined,
           createdAt: new Date().toISOString(), date: new Date().toLocaleDateString('ko-KR'),
-          viewCount: 0, likeCount: 0, commentCount: 0, tags, imageUrl: image || undefined,
+          viewCount: 0, likeCount: 0, commentCount: 0, tags: finalTags, imageUrl: image || undefined,
           thumbnailUrl: image || undefined, hasAnswer: false, answerCount: 0,
         };
         const result = await addPost(next);
@@ -165,7 +174,7 @@ export default function CommunityComposer({ initialBoard = 'question', initialCa
   const head = <div className={styles.cmpHead}>
     <button type="button" className={styles.cmpCancel} onClick={requestClose} disabled={submitting || uploading}>취소</button>
     <span className={styles.cmpTitle}>{post ? '게시글 수정' : '새 게시글'}</span>
-    <span className={styles.cmpHeadRight}><button type="button" className={styles.cmpPost} onClick={submit} disabled={!content.trim() || submitting || uploading}>{submitting ? '저장 중…' : uploading ? '업로드 중…' : post ? '저장' : '게시'}</button></span>
+    <span className={styles.cmpHeadRight}><button type="button" className={styles.cmpPost} onClick={submit} disabled={!content.trim() || submitting || uploading}>{submitting ? (post ? '저장 중…' : '태그 고르는 중…') : uploading ? '업로드 중…' : post ? '저장' : '게시'}</button></span>
   </div>;
   const body = <div className={styles.cmpBody}>
     <div className={styles.cmpRow}>
@@ -181,7 +190,7 @@ export default function CommunityComposer({ initialBoard = 'question', initialCa
         </div>
         {pickerOpen && <div className={styles.cmpCatList}>{choices.map(item => <button key={item.value} type="button" className={styles.cmpCatItem} aria-pressed={board === item.value} onClick={() => { setBoard(item.value); setTags([]); setPickerOpen(false); }}>{item.label}</button>)}</div>}
         {post && <input className={styles.cmpTitleInput} aria-label="제목" placeholder="제목" value={title} maxLength={100} onChange={e => setTitle(e.target.value)} />}
-        <textarea ref={textarea} className={styles.cmpTextarea} aria-label="게시글 내용" rows={1} placeholder={board === 'question' ? '궁금한 치아 이야기를 들려주세요.' : '새로운 소식이 있나요?'} value={content} maxLength={5000} onChange={e => setContent(e.target.value)} />
+        <textarea ref={textarea} className={styles.cmpTextarea} aria-label="게시글 내용" rows={1} placeholder={mode === 'tip' ? '고객에게 도움이 될 꿀팁을 남겨 주세요.' : board === 'question' ? '궁금한 치아 이야기를 들려주세요.' : '동료 의사들과 나누고 싶은 이야기가 있나요?'} value={content} maxLength={5000} onChange={e => setContent(e.target.value)} />
         {image && <div className={styles.cmpImages}><div className={styles.cmpImage}>
           <img src={image} alt="첨부 이미지" />
           {uploading ? <span className={styles.cmpImageBusy}><LoaderCircle size={22} className="animate-spin" /></span>
@@ -192,18 +201,22 @@ export default function CommunityComposer({ initialBoard = 'question', initialCa
           <button type="button" className={styles.cmpAttachBtn} aria-label="사진 첨부" title="사진 첨부" onClick={() => fileRef.current?.click()} disabled={uploading}><img src="/icons/toss/picture.svg" alt="" /></button>
           <span className={styles.cmpCount}>{content.length.toLocaleString()}/5,000</span>
         </div>
-        <p className={styles.cmpLabel}>태그 · 최대 5개</p>
+        {!post && <p className="mt-3 flex items-center gap-1.5 text-[13.5px] text-[#8B95A1]">
+          <span className="inline-flex h-5 items-center rounded-[5px] bg-[#EFF5FE] px-1.5 text-[11.5px] font-bold text-[#2F6FE4]">AI</span>
+          태그는 글을 읽고 자동으로 붙여요
+        </p>}
+        {post && <><p className={styles.cmpLabel}>태그 · 최대 5개</p>
         <div className={styles.cmpCatList} aria-label="게시글 태그">
           {availableTags.map(tag => <button key={tag} type="button" className={styles.cmpCatItem} aria-pressed={tags.includes(tag)} onClick={() => {
             if (!tags.includes(tag) && tags.length >= 5) { showToast('태그는 최대 5개까지 선택할 수 있습니다.'); return; }
             setTags(current => current.includes(tag) ? current.filter(t => t !== tag) : [...current, tag]);
           }}>{tag}</button>)}
-        </div>
+        </div></>}
       </div>
     </div>
     <div className={styles.cmpHint}>
       <Avatar size={26} src={anonymous ? undefined : user?.profileImage} seed={user?.id} />
-      <span>{anonymous ? '익명으로 게시돼요' : '함께 나누는 건강한 치아 이야기'}</span>
+      <span>{anonymous ? '익명으로 게시돼요 · 의사 회원만 볼 수 있어요' : mode === 'lounge' ? '의사 회원만 볼 수 있어요' : mode === 'tip' ? '고객 커뮤니티에 의사 꿀팁으로 올라가요' : '함께 나누는 건강한 치아 이야기'}</span>
     </div>
     {error && <p className={styles.cmpMsg} role="alert">{error}</p>}
   </div>;

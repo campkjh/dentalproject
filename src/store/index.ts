@@ -462,8 +462,9 @@ export const useStore = create<AppState>((set, get) => ({
         set({ posts: get().posts.filter((p) => p.id !== post.id) });
         return { error: j.error || `등록 실패 (${res.status})` };
       }
-      const { id } = await res.json();
-      set({ posts: get().posts.map((p) => (p.id === post.id ? { ...p, id } : p)) });
+      const { id, tags } = await res.json();
+      // 서버(AI)가 고른 태그로 바꿔 끼운다
+      set({ posts: get().posts.map((p) => (p.id === post.id ? { ...p, id, tags: Array.isArray(tags) ? tags : p.tags } : p)) });
       return { error: null, id };
     } catch (e) {
       set({ posts: get().posts.filter((p) => p.id !== post.id) });
