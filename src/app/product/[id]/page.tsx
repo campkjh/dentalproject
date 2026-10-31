@@ -60,6 +60,15 @@ function closedNotice(hours: { day: string; startTime?: string; endTime?: string
   return null;
 }
 
+/** 좋아요 기기 기억(서버 표가 없을 때·로그인 전 상태 복원용) */
+const LIKED_KEY = 'md-liked-products';
+function readLikedLocal(): string[] {
+  try { const v = JSON.parse(localStorage.getItem(LIKED_KEY) || '[]'); return Array.isArray(v) ? v : []; } catch { return []; }
+}
+function writeLikedLocal(id: string, on: boolean) {
+  try { localStorage.setItem(LIKED_KEY, JSON.stringify(on ? [id, ...readLikedLocal().filter(x => x !== id)] : readLikedLocal().filter(x => x !== id))); } catch { /* 저장소 막힘 */ }
+}
+
 /** 후기 작성 적립(api/reviews 가 주는 500P) — 상품 상세 '최대 N P 적립' 줄 */
 const REVIEW_POINT = 500;
 
@@ -112,6 +121,9 @@ export default function ProductDetailPage() {
   const [activeSection, setActiveSection] = useState<SectionId>('desc');
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
   const [heartAnim, setHeartAnim] = useState(false);
+  // 좋아요(하트) — 포켓과 별개. 서버(product_likes)가 아직 없으면 이 기기에만 기억한다
+  const [liked, setLiked] = useState<boolean | null>(null);
+  const [likeAnim, setLikeAnim] = useState(false);
   const [priceOpen, setPriceOpen] = useState(false);
   const [optionId, setOptionId] = useState<string | null>(null);
   const [imageModal, setImageModal] = useState<string | null>(null);
@@ -126,6 +138,16 @@ export default function ProductDetailPage() {
   const pocketColor = toneAccent(productTone) || '#6B7684';
   const hospital = hospitals.find(h => h.id === product?.hospitalId);
   const productReviews = reviews.filter(r => r.productId === product?.id);
+
+  useEffect(() => {
+    if (!product) return;
+    let alive = true;
+    const local = readLikedLocal().includes(product.id);
+    fetch(`/api/products/${product.id}/like`).then(r => r.json()).then((d: { liked?: boolean; missing?: boolean }) => {
+      if (alive) setLiked(d.missing || !user ? local : !!d.liked);
+    }).catch(() => { if (alive) setLiked(local); });
+    return () => { alive = false; };
+  }, [product?.id, user]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (product) addRecentlyViewed(product.id);
@@ -218,6 +240,14 @@ export default function ProductDetailPage() {
     setHeartAnim(true);
     setTimeout(() => setHeartAnim(false), 400);
   };
+  const toggleLike = () => {
+    if (!user) { window.dispatchEvent(new Event('dental:login')); return; }
+    const next = !liked;
+    setLiked(next);
+    writeLikedLocal(product.id, next);
+    if (next) { setLikeAnim(true); setTimeout(() => setLikeAnim(false), 450); }
+    fetch(`/api/products/${product.id}/like`, { method: next ? 'POST' : 'DELETE' }).catch(() => {});
+  };
   const scrollToSection = (id: SectionId) => {
     const el = sectionRefs[id].current;
     const offset = STICKY_OFFSET + (window.innerWidth >= 1024 ? 12 : 0);
@@ -234,14 +264,14 @@ export default function ProductDetailPage() {
   // 바닥 버튼 — 사장 견본: 하트 · 가방(포켓) · 연파랑 보조 · 파랑 주 버튼
   const buttons = (
     <div className="flex items-center gap-2">
-      <button type="button" aria-label={isWished ? '찜 빼기' : '찜하기'} onClick={wish} className="flex h-14 w-11 shrink-0 items-center justify-center transition-transform active:scale-90">
-        <svg width="32" height="32" viewBox="0 0 24 24" aria-hidden className={heartAnim ? 'heart-pop' : undefined}>
-          <path d="M12 20.3s-7.8-4.6-7.8-10.4A4.4 4.4 0 0 1 12 7.2a4.4 4.4 0 0 1 7.8 2.7c0 5.8-7.8 10.4-7.8 10.4z" fill={isWished ? '#F04452' : 'none'} stroke={isWished ? '#F04452' : '#9E9E9E'} strokeWidth="1.9" strokeLinejoin="round" />
+      <button type="button" aria-label={liked ? '좋아요 취소' : '좋아요'} aria-pressed={!!liked} onClick={toggleLike} className="flex h-14 w-11 shrink-0 items-center justify-center transition-transform active:scale-90">
+        <svg width="32" height="32" viewBox="0 0 24 24" aria-hidden className={likeAnim ? 'heart-pop' : undefined}>
+          <path d="M12 20.3s-7.8-4.6-7.8-10.4A4.4 4.4 0 0 1 12 7.2a4.4 4.4 0 0 1 7.8 2.7c0 5.8-7.8 10.4-7.8 10.4z" fill={liked ? '#F04452' : 'none'} stroke={liked ? '#F04452' : '#9E9E9E'} strokeWidth="1.9" strokeLinejoin="round" style={{ transition: 'fill .2s ease, stroke .2s ease' }} />
         </svg>
       </button>
-      <Link href="/wishlist" aria-label="포켓 보기" className="flex h-14 w-11 shrink-0 items-center justify-center transition-transform active:scale-90">
-        <PocketIcon size={30} strokeWidth={1.9} style={{ color: '#9E9E9E' }} />
-      </Link>
+      <button type="button" aria-label={isWished ? '포켓에서 빼기' : '포켓에 담기'} aria-pressed={isWished} onClick={wish} className="flex h-14 w-11 shrink-0 items-center justify-center transition-transform active:scale-90">
+        <PocketIcon size={30} filled={isWished} strokeWidth={1.9} className={heartAnim ? 'heart-pop' : undefined} style={{ color: isWished ? pocketColor : '#9E9E9E' }} />
+      </button>
       <button
         type="button"
         onClick={() => router.push(`/booking?productId=${product.id}`)}

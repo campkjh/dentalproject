@@ -233,9 +233,8 @@ export default function PocketPage() {
                     선택 삭제
                   </button>
                 </div>
-                <div className="mx-4 h-px bg-[#F2F4F6] pc:mx-0" />
-
-                <ul className="divide-y divide-[#F2F4F6] px-4 pc:px-0">
+                
+                <ul className="px-4 pc:px-0">
                   {pocketProducts.map((p) => {
                     const enter = enterProps(`pocket:${p.id}`);
                     return (
@@ -268,7 +267,7 @@ export default function PocketPage() {
                   </div>
                   <dl className="mt-5 space-y-2.5 text-[15px] tracking-[-0.2px]">
                     <div className="flex justify-between"><dt className="text-[#6B7684]">상품 금액</dt><dd className="tabular-nums text-[#333D4B]">{won(originalTotal)}</dd></div>
-                    <div className="flex justify-between"><dt className="text-[#6B7684]">할인 금액</dt><dd className="tabular-nums text-[#F04452]">{saved > 0 ? `-${won(saved)}` : '0원'}</dd></div>
+                    <div className="flex justify-between"><dt className="text-[#6B7684]">할인 금액</dt><dd className="tabular-nums text-[#2F6FE4]">{saved > 0 ? `-${won(saved)}` : '0원'}</dd></div>
                   </dl>
                   <div className="my-4 h-px bg-[#E5E8EB]" />
                   <div className="flex items-baseline justify-between">
@@ -311,22 +310,23 @@ export default function PocketPage() {
         </>
       )}
 
-      {/* 모바일 아래 고정 영역 — 선택 개수 · 합계 · 큰 예약하기(56 · r16) */}
+      {/* 모바일 아래 고정 영역 — 상품 상세 바닥 결(261031): 선 대신 흰 그라데이션 · 연파랑 합계 줄 · 파랑 예약 버튼(56 · r18) */}
       {showCheckout && (
         <div className={pocketStyles.checkoutBar}>
           <div className={pocketStyles.checkoutInner}>
-            <div className="flex items-baseline justify-between px-1">
-              <span className="text-[14px] tracking-[-0.2px] text-[#6B7684]">
-                선택 <span className="font-semibold tabular-nums text-[#191F28]">{selected.length}개</span>
-                {saved > 0 && <span className="ml-1.5 text-[#F04452]">{won(saved)} 할인</span>}
+            <span aria-hidden className="pointer-events-none absolute inset-x-0 bottom-full h-8 bg-gradient-to-b from-white/0 to-white" />
+            <div className="flex items-center justify-between rounded-[14px] bg-[#EFF5FE] px-4 py-3">
+              <span className="text-[14.5px] tracking-[-0.2px] text-[#4E5968]">
+                선택 <b className="font-bold tabular-nums text-[#1E3A78]">{selected.length}개</b>
+                {saved > 0 && <span className="ml-1.5 font-semibold text-[#2F6FE4]">{won(saved)} 할인</span>}
               </span>
-              <span className="text-[19px] font-bold tabular-nums tracking-[-0.4px] text-[#191F28]">{won(total)}</span>
+              <span className="text-[20px] font-bold tabular-nums tracking-[-0.5px] text-[#1E3A78]">{won(total)}</span>
             </div>
             <button
               type="button"
               onClick={startBooking}
               disabled={selected.length === 0}
-              className="mt-2.5 flex h-[54px] w-full items-center justify-center rounded-[17px] bg-[#3180F7] text-[17px] font-bold tracking-[-0.2px] text-white transition active:scale-[0.98] active:bg-[#2272EB] disabled:bg-[#D1D6DB]"
+              className="mt-2 flex h-14 w-full items-center justify-center rounded-[18px] bg-[#4A82EE] text-[17px] font-bold tracking-[-0.2px] text-white transition active:scale-[0.98] disabled:bg-[#D1D6DB]"
             >
               {selected.length === 0 ? '상품을 골라 주세요' : bookLabel}
             </button>

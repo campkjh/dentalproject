@@ -1,6 +1,6 @@
 'use client';
 
-// 포켓 한 줄 — 장바구니 줄(체크 · 사진 84 · 병원 13 회색 · 상품명 16 굵게 2줄 · 할인율 + 가격 17 굵게 · 원가 취소선).
+// 포켓 한 줄 — 장바구니 줄(체크 · 사진 84 · 병원 13 회색 · 상품명 16 2줄 · 남색 할인율 + 가격 18 굵게 · 원가 취소선). 261031 상품 상세 가격 카드 톤.
 //  · 포켓 탭 = 왼쪽 체크 + 오른쪽 위 ×(빼기). 최근 본 탭 = 체크 없이 오른쪽 가방(담기/빼기).
 //  · 줄을 누르면 상품 상세. 체크·버튼은 상세로 넘어가지 않게 막는다.
 import { useState, type CSSProperties } from 'react';
@@ -11,12 +11,11 @@ import { PocketIcon } from '@/components/icons/PocketIcon';
 import { resolveProductImageUrl } from '@/lib/images';
 import styles from './pocket.module.css';
 
+/** 동그란 체크 — 거르기 시트와 같은 결(globals .chk-dot): 켜면 톡 튀며 체크가 그려지고, 끄면 살짝 움츠렸다 돌아온다 */
 export function CheckCircle({ on }: { on: boolean }) {
   return (
-    <span className={styles.check} data-on={on ? 'true' : 'false'} aria-hidden="true">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-        <path d="M5 12.5l4.5 4.5L19 7.5" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
+    <span key={String(on)} aria-hidden="true" className={`chk-dot flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${on ? 'is-on bg-[#2F6FE4]' : 'is-off border-2 border-[#E5E8EB] bg-white'}`}>
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={on ? '#fff' : '#D1D6DB'} strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
     </span>
   );
 }
@@ -75,10 +74,10 @@ export default function PocketRow({
         </span>
         <span className={`min-w-0 flex-1 ${mode === 'pocket' ? 'pr-7' : 'pr-11'}`}>
           <span className="block truncate text-[13px] tracking-[-0.2px] text-[#8B95A1]">{product.hospitalName}{product.location ? ` · ${product.location}` : ''}</span>
-          <span className="mt-0.5 line-clamp-2 break-words text-[16px] font-bold leading-[1.4] tracking-[-0.3px] text-[#191F28]">{product.title}</span>
+          <span className="mt-0.5 line-clamp-2 break-words text-[16px] font-medium leading-[1.4] tracking-[-0.3px] text-[#191F28]">{product.title}</span>
           <span className="mt-1.5 flex items-baseline gap-1.5">
-            {discount > 0 && <span className="text-[16px] font-bold tabular-nums text-[#F04452]">{discount}%</span>}
-            <span className="text-[17px] font-bold tabular-nums tracking-[-0.3px] text-[#191F28]">{product.price.toLocaleString()}원</span>
+            {discount > 0 && <span className="text-[16px] font-bold tabular-nums text-[#1E3A78]">{discount}%</span>}
+            <span className="text-[18px] font-bold tabular-nums tracking-[-0.4px] text-[#1E3A78]">{product.price.toLocaleString()}원</span>
             {showOriginal && <span className="text-[13px] tabular-nums text-[#B0B8C1] line-through">{product.originalPrice!.toLocaleString()}원</span>}
           </span>
         </span>
@@ -99,7 +98,7 @@ export default function PocketRow({
           onClick={onTogglePocket}
           aria-label={inPocket ? `${product.title} 포켓에서 빼기` : `${product.title} 포켓에 담기`}
           aria-pressed={inPocket}
-          className={`absolute right-0 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full transition active:scale-90 ${inPocket ? 'bg-[#E8F3FF] text-[#3180F7]' : 'bg-[#F2F4F6] text-[#6B7684]'}`}
+          className={`absolute right-0 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-[12px] transition active:scale-90 ${inPocket ? 'bg-[#EFF5FE] text-[#2F6FE4]' : 'bg-[#F2F4F6] text-[#6B7684]'}`}
         >
           <PocketIcon size={20} filled={inPocket} />
         </button>
