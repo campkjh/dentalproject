@@ -56,7 +56,7 @@ const PRICE_PRESETS: { label: string; min: number | null; max: number | null }[]
   { label: '320,000원 이상', min: 320000, max: null },
 ];
 const bookingMethods = ['전체', '앱결제', '현장결제', '상담 후 결제'];
-const sortOptions = ['추천순', '가격 낮은순', '가격 높은순', '평점순', '리뷰 많은순'];
+const sortOptions = ['추천순', '가격 낮은순', '가격 높은순', '평점 높은순', '리뷰 많은순'];
 
 export default function SearchPageWrapper() {
   return (
@@ -149,10 +149,14 @@ function SearchPage() {
 
   // 전체 카테고리 화면(머리 햄버거) — 진료과 알약 줄 대신
   const [allCatsOpen, setAllCatsOpen] = useState(false);
+  // 카테고리 목록 머리 검색 칸 — 진료과 이름을 보여 주다가 X 를 누르면 비운다(진료과를 바꾸면 다시 보인다)
+  const [catLabelCleared, setCatLabelCleared] = useState(false);
+  const catInputRef = useRef<HTMLInputElement>(null);
   // 본 진료과를 '최근 본 카테고리'로 남긴다
   useEffect(() => { if (activeCategory) rememberCategory(activeCategory); }, [activeCategory]);
 
   const changeCategory = (id: string) => {
+    setCatLabelCleared(false);
     const nextIdx = categoryTabIds.indexOf(id);
     setTabDirection(nextIdx >= prevTabIdxRef.current ? 'right' : 'left');
     prevTabIdxRef.current = nextIdx;
@@ -472,15 +476,16 @@ function SearchPage() {
             <Search size={19} strokeWidth={2.2} className="shrink-0 text-[#8B95A1]" />
             <input
               type="text"
-              value={query || currentCat?.name || ''}
+              ref={catInputRef}
+              value={query || (catLabelCleared ? '' : currentCat?.name || '')}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter' && query) handleSearch(); }}
               placeholder="원하는 시술이 있으신가요?"
               style={{ fontSize: 16 }}
               className="min-w-0 flex-1 bg-transparent font-medium text-[#191F28] outline-none placeholder:font-normal placeholder:text-[#8B95A1]"
             />
-            {(query || currentCat) && (
-              <button onClick={() => { setQuery(''); setHasSearched(false); }}>
+            {(query || (currentCat && !catLabelCleared)) && (
+              <button type="button" aria-label="검색어 지우기" onClick={() => { setQuery(''); setHasSearched(false); setCatLabelCleared(true); catInputRef.current?.focus(); }}>
                 <svg width={20} height={20} viewBox="0 0 24 24" fill="none">
                   <circle cx="12" cy="12" r="10" fill="#C9CED6" />
                   <path d="m15 9-6 6" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
@@ -508,7 +513,7 @@ function SearchPage() {
           onOpenRegion={() => setFilterModalTab('region')}
           onOpenPrice={() => setFilterModalTab('price')}
           onOpenBooking={() => setFilterModalTab('booking')}
-          onOpenSort={() => setShowSortModal(true)}
+          setSelectedSort={setSelectedSort}
           count={categoryResults.length}
         />
 
@@ -562,20 +567,6 @@ function SearchPage() {
           />
         )}
 
-        {/* Sort Modal */}
-        {showSortModal && (
-          <FilterModal title="정렬" onClose={() => setShowSortModal(false)}>
-            <div className="flex-1 overflow-y-auto">
-              {sortOptions.map((opt) => (
-                <button key={opt} onClick={() => { setSelectedSort(opt); setShowSortModal(false); }}
-                  className={`w-full flex items-center justify-between px-5 py-3.5 text-sm hover:bg-gray-50 transition-colors ${selectedSort === opt ? 'text-[#3180F7] font-medium bg-[#EDF4FF]' : 'text-gray-700'}`}>
-                  <span>{opt}</span>
-                  {selectedSort === opt && <Check size={16} className="text-[#3180F7]" />}
-                </button>
-              ))}
-            </div>
-          </FilterModal>
-        )}
       </div>
     );
   }
@@ -632,7 +623,7 @@ function SearchPage() {
           onOpenRegion={() => setFilterModalTab('region')}
           onOpenPrice={() => setFilterModalTab('price')}
           onOpenBooking={() => setFilterModalTab('booking')}
-          onOpenSort={() => setShowSortModal(true)}
+          setSelectedSort={setSelectedSort}
           count={searchResults.length}
         />
 
@@ -689,18 +680,6 @@ function SearchPage() {
             onLocate={handleCurrentLocation}
             locating={locating}
           />
-        )}
-        {showSortModal && (
-          <FilterModal title="정렬" onClose={() => setShowSortModal(false)}>
-            <div className="flex-1 overflow-y-auto">
-              {sortOptions.map((o) => (
-                <button key={o} onClick={() => { setSelectedSort(o); setShowSortModal(false); }}
-                  className={`w-full flex items-center justify-between px-5 py-3.5 text-sm hover:bg-gray-50 ${selectedSort === o ? 'text-[#3180F7] font-medium bg-[#EDF4FF]' : 'text-gray-700'}`}>
-                  <span>{o}</span>{selectedSort === o && <Check size={16} className="text-[#3180F7]" />}
-                </button>
-              ))}
-            </div>
-          </FilterModal>
         )}
       </div>
     );
@@ -1308,10 +1287,10 @@ function ListPageFilters({
   selectedBooking,
   selectedSort,
   setSelectedBooking,
+  setSelectedSort,
   onOpenRegion,
   onOpenPrice,
   onOpenBooking,
-  onOpenSort,
   count,
 }: {
   categories: { id: string; name: string; icon?: string }[];
@@ -1327,34 +1306,41 @@ function ListPageFilters({
   onOpenRegion: () => void;
   onOpenPrice: () => void;
   onOpenBooking: () => void;
-  onOpenSort: () => void;
+  setSelectedSort: (s: string) => void;
   count: number;
 }) {
   const isAppPay = selectedBooking === '앱결제';
+  const [sortOpen, setSortOpen] = useState(false);
 
+  // 칩 — 상품 상세 순위 알약 결(261031): 모서리 8 · 회색 면 · 고르면 연파랑 면 + 파랑 글자
   const chip = (active: boolean) =>
-    `inline-flex h-[34px] shrink-0 items-center gap-1 whitespace-nowrap rounded-full px-3.5 text-[14px] font-semibold tracking-[-0.2px] transition-colors active:scale-[0.97] ${
-      active ? 'bg-[#EDF4FF] text-[#3180F7]' : 'bg-[#F2F4F6] text-[#4E5968]'
+    `inline-flex h-9 shrink-0 items-center gap-0.5 whitespace-nowrap rounded-[8px] pl-3 pr-2 text-[14.5px] font-semibold tracking-[-0.2px] transition-all active:scale-[0.97] ${
+      active ? 'bg-[#EFF5FE] text-[#2F6FE4]' : 'bg-[#F2F4F6] text-[#333D4B] active:bg-[#E5E8EB]'
     }`;
+  const caret = (active: boolean) => <ChevronDown size={16} strokeWidth={2.4} className={active ? 'text-[#2F6FE4]' : 'text-[#8B95A1]'} />;
+  const regionOn = selectedRegions.length > 0;
+  const bookingOn = selectedBooking !== '전체' && !isAppPay;
 
   return (
     <div className="bg-white">
       {/* 거르기 칩 — 지역 · 가격 · 예약방법 · 앱결제 */}
       <div className="flex gap-1.5 overflow-x-auto hide-scrollbar px-4 pb-1 pt-1">
-        <button type="button" onClick={onOpenRegion} className={chip(selectedRegions.length > 0)}>
-          {selectedRegions.length > 0 ? regionLabel : '지역'}
-          <ChevronDown size={15} strokeWidth={2.4} />
+        <button type="button" onClick={onOpenRegion} className={chip(regionOn)}>
+          {regionOn ? regionLabel : '지역'}
+          {caret(regionOn)}
         </button>
         <button type="button" onClick={onOpenPrice} className={chip(priceActive)}>
           {priceLabel}
-          <ChevronDown size={15} strokeWidth={2.4} />
+          {caret(priceActive)}
         </button>
-        <button type="button" onClick={onOpenBooking} className={chip(selectedBooking !== '전체' && !isAppPay)}>
-          {selectedBooking !== '전체' && !isAppPay ? selectedBooking : '예약방법'}
-          <ChevronDown size={15} strokeWidth={2.4} />
+        <button type="button" onClick={onOpenBooking} className={chip(bookingOn)}>
+          {bookingOn ? selectedBooking : '예약방법'}
+          {caret(bookingOn)}
         </button>
-        <button type="button" onClick={() => setSelectedBooking(isAppPay ? '전체' : '앱결제')} aria-pressed={isAppPay} className={chip(isAppPay)}>
-          {isAppPay && <Check size={15} strokeWidth={2.8} />}
+        <button type="button" onClick={() => setSelectedBooking(isAppPay ? '전체' : '앱결제')} aria-pressed={isAppPay} className={`${chip(isAppPay)} !gap-1 !px-3`}>
+          <span className={`flex h-[18px] w-[18px] items-center justify-center rounded-full transition-colors ${isAppPay ? 'bg-[#2F6FE4]' : 'border-[1.6px] border-[#C9CED6]'}`}>
+            {isAppPay && <Check size={12} strokeWidth={3.4} className="text-white" />}
+          </span>
           앱결제
         </button>
       </div>
@@ -1364,10 +1350,39 @@ function ListPageFilters({
         <p className="text-[15px] text-[#6B7684]">
           상품 <b className="font-bold tabular-nums text-[#191F28]">{count}</b>개
         </p>
-        <button type="button" onClick={onOpenSort} className="flex items-center gap-0.5 text-[14px] font-semibold text-[#4E5968] transition-opacity active:opacity-60">
-          {selectedSort}
-          <ChevronDown size={16} strokeWidth={2.4} />
-        </button>
+        {/* 정렬 — 프리티풀 툴팁 메뉴(.pop-menu: 작게 시작해 커지고 항목은 오른쪽→왼쪽 촤라락) */}
+        <div className="relative">
+          <button type="button" onClick={() => setSortOpen(v => !v)} aria-expanded={sortOpen} aria-haspopup="menu" className="flex items-center gap-0.5 text-[14.5px] font-semibold text-[#4E5968] transition-opacity active:opacity-60">
+            {selectedSort}
+            <ChevronDown size={16} strokeWidth={2.4} className="text-[#8B95A1] transition-transform duration-200" style={{ transform: sortOpen ? 'rotate(180deg)' : undefined }} />
+          </button>
+          {sortOpen && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setSortOpen(false)} />
+              <div className="pop-menu absolute right-0 top-full z-50 mt-2 w-max min-w-[188px] overflow-hidden py-2" style={{ transformOrigin: 'calc(100% - 24px) 0' }} role="menu">
+                {sortOptions.map((o, i) => {
+                  const on = o === selectedSort;
+                  return (
+                    <button
+                      key={o}
+                      type="button"
+                      role="menuitemradio"
+                      aria-checked={on}
+                      onClick={() => { setSelectedSort(o); setSortOpen(false); }}
+                      className="pop-menu-item flex w-full items-center gap-3 py-[9px] pl-5 pr-6 text-left"
+                      style={{ animationDelay: `${0.07 + i * 0.035}s` }}
+                    >
+                      <span className="flex h-6 w-6 shrink-0 items-center justify-center">
+                        {on && <Check size={20} strokeWidth={2.6} className="text-[#3180F7]" />}
+                      </span>
+                      <span className={`text-[17px] leading-[24px] ${on ? 'font-semibold text-[#191F28]' : 'text-[#333D4B]'}`}>{o}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );

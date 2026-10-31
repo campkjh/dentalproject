@@ -209,7 +209,7 @@ export default function ReservationsPage() {
       {!isLoggedIn ? (
         <>
           <h1 className="hidden pb-4 pt-10 text-[26px] font-bold leading-tight tracking-[-0.5px] text-[#191F28] pc:block">예약내역</h1>
-          <LoginRequired />
+          <LoginRequired title="로그인하고 예약내역을 확인하세요" sub="예약한 시술과 병원별 진행 상태를 한눈에 볼 수 있어요" />
         </>
       ) : (
         <div className="grid items-start gap-8 pc:grid-cols-[minmax(0,1fr)_340px] pc:pt-10">

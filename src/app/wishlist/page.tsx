@@ -155,7 +155,7 @@ export default function PocketPage() {
       </div>
 
       {!isLoggedIn ? (
-        <LoginRequired />
+        <LoginRequired title="포켓은 로그인하고 쓸 수 있어요" sub="마음에 드는 시술을 담아 두고 한 번에 비교해 보세요" />
       ) : (
         <>
           {/* 탭 — 상세 섹션 탭과 같은 결: 회색 트랙 위 흰 알약이 미끄러진다(빈 화면에선 트랙이 반투명 흰색) */}
