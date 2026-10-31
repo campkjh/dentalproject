@@ -73,9 +73,11 @@ export default function PartnerLoginPage() {
       </div>
 
       {/* 흘러가는 병원관리자 화면 조각 */}
+      <span aria-hidden className="pointer-events-none absolute -left-16 top-40 h-56 w-56 rounded-full bg-[#BFD6FF]/60 blur-3xl" />
+      <span aria-hidden className="pointer-events-none absolute -right-20 top-72 h-64 w-64 rounded-full bg-[#CFEAFF]/60 blur-3xl" />
       <div aria-hidden className="pl-marquee relative min-h-[300px] flex-1 select-none pt-6">
         {PL_ROWS.map((row, i) => (
-          <div key={i} className="pl-row mb-3 flex w-max gap-3 pr-3" style={{ animationDuration: `${row.dur}s`, animationDirection: i % 2 ? 'reverse' : 'normal' }}>
+          <div key={i} className="pl-row mb-3.5 flex w-max gap-3.5 pr-3.5" style={{ animationDuration: `${row.dur}s`, animationDirection: i % 2 ? 'reverse' : 'normal' }}>
             {[...row.cards, ...row.cards].map((c, j) => <PlCard key={j} card={c} />)}
           </div>
         ))}
@@ -194,8 +196,8 @@ const PL_ROWS: { dur: number; cards: PlCardData[] }[] = [
     dur: 46,
     cards: [
       { kind: 'chat', text: '내일 오전에도 예약 가능할까요?' },
-      { kind: 'money', label: '이번 주 정산 예정', amount: '3,420,000원' },
       { kind: 'reserve', badge: '대기', name: '박*수 · 스케일링', when: '내일 오전 10:00' },
+      { kind: 'money', label: '이번 주 정산 예정', amount: '3,420,000원' },
       { kind: 'note', icon: 'gift', title: '이벤트 승인 완료', sub: '치아미백 49,000원' },
     ],
   },
@@ -216,61 +218,83 @@ const PL_BADGE = {
   완료: 'bg-[#E6F7EE] text-[#03A94D]',
 } as const;
 
+// 카드 = 유리 면(흰 82% + 블러) · 안쪽 흰 윤곽 · 겹 그림자 · 같은 높이 · 머리줄(종류 · 시각)
+const PL_GLASS = 'relative h-[112px] w-[224px] shrink-0 overflow-hidden rounded-[22px] bg-white/[0.82] px-4 pb-3.5 pt-3 backdrop-blur-xl shadow-[inset_0_0_0_1px_rgba(255,255,255,0.9),0_1px_2px_rgba(30,58,120,0.04),0_10px_28px_-6px_rgba(30,58,120,0.14)]';
+
+function PlHead({ icon, label, time, dark }: { icon: string; label: string; time: string; dark?: boolean }) {
+  return (
+    <div className="flex items-center gap-1.5">
+      <MonoIcon name={icon} size={13} color={dark ? 'rgba(255,255,255,0.7)' : '#8B95A1'} />
+      <span className={`text-[12px] font-semibold tracking-[-0.1px] ${dark ? 'text-white/70' : 'text-[#8B95A1]'}`}>{label}</span>
+      <span className={`ml-auto text-[11.5px] ${dark ? 'text-white/50' : 'text-[#B0B8C1]'}`}>{time}</span>
+    </div>
+  );
+}
+
 function PlCard({ card }: { card: PlCardData }) {
-  const base = 'w-[208px] shrink-0 rounded-[18px] bg-white px-4 py-3.5 shadow-[0_6px_20px_rgba(30,58,120,0.08)]';
   switch (card.kind) {
     case 'reserve':
       return (
-        <div className={base}>
-          <span className={`inline-flex h-6 items-center rounded-[6px] px-2 text-[12.5px] font-semibold ${PL_BADGE[card.badge]}`}>{card.badge}</span>
-          <p className="mt-2 truncate text-[15px] font-bold text-[#191F28]">{card.name}</p>
-          <p className="mt-0.5 text-[13.5px] text-[#8B95A1]">{card.when}</p>
+        <div className={PL_GLASS}>
+          <PlHead icon="calendar-check" label="예약" time="방금" />
+          <div className="mt-2.5 flex items-center gap-2">
+            <span className={`inline-flex h-[22px] items-center rounded-[6px] px-1.5 text-[12px] font-semibold ${PL_BADGE[card.badge]}`}>{card.badge}</span>
+            <p className="min-w-0 truncate text-[15px] font-bold tracking-[-0.3px] text-[#191F28]">{card.name}</p>
+          </div>
+          <p className="mt-1.5 text-[13.5px] font-medium text-[#6B7684]">{card.when}</p>
         </div>
       );
     case 'money':
       return (
-        <div className={`${base} !bg-[#EFF5FE]`}>
-          <span className="inline-flex rounded-[6px] bg-[#2F6FE4] px-2 py-0.5 text-[12.5px] font-bold text-white">{card.label}</span>
-          <p className="mt-2.5 text-[22px] font-bold tracking-[-0.6px] text-[#1E3A78]">{card.amount}</p>
+        <div className={`${PL_GLASS} !bg-[linear-gradient(135deg,#2F6FE4_0%,#1E3A78_100%)] !shadow-[inset_0_0_0_1px_rgba(255,255,255,0.12),0_12px_30px_-8px_rgba(30,58,120,0.45)]`}>
+          <span aria-hidden className="absolute -right-8 -top-10 h-28 w-28 rounded-full bg-white/10" />
+          <PlHead icon="coin" label={card.label} time="실시간" dark />
+          <p className="mt-3 text-[24px] font-bold tracking-[-0.8px] text-white">{card.amount}</p>
         </div>
       );
     case 'review':
       return (
-        <div className={base}>
-          <p className="flex items-center gap-1 text-[14px] font-bold text-[#191F28]">
-            <span className="text-[#FFC342]">★★★★★</span>{card.score}
+        <div className={PL_GLASS}>
+          <PlHead icon="star" label="새 리뷰" time="5분 전" />
+          <p className="mt-2 flex items-center gap-1 text-[13px] font-bold text-[#191F28]">
+            <span className="tracking-[1px] text-[#FFC342]">★★★★★</span>{card.score}
           </p>
-          <p className="mt-1.5 line-clamp-2 text-[14px] leading-[1.45] text-[#4E5968]">{card.text}</p>
+          <p className="mt-1 line-clamp-2 text-[13.5px] leading-[1.45] text-[#4E5968]">“{card.text}”</p>
         </div>
       );
     case 'chat':
       return (
-        <div className={`${base} flex items-start gap-2.5`}>
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#F2F4F6]">
-            <MonoIcon name="user" size={18} color="#8B95A1" />
-          </span>
-          <p className="rounded-[14px] rounded-tl-[4px] bg-[#F2F4F6] px-3 py-2 text-[13.5px] leading-[1.45] text-[#333D4B]">{card.text}</p>
+        <div className={PL_GLASS}>
+          <PlHead icon="chat-bubble" label="상담 문의" time="1분 전" />
+          <p className="mt-2.5 rounded-[14px] rounded-tl-[4px] bg-[#F2F4F6] px-3 py-2 text-[13.5px] leading-[1.45] text-[#333D4B]">{card.text}</p>
         </div>
       );
     case 'note':
       return (
-        <div className={`${base} flex items-center gap-3`}>
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[#EFF5FE]">
-            <MonoIcon name={card.icon} size={20} color="#2F6FE4" />
-          </span>
-          <span className="min-w-0">
-            <span className="block truncate text-[15px] font-bold text-[#191F28]">{card.title}</span>
-            <span className="block truncate text-[13px] text-[#8B95A1]">{card.sub}</span>
-          </span>
+        <div className={PL_GLASS}>
+          <PlHead icon={card.icon} label="알림" time="오늘" />
+          <div className="mt-2.5 flex items-center gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[13px] bg-[linear-gradient(145deg,#EAF2FF,#D7E6FD)] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.8)]">
+              <MonoIcon name={card.icon} size={20} color="#2F6FE4" />
+            </span>
+            <span className="min-w-0">
+              <span className="block truncate text-[15px] font-bold tracking-[-0.3px] text-[#191F28]">{card.title}</span>
+              <span className="block truncate text-[13px] text-[#8B95A1]">{card.sub}</span>
+            </span>
+          </div>
         </div>
       );
     case 'chart':
       return (
-        <div className={base}>
-          <p className="text-[13.5px] font-semibold text-[#6B7684]">{card.label}</p>
-          <div className="mt-2 flex h-[46px] items-end gap-1.5">
+        <div className={PL_GLASS}>
+          <PlHead icon="chart-bar" label={card.label} time="+18%" />
+          <div className="mt-3 flex h-[48px] items-end gap-1.5">
             {card.bars.map((h, i) => (
-              <span key={i} className="flex-1 rounded-[4px]" style={{ height: `${h}%`, background: i === card.bars.length - 2 ? '#4A82EE' : '#D6E4FB' }} />
+              <span
+                key={i}
+                className="flex-1 rounded-[5px]"
+                style={{ height: `${h}%`, background: i === card.bars.length - 2 ? 'linear-gradient(180deg,#6A9BF4,#2F6FE4)' : '#E3ECFB' }}
+              />
             ))}
           </div>
         </div>
