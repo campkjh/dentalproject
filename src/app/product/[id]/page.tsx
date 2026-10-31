@@ -498,8 +498,8 @@ export default function ProductDetailPage() {
                   </p>
                 ))}
               </div>
-              <p className="mt-3 flex gap-2 rounded-[14px] bg-[#EFF5FE] px-4 py-3.5 text-[14px] leading-[1.5] text-[#1E3A78]">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden className="mt-px shrink-0"><circle cx="12" cy="12" r="9" stroke="#2F6FE4" strokeWidth="2" /><path d="M12 11v5.5" stroke="#2F6FE4" strokeWidth="2.2" strokeLinecap="round" /><circle cx="12" cy="7.8" r="1.3" fill="#2F6FE4" /></svg>
+              <p className="mt-3 flex gap-2 rounded-[14px] bg-[#F2F4F6] px-4 py-3.5 text-[14px] leading-[1.5] text-[#4E5968]">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden className="mt-px shrink-0"><circle cx="12" cy="12" r="9" stroke="#8B95A1" strokeWidth="2" /><path d="M12 11v5.5" stroke="#8B95A1" strokeWidth="2.2" strokeLinecap="round" /><circle cx="12" cy="7.8" r="1.3" fill="#8B95A1" /></svg>
                 시술에 대한 정보는 참고 사항이며, 병원 방문 시 개인의 상태에 따라 달라질 수 있어요.
               </p>
             </Reveal>
@@ -509,15 +509,15 @@ export default function ProductDetailPage() {
                 <span className="h-3.5 w-px bg-[#E5E8EB]" />
                 <span className="font-bold text-[#3180F7]">{optionRows.length}개</span>
               </p>
-              <div className="mt-3 overflow-hidden rounded-[16px] border border-[#E5E8EB]">
-                {optionRows.map((o, i) => {
+              <div className="-mx-1 mt-2 space-y-1">
+                {optionRows.map(o => {
                   const on = o.id === selected.id;
                   return (
                     <button
                       key={o.id}
                       type="button"
                       onClick={() => setOptionId(o.id)}
-                      className={`flex w-full items-center gap-3.5 px-4 py-4 text-left transition-colors ${i > 0 ? 'border-t border-[#F2F4F6]' : ''} ${on ? 'bg-[#EFF5FE]' : 'bg-white active:bg-[#F9FAFB]'}`}
+                      className={`flex w-full items-center gap-3.5 rounded-[16px] px-4 py-4 text-left transition-colors ${on ? 'bg-[#EFF5FE]' : 'bg-white active:bg-[#F9FAFB]'}`}
                     >
                       <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full transition-colors ${on ? 'bg-[#2F6FE4]' : 'border-2 border-[#E5E8EB]'}`}>
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={on ? '#fff' : '#D1D6DB'} strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
@@ -578,7 +578,7 @@ export default function ProductDetailPage() {
           <div className="h-2.5 bg-[#F2F4F6]" />
           {/* ─── 시술 후기 — 로그인해야 자세한 후기를 보여 준다(사장 견본). 로그인 전·후기 없음 = 프리티풀 비즈 '카드 3장' 예시 장면 ─── */}
           <div ref={sectionRefs.reviews} className="bg-white px-5 py-6">
-            <h2 className="mb-5 text-[22px] font-bold leading-tight text-[#191F28]">시술 후기</h2>
+            <h2 className="mb-5 text-[20px] font-bold leading-tight tracking-[-0.4px] text-[#191F28]">시술 후기</h2>
             <ReviewSummaryCard summary={reviewSummary.value} loading={reviewSummary.loading} className="mb-5" />
             {!user ? (
               <ReviewShowcase mode="login" onLogin={() => window.dispatchEvent(new Event('dental:login'))} />
@@ -599,35 +599,45 @@ export default function ProductDetailPage() {
             )}
           </div>
 
-          {/* ─── 병원 정보 — 옵션 정보와 같은 결: 22 굵은 제목 · 가는 테두리 둥근 칸(16) · 파란 안내 띠 · 사이는 회색 띠 ─── */}
+          {/* ─── 병원 정보 — 옵션 정보와 같은 결(261031): 20 굵은 제목 · 테두리 없는 병원 줄 · 회색 이름 정보 줄 · 회색 바로 하기 버튼 ─── */}
           <div className="h-2.5 bg-[#F2F4F6]" />
           <div ref={sectionRefs.info} className="bg-white px-5 py-7">
-            <h2 className="text-[22px] font-bold leading-tight text-[#191F28]">병원 정보</h2>
+            <h2 className="text-[20px] font-bold leading-tight tracking-[-0.4px] text-[#191F28]">병원 정보</h2>
             {hospital ? (
               <>
                 <Reveal>
-                  <Link href={`/hospital/detail/${hospital.id}`} className="mt-5 flex items-center gap-3.5 rounded-[16px] border border-[#E5E8EB] p-4 transition-colors active:bg-[#F9FAFB]">
+                  <Link href={`/hospital/detail/${hospital.id}`} className="-mx-2 mt-3 flex items-center gap-3.5 rounded-[16px] px-2 py-2 transition-colors active:bg-[#F9FAFB]">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={hospitalImageUrl} alt="" className="h-[56px] w-[56px] shrink-0 rounded-[14px] bg-[#F2F4F6] object-cover" />
+                    <img src={hospitalImageUrl} alt="" className="h-[52px] w-[52px] shrink-0 rounded-[14px] bg-[#F2F4F6] object-cover" />
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-[17px] font-medium text-[#191F28]">{hospital.name}</p>
-                      <p className="mt-1 flex items-center gap-1 text-[14px] text-[#191F28]">
+                      <p className="flex min-w-0 items-center gap-1.5 text-[17px] font-bold text-[#191F28]">
+                        <span className="truncate">{hospital.name}</span>
+                        {verified && (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src="/icons/brand-logo.png" alt="인증 병원" width={16} height={16} className="shrink-0" />
+                        )}
+                      </p>
+                      <p className="mt-0.5 flex items-center gap-1 text-[14px] text-[#4E5968]">
                         <SingleStar size={15} />
-                        {hospital.rating.toFixed(1)}
-                        <span className="text-[#6B7684]">(<span className="underline underline-offset-2">{hospital.reviewCount}</span>)</span>
-                        {hospital.location && <span className="ml-1 min-w-0 truncate text-[#8B95A1]">· {hospital.location.split(' ').slice(0, 2).join(' ')}</span>}
+                        {hospital.rating.toFixed(1)} ({hospital.reviewCount})
                       </p>
                     </div>
                     <ChevronRight size={20} className="shrink-0 text-[#B0B8C1]" />
                   </Link>
-                  {hospital.tags?.length > 0 && (
-                    <div className="mt-3 flex flex-wrap gap-1.5">
-                      {hospital.tags.slice(0, 6).map(t => (
-                        <span key={t} className="rounded-full bg-[#F2F4F6] px-2.5 py-1 text-[13px] font-semibold text-[#4E5968]">#{t.replace(/^#/, '')}</span>
-                      ))}
-                    </div>
-                  )}
-                  {/* 바로 하기 — 전화 · 길찾기 · 병원 홈 */}
+                  <div className="mt-3">
+                    {[
+                      ...(hospital.location ? [{ label: '지역', value: hospital.location }] : []),
+                      ...(hospital.phone ? [{ label: '전화', value: hospital.phone }] : []),
+                      { label: '진료시간', value: todayHours },
+                      ...(hospital.tags?.length > 0 ? [{ label: '키워드', value: hospital.tags.slice(0, 6).map(t => t.replace(/^#/, '')).join(', ') }] : []),
+                    ].map(r => (
+                      <p key={r.label} className="flex min-h-11 items-center py-1.5">
+                        <span className="w-[86px] shrink-0 text-[17px] text-[#8B95A1]">{r.label}</span>
+                        <span className="min-w-0 flex-1 break-keep text-[17px] text-[#333D4B]">{r.value}</span>
+                      </p>
+                    ))}
+                  </div>
+                  {/* 바로 하기 — 전화 · 길찾기 · 병원 홈(회색 바탕, 테두리 없음) */}
                   <div className="mt-4 grid grid-cols-3 gap-2">
                     {[
                       ...(hospital.phone ? [{ label: '전화하기', icon: 'phone', onClick: () => { window.location.href = `tel:${hospital.phone.replace(/[^0-9+]/g, '')}`; } }] : []),
@@ -638,7 +648,7 @@ export default function ProductDetailPage() {
                         key={btn.label}
                         type="button"
                         onClick={btn.onClick}
-                        className="flex h-12 items-center justify-center gap-1.5 rounded-[12px] border border-[#E5E8EB] text-[14px] font-semibold text-[#333D4B] transition-colors active:bg-[#F7F8FA]"
+                        className="flex h-12 items-center justify-center gap-1.5 rounded-[14px] bg-[#F2F4F6] text-[15px] font-semibold text-[#333D4B] transition-all active:scale-[0.98] active:bg-[#E5E8EB]"
                       >
                         <QuickIcon name={btn.icon as 'phone' | 'map' | 'home'} />
                         {btn.label}
@@ -656,7 +666,7 @@ export default function ProductDetailPage() {
 
                 <Reveal>
                   <h3 className="mt-8 text-[17px] font-bold text-[#191F28]">오시는 길</h3>
-                  <div className="relative mt-3 aspect-[16/10] overflow-hidden rounded-[16px] border border-[#E5E8EB]">
+                  <div className="relative mt-3 aspect-[16/10] overflow-hidden rounded-[16px] bg-[#F2F4F6]">
                     <NaverMap address={hospital.address} lat={hospital.lat} lng={hospital.lng} name={hospital.name} />
                   </div>
                   <div className="mt-3 flex items-start gap-3">
@@ -669,15 +679,15 @@ export default function ProductDetailPage() {
                       주소 복사
                     </button>
                   </div>
-                  {hospital.addressDetail && <p className="mt-1.5 whitespace-pre-line rounded-[12px] bg-[#F7F8FA] px-4 py-3 text-[14px] leading-[1.6] text-[#4E5968]">{hospital.addressDetail}</p>}
+                  {hospital.addressDetail && <p className="mt-1.5 whitespace-pre-line rounded-[14px] bg-[#F2F4F6] px-4 py-3 text-[14px] leading-[1.6] text-[#4E5968]">{hospital.addressDetail}</p>}
                 </Reveal>
 
                 {hospital.doctors.length > 0 && (
                   <Reveal>
                     <h3 className="mt-8 text-[17px] font-bold text-[#191F28]">의료진 <span className="text-[#3180F7]">{hospital.doctors.length}</span></h3>
-                    <div className="mt-3 divide-y divide-[#F2F4F6] rounded-[16px] border border-[#E5E8EB] px-4">
+                    <div className="mt-1">
                       {hospital.doctors.map(d => (
-                        <Link key={d.id} href={`/doctor/${d.id}`} className="flex items-center gap-3 py-3.5 transition-opacity active:opacity-70">
+                        <Link key={d.id} href={`/doctor/${d.id}`} className="-mx-2 flex items-center gap-3 rounded-[16px] px-2 py-3 transition-colors active:bg-[#F9FAFB]">
                           <Avatar src={d.profileImage} role="doctor" seed={d.name} size={48} alt={d.name} className="shrink-0" />
                           <div className="min-w-0 flex-1">
                             <p className="text-[16px] font-medium text-[#191F28]">{d.name} <span className="text-[14px] text-[#6B7684]">{d.isOwner ? '대표원장' : d.title || '원장'}</span></p>
@@ -700,14 +710,14 @@ export default function ProductDetailPage() {
             <>
               <div className="h-2.5 bg-[#F2F4F6]" />
               <div className="bg-white px-5 py-7">
-                <h2 className="text-[22px] font-bold leading-tight text-[#191F28]">진료 시간</h2>
+                <h2 className="text-[20px] font-bold leading-tight tracking-[-0.4px] text-[#191F28]">진료 시간</h2>
                 <Reveal>
                   {(() => {
                     const todayDay = WEEK_ORDER.find(d => DAY_INDEX[d] === new Date().getDay())!;
                     const t = hospital.operatingHours.find(o => o.day === todayDay);
                     const closed = !t || t.isClosed;
                     return (
-                      <div className="mt-5 rounded-[16px] bg-[#F7F8FA] px-5 py-4">
+                      <div className="mt-4 rounded-[16px] bg-[#F2F4F6] px-5 py-4">
                         <div>
                           <p className="text-[13px] font-semibold text-[#8B95A1]">오늘 · {todayDay}요일</p>
                           <p className="mt-1 text-[22px] font-bold tracking-[-0.4px] text-[#191F28]">{closed ? '휴진' : `${t!.startTime} – ${t!.endTime}`}</p>
@@ -733,7 +743,7 @@ export default function ProductDetailPage() {
                     })}
                   </dl>
                   {hospital.holidayNotice && (
-                    <p className="mt-3 flex items-start gap-2 rounded-[12px] bg-[#F7F8FA] px-4 py-3 text-[14px] leading-[1.5] text-[#4E5968]">
+                    <p className="mt-3 flex items-start gap-2 rounded-[14px] bg-[#F2F4F6] px-4 py-3 text-[14px] leading-[1.5] text-[#4E5968]">
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden className="mt-0.5 shrink-0"><circle cx="12" cy="12" r="9" stroke="#8B95A1" strokeWidth="1.8" /><path d="M12 8v5M12 16.5v.01" stroke="#8B95A1" strokeWidth="1.8" strokeLinecap="round" /></svg>
                       {hospital.holidayNotice.replace(/^\*/, '')}
                     </p>
