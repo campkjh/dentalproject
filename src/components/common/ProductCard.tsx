@@ -11,6 +11,7 @@ import { Product } from '@/types';
 import { resolveProductImageUrl } from '@/lib/images';
 import { toneAccent, useImageTone } from '@/lib/image-tone';
 import { useStore } from '@/store';
+import { useProductImpression } from '@/lib/product-tracking';
 
 /** 사진 아래쪽을 카드 색으로 녹인다 */
 const CARD_FADE = 'linear-gradient(to bottom, #000 0%, #000 55%, rgba(0,0,0,.45) 80%, transparent 100%)';
@@ -27,6 +28,8 @@ export default function ProductCard({ product, index = 0 }: { product: Product; 
   const isWished = useStore(s => s.wishlist.includes(product.id));
   const toggleWishlist = useStore(s => s.toggleWishlist);
   const [pop, setPop] = useState(false);
+  const [cardEl, setCardEl] = useState<HTMLAnchorElement | null>(null);
+  useProductImpression(cardEl, product.id); // 의사 상품 인사이트 '노출'
   const image = resolveProductImageUrl(product.imageUrl, product.id);
   const tone = useImageTone(image, 'square');
   const sub = tone?.sub || '#6B7684';
@@ -37,6 +40,7 @@ export default function ProductCard({ product, index = 0 }: { product: Product; 
 
   return (
     <Link
+      ref={setCardEl}
       href={`/product/${product.id}`}
       className="group card-press block h-full overflow-hidden rounded-[20px] border"
       style={{

@@ -1039,6 +1039,14 @@ export default function PartnerHomePage() {
           {/* 제목 + 상품 추가 */}
           <div className="flex items-center justify-between px-5 pb-3 pt-4">
             <h2 className="text-[20px] font-bold tracking-[-0.4px] text-[#191F28]">등록 상품</h2>
+            <span className="min-w-0 flex-1" />
+            <Link
+              href="/partner/insights"
+              className="mr-1.5 inline-flex h-9 items-center gap-1 rounded-[8px] bg-[#F2F4F6] pl-2.5 pr-3 text-[14.5px] font-semibold text-[#333D4B] transition-all active:scale-[0.97]"
+            >
+              <MonoIcon name="chart-bar" size={16} color="#6B7684" />
+              인사이트
+            </Link>
             <button
               type="button"
               onClick={openProductCreate}

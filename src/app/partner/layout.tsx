@@ -39,6 +39,7 @@ const GATED_ROUTE_PREFIXES = [
   '/partner/events',
   '/partner/notices',
   '/partner/performance',
+  '/partner/insights',
   '/partner/points',
   '/partner/ads',
   '/partner/consults',

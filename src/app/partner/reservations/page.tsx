@@ -154,19 +154,22 @@ function MonthCalendar({
   );
 }
 
-/** 병원예약 · 예약설정 — 회색 트랙 위 흰 알약이 미끄러진다 */
-function ReservationTabs({ active, onChange }: { active: 'reservations' | 'settings'; onChange: (tab: 'reservations' | 'settings') => void }) {
+type ReservationTabKey = 'reservations' | 'customers' | 'settings';
+
+/** 병원예약 · 고객관리 · 예약설정 — 회색 트랙 위 흰 알약이 미끄러진다 */
+function ReservationTabs({ active, onChange }: { active: ReservationTabKey; onChange: (tab: ReservationTabKey) => void }) {
   const tabs = [
     { key: 'reservations', label: '병원예약' },
+    { key: 'customers', label: '고객관리' },
     { key: 'settings', label: '예약설정' },
   ] as const;
-  const idx = tabs.findIndex((t) => t.key === active);
+  const idx = Math.max(0, tabs.findIndex((t) => t.key === active));
   return (
-    <nav className="relative flex w-[176px] rounded-[12px] bg-[#F2F4F6] p-1" aria-label="예약관리 탭">
+    <nav className="relative flex w-[246px] max-w-[calc(100vw-112px)] shrink-0 rounded-[12px] bg-[#F2F4F6] p-1" aria-label="예약관리 탭">
       <span
         aria-hidden
         className="absolute bottom-1 top-1 rounded-[10px] bg-white shadow-[0_1px_4px_rgba(0,0,0,0.06)] transition-transform duration-300"
-        style={{ left: 4, width: 'calc((100% - 8px) / 2)', transform: `translateX(${idx * 100}%)`, transitionTimingFunction: 'cubic-bezier(0.22, 1, 0.36, 1)' }}
+        style={{ left: 4, width: `calc((100% - 8px) / ${tabs.length})`, transform: `translateX(${idx * 100}%)`, transitionTimingFunction: 'cubic-bezier(0.22, 1, 0.36, 1)' }}
       />
       {tabs.map((t) => (
         <button
@@ -174,7 +177,7 @@ function ReservationTabs({ active, onChange }: { active: 'reservations' | 'setti
           type="button"
           onClick={() => onChange(t.key)}
           aria-current={active === t.key ? 'page' : undefined}
-          className={`relative z-[1] flex h-9 flex-1 items-center justify-center text-[14.5px] transition-colors ${active === t.key ? 'font-bold text-[#191F28]' : 'font-semibold text-[#8B95A1]'}`}
+          className={`relative z-[1] flex h-9 min-w-0 flex-1 items-center justify-center whitespace-nowrap text-[14.5px] transition-colors ${active === t.key ? 'font-bold text-[#191F28]' : 'font-semibold text-[#8B95A1]'}`}
         >
           {t.label}
         </button>
@@ -313,11 +316,11 @@ function applyScheduleAction(settings: ScheduleSettings, action: ScheduleAction)
 function ScheduleSettingsView({
   hospitalId,
   reservations,
-  onShowReservations,
+  onTabChange,
 }: {
   hospitalId: string | null;
   reservations: ReservationRow[];
-  onShowReservations: () => void;
+  onTabChange: (tab: ReservationTabKey) => void;
 }) {
   const showToast = useStore((s) => s.showToast);
   const showConfirm = useStore((s) => s.showConfirm);
@@ -427,7 +430,7 @@ function ScheduleSettingsView({
     <div className="partner-mobile-screen has-fixed-title page-enter">
       <header className="partner-screen-title with-action">
         <h1>예약관리</h1>
-        <ReservationTabs active="settings" onChange={(tab) => { if (tab === 'reservations') onShowReservations(); }} />
+        <ReservationTabs active="settings" onChange={(tab) => { if (tab !== 'settings') onTabChange(tab); }} />
       </header>
 
       <MonthCalendar
@@ -493,12 +496,279 @@ function ScheduleSettingsView({
   );
 }
 
+type CustomerReservation = {
+  id: string;
+  status: ReservationRow['status'];
+  visit_at: string | null;
+  reservation_at: string | null;
+  created_at: string | null;
+  amount: number | null;
+  product_title: string | null;
+};
+
+type CustomerRow = {
+  key: string;
+  user_id: string | null;
+  name: string;
+  phone: string | null;
+  visits: number;
+  total: number;
+  cancelled: number;
+  paid: number;
+  last_visit_at: string | null;
+  last_activity_at: string | null;
+  reservations: CustomerReservation[];
+};
+
+type CustomerSort = 'recent' | 'visits' | 'paid';
+
+const CUSTOMER_SORTS: Array<{ key: CustomerSort; label: string }> = [
+  { key: 'recent', label: '최근 방문순' },
+  { key: 'visits', label: '방문 많은순' },
+  { key: 'paid', label: '결제 많은순' },
+];
+
+function wonOf(value?: number | null) {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return '-';
+  return `${value.toLocaleString('ko-KR')}원`;
+}
+
+function msOf(value?: string | null) {
+  if (!value) return 0;
+  const t = new Date(value).getTime();
+  return Number.isNaN(t) ? 0 : t;
+}
+
+function monthDayOf(value?: string | null) {
+  if (!value) return '';
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return '';
+  const prefix = d.getFullYear() !== new Date().getFullYear() ? `${d.getFullYear()}년 ` : '';
+  return `${prefix}${d.getMonth() + 1}월 ${d.getDate()}일`;
+}
+
+/** 고객관리 — 이 병원 예약을 고객별로 묶어 방문·결제를 한눈에 */
+function CustomersView({ hospitalId, onTabChange }: { hospitalId: string | null; onTabChange: (tab: ReservationTabKey) => void }) {
+  const router = useRouter();
+  const showToast = useStore((s) => s.showToast);
+  const [customers, setCustomers] = useState<CustomerRow[]>([]);
+  const [loaded, setLoaded] = useState(false);
+  const loading = Boolean(hospitalId) && !loaded;
+  const [query, setQuery] = useState('');
+  const [sort, setSort] = useState<CustomerSort>('recent');
+  const [openKey, setOpenKey] = useState<string | null>(null);
+  const [reloadTick, setReloadTick] = useState(0);
+
+  useReservationRealtimeRefresh({
+    enabled: Boolean(hospitalId),
+    hospitalId,
+    onChange: () => setReloadTick((n) => n + 1),
+  });
+
+  useEffect(() => {
+    if (!hospitalId) return;
+    let cancelled = false;
+    fetch('/api/my-hospital/customers', { cache: 'no-store' })
+      .then(async (res) => {
+        const payload = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(payload.error || '고객 목록을 불러오지 못했습니다.');
+        return Array.isArray(payload.customers) ? (payload.customers as CustomerRow[]) : [];
+      })
+      .then((rows) => {
+        if (!cancelled) setCustomers(rows);
+      })
+      .catch((error) => {
+        if (!cancelled) showToast(error instanceof Error ? error.message : '고객 목록을 불러오지 못했습니다.');
+      })
+      .finally(() => {
+        if (!cancelled) setLoaded(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [hospitalId, reloadTick, showToast]);
+
+  const visible = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const qDigits = q.replace(/\D/g, '');
+    const filtered = q
+      ? customers.filter((c) => (
+        c.name.toLowerCase().includes(q)
+        || (qDigits.length > 0 && (c.phone ?? '').replace(/\D/g, '').includes(qDigits))
+      ))
+      : customers;
+    const recentOf = (c: CustomerRow) => msOf(c.last_visit_at) || msOf(c.last_activity_at);
+    return [...filtered].sort((a, b) => {
+      if (sort === 'visits') return b.visits - a.visits || b.total - a.total || recentOf(b) - recentOf(a);
+      if (sort === 'paid') return b.paid - a.paid || b.visits - a.visits || recentOf(b) - recentOf(a);
+      return recentOf(b) - recentOf(a);
+    });
+  }, [customers, query, sort]);
+
+  const openCustomer = openKey ? customers.find((c) => c.key === openKey) ?? null : null;
+
+  return (
+    <div className="partner-mobile-screen has-fixed-title page-enter">
+      <header className="partner-screen-title with-action">
+        <h1>예약관리</h1>
+        <ReservationTabs active="customers" onChange={(tab) => { if (tab !== 'customers') onTabChange(tab); }} />
+      </header>
+
+      <section className="px-5 pb-10 pt-2">
+        <label className="flex h-12 items-center gap-2 rounded-[14px] bg-[#F2F4F6] px-4">
+          <MonoIcon name="search" size={18} color="#B0B8C1" />
+          <input
+            type="search"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="이름이나 전화번호로 찾기"
+            aria-label="고객 검색"
+            className="min-w-0 flex-1 bg-transparent text-[16px] text-[#191F28] outline-none placeholder:text-[#B0B8C1]"
+          />
+        </label>
+
+        <div className="mt-3 flex gap-1.5 overflow-x-auto" role="radiogroup" aria-label="고객 정렬">
+          {CUSTOMER_SORTS.map((item) => {
+            const on = sort === item.key;
+            return (
+              <button
+                key={item.key}
+                type="button"
+                role="radio"
+                aria-checked={on}
+                onClick={() => setSort(item.key)}
+                className={`h-9 shrink-0 rounded-[8px] px-3 text-[14.5px] font-semibold transition-all active:scale-[0.97] ${on ? 'bg-[#EFF5FE] text-[#2F6FE4]' : 'bg-[#F2F4F6] text-[#4E5968]'}`}
+              >
+                {item.label}
+              </button>
+            );
+          })}
+        </div>
+
+        {loading ? (
+          <p className="py-16 text-center text-[15px] text-[#8B95A1]">불러오는 중…</p>
+        ) : visible.length === 0 ? (
+          <div className="flex flex-col items-center py-14 text-center">
+            <span className="qd-a-item flex h-[72px] w-[72px] items-center justify-center rounded-[24px] bg-[#F2F4F6]">
+              <MonoIcon name={query.trim() ? 'search' : 'user'} size={34} color="#B0B8C1" />
+            </span>
+            <p className="qd-a-item mt-5 text-[19px] font-bold tracking-[-0.4px] text-[#191F28]" style={{ animationDelay: '.06s' }}>
+              {query.trim() ? '찾는 고객이 없어요' : '아직 고객이 없어요'}
+            </p>
+            <p className="qd-a-item mt-1.5 text-[15px] leading-[1.6] text-[#8B95A1]" style={{ animationDelay: '.12s' }}>
+              {query.trim() ? '이름이나 전화번호를 다시 확인해 주세요' : '예약이 들어오면 고객별로 모아 보여 드려요'}
+            </p>
+          </div>
+        ) : (
+          <>
+            <p className="mt-6 text-[15px] text-[#6B7684]">
+              고객 <b className="font-bold tabular-nums text-[#191F28]">{visible.length}</b>명
+            </p>
+            <div className="mt-2 space-y-1">
+              {visible.map((c, index) => {
+                const lastLabel = c.last_visit_at
+                  ? `마지막 ${monthDayOf(c.last_visit_at)}`
+                  : c.last_activity_at ? `최근 예약 ${monthDayOf(c.last_activity_at)}` : '';
+                return (
+                  <button
+                    key={c.key}
+                    type="button"
+                    onClick={() => setOpenKey(c.key)}
+                    className="qd-a-item -mx-2 flex w-[calc(100%+16px)] items-center gap-3 rounded-[16px] px-2 py-3 text-left transition-colors active:bg-[#F9FAFB]"
+                    style={{ animationDelay: `${Math.min(index, 6) * 0.04}s` }}
+                  >
+                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#F2F4F6] text-[17px] font-bold text-[#4E5968]">
+                      {c.name.trim().charAt(0) || '환'}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="flex items-center gap-1.5">
+                        <span className="truncate text-[17px] font-bold text-[#191F28]">{c.name}</span>
+                        {c.visits >= 3 && <span className="inline-flex h-6 shrink-0 items-center rounded-[6px] bg-[#E8F3FF] px-2 text-[13px] font-semibold text-[#3180F7]">단골</span>}
+                        {c.cancelled > 0 && <span className="inline-flex h-6 shrink-0 items-center rounded-[6px] bg-[#FFEEEF] px-2 text-[13px] font-semibold text-[#F04452]">노쇼·취소 있음</span>}
+                      </span>
+                      {c.phone && <span className="mt-0.5 block truncate text-[14px] text-[#4E5968]">{c.phone}</span>}
+                      <span className="mt-0.5 block truncate text-[13.5px] text-[#8B95A1]">
+                        방문 {c.visits}회{lastLabel ? ` · ${lastLabel}` : ''}
+                      </span>
+                    </span>
+                    <span className="shrink-0 text-[16px] font-bold tabular-nums text-[#1E3A78]">{wonOf(c.paid)}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </>
+        )}
+      </section>
+
+      {openCustomer && (
+        <CommunityModal label="고객 정보" onClose={() => setOpenKey(null)}>
+          <div className="overflow-y-auto px-5 pb-5 pt-2">
+            <h2 className="text-[20px]! font-bold leading-tight! tracking-[-0.4px] text-[#191F28]">{openCustomer.name}</h2>
+            <p className="mt-1.5 text-[15px] leading-[1.6] text-[#6B7684]">{openCustomer.phone || '전화번호 없음'}</p>
+
+            <div className="mt-5 grid grid-cols-2 gap-2">
+              {[
+                { label: '방문 완료', value: `${openCustomer.visits}회` },
+                { label: '예약 전체', value: `${openCustomer.total}건` },
+                { label: '취소', value: `${openCustomer.cancelled}건` },
+                { label: '결제 합계', value: wonOf(openCustomer.paid) },
+              ].map((tile) => (
+                <div key={tile.label} className="rounded-[14px] bg-[#F2F4F6] px-4 py-3.5">
+                  <p className="text-[14px] text-[#8B95A1]">{tile.label}</p>
+                  <p className="mt-1 truncate text-[20px] font-bold tabular-nums tracking-[-0.4px] text-[#333D4B]">{tile.value}</p>
+                </div>
+              ))}
+            </div>
+
+            <h3 className="mt-7 text-[17px] font-bold text-[#191F28]">예약 기록</h3>
+            <div className="mt-1">
+              {openCustomer.reservations.map((r) => {
+                const when = r.visit_at ?? r.reservation_at ?? r.created_at;
+                return (
+                  <button
+                    key={r.id}
+                    type="button"
+                    onClick={() => router.push(`/partner/reservations/${r.id}`)}
+                    className="-mx-2 flex w-[calc(100%+16px)] items-center gap-3 rounded-[16px] px-2 py-3 text-left transition-colors active:bg-[#F9FAFB]"
+                  >
+                    <span className="min-w-0 flex-1">
+                      <span className="flex items-center gap-1.5">
+                        <span className="truncate text-[16px] font-semibold tabular-nums text-[#191F28]">
+                          {monthDayOf(when) || '날짜 없음'}{r.visit_at ? ` ${timeOf(r.visit_at)}` : ''}
+                        </span>
+                        <span className={`inline-flex h-6 shrink-0 items-center rounded-[6px] px-2 text-[13px] font-semibold ${statusTone(r.status)}`}>{STATUS_LABEL[r.status] ?? r.status}</span>
+                      </span>
+                      <span className="mt-0.5 block truncate text-[14px] text-[#8B95A1]">{r.product_title ?? '상품 정보 없음'}</span>
+                    </span>
+                    <span className="shrink-0 text-[15px] font-semibold tabular-nums text-[#333D4B]">{wonOf(r.amount)}</span>
+                    <ChevronRight size={18} className="shrink-0 text-[#B0B8C1]" />
+                  </button>
+                );
+              })}
+            </div>
+
+            {openCustomer.phone && (
+              <a
+                href={`tel:${openCustomer.phone.replace(/[^\d+]/g, '')}`}
+                className="mt-5 flex h-14 w-full items-center justify-center gap-2 rounded-[18px] bg-[#4A82EE] text-[17px] font-bold text-white transition-all active:scale-[0.98]"
+              >
+                <MonoIcon name="call" size={20} color="#FFFFFF" />
+                전화하기
+              </a>
+            )}
+          </div>
+        </CommunityModal>
+      )}
+    </div>
+  );
+}
+
 export default function PartnerReservationsPage() {
   const router = useRouter();
   const { authUser } = useSession();
   const showToast = useStore((s) => s.showToast);
   const now = new Date();
-  const [activeTab, setActiveTab] = useState<'reservations' | 'settings'>('reservations');
+  const [activeTab, setActiveTab] = useState<ReservationTabKey>('reservations');
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth());
   const [selected, setSelected] = useState(dateKey(now));
@@ -654,9 +924,13 @@ export default function PartnerReservationsPage() {
       <ScheduleSettingsView
         hospitalId={hospitalId}
         reservations={items}
-        onShowReservations={() => setActiveTab('reservations')}
+        onTabChange={setActiveTab}
       />
     );
+  }
+
+  if (activeTab === 'customers') {
+    return <CustomersView hospitalId={hospitalId} onTabChange={setActiveTab} />;
   }
 
   const memoName = memoTarget ? memoTarget.user?.name ?? memoTarget.customer_name ?? '환자' : '';

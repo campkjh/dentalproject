@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { trackProduct } from '@/lib/product-tracking';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { PocketIcon } from '@/components/icons/PocketIcon';
@@ -139,6 +140,8 @@ export default function ProductDetailPage() {
   const hospital = hospitals.find(h => h.id === product?.hospitalId);
   const productReviews = reviews.filter(r => r.productId === product?.id);
 
+  // 의사 상품 인사이트 '조회' — 상세를 열면 1회(같은 기기·하루 한 번)
+  useEffect(() => { trackProduct('views', typeof params.id === 'string' ? params.id : undefined); }, [params.id]);
   useEffect(() => {
     if (!product) return;
     let alive = true;
