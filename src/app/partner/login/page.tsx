@@ -56,12 +56,13 @@ export default function PartnerLoginPage() {
   // 261031 로그인 = 아래 모달 시트(아이디·비번) + 위에서 병원관리자 화면 조각이 흘러가는 장면.
   // 시트 윗변은 흰 그라데이션이라 흘러가는 카드가 시트 밑으로 스며들어 사라진다.
   return (
-    <div className="pl-stage relative flex min-h-[100dvh] flex-col overflow-hidden bg-[linear-gradient(180deg,#E6F0FF_0%,#F3F7FF_46%,#FFFFFF_100%)]">
+    <div className="pl-stage relative flex min-h-[100dvh] flex-col overflow-hidden bg-[linear-gradient(165deg,#ECEBFF_0%,#E9F1FF_38%,#F6F8FF_62%,#FFFFFF_100%)]">
       {/* 브랜드 · 제목 */}
       <div className="relative z-10 mx-auto w-full max-w-[440px] px-5 pt-[calc(env(safe-area-inset-top)+28px)]">
         <div className="qd-a-item flex items-center gap-2.5">
           <span className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-white shadow-[0_2px_8px_rgba(47,111,228,0.12)]">
-            <MonoIcon name="stethoscope" size={22} color="#2F6FE4" />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/icons/brand-logo.png" alt="마이닥" className="h-[26px] w-[26px] object-contain" />
           </span>
           <span className="text-[16px] font-bold tracking-[-0.3px] text-[#333D4B]">마이닥 파트너센터</span>
         </div>
@@ -73,8 +74,10 @@ export default function PartnerLoginPage() {
       </div>
 
       {/* 흘러가는 병원관리자 화면 조각 */}
-      <span aria-hidden className="pointer-events-none absolute -left-16 top-40 h-56 w-56 rounded-full bg-[#BFD6FF]/60 blur-3xl" />
-      <span aria-hidden className="pointer-events-none absolute -right-20 top-72 h-64 w-64 rounded-full bg-[#CFEAFF]/60 blur-3xl" />
+      {/* 옅은 보라·파랑 빛번짐 — 천천히 떠다닌다 */}
+      <span aria-hidden className="pl-blob pointer-events-none absolute -right-24 -top-16 h-72 w-72 rounded-full bg-[#DCD3FF]/70 blur-3xl" />
+      <span aria-hidden className="pl-blob pointer-events-none absolute -left-20 top-44 h-64 w-64 rounded-full bg-[#C4D8FF]/70 blur-3xl" style={{ animationDelay: '-4s' }} />
+      <span aria-hidden className="pl-blob pointer-events-none absolute -right-16 top-[340px] h-56 w-56 rounded-full bg-[#E4DBFF]/60 blur-3xl" style={{ animationDelay: '-8s' }} />
       <div aria-hidden className="pl-marquee relative min-h-[300px] flex-1 select-none pt-6">
         {PL_ROWS.map((row, i) => (
           <div key={i} className="pl-row mb-3.5 flex w-max gap-3.5 pr-3.5" style={{ animationDuration: `${row.dur}s`, animationDirection: i % 2 ? 'reverse' : 'normal' }}>
@@ -250,10 +253,9 @@ function PlCard({ card }: { card: PlCardData }) {
     case 'money':
       return (
         <div className={`${PL_GLASS} !bg-[linear-gradient(140deg,rgba(255,255,255,0.92)_0%,rgba(234,242,255,0.92)_100%)]`}>
-          <span aria-hidden className="pl-shine pointer-events-none absolute inset-y-0 -left-1/2 w-1/2 bg-[linear-gradient(100deg,transparent,rgba(255,255,255,0.9),transparent)]" />
           <PlHead icon="coin" label={card.label} time="실시간" />
           <div className="mt-2.5 flex flex-col items-start gap-1.5">
-            <p className="whitespace-nowrap text-[24px] font-bold leading-none tracking-[-0.8px] text-[#1E3A78]">{card.amount}</p>
+            <PlOdometer value={card.amount} />
             <span className="pl-rise rounded-[6px] bg-[#E8F3FF] px-1.5 py-0.5 text-[11.5px] font-bold text-[#3180F7]">+{card.label.includes('정산') ? '240,000' : '89,000'}</span>
           </div>
         </div>
@@ -317,4 +319,27 @@ function PlCard({ card }: { card: PlCardData }) {
         </div>
       );
   }
+}
+
+// 금액 다이얼 — 자리마다 0~9 띠가 위로 촤라락 굴러가 제 숫자에 멈춘다(뒤 자리일수록 늦게·길게). 4.2s 반복.
+function PlOdometer({ value }: { value: string }) {
+  let n = 0;
+  return (
+    <p className="flex whitespace-nowrap text-[24px] font-bold leading-[1.15] tracking-[-0.8px] text-[#1E3A78]">
+      {value.split('').map((ch, i) => {
+        if (!/\d/.test(ch)) return <span key={i}>{ch}</span>;
+        const order = n++;
+        return (
+          <span key={i} className="relative inline-block h-[1.15em] overflow-hidden">
+            <span
+              className="pl-odo flex flex-col"
+              style={{ '--d': Number(ch) + 10, animationDelay: `${order * 0.06}s` } as React.CSSProperties}
+            >
+              {[...'01234567890123456789'].map((d, k) => <span key={k} className="h-[1.15em]">{d}</span>)}
+            </span>
+          </span>
+        );
+      })}
+    </p>
+  );
 }
