@@ -112,8 +112,8 @@ function IntroText({ text }: { text: string }) {
 type SectionId = 'desc' | 'info' | 'reviews';
 const SECTION_TABS: { id: SectionId; label: string }[] = [
   { id: 'desc', label: '상품 정보' },
-  { id: 'info', label: '병원 정보' },
   { id: 'reviews', label: '시술 후기' },
+  { id: 'info', label: '병원 정보' },
 ];
 /** 고정 머리(60) + 섹션 탭(52) */
 const STICKY_OFFSET = 116;
@@ -599,6 +599,30 @@ export default function ProductDetailPage() {
             </div>
           )}
 
+          <div className="h-2.5 bg-[#F2F4F6]" />
+          {/* ─── 시술 후기 — 로그인해야 자세한 후기를 보여 준다(사장 견본). 로그인 전·후기 없음 = 프리티풀 비즈 '카드 3장' 예시 장면 ─── */}
+          <div ref={sectionRefs.reviews} className="bg-white px-5 py-6">
+            <h2 className="mb-5 text-[22px] font-bold leading-tight text-[#191F28]">시술 후기</h2>
+            <ReviewSummaryCard summary={reviewSummary.value} loading={reviewSummary.loading} className="mb-5" />
+            {!user ? (
+              <ReviewShowcase mode="login" onLogin={() => window.dispatchEvent(new Event('dental:login'))} />
+            ) : reviewRows.length === 0 ? (
+              <ReviewShowcase mode="empty" writeHref={`/mypage/reviews/write?productId=${product.id}`} />
+            ) : (
+              <>
+                <div className="mb-3 flex items-center gap-2">
+                  <StarRating value={Number(rating.toFixed(1))} size={20} />
+                  <span className="text-[24px] font-bold text-[#191F28]">{rating.toFixed(1)}</span>
+                  <span className="text-[14px] text-[#8B95A1]">({reviewCount})</span>
+                </div>
+                <h3 className="mb-1 mt-5 text-[16px] font-bold text-[#191F28]">전체 후기 {reviewCount}건</h3>
+                {reviewRows.map((r, i) => (
+                  <ReviewCommentRow key={r.id} review={r} first={i === 0} menu={<ReviewMenu reviewId={r.id} authorName={r.name} />} />
+                ))}
+              </>
+            )}
+          </div>
+
           {/* ─── 병원 정보 — 옵션 정보와 같은 결: 22 굵은 제목 · 가는 테두리 둥근 칸(16) · 파란 안내 띠 · 사이는 회색 띠 ─── */}
           <div className="h-2.5 bg-[#F2F4F6]" />
           <div ref={sectionRefs.info} className="bg-white px-5 py-7">
@@ -744,29 +768,6 @@ export default function ProductDetailPage() {
             </>
           )}
           <div className="h-2.5 bg-[#F2F4F6]" />
-          {/* ─── 시술 후기 — 로그인해야 자세한 후기를 보여 준다(사장 견본). 로그인 전·후기 없음 = 프리티풀 비즈 '카드 3장' 예시 장면 ─── */}
-          <div ref={sectionRefs.reviews} className="bg-white px-5 py-6">
-            <h2 className="mb-5 text-[22px] font-bold leading-tight text-[#191F28]">시술 후기</h2>
-            <ReviewSummaryCard summary={reviewSummary.value} loading={reviewSummary.loading} className="mb-5" />
-            {!user ? (
-              <ReviewShowcase mode="login" onLogin={() => window.dispatchEvent(new Event('dental:login'))} />
-            ) : reviewRows.length === 0 ? (
-              <ReviewShowcase mode="empty" writeHref={`/mypage/reviews/write?productId=${product.id}`} />
-            ) : (
-              <>
-                <div className="mb-3 flex items-center gap-2">
-                  <StarRating value={Number(rating.toFixed(1))} size={20} />
-                  <span className="text-[24px] font-bold text-[#191F28]">{rating.toFixed(1)}</span>
-                  <span className="text-[14px] text-[#8B95A1]">({reviewCount})</span>
-                </div>
-                <h3 className="mb-1 mt-5 text-[16px] font-bold text-[#191F28]">전체 후기 {reviewCount}건</h3>
-                {reviewRows.map((r, i) => (
-                  <ReviewCommentRow key={r.id} review={r} first={i === 0} menu={<ReviewMenu reviewId={r.id} authorName={r.name} />} />
-                ))}
-              </>
-            )}
-          </div>
-
           {/* ─── 자주 묻는 질문 ─── */}
           <div id="product-faq" className="bg-white px-5 py-6">
             <SectionHead title="자주 묻는 질문" icon="/icons/pro-detail/bulb.svg" className="mb-1" />
