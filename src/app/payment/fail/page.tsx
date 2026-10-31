@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Frown } from 'lucide-react';
+import MonoIcon from '@/components/common/MonoIcon';
 import { siteConfig } from '@/lib/site-config';
 import { clearPendingPayment } from '@/lib/pending-payment';
 
@@ -53,40 +53,70 @@ function PaymentFailPage() {
     }).catch(() => {});
   }, [reservationId, isUserCancel]);
 
+  const tel = siteConfig.phone.replace(/[^0-9+]/g, '');
+
   return (
-    <div className="min-h-screen bg-white flex flex-col">
-      <div className="flex-1 flex flex-col items-center justify-center px-6">
-        {/* Sad Face Icon */}
-        <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-6 bounce-in">
-          <Frown size={40} className="text-gray-400" />
+    <div className="mx-auto min-h-screen max-w-[640px] bg-white" style={{ paddingBottom: 'max(calc(env(safe-area-inset-bottom, 0px) + 112px), 128px)' }}>
+      <div className="px-5 pt-[min(22vh,160px)]">
+        <div className="flex flex-col items-center text-center">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={isUserCancel ? '/icons/color/exclamation-yellow.svg' : '/icons/color/warning-red.svg'}
+            alt=""
+            width={56}
+            height={56}
+            className="bounce-in h-14 w-14"
+          />
+          <h1 className="qd-a-item mt-5 text-[22px] font-bold tracking-[-0.5px] text-[#191F28]" style={{ animationDelay: '.16s' }}>
+            {isUserCancel ? '결제가 취소됐어요' : '결제에 실패했어요'}
+          </h1>
+          <p className="qd-a-item mt-2 whitespace-pre-line break-keep text-[15px] leading-[1.55] text-[#6B7684]" style={{ animationDelay: '.23s' }}>
+            {isUserCancel
+              ? '결제가 진행되지 않아 예약도 함께 취소됐어요.\n다시 예약하려면 처음부터 진행해 주세요.'
+              : message
+                ? message
+                : '자세한 내용은 고객센터로 문의해 주세요.'}
+          </p>
         </div>
 
-        {/* Heading */}
-        <h1 className="text-xl font-bold text-gray-900 mb-2 fade-in-up">
-          {isUserCancel ? '결제가 취소되었습니다.' : '결제에 실패했습니다.'}
-        </h1>
-        <p className="text-sm text-gray-500 mb-4 text-center whitespace-pre-line">
-          {isUserCancel
-            ? '결제가 진행되지 않아 예약도 함께 취소되었어요.\n다시 예약하시려면 처음부터 진행해 주세요.'
-            : message
-              ? message
-              : '자세한 사항은 고객센터로 연락부탁드립니다.'}
-        </p>
-
-        {/* Customer Service */}
-        <p className="text-sm font-medium text-gray-700">
-          고객센터 {siteConfig.phone}
-        </p>
+        <div className="qd-a-item mt-8" style={{ animationDelay: '.3s' }}>
+          <p className="flex min-h-11 items-center py-1.5">
+            <span className="w-[86px] shrink-0 text-[17px] text-[#8B95A1]">고객센터</span>
+            <span className="min-w-0 flex-1 text-[17px] text-[#333D4B]">{siteConfig.phone}</span>
+          </p>
+          <p className="mt-3 flex gap-2 rounded-[14px] bg-[#F2F4F6] px-4 py-3.5 text-[14px] leading-[1.5] text-[#4E5968]">
+            <MonoIcon name="info-circle" size={18} color="#B0B8C1" className="mt-px" />
+            결제 중 빠져나간 금액이 있다면 고객센터로 알려 주세요.
+          </p>
+        </div>
       </div>
 
-      {/* Home Button */}
-      <div className="px-2.5 py-6">
-        <button
-          onClick={() => router.push('/')}
-          className="w-full py-3.5 bg-[#8037FF] text-white rounded-xl font-bold text-sm btn-press"
-        >
-          홈으로
-        </button>
+      {/* 바닥 버튼 — 흐림 띠 위에 떠 있다 · 같은 폭 두 개 */}
+      <div className="pointer-events-none fixed bottom-0 left-0 right-0 z-40" style={{ paddingLeft: 16, paddingRight: 16, paddingBottom: 'max(calc(env(safe-area-inset-bottom, 0px) + 12px), 20px)' }}>
+        <div
+          className="absolute inset-0"
+          style={{
+            background: 'linear-gradient(to top, white 30%, rgba(255,255,255,0.9) 50%, rgba(255,255,255,0.5) 70%, rgba(255,255,255,0) 100%)',
+            maskImage: 'linear-gradient(to top, black 55%, transparent 100%)',
+            WebkitMaskImage: 'linear-gradient(to top, black 55%, transparent 100%)',
+          }}
+        />
+        <div className="pointer-events-auto relative mx-auto flex max-w-[608px] gap-2 pt-10">
+          <a
+            href={`tel:${tel}`}
+            className="flex h-14 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-[18px] bg-[#F2F4F6] text-[17px] font-bold text-[#4E5968] transition-all active:scale-[0.98]"
+          >
+            <MonoIcon name="call" size={18} color="#6B7684" />
+            고객센터
+          </a>
+          <button
+            type="button"
+            onClick={() => router.push('/')}
+            className="flex h-14 min-w-0 flex-1 items-center justify-center rounded-[18px] bg-[#4A82EE] text-[17px] font-bold text-white transition-all active:scale-[0.98]"
+          >
+            홈으로
+          </button>
+        </div>
       </div>
     </div>
   );

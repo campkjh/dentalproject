@@ -14,8 +14,12 @@ import {
 import { useStore } from '@/store';
 import { markPendingPayment, clearPendingPayment, cancelAbandonedPayment } from '@/lib/pending-payment';
 import type { Coupon } from '@/types';
-import { CheckIcon, FlowHeader, FlowSheet, cx, stag, useFlowSheet } from '@/components/booking/FlowKit';
+import { ChevronDown, ChevronRight } from 'lucide-react';
+import TopBar from '@/components/common/TopBar';
+import MonoIcon from '@/components/common/MonoIcon';
+import { FlowSheet, cx, stag, useFlowSheet } from '@/components/booking/FlowKit';
 import { formatKDate, formatKTime } from '@/components/booking/schedule';
+// 금액 바뀔 때 통통 튀는 .pop 만 빌려 쓴다(쿠폰 시트 껍데기도 FlowSheet 그대로)
 import s from '@/components/booking/flow.module.css';
 
 const agreementTerms = [
@@ -90,13 +94,18 @@ function PaymentPage() {
   const product = products.find((p) => p.id === productId) ?? products[0];
   if (!product) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center px-6 text-center">
-        <div>
-          <p className="text-base font-bold text-gray-900">결제할 상품을 찾을 수 없습니다.</p>
+      <div className="mx-auto min-h-screen max-w-[640px] bg-white">
+        <TopBar title="예약 결제" />
+        <div className="flex flex-col items-center px-6 pt-20 text-center">
+          <span className="flex h-[72px] w-[72px] items-center justify-center rounded-[24px] bg-[#F2F4F6]">
+            <MonoIcon name="receipt" size={34} color="#B0B8C1" />
+          </span>
+          <p className="mt-5 text-[19px] font-bold text-[#191F28]">결제할 상품을 찾을 수 없어요</p>
+          <p className="mt-1.5 text-[15px] text-[#8B95A1]">상품을 다시 골라 주세요.</p>
           <button
             type="button"
             onClick={() => router.push('/search')}
-            className="mt-4 h-12 px-6 rounded-2xl bg-[#3180F7] text-white text-[16px] font-semibold"
+            className="mt-6 h-12 rounded-[14px] bg-[#4A82EE] px-6 text-[16px] font-bold text-white transition-all active:scale-[0.98]"
           >
             상품 다시 찾기
           </button>
@@ -269,213 +278,270 @@ function PaymentPage() {
     : '';
   const rebook = () => router.push(`/booking?productId=${encodeURIComponent(product.id)}${paymentParam === 'app' ? '&payment=app' : ''}`);
 
+  const appMethodHint = appPayMethod === 'CARD'
+    ? '앱에서 카드결제로 미리 결제해요.'
+    : appPayMethod === 'TRANSFER'
+      ? '내 은행 계좌에서 바로 이체해 결제해요.'
+      : `발급된 계좌로 ${VIRTUAL_ACCOUNT_VALID_HOURS}시간 안에 입금하면 결제가 끝나요.`;
+
   return (
-    <div className={s.root}>
-      <div className={s.page}>
-        <FlowHeader onBack={() => router.back()} />
+    <div className="mx-auto min-h-screen max-w-[640px] bg-white" style={{ paddingBottom: 'max(calc(env(safe-area-inset-bottom, 0px) + 140px), 156px)' }}>
+      <TopBar title="예약 결제" sub="방문 일정과 결제 금액을 확인해 주세요" />
 
-        <main className={s.main}>
-          <p className={cx(s.eyebrow, s.aTitle)}>마지막 단계</p>
-          <h1 className={cx(s.coTitle, s.aTitle)}>예약 결제</h1>
-          <p className={cx(s.sub, s.aSub)}>방문 일정과 결제 금액을 확인해 주세요.</p>
+      {/* ─── 예약 상품 · 금액 카드 · 일정 ─── */}
+      <div className="px-5 pb-6 pt-2">
+        <div className="qd-a-item -mx-2 flex items-center gap-3.5 rounded-[16px] px-2 py-2" style={stag(0)}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={productImage} alt="" className="h-[56px] w-[56px] shrink-0 rounded-[14px] bg-[#F2F4F6] object-cover" />
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-[17px] font-bold text-[#191F28]">{product.title}</span>
+            <span className="mt-0.5 block truncate text-[14px] text-[#8B95A1]">{hospital}</span>
+          </span>
+        </div>
 
-          {/* 주문 요약 */}
-          <section className={cx(s.card, s.aItem)} style={stag(0)}>
-            <p className={s.cardLabel}>예약 상품</p>
-            <div className={s.orderTop}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img className={s.orderImg} src={productImage} alt="" />
-              <div className={s.orderTxt}>
-                <p className={s.orderHos}>{hospital}</p>
-                <p className={s.orderTitle}>{product.title}</p>
-                <p className={s.orderPrice}>
-                  {discountRate > 0 && <span className={s.rate}>{discountRate}%</span>}
-                  <span className={s.now}>{basePrice.toLocaleString()}원</span>
-                  {productDiscount > 0 && <s>{listPrice.toLocaleString()}원</s>}
-                </p>
-              </div>
-            </div>
-            <div className={s.kv}>
-              <div className={s.kvRow}>
-                <span>방문 일시</span>
-                <b className={visitPretty ? undefined : s.muted}>{visitPretty || selectedVisitLabel}</b>
-                <button type="button" className={s.linkBtn} onClick={rebook}>변경</button>
-              </div>
-              <div className={s.kvRow}><span>위치</span><b>{product.location || '-'}</b></div>
-              <div className={s.kvRow}>
-                <span>예약자</span>
-                <b className={user ? undefined : s.muted}>
-                  {user ? [user.name, user.phone || '연락처 미등록'].filter(Boolean).join(' · ') : '로그인 필요'}
-                </b>
-              </div>
-            </div>
-          </section>
+        {/* 금액 카드 — 상품 상세 가격 카드와 같은 연파랑 · 남색 */}
+        <div className="qd-a-item mt-4 rounded-[14px] bg-[#EFF5FE] px-5 pb-5 pt-4" style={stag(1)}>
+          <div className="flex items-center gap-2">
+            <span className="rounded-[6px] bg-[#2F6FE4] px-2 py-1 text-[13.5px] font-bold text-white">{paymentMethod === '앱결제' ? '앱결제' : '현장결제'}</span>
+            {discountRate > 0 && <span className="text-[14px] font-semibold text-[#2F6FE4]">상품 {discountRate}% 할인 적용</span>}
+          </div>
+          <p className="mt-3 text-[15px] font-semibold text-[#1E3A78]">최종 결제금액</p>
+          <p key={totalPrice} className={cx('mt-0.5 text-[30px] font-bold tracking-[-0.8px] text-[#1E3A78]', s.pop)}>{totalPrice.toLocaleString()}원</p>
+          {totalSavings > 0 && (
+            <p key={totalSavings} className="mt-1 text-[14px] font-semibold text-[#2F6FE4]">쿠폰·포인트로 {totalSavings.toLocaleString()}원 아꼈어요</p>
+          )}
+        </div>
 
-          {/* 할인 — 쿠폰·포인트 */}
-          <section className={cx(s.section, s.aItem)} style={stag(1)}>
-            <div className={s.sectionHead}>
-              <h2>할인</h2>
-              <em>사용 가능 쿠폰 <b>{availableCoupons.length}</b>장</em>
-            </div>
-            <button type="button" className={cx(s.pickRow, selectedCoupon && s.on)} onClick={() => setShowCouponSheet(true)}>
-              <span className={s.t}>{selectedCoupon ? selectedCoupon.name : availableCoupons.length > 0 ? '쿠폰을 선택해 주세요' : '사용 가능한 쿠폰이 없어요'}</span>
-              {selectedCoupon && <span className={s.amt}>-{selectedCoupon.discountAmount.toLocaleString()}원</span>}
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9 5.5 15.5 12 9 18.5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" /></svg>
-            </button>
-            <div className={s.pointRow}>
-              <label className={s.pointInput}>
-                <input
-                  type="number"
-                  inputMode="numeric"
-                  value={pointInput}
-                  onChange={(e) => {
-                    const val = parseInt(e.target.value, 10);
-                    if (isNaN(val) || val < 0) setPointInput('');
-                    else if (val > userPoints) setPointInput(String(userPoints));
-                    else setPointInput(e.target.value);
-                  }}
-                  placeholder={`포인트 (보유 ${userPoints.toLocaleString()}P)`}
-                  aria-label="사용할 포인트"
-                />
-                <span>P</span>
-              </label>
-              <button type="button" className={s.pointAll} onClick={handleUseAllPoints}>전액사용</button>
-            </div>
-          </section>
+        <div className="qd-a-item mt-3" style={stag(2)}>
+          <p className="flex min-h-11 items-center py-1.5">
+            <span className="w-[86px] shrink-0 text-[17px] text-[#8B95A1]">방문일시</span>
+            <span className={cx('min-w-0 flex-1 break-keep text-[17px]', visitPretty ? 'text-[#333D4B]' : 'text-[#B0B8C1]')}>{visitPretty || selectedVisitLabel}</span>
+            <button type="button" onClick={rebook} className="ml-2 h-8 shrink-0 rounded-[8px] bg-[#F2F4F6] px-3 text-[14px] font-semibold text-[#4E5968] transition-all active:scale-[0.97] active:bg-[#E5E8EB]">변경</button>
+          </p>
+          <InfoRow label="위치" value={product.location || '-'} />
+          <InfoRow
+            label="예약자"
+            value={user ? [user.name, user.phone || '연락처 미등록'].filter(Boolean).join(' · ') : '로그인이 필요해요'}
+            muted={!user}
+          />
+        </div>
+      </div>
 
-          {/* 결제 수단 */}
-          <section className={cx(s.section, s.aItem)} style={stag(2)}>
-            <div className={s.sectionHead}><h2>결제 수단</h2></div>
-            <div className={s.list}>
-              {([
-                ['후불결제', '진료 후 병원에서 직접 결제합니다.'],
-                ['앱결제', '지금 앱에서 미리 결제합니다.'],
-              ] as const).map(([method, hint]) => {
-                const on = paymentMethod === method;
-                return (
-                  <button key={method} type="button" className={cx(s.opt, on && s.on)} onClick={() => setPaymentMethod(method)} aria-pressed={on}>
-                    <span className={s.optTt}>
-                      <span className={s.optT}>{method}</span>
-                      <span className={s.optHint}>{hint}</span>
-                    </span>
-                    <span className={cx(s.radio, on && s.on)}>{on && <CheckIcon size={14} width={3} />}</span>
-                  </button>
-                );
-              })}
-            </div>
-            {paymentMethod === '앱결제' && (
-              <div className={s.subFade}>
-                <div className={s.chips} role="group" aria-label="앱결제 수단">
-                  {APP_PAY_METHODS.map(([method, label]) => (
-                    <button key={method} type="button" className={cx(s.chip, appPayMethod === method && s.on)} aria-pressed={appPayMethod === method} onClick={() => setAppPayMethod(method)}>
-                      {label}
-                    </button>
-                  ))}
-                </div>
-                <p className={s.methodHint}>
-                  {appPayMethod === 'CARD'
-                    ? '앱에서 카드결제로 미리 결제합니다.'
-                    : appPayMethod === 'TRANSFER'
-                      ? '내 은행 계좌에서 바로 이체해 결제합니다.'
-                      : `발급된 계좌로 ${VIRTUAL_ACCOUNT_VALID_HOURS}시간 안에 입금하면 결제가 완료됩니다.`}
-                </p>
-              </div>
-            )}
-          </section>
+      {/* ─── 할인 — 쿠폰·포인트 ─── */}
+      <Band />
+      <div className="qd-a-item px-5 py-7" style={stag(3)}>
+        <div className="flex items-baseline justify-between">
+          <SectionTitle>할인</SectionTitle>
+          <span className="text-[14px] text-[#8B95A1]">사용 가능 쿠폰 <b className="font-bold text-[#3180F7]">{availableCoupons.length}</b>장</span>
+        </div>
+        <button
+          type="button"
+          onClick={() => setShowCouponSheet(true)}
+          className={cx(
+            'mt-4 flex h-14 w-full items-center gap-2 rounded-[14px] px-4 text-left transition-all active:scale-[0.99]',
+            selectedCoupon ? 'bg-[#EFF5FE]' : 'bg-[#F2F4F6]'
+          )}
+        >
+          <MonoIcon name="tag" size={18} color={selectedCoupon ? '#2F6FE4' : '#8B95A1'} />
+          <span className={cx('min-w-0 flex-1 truncate text-[16px]', selectedCoupon ? 'font-semibold text-[#191F28]' : 'text-[#8B95A1]')}>
+            {selectedCoupon ? selectedCoupon.name : availableCoupons.length > 0 ? '쿠폰을 선택해 주세요' : '사용 가능한 쿠폰이 없어요'}
+          </span>
+          {selectedCoupon && <span className="shrink-0 text-[16px] font-bold text-[#2F6FE4]">-{selectedCoupon.discountAmount.toLocaleString()}원</span>}
+          <ChevronRight size={20} className="shrink-0 text-[#B0B8C1]" />
+        </button>
+        <div className="mt-2 flex gap-2">
+          <label className="flex h-14 min-w-0 flex-1 items-center gap-2 rounded-[14px] bg-[#F2F4F6] px-4 transition-colors focus-within:bg-[#EDEFF2]">
+            <input
+              type="number"
+              inputMode="numeric"
+              value={pointInput}
+              onChange={(e) => {
+                const val = parseInt(e.target.value, 10);
+                if (isNaN(val) || val < 0) setPointInput('');
+                else if (val > userPoints) setPointInput(String(userPoints));
+                else setPointInput(e.target.value);
+              }}
+              placeholder={`포인트 (보유 ${userPoints.toLocaleString()}P)`}
+              aria-label="사용할 포인트"
+              className="min-w-0 flex-1 bg-transparent text-[16px] text-[#191F28] outline-none placeholder:text-[#B0B8C1]"
+            />
+            <span className="shrink-0 text-[16px] font-semibold text-[#8B95A1]">P</span>
+          </label>
+          <button type="button" onClick={handleUseAllPoints} className="h-14 shrink-0 rounded-[14px] bg-[#F2F4F6] px-4 text-[15px] font-semibold text-[#333D4B] transition-all active:scale-[0.98] active:bg-[#E5E8EB]">
+            전액사용
+          </button>
+        </div>
+      </div>
 
-          {/* 금액 내역 */}
-          <section className={cx(s.card, s.aItem)} style={{ ...stag(3), marginTop: 32 }}>
-            {productDiscount > 0 && (
-              <>
-                <div className={s.line}><span>정가</span><span>{listPrice.toLocaleString()}원</span></div>
-                <div className={s.line}><span>상품 할인</span><span className={s.minus}>-{productDiscount.toLocaleString()}원</span></div>
-              </>
-            )}
-            <div className={s.line}><span>상품 금액 (VAT 포함)</span><span>{basePrice.toLocaleString()}원</span></div>
-            <div className={cx(s.line, s.vat)}><span>└ 부가세 VAT (포함)</span><span>{vatAmount.toLocaleString()}원</span></div>
-            {couponDiscount > 0 && (
-              <div className={cx(s.line, s.lineIn)}><span>쿠폰 할인</span><span className={s.minus}>-{couponDiscount.toLocaleString()}원</span></div>
-            )}
-            {pointsToUse > 0 && (
-              <div className={cx(s.line, s.lineIn)}><span>포인트 사용</span><span className={s.minus}>-{pointsToUse.toLocaleString()}원</span></div>
-            )}
-            <div className={s.total}>
-              <span>최종 결제금액</span>
-              <b key={totalPrice} className={s.pop}>{totalPrice.toLocaleString()}<small>원</small></b>
-            </div>
-            {totalSavings > 0 && (
-              <div key={totalSavings} className={cx(s.save, s.lineIn)}>
-                총 {totalSavings.toLocaleString()}원 할인됐어요
-                <span>쿠폰 + 포인트</span>
-              </div>
-            )}
-          </section>
-
-          {/* 약관 동의 */}
-          <section ref={agreementRef} className={cx(s.section, s.aItem)} style={stag(4)}>
-            <div className={s.sectionHead}><h2>결제 동의</h2></div>
-            <button type="button" className={cx(s.agreeAll, allAgreed && s.on)} onClick={toggleAgreeAll} aria-pressed={allAgreed}>
-              <span className={cx(s.check, allAgreed && s.on)}>{allAgreed && <CheckIcon size={14} width={3} />}</span>
-              <span className={s.t}>전체 약관에 동의</span>
-              <span
-                role="button"
-                tabIndex={0}
-                aria-label={showAgreeAccordion ? '약관 접기' : '약관 펼치기'}
-                className={cx(s.agreeToggle, showAgreeAccordion && s.open)}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowAgreeAccordion(!showAgreeAccordion);
-                }}
-                onKeyDown={(e) => {
-                  if (e.key !== 'Enter' && e.key !== ' ') return;
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setShowAgreeAccordion(!showAgreeAccordion);
-                }}
+      {/* ─── 결제 수단 ─── */}
+      <Band />
+      <div className="qd-a-item px-5 py-7" style={stag(4)}>
+        <SectionTitle>결제 수단</SectionTitle>
+        <div className="mt-4 space-y-2">
+          {([
+            ['후불결제', '진료 후 병원에서 직접 결제해요', 'hospital'],
+            ['앱결제', '지금 앱에서 미리 결제해요', 'coin'],
+          ] as const).map(([method, hint, icon]) => {
+            const on = paymentMethod === method;
+            return (
+              <button
+                key={method}
+                type="button"
+                onClick={() => setPaymentMethod(method)}
+                aria-pressed={on}
+                className={cx('flex w-full items-center gap-3 rounded-[14px] px-4 py-4 text-left transition-all active:scale-[0.99]', on ? 'bg-[#EFF5FE]' : 'bg-[#F2F4F6]')}
               >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5.5 9 12 15.5 18.5 9" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" /></svg>
-              </span>
-            </button>
-            <div className={s.agreeList} style={{ maxHeight: showAgreeAccordion ? 200 : 0, opacity: showAgreeAccordion ? 1 : 0 }}>
-              {agreementTerms.map((t) => {
-                const checked = agreed.has(t.id);
+                <MonoIcon name={icon} size={22} color={on ? '#2F6FE4' : '#8B95A1'} />
+                <span className="min-w-0 flex-1">
+                  <span className={cx('block text-[17px] font-bold', on ? 'text-[#191F28]' : 'text-[#333D4B]')}>{method}</span>
+                  <span className="mt-0.5 block text-[14px] text-[#6B7684]">{hint}</span>
+                </span>
+                {checkDot(on)}
+              </button>
+            );
+          })}
+        </div>
+        {paymentMethod === '앱결제' && (
+          <div className="qd-a-item mt-4">
+            <div className="flex flex-wrap gap-2" role="group" aria-label="앱결제 수단">
+              {APP_PAY_METHODS.map(([method, label]) => {
+                const on = appPayMethod === method;
                 return (
-                  <button key={t.id} type="button" className={s.agreeItem} onClick={() => toggleAgree(t.id)} aria-pressed={checked}>
-                    <span className={cx(s.check, s.sm, checked && s.on)}><CheckIcon size={18} width={2.6} /></span>
-                    <span className={s.t}>{t.label}</span>
+                  <button
+                    key={method}
+                    type="button"
+                    aria-pressed={on}
+                    onClick={() => setAppPayMethod(method)}
+                    className={cx('h-9 rounded-[8px] px-3 text-[14.5px] font-semibold transition-all active:scale-[0.97]', on ? 'bg-[#EFF5FE] text-[#2F6FE4]' : 'bg-[#F2F4F6] text-[#333D4B]')}
+                  >
+                    {label}
                   </button>
                 );
               })}
             </div>
-          </section>
-        </main>
+            <p className="mt-3 flex gap-2 rounded-[14px] bg-[#F2F4F6] px-4 py-3.5 text-[14px] leading-[1.5] text-[#4E5968]">
+              <MonoIcon name="info-circle" size={18} color="#B0B8C1" className="mt-px" />
+              {appMethodHint}
+            </p>
+          </div>
+        )}
+      </div>
 
-        {/* 하단 고정 결제 줄 — 동의 전 '약관 동의' → 동의 후 'N원 결제하기' 로 바뀐다 */}
-        <div className={s.payBar}>
+      {/* ─── 금액 내역 ─── */}
+      <Band />
+      <div className="qd-a-item px-5 py-7" style={stag(5)}>
+        <SectionTitle>결제 금액</SectionTitle>
+        <div className="mt-3">
+          {productDiscount > 0 && (
+            <>
+              <PriceLine label="정가" value={`${listPrice.toLocaleString()}원`} />
+              <PriceLine label="상품 할인" value={`-${productDiscount.toLocaleString()}원`} minus />
+            </>
+          )}
+          <PriceLine label="상품 금액" value={`${basePrice.toLocaleString()}원`} />
+          <PriceLine label="└ 부가세(포함)" value={`${vatAmount.toLocaleString()}원`} faint />
+          {couponDiscount > 0 && <PriceLine label="쿠폰 할인" value={`-${couponDiscount.toLocaleString()}원`} minus />}
+          {pointsToUse > 0 && <PriceLine label="포인트 사용" value={`-${pointsToUse.toLocaleString()}원`} minus />}
+          <div className="mt-2 flex items-center justify-between rounded-[14px] bg-[#F2F4F6] px-4 py-4">
+            <span className="text-[17px] font-bold text-[#191F28]">최종 결제금액</span>
+            <b key={totalPrice} className={cx('text-[20px] font-bold tracking-[-0.4px] text-[#1E3A78]', s.pop)}>{totalPrice.toLocaleString()}원</b>
+          </div>
+        </div>
+      </div>
+
+      {/* ─── 결제 동의 ─── */}
+      <Band />
+      <div ref={agreementRef} className="qd-a-item px-5 py-7" style={stag(6)}>
+        <SectionTitle>결제 동의</SectionTitle>
+        <button
+          type="button"
+          onClick={toggleAgreeAll}
+          aria-pressed={allAgreed}
+          className={cx('mt-4 flex h-14 w-full items-center gap-3 rounded-[14px] px-4 text-left transition-all active:scale-[0.99]', allAgreed ? 'bg-[#EFF5FE]' : 'bg-[#F2F4F6]')}
+        >
+          {checkDot(allAgreed)}
+          <span className="min-w-0 flex-1 text-[17px] font-bold text-[#191F28]">전체 약관에 동의해요</span>
+          <span
+            role="button"
+            tabIndex={0}
+            aria-label={showAgreeAccordion ? '약관 접기' : '약관 펼치기'}
+            className="-mr-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[#8B95A1] transition-transform duration-300"
+            style={{ transform: showAgreeAccordion ? 'rotate(180deg)' : 'rotate(0deg)' }}
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowAgreeAccordion(!showAgreeAccordion);
+            }}
+            onKeyDown={(e) => {
+              if (e.key !== 'Enter' && e.key !== ' ') return;
+              e.preventDefault();
+              e.stopPropagation();
+              setShowAgreeAccordion(!showAgreeAccordion);
+            }}
+          >
+            <ChevronDown size={20} />
+          </span>
+        </button>
+        <div
+          className="overflow-hidden transition-all duration-300 ease-out"
+          style={{ maxHeight: showAgreeAccordion ? 200 : 0, opacity: showAgreeAccordion ? 1 : 0 }}
+        >
+          <div className="pt-2">
+            {agreementTerms.map((t) => {
+              const checked = agreed.has(t.id);
+              return (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => toggleAgree(t.id)}
+                  aria-pressed={checked}
+                  className="flex min-h-11 w-full items-center gap-3 rounded-[12px] px-4 py-1.5 text-left transition-colors active:bg-[#F9FAFB]"
+                >
+                  {checkDot(checked)}
+                  <span className="min-w-0 flex-1 text-[16px] text-[#4E5968]">{t.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* ─── 바닥 결제 버튼 — 흐림 띠 위에 떠 있다(동의 전 '약관 동의' → 동의 후 'N원 결제하기') ─── */}
+      <div className="pointer-events-none fixed bottom-0 left-0 right-0 z-40" style={{ paddingLeft: 16, paddingRight: 16, paddingBottom: 'max(calc(env(safe-area-inset-bottom, 0px) + 12px), 20px)' }}>
+        <div
+          className="absolute inset-0"
+          style={{
+            background: 'linear-gradient(to top, white 30%, rgba(255,255,255,0.9) 50%, rgba(255,255,255,0.5) 70%, rgba(255,255,255,0) 100%)',
+            maskImage: 'linear-gradient(to top, black 55%, transparent 100%)',
+            WebkitMaskImage: 'linear-gradient(to top, black 55%, transparent 100%)',
+          }}
+        />
+        <div className="pointer-events-auto relative mx-auto max-w-[608px] pt-10">
           <div
-            className={s.payBarTop}
+            className="flex items-center justify-between overflow-hidden px-1 transition-all duration-300"
             style={{ maxHeight: agreedFlow ? 30 : 0, opacity: agreedFlow ? 1 : 0, marginBottom: agreedFlow ? 10 : 0 }}
           >
-            <span>결제할 금액</span>
-            <b key={totalPrice} className={s.pop}>{totalPrice.toLocaleString()}원</b>
+            <span className="text-[15px] text-[#6B7684]">결제할 금액</span>
+            <b key={totalPrice} className={cx('text-[17px] font-bold text-[#191F28]', s.pop)}>{totalPrice.toLocaleString()}원</b>
           </div>
           <button
             type="button"
             onClick={handleCta}
             disabled={submitting}
-            className={cx(s.cta, submitting && s.busy)}
-            style={{ background: agreedFlow ? undefined : '#191F28', transition: 'background-color 420ms cubic-bezier(0.22, 1, 0.36, 1)' }}
+            className={cx(
+              'relative flex h-14 w-full items-center justify-center overflow-hidden rounded-[18px] bg-[#4A82EE] text-[17px] font-bold text-white transition-all active:scale-[0.98]',
+              submitting && 'opacity-60'
+            )}
           >
-            <span className={s.ctaLabel}>
-              <span style={{ transform: agreedFlow ? 'translateY(-120%)' : 'translateY(0)', opacity: agreedFlow ? 0 : 1 }}>
-                결제 약관에 동의합니다
+            <span className="relative block h-[24px] w-full overflow-hidden">
+              <span
+                className="absolute inset-0 flex items-center justify-center transition-all duration-[420ms] ease-[cubic-bezier(0.22,1,0.36,1)]"
+                style={{ transform: agreedFlow ? 'translateY(-120%)' : 'translateY(0)', opacity: agreedFlow ? 0 : 1 }}
+              >
+                결제 약관에 동의해요
               </span>
               <span
-                style={{
-                  transform: agreedFlow ? 'translateY(0)' : 'translateY(120%)',
-                  opacity: agreedFlow ? 1 : 0,
-                  transitionDelay: '80ms',
-                }}
+                className="absolute inset-0 flex items-center justify-center transition-all duration-[420ms] ease-[cubic-bezier(0.22,1,0.36,1)]"
+                style={{ transform: agreedFlow ? 'translateY(0)' : 'translateY(120%)', opacity: agreedFlow ? 1 : 0, transitionDelay: '80ms' }}
               >
                 {submitting ? '결제 진행 중...' : `${totalPrice.toLocaleString()}원 결제하기`}
               </span>
@@ -500,6 +566,38 @@ function PaymentPage() {
   );
 }
 
+/** 전역 .chk-dot — 켜짐 파랑 채움 + 흰 체크 그리기, 꺼짐 회색 테두리(search 거르기 시트와 같은 결) */
+function checkDot(on: boolean) {
+  return (
+    <span key={String(on)} className={`chk-dot flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${on ? 'is-on bg-[#2F6FE4]' : 'is-off border-2 border-[#E5E8EB]'}`}>
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={on ? '#fff' : '#D1D6DB'} strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
+    </span>
+  );
+}
+
+const Band = () => <div className="h-2.5 bg-[#F2F4F6]" />;
+const SectionTitle = ({ children }: { children: React.ReactNode }) => (
+  <h2 className="text-[20px] font-bold leading-tight tracking-[-0.4px] text-[#191F28]">{children}</h2>
+);
+
+function InfoRow({ label, value, muted }: { label: string; value: React.ReactNode; muted?: boolean }) {
+  return (
+    <p className="flex min-h-11 items-center py-1.5">
+      <span className="w-[86px] shrink-0 text-[17px] text-[#8B95A1]">{label}</span>
+      <span className={cx('min-w-0 flex-1 break-keep text-[17px]', muted ? 'text-[#B0B8C1]' : 'text-[#333D4B]')}>{value}</span>
+    </p>
+  );
+}
+
+function PriceLine({ label, value, minus, faint }: { label: string; value: string; minus?: boolean; faint?: boolean }) {
+  return (
+    <p className={cx('flex items-center justify-between', faint ? 'min-h-8 py-0.5' : 'min-h-11 py-1.5')}>
+      <span className={faint ? 'text-[15px] text-[#B0B8C1]' : 'text-[17px] text-[#8B95A1]'}>{label}</span>
+      <span className={cx(faint ? 'text-[15px] text-[#B0B8C1]' : 'text-[17px]', minus ? 'font-semibold text-[#3180F7]' : !faint && 'text-[#333D4B]')}>{value}</span>
+    </p>
+  );
+}
+
 function CouponSheet({
   coupons,
   selectedId,
@@ -515,29 +613,38 @@ function CouponSheet({
   return (
     <FlowSheet label="쿠폰 선택" out={out} onBackdrop={() => close()}>
       <>
-          <h2 className={s.sheetTitle}>쿠폰 선택</h2>
-          <div className={s.couponList}>
-            <button type="button" className={cx(s.coupon, !selectedId && s.on)} onClick={() => close(() => onSelect(null))}>
-              <span className={s.tt}><span className={s.n}>쿠폰 미사용</span></span>
-              <span className={cx(s.radio, !selectedId && s.on)}>{!selectedId && <CheckIcon size={14} width={3} />}</span>
-            </button>
-            {coupons.map((c) => {
-              const on = selectedId === c.id;
-              return (
-                <button key={c.id} type="button" className={cx(s.coupon, on && s.on)} onClick={() => close(() => onSelect(c.id))}>
-                  <span className={s.tt}>
-                    <span className={s.n}>{c.name}</span>
-                    <span className={s.d}>
-                      <b>-{c.discountAmount.toLocaleString()}원</b>
-                      {c.daysLeft !== undefined && ` · ${c.daysLeft}일 남음`}
-                    </span>
+        <h2 className="px-1 pb-3 pt-1 text-[20px] font-bold tracking-[-0.4px] text-[#191F28]">쿠폰 선택</h2>
+        <div className="space-y-2">
+          <button
+            type="button"
+            onClick={() => close(() => onSelect(null))}
+            className={cx('flex w-full items-center gap-3 rounded-[14px] px-4 py-4 text-left transition-all active:scale-[0.99]', !selectedId ? 'bg-[#EFF5FE]' : 'bg-[#F2F4F6]')}
+          >
+            <span className="min-w-0 flex-1 text-[17px] font-semibold text-[#333D4B]">쿠폰 미사용</span>
+            {checkDot(!selectedId)}
+          </button>
+          {coupons.map((c) => {
+            const on = selectedId === c.id;
+            return (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => close(() => onSelect(c.id))}
+                className={cx('flex w-full items-center gap-3 rounded-[14px] px-4 py-4 text-left transition-all active:scale-[0.99]', on ? 'bg-[#EFF5FE]' : 'bg-[#F2F4F6]')}
+              >
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-[17px] font-semibold text-[#191F28]">{c.name}</span>
+                  <span className="mt-0.5 block text-[14px] text-[#6B7684]">
+                    <b className="font-bold text-[#2F6FE4]">-{c.discountAmount.toLocaleString()}원</b>
+                    {c.daysLeft !== undefined && ` · ${c.daysLeft}일 남음`}
                   </span>
-                  <span className={cx(s.radio, on && s.on)}>{on && <CheckIcon size={14} width={3} />}</span>
-                </button>
-              );
-            })}
-          </div>
-          {coupons.length === 0 && <p className={s.couponEmpty}>지금 사용할 수 있는 쿠폰이 없어요.</p>}
+                </span>
+                {checkDot(on)}
+              </button>
+            );
+          })}
+        </div>
+        {coupons.length === 0 && <p className="py-6 text-center text-[15px] text-[#8B95A1]">지금 사용할 수 있는 쿠폰이 없어요.</p>}
       </>
     </FlowSheet>
   );
