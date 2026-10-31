@@ -10,11 +10,10 @@ import Avatar from '@/components/common/Avatar';
 import ProductCard from '@/components/common/ProductCard';
 import ReviewShowcase from '@/components/product/ReviewShowcase';
 import ReviewSummaryCard, { useReviewSummary } from '@/components/product/ReviewSummaryCard';
-import { BRAND, Reveal, StarRating, SingleStar, SectionHead, ReviewCommentRow, ExpandRow, type ReviewRowData } from '@/components/detail/DetailKit';
+import { Reveal, StarRating, SingleStar, SectionHead, ReviewCommentRow, ExpandRow, type ReviewRowData } from '@/components/detail/DetailKit';
 import { useStore } from '@/store';
 import { toneAccent, useImageTone } from '@/lib/image-tone';
 import { resolveHospitalImageUrl, resolveProductImageUrl } from '@/lib/images';
-import SilkBackdrop from '@/components/detail/SilkBackdrop';
 import TossBubble, { BubbleClockIcon, BubbleMoonIcon } from '@/components/common/TossBubble';
 
 const faqItems = [
@@ -72,6 +71,17 @@ const OPTION_CHECKS = [
 
 /** 적립 줄 앞 동전 두 개(노랑 뒤 · 주황 P 앞) — 견본 아이콘 */
 
+/** 견본 오른쪽 위 물음표 말풍선 */
+function QuestionIcon() {
+  return (
+    <svg width="36" height="36" viewBox="0 0 36 36" fill="none" aria-hidden>
+      <path d="M18 4.5c7.6 0 13.5 5.6 13.5 12.8S25.6 30 18 30c-1.6 0-3.1-.2-4.5-.7L7.6 31.6l1.3-5.4C6.3 23.9 4.5 20.8 4.5 17.3 4.5 10.1 10.4 4.5 18 4.5z" stroke="#8B95A1" strokeWidth="2.2" strokeLinejoin="round" />
+      <path d="M14.6 13.8a3.5 3.5 0 0 1 6.9.8c0 2.3-3.5 2.8-3.5 5" stroke="#8B95A1" strokeWidth="2.4" strokeLinecap="round" />
+      <circle cx="18" cy="23.4" r="1.5" fill="#8B95A1" />
+    </svg>
+  );
+}
+
 /** 요일 표 순서(월→일) */
 const WEEK_ORDER = ['월', '화', '수', '목', '금', '토', '일'];
 
@@ -120,7 +130,8 @@ export default function ProductDetailPage() {
   const [activeSection, setActiveSection] = useState<SectionId>('desc');
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
   const [heartAnim, setHeartAnim] = useState(false);
-  const [pointOpen, setPointOpen] = useState(false);
+  const [priceOpen, setPriceOpen] = useState(false);
+  const [optionId, setOptionId] = useState<string | null>(null);
   const [imageModal, setImageModal] = useState<string | null>(null);
   const galleryRef = useRef<HTMLDivElement>(null);
   const sectionRefs = { desc: useRef<HTMLDivElement>(null), info: useRef<HTMLDivElement>(null), reviews: useRef<HTMLDivElement>(null) };
@@ -200,6 +211,18 @@ export default function ProductDetailPage() {
     const original = o.id === 'base' && product.originalPrice ? product.originalPrice : baseDiscount > 0 ? Math.round(o.price / (1 - baseDiscount / 100) / 100) * 100 : o.price;
     return { ...o, original, discount: original > o.price ? baseDiscount : 0 };
   });
+  const selected = optionRows.find(o => o.id === optionId) ?? optionRows[0];
+  const cheapestId = optionRows.reduce((m, o) => (o.price < m.price ? o : m), optionRows[0]).id;
+  // 진료과 순위 = 같은 진료과 안에서 찜 수 → 후기 수 순
+  const categoryRanked = products.filter(p => p.category === product.category).sort((x, y) => y.likeCount - x.likeCount || y.reviewCount - x.reviewCount);
+  const categoryRankIdx = categoryRanked.findIndex(p => p.id === product.id);
+  const categoryRank = categoryRankIdx >= 0 && categoryRankIdx < 100 ? categoryRankIdx + 1 : null;
+  const categoryTop = categoryRanked.slice(0, 3);
+  const todayHours = (() => {
+    const oh = hospital?.operatingHours.find(h => DAY_INDEX[h.day] === new Date().getDay());
+    if (!oh) return '병원 정보에서 확인';
+    return oh.isClosed ? '오늘 휴진' : `오늘 ${oh.startTime} ~ ${oh.endTime}`;
+  })();
   const tagChips = product.tags.map(t => t.replace(/^#/, '').trim()).filter(Boolean);
   const categoryName = categories.find(c => c.id === product.category)?.name;
   // 옵션 속성 줄 — 첫 칸(진료과)만 파랑, 나머지는 태그
@@ -228,22 +251,32 @@ export default function ProductDetailPage() {
   // 머리 버튼 — 그림자 없이(사장 지시), 아이콘은 크게
   const roundBtn = (solid: boolean) => `flex h-11 w-11 shrink-0 items-center justify-center transition-all active:scale-90 ${solid ? 'text-[#191F28]' : 'rounded-full bg-white/90 backdrop-blur-md'}`;
 
+  // 바닥 버튼 — 사장 견본: 하트 · 가방(포켓) · 연파랑 보조 · 파랑 주 버튼
   const buttons = (
     <div className="flex items-center gap-2">
+      <button type="button" aria-label={isWished ? '찜 빼기' : '찜하기'} onClick={wish} className="flex h-14 w-11 shrink-0 items-center justify-center transition-transform active:scale-90">
+        <svg width="32" height="32" viewBox="0 0 24 24" aria-hidden className={heartAnim ? 'heart-pop' : undefined}>
+          <path d="M12 20.3s-7.8-4.6-7.8-10.4A4.4 4.4 0 0 1 12 7.2a4.4 4.4 0 0 1 7.8 2.7c0 5.8-7.8 10.4-7.8 10.4z" fill={isWished ? '#F04452' : 'none'} stroke={isWished ? '#F04452' : '#9E9E9E'} strokeWidth="1.9" strokeLinejoin="round" />
+        </svg>
+      </button>
+      <Link href="/wishlist" aria-label="포켓 보기" className="flex h-14 w-11 shrink-0 items-center justify-center transition-transform active:scale-90">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#9E9E9E" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <path d="M5.2 8.5h13.6l-.9 10.2a1.8 1.8 0 0 1-1.8 1.6H7.9a1.8 1.8 0 0 1-1.8-1.6z" /><path d="M8.8 8.5V7a3.2 3.2 0 0 1 6.4 0v1.5" />
+        </svg>
+      </Link>
       <button
         type="button"
         onClick={() => router.push(`/booking?productId=${product.id}`)}
-        className="flex h-14 flex-1 items-center justify-center rounded-2xl bg-[#F2F4F6] text-[16.5px] font-bold text-[#333D4B] transition-all active:scale-[0.99]"
+        className="ml-1 flex h-14 flex-1 items-center justify-center rounded-[18px] bg-[#EBF2FD] text-[17px] font-bold text-[#3A6FDB] transition-all active:scale-[0.98]"
       >
         예약하기
       </button>
       <button
         type="button"
         onClick={() => router.push(`/booking?productId=${product.id}&payment=app`)}
-        className="flex h-14 flex-1 items-center justify-center rounded-2xl text-[16.5px] font-bold text-white transition-all active:scale-[0.99]"
-        style={{ backgroundColor: BRAND }}
+        className="flex h-14 flex-1 items-center justify-center rounded-[18px] bg-[#4A82EE] text-[17px] font-bold text-white transition-all active:scale-[0.98]"
       >
-        앱결제로 예약하기
+        앱결제하기
       </button>
     </div>
   );
@@ -320,95 +353,140 @@ export default function ProductDetailPage() {
             )}
           </div>
 
-          {/* ─── 이름 · 별점 · 옵션 1 · 가격 · 적립 — 사장 견본(강남언니 상세 위 칸) 그대로, 선은 가는 회색 줄 ─── */}
-          <div className="bg-white px-5 pb-2 pt-6">
+          {/* ─── 이름 · 가격 카드 · 정보 줄 · 옵션 고르기 — 사장 견본(쿠팡 상세 위 칸, 261031) 그대로 ─── */}
+          <div className="bg-white pt-6">
             <Reveal>
-              <div className="mb-1.5 flex items-center justify-between gap-3">
-                <Link href={`/hospital/detail/${product.hospitalId}`} className="min-w-0 truncate text-[14px] font-semibold text-[#6B7684]">
-                  {product.hospitalName}
-                </Link>
-                {verified && (
-                  <span className="flex shrink-0 items-center gap-1 rounded-full bg-[#F2F4F6] px-2.5 py-1 text-[11px] font-bold text-[#4E5968]">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src="/icons/brand-logo.png" alt="" width={14} height={14} className="shrink-0" />
-                    인증 병원
-                  </span>
-                )}
-              </div>
-              <h1 className="break-keep text-[20px] font-medium leading-[1.45] tracking-[-0.3px] text-[#191F28]">{product.title}</h1>
-              <button type="button" onClick={() => scrollToSection('reviews')} className="mt-2.5 flex items-center gap-1 text-[15px] text-[#191F28]">
-                <SingleStar size={19} />
-                <span className="ml-0.5">{rating.toFixed(1)}</span>
-                <span className="text-[#6B7684]">(<span className="underline underline-offset-2">{reviewCount}</span>)</span>
-              </button>
-              {tagChips.length > 0 && (
-                <div className="mt-3 flex flex-wrap gap-1.5">
-                  {tagChips.map(t => (
-                    <span key={t} className="rounded-full bg-[#F2F4F6] px-2.5 py-1 text-[13px] font-semibold text-[#4E5968]">#{t}</span>
-                  ))}
+              <div className="px-5">
+                <div className="flex items-start justify-between gap-3">
+                  <Link
+                    href={`/search?category=${product.category}`}
+                    className="flex min-w-0 items-center gap-0.5 rounded-[8px] bg-[#F2F4F6] py-1.5 pl-2.5 pr-1.5 text-[14px] font-semibold text-[#333D4B] transition-colors active:bg-[#E5E8EB]"
+                  >
+                    <span className="truncate">{categoryRank ? `${categoryName} ${categoryRank}위` : product.hospitalName}</span>
+                    <ChevronRight size={16} strokeWidth={2.2} className="shrink-0 text-[#6B7684]" />
+                  </Link>
+                  <button type="button" aria-label="자주 묻는 질문" onClick={() => document.getElementById('product-faq')?.scrollIntoView({ behavior: 'smooth', block: 'center' })} className="-mr-1 -mt-0.5 shrink-0 p-1 transition-transform active:scale-90">
+                    <QuestionIcon />
+                  </button>
                 </div>
-              )}
-            </Reveal>
+                <h1 className="mt-3 break-keep text-[20px] font-medium leading-[1.4] tracking-[-0.4px] text-[#191F28]">{product.title}</h1>
 
-            <Reveal delay={80}>
-              {/* 옵션 1 + 전체보기 */}
-              <div className="mt-6 flex items-center gap-3 border-t border-[#F2F4F6] py-5">
-                <div className="min-w-0 flex-1">
-                  <p className="text-[14px] text-[#6B7684]">옵션 1</p>
-                  <p className="mt-1 truncate text-[17px] font-medium text-[#191F28]">{optionRows[0].name}</p>
-                  {optionAttrs.length > 0 && <p className="mt-1 truncate text-[14px] text-[#6B7684]">{optionAttrs.join(', ')}</p>}
-                </div>
-                <button
-                  type="button"
-                  onClick={() => scrollToSection('desc')}
-                  className="shrink-0 rounded-[12px] border border-[#D1D6DB] px-3.5 py-2.5 text-[14px] font-semibold text-[#191F28] transition-colors active:bg-[#F7F8FA]"
-                >
-                  전체보기
-                </button>
-              </div>
-
-              {/* 가격 */}
-              <div className="border-t border-[#F2F4F6] py-5">
-                {optionRows[0].original > optionRows[0].price && (
-                  <p className="text-[14px] text-[#8B95A1]"><span className="line-through">{optionRows[0].original.toLocaleString()}원</span> (VAT 포함)</p>
-                )}
-                <p className="mt-0.5 flex items-baseline gap-2 font-bold tracking-[-0.5px]">
-                  {optionRows[0].discount > 0 && <span className="text-[26px] text-[#F04452]">{optionRows[0].discount}%</span>}
-                  <span className="text-[26px] text-[#191F28]">{optionRows[0].price.toLocaleString()}원</span>
-                  {!(optionRows[0].original > optionRows[0].price) && <span className="text-[13px] font-medium text-[#8B95A1]">VAT 포함</span>}
-                </p>
-              </div>
-
-              {/* 적립 — 펼치면 적립 방법 */}
-              <div className="border-t border-[#F2F4F6]">
-                {/* 적립 카드 — 바탕은 프리티풀 비즈 이사진 소개의 일렁이는 비단(SilkBackdrop), 오른쪽엔 포켓 빈 화면의 동전들이 둥실(카드 안으로 잘림) */}
-                <button
-                  type="button"
-                  onClick={() => setPointOpen(v => !v)}
-                  aria-expanded={pointOpen}
-                  className="point-card relative isolate my-4 flex h-[92px] w-full items-center gap-2 overflow-hidden rounded-[20px] px-5 text-left transition-transform duration-150 active:scale-[0.98]"
-                >
-                  <SilkBackdrop spread={0.62} className="absolute inset-0 z-0 [&_canvas]:block [&_canvas]:h-full [&_canvas]:w-full [&_canvas]:opacity-0 [&_canvas]:transition-opacity [&_canvas]:duration-[1200ms] [&_canvas[data-on]]:opacity-100" />
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/pocket/check-coin.webp" alt="" aria-hidden className="point-coin point-coin-a" draggable={false} />
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/pocket/glass-coin.webp" alt="" aria-hidden className="point-coin point-coin-b" draggable={false} />
-                  <span className="relative z-[2] min-w-0 flex-1">
-                    <span className="block text-[13px] font-semibold text-[#4E5968]">시술 후 후기를 남기면</span>
-                    <span className="mt-0.5 block text-[19px] font-bold tracking-[-0.4px] text-[#191F28]">최대 <span className="text-[#3180F7]">{REVIEW_POINT.toLocaleString()}P</span> 적립</span>
-                  </span>
-                  <ChevronDown size={22} className="relative z-[2] mr-[84px] shrink-0 text-[#4E5968] transition-transform duration-300" style={{ transform: pointOpen ? 'rotate(180deg)' : undefined }} />
-                </button>
-                <div className="grid transition-all duration-500" style={{ gridTemplateRows: pointOpen ? '1fr' : '0fr', opacity: pointOpen ? 1 : 0, transitionTimingFunction: 'cubic-bezier(0.22, 1, 0.36, 1)' }}>
-                  <div className="overflow-hidden">
-                    <div className="mb-5 flex items-center justify-between rounded-[14px] bg-[#F7F8FA] px-4 py-3.5 text-[14px]">
-                      <span className="text-[#4E5968]">시술 후 후기 작성</span>
-                      <span className="font-bold text-[#191F28]">{REVIEW_POINT.toLocaleString()}P</span>
+                {/* 가격 카드 — 연한 파랑 바탕 · 파란 띠 · 남색 큰 값 */}
+                <div className="mt-4 rounded-[14px] bg-[#EFF5FE] px-5 pb-5 pt-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="rounded-[6px] bg-[#2F6FE4] px-2 py-1 text-[13.5px] font-bold text-white">
+                      {selected.discount > 0 ? `${selected.discount}% 할인 적용중` : '앱결제 가능'}
+                    </span>
+                    <button type="button" onClick={() => scrollToSection('desc')} className="text-[15px] text-[#8B95A1] underline underline-offset-[3px]">
+                      옵션 비교하기
+                    </button>
+                  </div>
+                  {selected.original > selected.price && (
+                    <p className="mt-3 flex items-baseline gap-1.5 text-[17px] font-bold">
+                      <span className="text-[#1E3A78]">{selected.discount}%</span>
+                      <span className="font-medium text-[#B0B8C1] line-through">{selected.original.toLocaleString()}원</span>
+                    </p>
+                  )}
+                  <button type="button" onClick={() => setPriceOpen(v => !v)} aria-expanded={priceOpen} className={`flex items-baseline gap-2 text-left ${selected.original > selected.price ? 'mt-0.5' : 'mt-3'}`}>
+                    <span className="text-[30px] font-bold tracking-[-0.8px] text-[#1E3A78]">{selected.price.toLocaleString()}원</span>
+                    <span className="flex items-center gap-0.5 text-[17px] font-bold text-[#1E3A78]">
+                      {selected.original > selected.price ? '할인 적용가' : 'VAT 포함'}
+                      <ChevronDown size={18} strokeWidth={2.4} className="transition-transform duration-300" style={{ transform: priceOpen ? 'rotate(180deg)' : undefined }} />
+                    </span>
+                  </button>
+                  <div className="grid transition-all duration-500" style={{ gridTemplateRows: priceOpen ? '1fr' : '0fr', opacity: priceOpen ? 1 : 0, transitionTimingFunction: 'cubic-bezier(0.22, 1, 0.36, 1)' }}>
+                    <div className="overflow-hidden">
+                      <div className="mt-3 space-y-1.5 border-t border-[#DCE7FA] pt-3 text-[14px]">
+                        <p className="flex justify-between text-[#4E5968]"><span>정가</span><span>{selected.original.toLocaleString()}원</span></p>
+                        {selected.original > selected.price && <p className="flex justify-between text-[#4E5968]"><span>할인</span><span className="text-[#2F6FE4]">-{(selected.original - selected.price).toLocaleString()}원</span></p>}
+                        <p className="flex justify-between font-bold text-[#191F28]"><span>결제 금액(VAT 포함)</span><span>{selected.price.toLocaleString()}원</span></p>
+                      </div>
                     </div>
                   </div>
                 </div>
+
+                {/* 적립 · 안내 */}
+                <p className="mt-2.5 flex items-center gap-1.5 text-[15px] text-[#333D4B]">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/pocket/glass-coin.webp" alt="" width={20} height={20} className="shrink-0" />
+                  후기 작성 시 {REVIEW_POINT.toLocaleString()}P 적립 · VAT 포함
+                </p>
+                <p className="mt-1 text-[15px] text-[#333D4B]">이 상품은 앱결제로 바로 예약할 수 있어요.</p>
+
+                {/* 정보 줄 */}
+                <div className="mt-5 pb-3">
+                  <button type="button" onClick={() => scrollToSection('reviews')} className="flex h-12 w-full items-center text-left">
+                    <span className="w-[86px] shrink-0 text-[17px] text-[#8B95A1]">평점·리뷰</span>
+                    <span className="flex min-w-0 flex-1 items-center gap-1 text-[17px] text-[#333D4B]"><SingleStar size={20} />{rating.toFixed(1)} ({reviewCount})</span>
+                    <ChevronRight size={20} className="shrink-0 text-[#B0B8C1]" />
+                  </button>
+                  <button type="button" onClick={() => scrollToSection('info')} className="flex h-12 w-full items-center text-left">
+                    <span className="w-[86px] shrink-0 text-[17px] text-[#8B95A1]">진료시간</span>
+                    <span className="min-w-0 flex-1 truncate text-[17px] text-[#333D4B]">{todayHours}</span>
+                    <ChevronRight size={20} className="shrink-0 text-[#B0B8C1]" />
+                  </button>
+                  <Link href={`/hospital/detail/${product.hospitalId}`} className="flex h-12 w-full items-center">
+                    <span className="w-[86px] shrink-0 text-[17px] text-[#8B95A1]">병원</span>
+                    <span className="flex min-w-0 flex-1 items-center gap-1.5 text-[17px] text-[#333D4B]">
+                      <span className="truncate">{product.hospitalName}</span>
+                      {verified && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src="/icons/brand-logo.png" alt="인증 병원" width={16} height={16} className="shrink-0" />
+                      )}
+                    </span>
+                    <ChevronRight size={20} className="shrink-0 text-[#B0B8C1]" />
+                  </Link>
+                </div>
               </div>
             </Reveal>
+
+            {/* 옵션 고르기 — 고른 줄은 연파랑 바탕 + 파란 체크 */}
+            <Reveal delay={80}>
+              <div className="border-t border-[#E5E8EB] pt-6">
+                <p className="flex min-w-0 items-center gap-2 px-5 text-[16px]">
+                  <span className="shrink-0 text-[#8B95A1]">옵션</span>
+                  <span className="h-3.5 w-px shrink-0 bg-[#E5E8EB]" />
+                  <span className="truncate font-bold text-[#3180F7]">{selected.name}</span>
+                </p>
+                <div className="mt-4">
+                  {optionRows.map(o => {
+                    const on = o.id === selected.id;
+                    return (
+                      <button key={o.id} type="button" onClick={() => setOptionId(o.id)} className={`flex min-h-[80px] w-full items-center gap-4 px-5 py-4 text-left transition-colors ${on ? 'bg-[#EFF5FE]' : 'active:bg-[#F9FAFB]'}`}>
+                        <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-colors ${on ? 'bg-[#2F6FE4]' : 'border-2 border-[#E5E8EB]'}`}>
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={on ? '#fff' : '#D1D6DB'} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className={`block truncate text-[17px] ${on ? 'font-bold text-[#3180F7]' : 'text-[#4E5968]'}`}>{o.name}</span>
+                          <span className="mt-0.5 block text-[19px] font-bold tracking-[-0.4px] text-[#191F28]">{o.price.toLocaleString()}원</span>
+                          {o.original > o.price && <span className="mt-0.5 block text-[14px] text-[#8B95A1]">정가 {o.original.toLocaleString()}원</span>}
+                        </span>
+                        {o.id === cheapestId && optionRows.length > 1 && (
+                          <span className="shrink-0 rounded-[6px] bg-[#DCE9FD] px-2 py-1 text-[13px] font-semibold text-[#2F6FE4]">최저가</span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </Reveal>
+
+            {/* 인기 순위 줄 */}
+            {categoryTop.length > 0 && (
+              <>
+                <div className="h-2.5 bg-[#F2F4F6]" />
+                <Link href={`/search?category=${product.category}`} className="flex h-[72px] items-center gap-3 px-5 transition-colors active:bg-[#F9FAFB]">
+                  <span className="min-w-0 flex-1 truncate text-[18px] font-medium text-[#333D4B]">{categoryName ?? '마이닥'} 인기 순위</span>
+                  <span className="flex shrink-0 gap-1">
+                    {categoryTop.map(p => (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img key={p.id} src={resolveProductImageUrl(p.imageUrl, p.id)} alt="" className="h-[30px] w-[30px] rounded-[6px] object-cover" />
+                    ))}
+                  </span>
+                  <ChevronRight size={20} className="shrink-0 text-[#B0B8C1]" />
+                </Link>
+              </>
+            )}
           </div>
 
           {/* 칸 나눔 — 회색 띠 */}
@@ -690,7 +768,7 @@ export default function ProductDetailPage() {
           </div>
 
           {/* ─── 자주 묻는 질문 ─── */}
-          <div className="bg-white px-5 py-6">
+          <div id="product-faq" className="bg-white px-5 py-6">
             <SectionHead title="자주 묻는 질문" icon="/icons/pro-detail/bulb.svg" className="mb-1" />
             {faqItems.map((faq, i) => (
               <ExpandRow key={faq.question} label={faq.question} open={expandedFaq === i} onToggle={() => setExpandedFaq(expandedFaq === i ? null : i)}>
