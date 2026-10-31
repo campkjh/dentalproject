@@ -767,6 +767,9 @@ export default function PartnerHomePage() {
     [productApprovalTab, products]
   );
 
+  // 새 예약을 확정하면 — 위 '새로운 예약' 칸에서 접히며 빠지고(leavingId) 아래 목록에 잠깐 연파랑으로 반짝(movedId)
+  const [leavingId, setLeavingId] = useState<string | null>(null);
+  const [movedId, setMovedId] = useState<string | null>(null);
   const updateStatus = async (id: string, status: ReservationRow['status']) => {
     const previous = hospitalData;
     mutateHospital((current) => current
@@ -996,7 +999,14 @@ export default function PartnerHomePage() {
       ? '예약이 확정되며 스케줄에 표시됩니다'
       : '예약이 취소되며 취소 내역에 표시됩니다';
     showConfirm(title, message, () => {
-      void updateStatus(action.id, action.status);
+      if (action.status !== 'confirmed') { void updateStatus(action.id, action.status); return; }
+      setLeavingId(action.id);
+      window.setTimeout(() => {
+        setLeavingId(null);
+        setMovedId(action.id);
+        void updateStatus(action.id, action.status);
+        window.setTimeout(() => setMovedId((cur) => (cur === action.id ? null : cur)), 1800);
+      }, 320);
     });
   };
 
@@ -1140,6 +1150,68 @@ export default function PartnerHomePage() {
           <section key={filter}>
             {visible.length === 0 ? (
               <EmptyBlock icon="calendar-x" title="표시할 예약이 없어요" sub="예약이 들어오면 이 화면에 바로 보여요" />
+            ) : filter === 'all' ? (
+              (() => {
+                // 전체 — 확인 기다리는 새 예약을 위 칸에 따로 모으고, 확정하면 아래 목록으로 내려간다
+                const fresh = visible.filter((r) => r.status === 'pending');
+                const rest = visible.filter((r) => r.status !== 'pending');
+                const card = (row: ReservationRow, index: number) => (
+                  <ReservationCard
+                    row={row}
+                    hospital={hospital}
+                    index={index}
+                    onConfirmRequest={onConfirmRequest}
+                    onDetailRequest={(id) => router.push(`/partner/reservations/${id}`)}
+                  />
+                );
+                return (
+                  <>
+                    {fresh.length > 0 && (
+                      <div className="bg-[#F5F8FF] pb-1">
+                        <div className="flex items-center gap-2 px-5 pt-6">
+                          <span className="relative flex h-2 w-2">
+                            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#3180F7] opacity-60" />
+                            <span className="relative inline-flex h-2 w-2 rounded-full bg-[#3180F7]" />
+                          </span>
+                          <h2 className="text-[20px] font-bold tracking-[-0.4px] text-[#191F28]">새로운 예약</h2>
+                          <span className="text-[18px] font-bold text-[#3180F7]">{fresh.length}</span>
+                        </div>
+                        <p className="px-5 pt-1 text-[14px] text-[#6B7684]">확정하면 아래 예약 목록으로 옮겨져요</p>
+                        {fresh.map((row, index) => (
+                          <div
+                            key={row.id}
+                            className="grid transition-[grid-template-rows,opacity,transform] duration-300 ease-out"
+                            style={leavingId === row.id
+                              ? { gridTemplateRows: '0fr', opacity: 0, transform: 'translateY(24px)' }
+                              : { gridTemplateRows: '1fr' }}
+                          >
+                            <div className="min-h-0 overflow-hidden">
+                              {index > 0 && <div className="mx-5 h-px bg-[#E5ECFA]" />}
+                              {card(row, index)}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {rest.length > 0 && (
+                      <>
+                        {fresh.length > 0 && <Band />}
+                        <h2 className="px-5 pt-6 text-[20px] font-bold tracking-[-0.4px] text-[#191F28]">예약 목록</h2>
+                        {rest.map((row, index) => (
+                          <div
+                            key={row.id}
+                            className="transition-colors duration-700"
+                            style={{ backgroundColor: movedId === row.id ? '#EFF5FE' : 'transparent' }}
+                          >
+                            {index > 0 && <Band />}
+                            {card(row, index)}
+                          </div>
+                        ))}
+                      </>
+                    )}
+                  </>
+                );
+              })()
             ) : (
               visible.map((row, index) => (
                 <div key={row.id}>
