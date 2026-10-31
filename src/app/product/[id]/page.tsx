@@ -124,6 +124,8 @@ export default function ProductDetailPage() {
   const [heartAnim, setHeartAnim] = useState(false);
   // 좋아요(하트) — 포켓과 별개. 서버(product_likes)가 아직 없으면 이 기기에만 기억한다
   const [liked, setLiked] = useState<boolean | null>(null);
+  // 받은 하트·포켓 수(서버) + 그때 내가 눌러 둔 상태 — 화면 숫자 = 서버 수 - 처음 내 것 + 지금 내 것
+  const [heartBase, setHeartBase] = useState<{ likes: number; pockets: number; liked: boolean; wished: boolean } | null>(null);
   const [likeAnim, setLikeAnim] = useState(false);
   const [priceOpen, setPriceOpen] = useState(false);
   const [optionId, setOptionId] = useState<string | null>(null);
@@ -146,8 +148,12 @@ export default function ProductDetailPage() {
     if (!product) return;
     let alive = true;
     const local = readLikedLocal().includes(product.id);
-    fetch(`/api/products/${product.id}/like`).then(r => r.json()).then((d: { liked?: boolean; missing?: boolean }) => {
-      if (alive) setLiked(d.missing || !user ? local : !!d.liked);
+    const wishedNow = useStore.getState().wishlist.includes(product.id);
+    fetch(`/api/products/${product.id}/like`).then(r => r.json()).then((d: { liked?: boolean; missing?: boolean; likeCount?: number; pocketCount?: number }) => {
+      if (!alive) return;
+      const likedNow = d.missing || !user ? local : !!d.liked;
+      setLiked(likedNow);
+      if (typeof d.likeCount === 'number') setHeartBase({ likes: d.likeCount, pockets: d.pocketCount ?? 0, liked: !!user && !d.missing && likedNow, wished: wishedNow });
     }).catch(() => { if (alive) setLiked(local); });
     return () => { alive = false; };
   }, [product?.id, user]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -428,7 +434,19 @@ export default function ProductDetailPage() {
                 <div className="mt-5 pb-3">
                   <button type="button" onClick={() => scrollToSection('reviews')} className="flex h-12 w-full items-center text-left">
                     <span className="w-[86px] shrink-0 text-[17px] text-[#8B95A1]">평점·리뷰</span>
-                    <span className="flex min-w-0 flex-1 items-center gap-1 text-[17px] text-[#333D4B]"><SingleStar size={20} />{rating.toFixed(1)} ({reviewCount})</span>
+                    <span className="flex min-w-0 flex-1 items-center gap-1 text-[17px] text-[#333D4B]">
+                      <SingleStar size={20} />{rating.toFixed(1)} ({reviewCount})
+                      {heartBase && (
+                        <>
+                          <span className="mx-1.5 h-3 w-px bg-[#E5E8EB]" aria-hidden />
+                          <svg width="17" height="17" viewBox="0 0 24 24" aria-label="받은 하트" className="shrink-0"><path d="M12 20.3s-7.8-4.6-7.8-10.4A4.4 4.4 0 0 1 12 7.2a4.4 4.4 0 0 1 7.8 2.7c0 5.8-7.8 10.4-7.8 10.4z" fill="#F04452" /></svg>
+                          <span className="tabular-nums">{Math.max(0, heartBase.likes - (heartBase.liked ? 1 : 0) + (liked ? 1 : 0)).toLocaleString()}</span>
+                          <span className="mx-1.5 h-3 w-px bg-[#E5E8EB]" aria-hidden />
+                          <PocketIcon size={18} filled strokeWidth={1.9} style={{ color: pocketColor }} />
+                          <span className="tabular-nums">{Math.max(0, heartBase.pockets - (heartBase.wished ? 1 : 0) + (isWished ? 1 : 0)).toLocaleString()}</span>
+                        </>
+                      )}
+                    </span>
                     <ChevronRight size={20} className="shrink-0 text-[#B0B8C1]" />
                   </button>
                   <button type="button" onClick={() => scrollToSection('info')} className="flex h-12 w-full items-center text-left">
