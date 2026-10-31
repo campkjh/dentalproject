@@ -238,18 +238,24 @@ function PlCard({ card }: { card: PlCardData }) {
         <div className={PL_GLASS}>
           <PlHead icon="calendar-check" label="예약" time="방금" />
           <div className="mt-2.5 flex items-center gap-2">
-            <span className={`inline-flex h-[22px] items-center rounded-[6px] px-1.5 text-[12px] font-semibold ${PL_BADGE[card.badge]}`}>{card.badge}</span>
+            <span className={`pl-pop inline-flex h-[22px] items-center rounded-[6px] px-1.5 text-[12px] font-semibold ${PL_BADGE[card.badge]}`}>{card.badge}</span>
             <p className="min-w-0 truncate text-[15px] font-bold tracking-[-0.3px] text-[#191F28]">{card.name}</p>
           </div>
-          <p className="mt-1.5 text-[13.5px] font-medium text-[#6B7684]">{card.when}</p>
+          <p className="mt-1.5 flex items-center gap-1.5 text-[13.5px] font-medium text-[#6B7684]">
+            <span className="pl-ping relative flex h-1.5 w-1.5 rounded-full bg-[#3180F7]" />
+            {card.when}
+          </p>
         </div>
       );
     case 'money':
       return (
-        <div className={`${PL_GLASS} !bg-[linear-gradient(135deg,#2F6FE4_0%,#1E3A78_100%)] !shadow-[inset_0_0_0_1px_rgba(255,255,255,0.12),0_12px_30px_-8px_rgba(30,58,120,0.45)]`}>
-          <span aria-hidden className="absolute -right-8 -top-10 h-28 w-28 rounded-full bg-white/10" />
-          <PlHead icon="coin" label={card.label} time="실시간" dark />
-          <p className="mt-3 text-[24px] font-bold tracking-[-0.8px] text-white">{card.amount}</p>
+        <div className={`${PL_GLASS} !bg-[linear-gradient(140deg,rgba(255,255,255,0.92)_0%,rgba(234,242,255,0.92)_100%)]`}>
+          <span aria-hidden className="pl-shine pointer-events-none absolute inset-y-0 -left-1/2 w-1/2 bg-[linear-gradient(100deg,transparent,rgba(255,255,255,0.9),transparent)]" />
+          <PlHead icon="coin" label={card.label} time="실시간" />
+          <div className="mt-2.5 flex flex-col items-start gap-1.5">
+            <p className="whitespace-nowrap text-[24px] font-bold leading-none tracking-[-0.8px] text-[#1E3A78]">{card.amount}</p>
+            <span className="pl-rise rounded-[6px] bg-[#E8F3FF] px-1.5 py-0.5 text-[11.5px] font-bold text-[#3180F7]">+{card.label.includes('정산') ? '240,000' : '89,000'}</span>
+          </div>
         </div>
       );
     case 'review':
@@ -257,7 +263,12 @@ function PlCard({ card }: { card: PlCardData }) {
         <div className={PL_GLASS}>
           <PlHead icon="star" label="새 리뷰" time="5분 전" />
           <p className="mt-2 flex items-center gap-1 text-[13px] font-bold text-[#191F28]">
-            <span className="tracking-[1px] text-[#FFC342]">★★★★★</span>{card.score}
+            <span className="flex text-[13px] text-[#E5E8EB]">
+              {[0, 1, 2, 3, 4].map((k) => (
+                <span key={k} className="pl-star" style={{ animationDelay: `${k * 0.12}s` }}>★</span>
+              ))}
+            </span>
+            {card.score}
           </p>
           <p className="mt-1 line-clamp-2 text-[13.5px] leading-[1.45] text-[#4E5968]">“{card.text}”</p>
         </div>
@@ -266,7 +277,12 @@ function PlCard({ card }: { card: PlCardData }) {
       return (
         <div className={PL_GLASS}>
           <PlHead icon="chat-bubble" label="상담 문의" time="1분 전" />
-          <p className="mt-2.5 rounded-[14px] rounded-tl-[4px] bg-[#F2F4F6] px-3 py-2 text-[13.5px] leading-[1.45] text-[#333D4B]">{card.text}</p>
+          <div className="relative mt-2.5">
+            <span className="pl-typing absolute left-0 top-0 flex h-[34px] items-center gap-1 rounded-[14px] rounded-tl-[4px] bg-[#F2F4F6] px-3">
+              <i /><i /><i />
+            </span>
+            <p className="pl-msg rounded-[14px] rounded-tl-[4px] bg-[#F2F4F6] px-3 py-2 text-[13.5px] leading-[1.45] text-[#333D4B]">{card.text}</p>
+          </div>
         </div>
       );
     case 'note':
@@ -274,8 +290,9 @@ function PlCard({ card }: { card: PlCardData }) {
         <div className={PL_GLASS}>
           <PlHead icon={card.icon} label="알림" time="오늘" />
           <div className="mt-2.5 flex items-center gap-3">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[13px] bg-[linear-gradient(145deg,#EAF2FF,#D7E6FD)] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.8)]">
-              <MonoIcon name={card.icon} size={20} color="#2F6FE4" />
+            <span className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-[13px] bg-[linear-gradient(145deg,#EAF2FF,#D7E6FD)] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.8)]">
+              <span className="pl-wiggle flex"><MonoIcon name={card.icon} size={20} color="#2F6FE4" /></span>
+              <span className="pl-pop absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full border-2 border-white bg-[#F04452]" />
             </span>
             <span className="min-w-0">
               <span className="block truncate text-[15px] font-bold tracking-[-0.3px] text-[#191F28]">{card.title}</span>
@@ -292,8 +309,8 @@ function PlCard({ card }: { card: PlCardData }) {
             {card.bars.map((h, i) => (
               <span
                 key={i}
-                className="flex-1 rounded-[5px]"
-                style={{ height: `${h}%`, background: i === card.bars.length - 2 ? 'linear-gradient(180deg,#6A9BF4,#2F6FE4)' : '#E3ECFB' }}
+                className="pl-bar flex-1 rounded-[5px]"
+                style={{ height: `${h}%`, animationDelay: `${i * 0.08}s`, background: i === card.bars.length - 2 ? 'linear-gradient(180deg,#6A9BF4,#2F6FE4)' : '#E3ECFB' }}
               />
             ))}
           </div>

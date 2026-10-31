@@ -530,3 +530,32 @@ html[data-pd-scrolled] .partner-page .qd-header::after { opacity: 1; }
   .pl-row { animation: none; }
   .pl-marquee, .pl-sheet { animation: none; opacity: 1; }
 }
+
+/* 261031 로그인 흐르는 카드 안 움직임 — 모두 4.2s 반복(장식) */
+.pl-bar { transform-origin: bottom; animation: plBar 4.2s cubic-bezier(.22,1,.36,1) infinite both; }
+@keyframes plBar { 0% { transform: scaleY(.12); } 22%, 82% { transform: scaleY(1); } 100% { transform: scaleY(.12); } }
+.pl-star { animation: plStar 4.2s ease-out infinite both; }
+@keyframes plStar { 0%, 8% { color: #E5E8EB; transform: scale(1); } 16% { color: #FFC342; transform: scale(1.35); } 24%, 86% { color: #FFC342; transform: scale(1); } 100% { color: #E5E8EB; } }
+.pl-typing { animation: plTyping 4.2s ease infinite both; }
+.pl-typing i { width: 5px; height: 5px; border-radius: 9999px; background: #B0B8C1; animation: plDot .9s ease-in-out infinite; }
+.pl-typing i:nth-child(2) { animation-delay: .15s; }
+.pl-typing i:nth-child(3) { animation-delay: .3s; }
+@keyframes plDot { 0%, 100% { transform: translateY(0); opacity: .5; } 40% { transform: translateY(-3px); opacity: 1; } }
+@keyframes plTyping { 0%, 30% { opacity: 1; transform: none; } 36%, 100% { opacity: 0; transform: scale(.9); } }
+.pl-msg { transform-origin: top left; animation: plMsg 4.2s cubic-bezier(.22,1,.36,1) infinite both; }
+@keyframes plMsg { 0%, 32% { opacity: 0; transform: scale(.85) translateY(4px); } 42%, 90% { opacity: 1; transform: none; } 100% { opacity: 0; } }
+.pl-wiggle { animation: plWiggle 4.2s ease-in-out infinite; transform-origin: 50% 10%; }
+@keyframes plWiggle { 0%, 60%, 100% { transform: rotate(0); } 64% { transform: rotate(14deg); } 68% { transform: rotate(-12deg); } 72% { transform: rotate(8deg); } 76% { transform: rotate(-4deg); } 80% { transform: rotate(0); } }
+.pl-pop { animation: plPop 4.2s cubic-bezier(.34,1.56,.64,1) infinite both; }
+@keyframes plPop { 0%, 10% { transform: scale(0); } 20%, 90% { transform: scale(1); } 100% { transform: scale(0); } }
+.pl-ping::after { content: ''; position: absolute; inset: 0; border-radius: inherit; background: inherit; animation: plPing 1.6s cubic-bezier(0,0,.2,1) infinite; }
+@keyframes plPing { 75%, 100% { transform: scale(3); opacity: 0; } }
+.pl-shine { animation: plShine 4.2s ease-in-out infinite; }
+@keyframes plShine { 0%, 50% { transform: translateX(0); } 80%, 100% { transform: translateX(400%); } }
+.pl-rise { animation: plRise 4.2s cubic-bezier(.22,1,.36,1) infinite both; }
+@keyframes plRise { 0%, 20% { opacity: 0; transform: translateY(8px); } 32%, 86% { opacity: 1; transform: none; } 100% { opacity: 0; transform: translateY(-6px); } }
+@media (prefers-reduced-motion: reduce) {
+  .pl-bar, .pl-star, .pl-typing, .pl-typing i, .pl-msg, .pl-wiggle, .pl-pop, .pl-ping::after, .pl-shine, .pl-rise { animation: none; }
+  .pl-typing { opacity: 0; }
+  .pl-star { color: #FFC342; }
+}
