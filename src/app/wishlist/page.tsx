@@ -5,6 +5,7 @@
 //  · 아래 고정 영역(모바일) / 오른쪽 요약 칸(PC) = 선택 개수 · 합계 · 큰 '예약하기'(56 · r16).
 //  · 예약은 상품 하나씩이라 — 1개 고르면 바로 /booking, 여러 개면 시트에서 먼저 예약할 상품을 고른다.
 //  · 데이터는 store 의 wishlist/toggleWishlist 그대로(이름만 화면에서 '포켓').
+//  · 포켓 줄을 오른쪽→왼쪽으로 밀면 예약하기 · 결제하기(프리티풀 채팅 목록 밀기) — 상품 상세 바닥 버튼과 같은 곳으로 간다.
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -40,6 +41,8 @@ export default function PocketPage() {
   // × 로 빼는 줄 — 옆으로 밀리며 접힌 뒤 실제로 뺀다
   const [leaving, setLeaving] = useState<Set<string>>(() => new Set());
   const [bookSheet, setBookSheet] = useState(false);
+  // 밀어서 연 줄 — 한 번에 한 줄만
+  const [openSwipeId, setOpenSwipeId] = useState<string | null>(null);
 
   const pocketProducts = useMemo(() => products.filter((p) => wishlist.includes(p.id)), [products, wishlist]);
   const recentProducts = useMemo(
@@ -90,6 +93,7 @@ export default function PocketPage() {
 
   const removeOne = (id: string) => {
     if (leaving.has(id)) return;
+    if (openSwipeId === id) setOpenSwipeId(null);
     setLeaving((prev) => new Set(prev).add(id));
     window.setTimeout(() => {
       toggleWishlist(id);
@@ -125,6 +129,11 @@ export default function PocketPage() {
   const goBooking = (productId: string) => {
     setBookSheet(false);
     router.push(`/booking?productId=${encodeURIComponent(productId)}`);
+  };
+
+  // 상품 상세 '앱결제하기'와 같은 곳 — 예약 흐름에서 결제 화면이 앱결제로 골라진 채 열린다
+  const goAppPayment = (productId: string) => {
+    router.push(`/booking?productId=${encodeURIComponent(productId)}&payment=app`);
   };
 
   const startBooking = () => {
@@ -182,7 +191,7 @@ export default function PocketPage() {
                   <button
                     key={tab}
                     type="button"
-                    onClick={() => setActiveTab(tab)}
+                    onClick={() => { setActiveTab(tab); setOpenSwipeId(null); }}
                     aria-pressed={active}
                     className={`relative flex flex-1 items-center justify-center gap-1 rounded-[13px] py-2.5 text-[14px] transition-colors duration-300 ${active ? 'font-bold text-[#191F28]' : 'font-semibold text-[#8B95A1]'}`}
                   >
@@ -246,6 +255,14 @@ export default function PocketPage() {
                         leaving={leaving.has(p.id)}
                         onToggleCheck={() => toggleCheck(p.id)}
                         onRemove={() => removeOne(p.id)}
+                        swipe={{
+                          open: openSwipeId === p.id,
+                          onOpenChange: (o) => setOpenSwipeId((cur) => (o ? p.id : cur === p.id ? null : cur)),
+                          actions: [
+                            { key: 'book', label: '예약하기', icon: 'calendar-check', bg: '#EFF5FE', color: '#2F6FE4', onClick: () => goBooking(p.id) },
+                            { key: 'pay', label: '결제하기', icon: 'coin', bg: '#4A82EE', color: '#FFFFFF', onClick: () => goAppPayment(p.id) },
+                          ],
+                        }}
                         className={enter.className}
                         style={enter.style}
                       />

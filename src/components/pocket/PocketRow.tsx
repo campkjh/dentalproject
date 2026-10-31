@@ -3,13 +3,23 @@
 // 포켓 한 줄 — 장바구니 줄(체크 · 사진 84 · 병원 13 회색 · 상품명 16 2줄 · 남색 할인율 + 가격 18 굵게 · 원가 취소선). 261031 상품 상세 가격 카드 톤.
 //  · 포켓 탭 = 왼쪽 체크 + 오른쪽 위 ×(빼기). 최근 본 탭 = 체크 없이 오른쪽 가방(담기/빼기).
 //  · 줄을 누르면 상품 상세. 체크·버튼은 상세로 넘어가지 않게 막는다.
-import { useState, type CSSProperties } from 'react';
+//  · swipe 를 주면(포켓 탭) 오른쪽→왼쪽으로 밀어 버튼(예약하기 · 결제하기)을 꺼낸다 — 프리티풀 채팅 목록 밀기(SwipeActionRow).
+//    이때 줄은 화면 끝까지 넓혀(-mx-4) 밀린 내용이 화면 가장자리에서 잘리게 한다.
+import { useState, type CSSProperties, type ReactNode } from 'react';
 import Link from 'next/link';
 import { X } from 'lucide-react';
 import type { Product } from '@/types';
 import { PocketIcon } from '@/components/icons/PocketIcon';
+import SwipeActionRow, { type SwipeRowAction } from '@/components/common/SwipeActionRow';
 import { resolveProductImageUrl } from '@/lib/images';
 import styles from './pocket.module.css';
+
+export type PocketRowSwipe = {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  actions: SwipeRowAction[];
+  disabled?: boolean;
+};
 
 /** 동그란 체크 — 거르기 시트와 같은 결(globals .chk-dot): 켜면 톡 튀며 체크가 그려지고, 끄면 살짝 움츠렸다 돌아온다 */
 export function CheckCircle({ on }: { on: boolean }) {
@@ -29,6 +39,7 @@ export default function PocketRow({
   onToggleCheck,
   onRemove,
   onTogglePocket,
+  swipe,
   className = '',
   style,
 }: {
@@ -40,6 +51,7 @@ export default function PocketRow({
   onToggleCheck?: () => void;
   onRemove?: () => void;
   onTogglePocket?: () => void;
+  swipe?: PocketRowSwipe;
   className?: string;
   style?: CSSProperties;
 }) {
@@ -48,8 +60,8 @@ export default function PocketRow({
   const discount = product.discount ?? 0;
   const showOriginal = !!product.originalPrice && product.originalPrice > product.price;
 
-  return (
-    <li className={`relative flex items-start gap-3 py-4 ${leaving ? styles.rowLeave : ''} ${className}`} style={style}>
+  const body: ReactNode = (
+    <>
       {mode === 'pocket' && (
         <button
           type="button"
@@ -103,6 +115,24 @@ export default function PocketRow({
           <PocketIcon size={20} filled={inPocket} />
         </button>
       )}
+    </>
+  );
+
+  if (swipe) {
+    return (
+      <li className={`relative -mx-4 pc:mx-0 ${leaving ? styles.rowLeave : ''} ${className}`} style={style}>
+        <SwipeActionRow open={swipe.open} onOpenChange={swipe.onOpenChange} actions={swipe.actions} disabled={swipe.disabled || leaving}>
+          <div className="px-4 pc:px-0">
+            <div className="relative flex items-start gap-3 py-4">{body}</div>
+          </div>
+        </SwipeActionRow>
+      </li>
+    );
+  }
+
+  return (
+    <li className={`relative flex items-start gap-3 py-4 ${leaving ? styles.rowLeave : ''} ${className}`} style={style}>
+      {body}
     </li>
   );
 }
