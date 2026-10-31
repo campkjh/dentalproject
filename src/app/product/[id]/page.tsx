@@ -14,6 +14,7 @@ import { Reveal, StarRating, SingleStar, SectionHead, ReviewCommentRow, ExpandRo
 import { useStore } from '@/store';
 import { toneAccent, useImageTone } from '@/lib/image-tone';
 import { resolveHospitalImageUrl, resolveProductImageUrl } from '@/lib/images';
+import MonoIcon from '@/components/common/MonoIcon';
 import TossBubble, { BubbleClockIcon, BubbleMoonIcon } from '@/components/common/TossBubble';
 
 const faqItems = [
@@ -73,12 +74,6 @@ const OPTION_CHECKS = [
 
 /** 요일 표 순서(월→일) */
 const WEEK_ORDER = ['월', '화', '수', '목', '금', '토', '일'];
-
-/** 토스 흑백 아이콘(public/icons/mono, 사장 제공 261031) — 마스크로 칠해 색을 고른다 */
-function MonoIcon({ name, size = 20, color = '#4E5968', className = '' }: { name: string; size?: number; color?: string; className?: string }) {
-  const url = `url(/icons/mono/${name}.svg)`;
-  return <i aria-hidden className={`inline-block shrink-0 ${className}`} style={{ width: size, height: size, backgroundColor: color, WebkitMaskImage: url, maskImage: url, WebkitMaskSize: 'contain', maskSize: 'contain', WebkitMaskRepeat: 'no-repeat', maskRepeat: 'no-repeat', WebkitMaskPosition: 'center', maskPosition: 'center' }} />;
-}
 
 /** 병원 소개 — 4줄까지, 넘치면 '더보기' */
 function IntroText({ text }: { text: string }) {

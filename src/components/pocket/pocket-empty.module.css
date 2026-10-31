@@ -10,8 +10,9 @@
 
 .stage {
   position: relative;
-  height: clamp(300px, 86vw, 400px);
-  max-width: 520px;
+  /* 261031 사장: 장바구니 칸이 너무 크다 → 높이·폭 약 2/3 */
+  height: clamp(200px, 56vw, 260px);
+  max-width: 340px;
   margin: 0 auto;
 }
 

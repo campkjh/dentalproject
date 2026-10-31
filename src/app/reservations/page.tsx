@@ -22,6 +22,8 @@ import { useReservationRealtimeRefresh } from '@/lib/realtime/reservations';
 import { useStore } from '@/store';
 import { Reservation } from '@/types';
 import { resolveProductImageUrl } from '@/lib/images';
+import { formatWhen } from '@/lib/reservation-format';
+import MonoIcon from '@/components/common/MonoIcon';
 
 type Status = Reservation['status'];
 type FilterKey = Status | 'all';
@@ -58,20 +60,6 @@ function StatusTag({ status }: { status: Status }) {
       {statusLabel[status]}
     </span>
   );
-}
-
-// 일시 표기 — 스토어 값은 toLocaleString('ko-KR')('2026. 10. 28. 오후 3:00:00') 이라 프리티풀 채팅방 일정처럼 '26년 10월 28일 (수) 오후 3:00' 로 다듬는다.
-// 모양이 다르면(옛 데이터) 그대로 보여 준다.
-const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
-function formatWhen(value?: string | null) {
-  const raw = (value || '').trim();
-  if (!raw) return '';
-  const m = raw.match(/(\d{4})\.\s*(\d{1,2})\.\s*(\d{1,2})\.?(?:\s*(오전|오후)\s*(\d{1,2}):(\d{2}))?/);
-  if (!m) return raw;
-  const [, y, mo, d, ampm, h, mi] = m;
-  const day = new Date(Number(y), Number(mo) - 1, Number(d)).getDay();
-  const date = `${y.slice(2)}년 ${Number(mo)}월 ${Number(d)}일 (${WEEKDAYS[day]})`;
-  return ampm ? `${date} ${ampm} ${Number(h)}:${mi}` : date;
 }
 
 /** 칸 제목 = 방문 일시(프리티풀 매칭의 '행사 일시' 자리) */
@@ -290,7 +278,7 @@ export default function ReservationsPage() {
 
                       {/* 본문(16.5) — 병원 */}
                       <p className="mt-3 flex items-center gap-1.5 text-[16.5px] leading-[1.5] tracking-[-0.3px] text-[#191F28] min-[601px]:text-[17.5px]">
-                        <PinIcon />
+                        <MonoIcon name="pin-location" size={18} color="#B0B8C1" />
                         <span className="min-w-0 truncate">{r.hospitalName || '병원 정보 없음'}</span>
                         {r.location && <span className="shrink-0 text-[14px] text-[#8B95A1]">{r.location}</span>}
                       </p>
@@ -415,15 +403,5 @@ export default function ReservationsPage() {
         </div>
       )}
     </div>
-  );
-}
-
-/** 병원 줄 앞 위치 핀(프리티풀 PinLocationIcon 결 — 회색 18) */
-function PinIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true" className="shrink-0 text-[#B0B8C1]">
-      <path d="M12 21.5s-7-5.6-7-11.3A7 7 0 0 1 19 10.2c0 5.7-7 11.3-7 11.3z" fill="currentColor" />
-      <circle cx="12" cy="10.2" r="2.6" fill="#fff" />
-    </svg>
   );
 }
