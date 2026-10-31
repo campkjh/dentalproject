@@ -1181,6 +1181,10 @@ textarea.tds-input {
 }
 
 /* ===== Partner center TDS adaptation ===== */
+/* 261101: 옛 의사 화면용 요소 규칙(h1 28 · h2 17 · label 13 · input 15 · rounded-full 버튼 13 …)은 @layer components 로 —
+ *  층 밖(unlayered)이라 Tailwind 유틸리티(text-[20px] 등)를 늘 이겨, 고객 화면과 같은 조각(TopBar·카드·시트)이 의사 화면에서만 글자가 커졌다.
+ *  이제 클래스를 준 곳은 그 값대로, 클래스 없는 옛 마크업만 이 기본값을 받는다. 보라→파랑 덮기만 층 밖에 남긴다. */
+@layer components {
 .partner-page {
   color: var(--tds-text-primary);
   letter-spacing: 0;
@@ -1308,21 +1312,6 @@ textarea.tds-input {
   transform: scale(0.985);
 }
 
-.partner-page :where(button, a)[class*="bg-[#8037FF]"] {
-  min-height: 56px;
-  border-radius: 16px;
-  box-shadow: none;
-  padding-left: 28px;
-  padding-right: 28px;
-  font-size: 17px;
-  font-weight: 700;
-  line-height: 21px;
-}
-
-.partner-page :where(button, a)[class*="text-[#8037FF]"] {
-  color: var(--tds-brand);
-}
-
 .partner-page label {
   font-size: 13px;
   font-weight: 600;
@@ -1384,16 +1373,32 @@ textarea.tds-input {
   height: 65px;
 }
 
-.partner-page :where(.bg-gradient-to-r.from-\[\#8037FF\].to-\[\#B18CFF\]) {
-  background: #3180F7;
-}
-
 .partner-page :where(.text-\[10px\].font-bold.px-1\.5.py-0\.5.rounded),
 .partner-page :where(.text-\[11px\].font-bold.px-1\.5.py-0\.5.rounded) {
   border-radius: 999px;
   padding: 3px 8px;
   font-size: 11px;
   line-height: 15px;
+}
+}
+
+.partner-page :where(button, a)[class*="bg-[#8037FF]"] {
+  min-height: 56px;
+  border-radius: 16px;
+  box-shadow: none;
+  padding-left: 28px;
+  padding-right: 28px;
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 21px;
+}
+
+.partner-page :where(button, a)[class*="text-[#8037FF]"] {
+  color: var(--tds-brand);
+}
+
+.partner-page :where(.bg-gradient-to-r.from-\[\#8037FF\].to-\[\#B18CFF\]) {
+  background: #3180F7;
 }
 
 .partner-top {
