@@ -6,7 +6,7 @@ import Link from 'next/link';
 import PullToRefresh from '@/components/common/PullToRefresh';
 import { useStore } from '@/store';
 import { createClient, hasSupabaseEnv } from '@/lib/supabase/client';
-import { communityCategories, getWeeklyPopularPosts, isTipPost, TIP_TAG } from '@/lib/community';
+import { communityCategories, getWeeklyPopularPosts, isTipPost, postInCategory, TIP_TAG } from '@/lib/community';
 import type { Post } from '@/types';
 import CommunityPostCard from './CommunityPostCard';
 import CommunityModal from './CommunityModal';
@@ -35,16 +35,14 @@ export default function CommunityFeed({ partner = false }: { partner?: boolean }
   const user = useStore(s => s.user);
   const basePath = partner ? '/partner/community' : '/community';
   // 커뮤니티는 둘로 나뉜다(261031):
-  //  · 고객 커뮤니티(/community) = question 게시판만 — 고객 질문 + 의사 꿀팁(의사가 남긴 글, TIP_TAG). 의사는 여기서 댓글로 상담하고 꿀팁을 쓴다.
+  //  · 고객 커뮤니티(/community) = question 게시판만 — 탭 = 전체 · 자유수다 · 시술질문 · 병원추천 · 의사꿀팁(261101, 전체/고객 질문/의사 꿀팁 칩 줄은 걷어냄).
   //  · 의사 커뮤니티(/partner/community) = 의사끼리(자유·과별, 고객에겐 API 에서 막힘) + 고객 상담 칸(질문에 답하기·내 꿀팁).
   const doctorSpaces = partner && isDoctor;
   const [space, setSpace] = useState<'doctor' | 'customer'>('doctor');
   type LoungeFilter = 'all' | 'free' | 'dental' | 'mine';
   type ConsultFilter = 'waiting' | 'all' | 'mytips';
-  type CustomerFilter = 'all' | 'question' | 'tip';
   const [lounge, setLounge] = useState<LoungeFilter>('all');
   const [consult, setConsult] = useState<ConsultFilter>('waiting');
-  const [customerView, setCustomerView] = useState<CustomerFilter>('all');
   const [mine, setMine] = useState(false);
   const [category, setCategory] = useState(() => communityCategories.includes(params.get('category') || '') ? params.get('category')! : '전체');
   const [query, setQuery] = useState(params.get('q') || '');
@@ -80,10 +78,8 @@ export default function CommunityFeed({ partner = false }: { partner?: boolean }
       if (consult === 'mytips') return isTipPost(post) && post.authorId === user?.id;
       return !isTipPost(post);
     }
-    if (customerView === 'question') return !isTipPost(post);
-    if (customerView === 'tip') return isTipPost(post);
     return true;
-  }, [doctorSpaces, space, lounge, consult, customerView, user?.id]);
+  }, [doctorSpaces, space, lounge, consult, user?.id]);
   const searchTerm = query.trim().toLocaleLowerCase();
   const popular = useMemo(() => {
     if (!(doctorSpaces && space === 'doctor')) return getWeeklyPopularPosts(posts);
@@ -97,11 +93,11 @@ export default function CommunityFeed({ partner = false }: { partner?: boolean }
   }, [posts, doctorSpaces, space]);
   const visible = useMemo(() => posts.filter(post => {
     if (!inView(post) || (mine && post.authorId !== user?.id)) return false;
-    if (category !== '전체' && !post.tags.includes(category)) return false;
+    if (!postInCategory(post, category)) return false;
     return !searchTerm || [post.title, post.content, post.isAnonymous ? '' : post.authorName, ...post.tags].join(' ').toLocaleLowerCase().includes(searchTerm);
   }).sort((a, b) => sort === 'popular' ? b.viewCount - a.viewCount : sort === 'comments' ? b.commentCount - a.commentCount : new Date(b.createdAt || b.date).getTime() - new Date(a.createdAt || a.date).getTime()), [posts, inView, mine, user?.id, category, searchTerm, sort]);
   // 주간 인기글·내가 쓴 글 탭은 고객 커뮤니티 첫 화면에만(의사 화면은 칩 하나로 정리)
-  const showWeeklyTabs = !doctorSpaces && category === '전체' && !searchTerm && customerView === 'all';
+  const showWeeklyTabs = !doctorSpaces && category === '전체' && !searchTerm;
 
   // 전체 헤더 검색(?q=)이 바뀌면 이 화면 검색어도 따라간다
   if (previousQuery !== params.get('q')) {
@@ -109,7 +105,7 @@ export default function CommunityFeed({ partner = false }: { partner?: boolean }
     if (params.has('q')) { setSearchMounted(true); setSearchOn(true); }
   }
   // 필터가 바뀌면 처음 20개부터 다시 그린다
-  const filterKey = `${space}|${lounge}|${consult}|${customerView}|${category}|${searchTerm}|${mine}|${sort}`;
+  const filterKey = `${space}|${lounge}|${consult}|${category}|${searchTerm}|${mine}|${sort}`;
   const [previousFilter, setPreviousFilter] = useState(filterKey);
   if (previousFilter !== filterKey) { setPreviousFilter(filterKey); setRenderCount(20); }
 
@@ -202,7 +198,7 @@ export default function CommunityFeed({ partner = false }: { partner?: boolean }
   </label>;
 
   return <div className={styles.page}>
-    <PullToRefresh onRefresh={refresh} disabled={Boolean(compose || commentPost || selected || loading)} />
+    <PullToRefresh onRefresh={refresh} busy={loading} disabled={Boolean(compose || commentPost || selected)} />
     <header className={`${styles.topbar} pc:hidden`} data-scrolled={scrolled} data-searching={searchOn}>
       <div className={styles.topbarInner}>
         <div className={styles.titleWrap}><h1 className={styles.title}>커뮤니티</h1></div>
@@ -249,7 +245,6 @@ export default function CommunityFeed({ partner = false }: { partner?: boolean }
             onChange={v => { if (space === 'doctor') setLounge(v as LoungeFilter); else setConsult(v as ConsultFilter); }}
           />
         </div>}
-        {!doctorSpaces && !searchTerm && <FilterChips items={[['all', '전체'], ['question', '고객 질문'], ['tip', '의사 꿀팁']]} value={customerView} onChange={v => { setCustomerView(v as CustomerFilter); setMine(false); }} />}
 
         {showWeeklyTabs && <section className={styles.weekly} aria-label="주간 인기글">
           <h2 className={styles.weeklyTitle} role="tablist" aria-label="게시글 보기">
@@ -274,7 +269,7 @@ export default function CommunityFeed({ partner = false }: { partner?: boolean }
           {loading && posts.length === 0 ? <CommunitySkeleton count={2} />
             : visible.length ? visible.slice(0, renderCount).map(post => <CommunityPostCard key={post.id} post={post} basePath={basePath} initialLiked={likedIds.has(post.id)} onOpen={open} onComments={p => setCommentPost(p.id)} onCategory={cat => communityCategories.includes(cat) && selectCategory(cat)} onDeleted={() => { if (selected === post.id) setSelected(null); }} />)
             : !error && <div className={styles.emptyPanel}>
-              <p>{searchTerm ? '검색 결과가 없어요.' : mine || lounge === 'mine' && space === 'doctor' && doctorSpaces ? '내가 쓴 글이 아직 없어요.' : doctorSpaces && space === 'customer' && consult === 'waiting' ? '답변을 기다리는 질문이 없어요.' : doctorSpaces && space === 'customer' && consult === 'mytips' ? '아직 남긴 꿀팁이 없어요.' : customerView === 'tip' ? '아직 의사 꿀팁이 없어요.' : '아직 게시글이 없습니다.'}</p>
+              <p>{searchTerm ? '검색 결과가 없어요.' : mine || lounge === 'mine' && space === 'doctor' && doctorSpaces ? '내가 쓴 글이 아직 없어요.' : doctorSpaces && space === 'customer' && consult === 'waiting' ? '답변을 기다리는 질문이 없어요.' : doctorSpaces && space === 'customer' && consult === 'mytips' ? '아직 남긴 꿀팁이 없어요.' : category === TIP_TAG ? '아직 의사 꿀팁이 없어요.' : '아직 게시글이 없습니다.'}</p>
               <button type="button" onClick={searchTerm ? closeSearch : write}>{searchTerm ? '전체 글 보기' : '첫 이야기 남기기'}</button>
             </div>}
           {!loading && visible.length > renderCount && <div ref={renderMore} style={{ height: 1 }} aria-hidden="true" />}

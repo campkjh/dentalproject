@@ -96,8 +96,25 @@
 @keyframes alertIconPop { 0% { opacity: 0; transform: scale(.3) rotate(-16deg); } 100% { opacity: 1; transform: scale(1) rotate(0); } }
 @keyframes alertUp { 0% { opacity: 0; transform: translateY(8px); } 100% { opacity: 1; transform: translateY(0); } }
 @media (prefers-reduced-motion: reduce) { .alertIcon, .alertTitle, .alertMessage, .alertActions { animation: none !important; } }
-.pullIndicator { position: fixed; z-index: 90; top: 56px; left: 50%; margin-left: -94px; min-width: 188px; padding: 6px 16px 6px 6px; display: flex; align-items: center; gap: 9px; border-radius: 30px; background: #fff; color: #51535c; box-shadow: 0 8px 24px #191f2824; font-size: 13px; font-weight: 600; pointer-events: none; }
-.pullIndicator img { border-radius: 50%; }
+/* 당겨서 새로고침(261101) — 흰 동그라미 + 차오르는 마이닥 로고(PullToRefresh.tsx) */
+.ptr { position: fixed; z-index: 90; top: calc(env(safe-area-inset-top, 0px) + 58px); left: 50%; width: 52px; height: 52px; margin-left: -26px; display: grid; place-items: center; border-radius: 50%; background: #fff; box-shadow: 0 6px 22px rgba(25, 31, 40, .1), 0 1px 3px rgba(25, 31, 40, .06); pointer-events: none; will-change: transform, opacity; }
+.ptr[data-phase=refreshing], .ptr[data-phase=done] { transition: transform .45s cubic-bezier(.22, 1, .36, 1), opacity .3s ease; }
+.ptr[data-phase=done] { opacity: 0 !important; transform: translate3d(0, 10px, 0) scale(.45) !important; transition: transform .42s cubic-bezier(.5, 0, .75, 0) .16s, opacity .3s ease .24s; }
+/* 로고 칸 — 빈 로고(흐린 회색) + 로고 모양으로 오린 물 칸(아래서부터 차오름) */
+.ptrMark { position: relative; display: block; width: 32px; height: 32px; }
+.ptrEmpty { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; filter: grayscale(1); opacity: .2; }
+.ptrFill { position: absolute; inset: 0; -webkit-mask: url(/icons/brand-logo-mark.png) center / contain no-repeat; mask: url(/icons/brand-logo-mark.png) center / contain no-repeat; }
+.ptrLiquid { position: absolute; left: 0; right: 0; bottom: 0; height: 0; background: linear-gradient(180deg, #B3A1FF 0%, #6C5CFF 100%) center bottom / 100% 32px no-repeat; }
+/* 물 윗면 물결 — 옆으로 흐른다 */
+.ptrLiquid::before { content: ''; position: absolute; left: 0; right: 0; top: -4px; height: 5px; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='5' viewBox='0 0 14 5'%3E%3Cpath d='M0 2.5 Q3.5 0 7 2.5 T14 2.5 V5 H0Z' fill='%23A08EFF'/%3E%3C/svg%3E") 0 0 / 14px 5px repeat-x; animation: ptrWave .7s linear infinite; }
+.ptr[data-armed=true][data-phase=pulling] .ptrMark { animation: ptrPop .36s cubic-bezier(.34, 1.56, .64, 1); }
+.ptr[data-phase=refreshing] .ptrLiquid { animation: ptrRefill 1.15s cubic-bezier(.45, 0, .25, 1) infinite; }
+.ptr[data-phase=done] .ptrLiquid { height: 100%; transition: height .2s ease-out; }
+.ptr[data-phase=done] .ptrMark { animation: ptrPop .36s cubic-bezier(.34, 1.56, .64, 1); }
+@keyframes ptrWave { to { background-position-x: 14px; } }
+@keyframes ptrRefill { 0% { height: 100%; } 14% { height: 6%; } 80% { height: 100%; } 100% { height: 100%; } }
+@keyframes ptrPop { 0% { transform: scale(1); } 45% { transform: scale(1.16); } 100% { transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) { .ptrLiquid::before, .ptr[data-phase=refreshing] .ptrLiquid, .ptr .ptrMark { animation: none !important; } .ptr[data-phase=refreshing] .ptrLiquid { height: 100%; } }
 @media (max-width: 359px) { .myRow { padding: 12px; gap: 9px; }.myRowLabel { font-size: 15px; }.myRowDesc { font-size: 12px; }.myProfileActions { gap: 5px; font-size: 12px; } }
 @media (min-width: 720px) { .myPage { padding: 0 28px 100px; }.myTopbar { margin-left: -28px; margin-right: -28px; }.mySections { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 0 24px; }.myRowDesc { white-space: normal; }.topbar { padding-left: 24px; padding-right: 24px; } }
 @media (min-width: 1024px) {

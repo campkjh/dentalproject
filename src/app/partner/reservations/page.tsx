@@ -3,10 +3,19 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ChevronRight } from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import CommunityModal from '@/components/community/CommunityModal';
 import MonoIcon from '@/components/common/MonoIcon';
 import { useMyHospitalData } from '@/lib/partner/my-hospital-cache';
+import {
+  RESERVATION_STATUS_LABEL as STATUS_LABEL,
+  customerHref,
+  monthDayOf,
+  reservationStatusTone as statusTone,
+  timeOf,
+  wonOf,
+  type CustomerRow,
+} from '@/lib/partner/customers';
 import { useSession } from '@/lib/supabase/SessionProvider';
 import { useReservationRealtimeRefresh } from '@/lib/realtime/reservations';
 import { useStore } from '@/store';
@@ -64,92 +73,177 @@ function getMonthCells(year: number, month: number) {
   return cells;
 }
 
-function timeOf(value?: string | null) {
-  if (!value) return '--:--';
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return '--:--';
-  return d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false });
+function addDays(date: Date, days: number) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate() + days);
 }
 
-const STATUS_LABEL: Record<ReservationRow['status'], string> = {
-  pending: '확인 대기',
-  confirmed: '예약확정',
-  completed: '진료완료',
-  cancelled: '취소',
-};
-
-/** 상태 배지 색 — 대기=회색 · 확정=파랑 · 완료=초록 · 취소=빨강 */
-function statusTone(status: ReservationRow['status']) {
-  if (status === 'completed') return 'bg-[#E6F7EE] text-[#03A94D]';
-  if (status === 'confirmed') return 'bg-[#E8F3FF] text-[#3180F7]';
-  if (status === 'cancelled') return 'bg-[#FFEEEF] text-[#F04452]';
-  return 'bg-[#F2F4F6] text-[#6B7684]';
+/** 그 날이 든 주의 일요일 */
+function weekStartOf(date: Date) {
+  return addDays(date, -date.getDay());
 }
 
-/** 달력 — 회색 요일 줄 · 고른 날 파랑 칸 · 예약 있는 날 아래 점 */
+/**
+ * 달력 — 프리티풀 어드민 주력처럼 처음엔 이번 주 한 줄만, 아래 ⌄ 로 이번 달 전체를 펼치고 접는다(261101).
+ *  · 접힘 = 고른 날이 든 주 한 줄. ‹ › 는 한 주씩. 펼침 = 한 달. ‹ › 는 한 달씩(지난달 예약도 본다).
+ *  · 펼치고 접을 땐 다른 주 줄만 높이가 0 ↔ 제 높이로 부드럽게(지금 주 줄은 제자리에 그대로).
+ *  · 회색 요일 줄 · 고른 날 파랑 칸 · 예약 있는 날 아래 점 · 쉬는 날 회색 취소선.
+ */
 function MonthCalendar({
-  month,
-  cells,
   selected,
-  onToday,
   onSelect,
   hasDot,
   isOff,
 }: {
-  month: number;
-  cells: Array<{ date: Date; muted: boolean }>;
   selected: string;
-  onToday: () => void;
   onSelect: (date: Date) => void;
   hasDot: (key: string) => boolean;
   isOff?: (key: string) => boolean;
 }) {
+  const today = new Date();
+  const [expanded, setExpanded] = useState(false);
+  // 보고 있는 자리 — 접힘이면 이 날이 든 주, 펼침이면 이 날이 든 달
+  const [cursor, setCursor] = useState(() => dateFromKey(selected));
+  const [dir, setDir] = useState<1 | -1>(1);
+
+  const year = cursor.getFullYear();
+  const month = cursor.getMonth();
+  const cells = useMemo(() => getMonthCells(year, month), [year, month]);
+  const rows = useMemo(() => Array.from({ length: cells.length / 7 }, (_, r) => cells.slice(r * 7, r * 7 + 7)), [cells]);
+  const cursorKey = dateKey(cursor);
+  const currentRow = Math.max(0, rows.findIndex((row) => row.some(({ date }) => dateKey(date) === cursorKey)));
+
+  const viewingToday = expanded
+    ? year === today.getFullYear() && month === today.getMonth()
+    : dateKey(weekStartOf(cursor)) === dateKey(weekStartOf(today));
+
+  const go = (step: 1 | -1) => {
+    setDir(step);
+    setCursor((c) => (expanded ? new Date(c.getFullYear(), c.getMonth() + step, 1) : addDays(c, step * 7)));
+  };
+
+  const toggle = () => {
+    if (expanded) {
+      // 접을 때 — 고른 날이 이 달에 있으면 그 주를, 아니면 보던 자리(달 첫 주)를 남긴다
+      const picked = dateFromKey(selected);
+      if (picked.getFullYear() === year && picked.getMonth() === month) setCursor(picked);
+    }
+    setExpanded((v) => !v);
+  };
+
+  const goToday = () => {
+    setDir(today < cursor ? -1 : 1);
+    setCursor(today);
+    onSelect(today);
+  };
+
   return (
-    <section className="px-5 pb-6 pt-1">
-      <button
-        type="button"
-        onClick={onToday}
-        className="-ml-1 inline-flex h-9 items-center gap-0.5 rounded-[10px] px-1 text-[20px] font-bold tracking-[-0.4px] text-[#191F28] transition-opacity active:opacity-60"
-        aria-label="오늘로 돌아가기"
-      >
-        {month + 1}월
-      </button>
+    <section className="px-5 pb-1 pt-1">
+      <div className="flex items-center gap-1">
+        <button
+          type="button"
+          onClick={goToday}
+          className="-ml-1 inline-flex h-9 items-center gap-0.5 rounded-[10px] px-1 text-[20px] font-bold tracking-[-0.4px] text-[#191F28] transition-opacity active:opacity-60"
+          aria-label="오늘로 돌아가기"
+        >
+          {year !== today.getFullYear() ? `${year}년 ` : ''}{month + 1}월
+        </button>
+        {!viewingToday && (
+          <button
+            type="button"
+            onClick={goToday}
+            className="qd-a-item ml-1 inline-flex h-7 items-center rounded-[8px] bg-[#F2F4F6] px-2.5 text-[13.5px] font-semibold text-[#4E5968] transition-all active:scale-[0.96]"
+          >
+            오늘
+          </button>
+        )}
+        <div className="ml-auto flex items-center">
+          <button
+            type="button"
+            onClick={() => go(-1)}
+            aria-label={expanded ? '지난달' : '지난주'}
+            className="flex h-10 w-10 items-center justify-center rounded-[12px] text-[#4E5968] transition-all active:scale-90 active:bg-[#F2F4F6]"
+          >
+            <ChevronLeft size={22} strokeWidth={2.2} />
+          </button>
+          <button
+            type="button"
+            onClick={() => go(1)}
+            aria-label={expanded ? '다음 달' : '다음 주'}
+            className="-mr-2 flex h-10 w-10 items-center justify-center rounded-[12px] text-[#4E5968] transition-all active:scale-90 active:bg-[#F2F4F6]"
+          >
+            <ChevronRight size={22} strokeWidth={2.2} />
+          </button>
+        </div>
+      </div>
       <div className="mt-3 grid grid-cols-7 text-center">
         {WEEKDAYS.map((day) => (
           <span key={day} className="text-[13px] font-medium text-[#8B95A1]">{day}</span>
         ))}
       </div>
-      <div className="mt-2 grid grid-cols-7 gap-y-1">
-        {cells.map(({ date, muted }) => {
-          const key = dateKey(date);
-          const active = key === selected;
-          const off = isOff?.(key) ?? false;
-          const dot = hasDot(key);
+      {/* 달이 바뀌면 판을 새로 그리며 넘긴 쪽에서 살짝 밀려 들어온다 */}
+      <div key={`${year}-${month}`} className={`mt-2 ${dir > 0 ? 'cal-swap-next' : 'cal-swap-prev'}`}>
+        {rows.map((row, r) => {
+          const show = expanded || r === currentRow;
           return (
-            <button
-              key={key}
-              type="button"
-              onClick={() => onSelect(date)}
-              className="flex h-12 flex-col items-center justify-center transition-transform active:scale-[0.93]"
+            <div
+              key={dateKey(row[0].date)}
+              aria-hidden={!show}
+              inert={!show}
+              className="grid transition-[grid-template-rows,opacity] duration-[450ms] ease-[cubic-bezier(.22,1,.36,1)]"
+              style={{ gridTemplateRows: show ? '1fr' : '0fr', opacity: show ? 1 : 0 }}
             >
-              <span
-                className={`flex h-9 w-9 items-center justify-center rounded-[12px] text-[16px] tabular-nums transition-colors ${
-                  active
-                    ? 'bg-[#2F6FE4] font-bold text-white'
-                    : off
-                      ? 'bg-[#F2F4F6] text-[#B0B8C1] line-through'
-                      : muted
-                        ? 'text-[#D1D6DB]'
-                        : 'font-medium text-[#333D4B]'
-                }`}
-              >
-                {date.getDate()}
-              </span>
-              <span className={`mt-0.5 h-1 w-1 rounded-full ${dot ? (active ? 'bg-[#2F6FE4]' : 'bg-[#3180F7]') : 'bg-transparent'}`} />
-            </button>
+              <div className="min-h-0 overflow-hidden">
+                <div className="grid grid-cols-7 pb-1">
+                  {row.map(({ date, muted }) => {
+                    const key = dateKey(date);
+                    const active = key === selected;
+                    const off = isOff?.(key) ?? false;
+                    const dot = hasDot(key);
+                    // 접힌 한 주에선 앞뒤 달 날짜도 진짜 이번 주라 흐리게 하지 않는다
+                    const dim = muted && expanded;
+                    return (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => {
+                          setCursor(date);
+                          onSelect(date);
+                        }}
+                        className="flex h-12 flex-col items-center justify-center transition-transform active:scale-[0.93]"
+                      >
+                        <span
+                          className={`flex h-9 w-9 items-center justify-center rounded-[12px] text-[16px] tabular-nums transition-colors ${
+                            active
+                              ? 'bg-[#2F6FE4] font-bold text-white'
+                              : off
+                                ? 'bg-[#F2F4F6] text-[#B0B8C1] line-through'
+                                : dim
+                                  ? 'text-[#D1D6DB]'
+                                  : 'font-medium text-[#333D4B]'
+                          }`}
+                        >
+                          {date.getDate()}
+                        </span>
+                        <span className={`mt-0.5 h-1 w-1 rounded-full ${dot ? (active ? 'bg-[#2F6FE4]' : 'bg-[#3180F7]') : 'bg-transparent'}`} />
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
           );
         })}
       </div>
+      {/* 펼치기·접기 — 아래 화살표(펼치면 위로 돈다) */}
+      <button
+        type="button"
+        onClick={toggle}
+        aria-expanded={expanded}
+        aria-label={expanded ? '이번 주만 보기' : '한 달 달력 보기'}
+        className="mt-0.5 flex h-10 w-full items-center justify-center rounded-[12px] text-[#8B95A1] transition-colors active:bg-[#F9FAFB]"
+      >
+        <ChevronDown size={24} strokeWidth={2} className={`transition-transform duration-300 ease-[cubic-bezier(.22,1,.36,1)] ${expanded ? 'rotate-180' : ''}`} />
+      </button>
     </section>
   );
 }
@@ -325,8 +419,6 @@ function ScheduleSettingsView({
   const showToast = useStore((s) => s.showToast);
   const showConfirm = useStore((s) => s.showConfirm);
   const today = new Date();
-  const [year, setYear] = useState(today.getFullYear());
-  const [month, setMonth] = useState(today.getMonth());
   const [selected, setSelected] = useState(dateKey(today));
   const [settings, setSettings] = useState<ScheduleSettings>({ disabledDays: [], disabledSlots: {} });
   const [loadingSettings, setLoadingSettings] = useState(true);
@@ -364,7 +456,6 @@ function ScheduleSettingsView({
     };
   }, [hospitalId, showToast]);
 
-  const cells = useMemo(() => getMonthCells(year, month), [year, month]);
   const selectedDate = dateFromKey(selected);
   const selectedIsToday = sameDateKey(selectedDate, today);
   const selectedTitle = `${selectedIsToday ? '오늘 ' : ''}${selectedDate.getMonth() + 1}월${selectedDate.getDate()}일`;
@@ -434,19 +525,8 @@ function ScheduleSettingsView({
       </header>
 
       <MonthCalendar
-        month={month}
-        cells={cells}
         selected={selected}
-        onToday={() => {
-          setYear(today.getFullYear());
-          setMonth(today.getMonth());
-          setSelected(dateKey(today));
-        }}
-        onSelect={(date) => {
-          setSelected(dateKey(date));
-          setYear(date.getFullYear());
-          setMonth(date.getMonth());
-        }}
+        onSelect={(date) => setSelected(dateKey(date))}
         hasDot={(key) => reservationDates.has(key)}
         isOff={(key) => disabledDaySet.has(key)}
       />
@@ -496,30 +576,6 @@ function ScheduleSettingsView({
   );
 }
 
-type CustomerReservation = {
-  id: string;
-  status: ReservationRow['status'];
-  visit_at: string | null;
-  reservation_at: string | null;
-  created_at: string | null;
-  amount: number | null;
-  product_title: string | null;
-};
-
-type CustomerRow = {
-  key: string;
-  user_id: string | null;
-  name: string;
-  phone: string | null;
-  visits: number;
-  total: number;
-  cancelled: number;
-  paid: number;
-  last_visit_at: string | null;
-  last_activity_at: string | null;
-  reservations: CustomerReservation[];
-};
-
 type CustomerSort = 'recent' | 'visits' | 'paid';
 
 const CUSTOMER_SORTS: Array<{ key: CustomerSort; label: string }> = [
@@ -528,35 +584,20 @@ const CUSTOMER_SORTS: Array<{ key: CustomerSort; label: string }> = [
   { key: 'paid', label: '결제 많은순' },
 ];
 
-function wonOf(value?: number | null) {
-  if (typeof value !== 'number' || !Number.isFinite(value)) return '-';
-  return `${value.toLocaleString('ko-KR')}원`;
-}
-
 function msOf(value?: string | null) {
   if (!value) return 0;
   const t = new Date(value).getTime();
   return Number.isNaN(t) ? 0 : t;
 }
 
-function monthDayOf(value?: string | null) {
-  if (!value) return '';
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return '';
-  const prefix = d.getFullYear() !== new Date().getFullYear() ? `${d.getFullYear()}년 ` : '';
-  return `${prefix}${d.getMonth() + 1}월 ${d.getDate()}일`;
-}
-
 /** 고객관리 — 이 병원 예약을 고객별로 묶어 방문·결제를 한눈에 */
 function CustomersView({ hospitalId, onTabChange, reloadKey }: { hospitalId: string | null; onTabChange: (tab: ReservationTabKey) => void; reloadKey: number }) {
-  const router = useRouter();
   const showToast = useStore((s) => s.showToast);
   const [customers, setCustomers] = useState<CustomerRow[]>([]);
   const [loaded, setLoaded] = useState(false);
   const loading = Boolean(hospitalId) && !loaded;
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState<CustomerSort>('recent');
-  const [openKey, setOpenKey] = useState<string | null>(null);
   // 실시간 갱신은 부모(예약관리)의 구독 하나만 쓴다 — 같은 채널을 두 번 열면 supabase 가 'subscribe() 뒤 callback 추가' 오류를 던져 화면이 죽었다(261101)
   const reloadTick = reloadKey;
 
@@ -599,8 +640,6 @@ function CustomersView({ hospitalId, onTabChange, reloadKey }: { hospitalId: str
       return recentOf(b) - recentOf(a);
     });
   }, [customers, query, sort]);
-
-  const openCustomer = openKey ? customers.find((c) => c.key === openKey) ?? null : null;
 
   return (
     <div className="partner-mobile-screen has-fixed-title page-enter">
@@ -665,10 +704,9 @@ function CustomersView({ hospitalId, onTabChange, reloadKey }: { hospitalId: str
                   ? `마지막 ${monthDayOf(c.last_visit_at)}`
                   : c.last_activity_at ? `최근 예약 ${monthDayOf(c.last_activity_at)}` : '';
                 return (
-                  <button
+                  <Link
                     key={c.key}
-                    type="button"
-                    onClick={() => setOpenKey(c.key)}
+                    href={customerHref(c.key)}
                     className="qd-a-item -mx-2 flex w-[calc(100%+16px)] items-center gap-3 rounded-[16px] px-2 py-3 text-left transition-colors active:bg-[#F9FAFB]"
                     style={{ animationDelay: `${Math.min(index, 6) * 0.04}s` }}
                   >
@@ -687,7 +725,8 @@ function CustomersView({ hospitalId, onTabChange, reloadKey }: { hospitalId: str
                       </span>
                     </span>
                     <span className="shrink-0 text-[16px] font-bold tabular-nums text-[#1E3A78]">{wonOf(c.paid)}</span>
-                  </button>
+                    <ChevronRight size={18} className="-ml-1 shrink-0 text-[#B0B8C1]" />
+                  </Link>
                 );
               })}
             </div>
@@ -695,65 +734,6 @@ function CustomersView({ hospitalId, onTabChange, reloadKey }: { hospitalId: str
         )}
       </section>
 
-      {openCustomer && (
-        <CommunityModal label="고객 정보" onClose={() => setOpenKey(null)}>
-          <div className="overflow-y-auto px-5 pb-5 pt-2">
-            <h2 className="text-[20px]! font-bold leading-tight! tracking-[-0.4px] text-[#191F28]">{openCustomer.name}</h2>
-            <p className="mt-1.5 text-[15px] leading-[1.6] text-[#6B7684]">{openCustomer.phone || '전화번호 없음'}</p>
-
-            <div className="mt-5 grid grid-cols-2 gap-2">
-              {[
-                { label: '방문 완료', value: `${openCustomer.visits}회` },
-                { label: '예약 전체', value: `${openCustomer.total}건` },
-                { label: '취소', value: `${openCustomer.cancelled}건` },
-                { label: '결제 합계', value: wonOf(openCustomer.paid) },
-              ].map((tile) => (
-                <div key={tile.label} className="rounded-[14px] bg-[#F2F4F6] px-4 py-3.5">
-                  <p className="text-[14px] text-[#8B95A1]">{tile.label}</p>
-                  <p className="mt-1 truncate text-[20px] font-bold tabular-nums tracking-[-0.4px] text-[#333D4B]">{tile.value}</p>
-                </div>
-              ))}
-            </div>
-
-            <h3 className="mt-7 text-[17px] font-bold text-[#191F28]">예약 기록</h3>
-            <div className="mt-1">
-              {openCustomer.reservations.map((r) => {
-                const when = r.visit_at ?? r.reservation_at ?? r.created_at;
-                return (
-                  <button
-                    key={r.id}
-                    type="button"
-                    onClick={() => router.push(`/partner/reservations/${r.id}`)}
-                    className="-mx-2 flex w-[calc(100%+16px)] items-center gap-3 rounded-[16px] px-2 py-3 text-left transition-colors active:bg-[#F9FAFB]"
-                  >
-                    <span className="min-w-0 flex-1">
-                      <span className="flex items-center gap-1.5">
-                        <span className="truncate text-[16px] font-semibold tabular-nums text-[#191F28]">
-                          {monthDayOf(when) || '날짜 없음'}{r.visit_at ? ` ${timeOf(r.visit_at)}` : ''}
-                        </span>
-                        <span className={`inline-flex h-6 shrink-0 items-center rounded-[6px] px-2 text-[13px] font-semibold ${statusTone(r.status)}`}>{STATUS_LABEL[r.status] ?? r.status}</span>
-                      </span>
-                      <span className="mt-0.5 block truncate text-[14px] text-[#8B95A1]">{r.product_title ?? '상품 정보 없음'}</span>
-                    </span>
-                    <span className="shrink-0 text-[15px] font-semibold tabular-nums text-[#333D4B]">{wonOf(r.amount)}</span>
-                    <ChevronRight size={18} className="shrink-0 text-[#B0B8C1]" />
-                  </button>
-                );
-              })}
-            </div>
-
-            {openCustomer.phone && (
-              <a
-                href={`tel:${openCustomer.phone.replace(/[^\d+]/g, '')}`}
-                className="mt-5 flex h-14 w-full items-center justify-center gap-2 rounded-[18px] bg-[#4A82EE] text-[17px] font-bold text-white transition-all active:scale-[0.98]"
-              >
-                <MonoIcon name="call" size={20} color="#FFFFFF" />
-                전화하기
-              </a>
-            )}
-          </div>
-        </CommunityModal>
-      )}
     </div>
   );
 }
@@ -764,8 +744,6 @@ export default function PartnerReservationsPage() {
   const showToast = useStore((s) => s.showToast);
   const now = new Date();
   const [activeTab, setActiveTab] = useState<ReservationTabKey>('reservations');
-  const [year, setYear] = useState(now.getFullYear());
-  const [month, setMonth] = useState(now.getMonth());
   const [selected, setSelected] = useState(dateKey(now));
   const [assignTarget, setAssignTarget] = useState<ReservationRow | null>(null);
   const [assignDoctorId, setAssignDoctorId] = useState('');
@@ -793,7 +771,6 @@ export default function PartnerReservationsPage() {
     },
   });
 
-  const cells = useMemo(() => getMonthCells(year, month), [year, month]);
   const countByDate = useMemo(() => {
     const counts: Record<string, number> = {};
     for (const row of items) {
@@ -810,7 +787,7 @@ export default function PartnerReservationsPage() {
       .sort((a, b) => new Date(a.visit_at ?? 0).getTime() - new Date(b.visit_at ?? 0).getTime());
   }, [items, selected]);
 
-  const selectedDate = new Date(selected);
+  const selectedDate = dateFromKey(selected);
   const isToday = selected === dateKey(now);
 
   const openAssign = (row: ReservationRow) => {
@@ -942,19 +919,8 @@ export default function PartnerReservationsPage() {
       </header>
 
       <MonthCalendar
-        month={month}
-        cells={cells}
         selected={selected}
-        onToday={() => {
-          setYear(now.getFullYear());
-          setMonth(now.getMonth());
-          setSelected(dateKey(now));
-        }}
-        onSelect={(date) => {
-          setSelected(dateKey(date));
-          setYear(date.getFullYear());
-          setMonth(date.getMonth());
-        }}
+        onSelect={(date) => setSelected(dateKey(date))}
         hasDot={(key) => (countByDate[key] ?? 0) > 0}
       />
 
@@ -964,9 +930,7 @@ export default function PartnerReservationsPage() {
         <div className="flex items-baseline justify-between">
           <h2 className="text-[20px]! font-bold leading-tight! tracking-[-0.4px] text-[#191F28]">
             {isToday ? '오늘 ' : ''}
-            {Number.isNaN(selectedDate.getTime()) ? month + 1 : selectedDate.getMonth() + 1}월
-            {' '}
-            {Number.isNaN(selectedDate.getTime()) ? now.getDate() : selectedDate.getDate()}일
+            {selectedDate.getMonth() + 1}월 {selectedDate.getDate()}일
           </h2>
           {!loading && dayItems.length > 0 && (
             <p className="text-[15px] text-[#6B7684]">

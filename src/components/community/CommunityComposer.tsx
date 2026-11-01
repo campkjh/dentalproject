@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import Avatar from '@/components/common/Avatar';
 import { useStore } from '@/store';
 import { compressImage } from '@/lib/compressImage';
-import { communityCategories, TIP_TAG } from '@/lib/community';
+import { communityTopicTags, TIP_TAG } from '@/lib/community';
 import { communityTags } from '@/lib/mock-data';
 import type { Post } from '@/types';
 import { CloseIcon } from './StadyIcons';
@@ -46,7 +46,7 @@ export default function CommunityComposer({ initialBoard = 'question', initialCa
   const busy = useRef(false);
   const alive = useRef(true);
   const choices = mode === 'lounge' ? LOUNGE_CHOICES : [{ value: 'question' as const, label: mode === 'tip' ? '의사 꿀팁' : '고객 질문' }];
-  const availableTags = board === 'question' ? communityCategories.slice(1) : communityTags;
+  const availableTags = board === 'question' ? communityTopicTags : communityTags;
   const dirty = content !== (post?.content ?? '') || image !== (post?.imageUrl ?? '') || title !== (post?.title ?? '');
   const boardLabel = choices.find(item => item.value === board)?.label || choices[0].label;
   const anonymous = board === 'free';

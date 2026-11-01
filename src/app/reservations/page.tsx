@@ -1,9 +1,10 @@
 'use client';
 
-// 예약내역 = 프리티풀 매칭(/inquiries) 화면 어법 그대로.
-//  · 머리 = 제목 ⌄ 거르기(탭 대신, 알림처럼 눌러서 상태를 고른다) + 오른쪽 돋보기. PC 는 26 제목 + 부제, 오른쪽 340 요약 칸.
-//  · 칸 = 웨딩숲 글 카드 계층: (진행 중이면) 굴러 바뀌는 진행 문구 → 제목(방문 일시 16 굵게) → 메타(14 회색) → 본문(병원 16.5)
-//    → 조건 칩(회색 · 모서리 6) → 회색 둥근 줄(상품 사진 · 이름 15 굵게 · 상태 배지 · 오른쪽 동작).
+// 예약내역 — 상품 상세·예약 상세(261031 쿠팡 견본) 톤(261101).
+//  · 머리 = 제목 ⌄ 거르기(눌러서 상태를 고른다 — 토스 팝 메뉴) + 오른쪽 돋보기. PC 는 26 제목 + 부제, 오른쪽 340 요약 칸.
+//  · 모바일 머리 아래 = 회색 면 상태별 개수 4칸(누르면 그 상태만, 다시 누르면 전체).
+//  · 칸 = 테두리 없이 회색 띠로 나눈다: 상태 배지 + 한 줄 안내 → 상품 줄(사진 60 · 이름 17 굵게 · 병원 14 회색)
+//    → 회색 면 정보 줄(방문 일시 · 결제 · 담당 · 취소 사유) → 같은 폭 행동 버튼(확인중=예약 취소, 완료=리뷰 쓰기).
 //  · 첫 진입 = 퀵매칭 등장(제목↑ · 칸 ←), 뒤로가기·30초 안 재진입은 생략. 거르기를 바꾸면 목록 통째 살짝 올라온다.
 //  · 기존 기능 유지: 실시간 새로고침 · 예약 취소 확인창/토스트 · 리뷰 쓰기 이동 · 로그인 필요.
 import { useEffect, useMemo, useState } from 'react';
@@ -14,7 +15,7 @@ import LoginRequired from '@/components/common/LoginRequired';
 import { HeaderSearchIcon } from '@/components/icons/HeaderIcons';
 import { PocketIcon } from '@/components/icons/PocketIcon';
 import TitleFilterMenu, { type TitleFilterOption } from '@/components/reservations/TitleFilterMenu';
-import MatchCardDeck, { RollingText, type DeckCard } from '@/components/reservations/MatchCardDeck';
+import MatchCardDeck, { type DeckCard } from '@/components/reservations/MatchCardDeck';
 import { useEntranceWindow, useListEntrance, useTabEntrance } from '@/components/reservations/useTabEntrance';
 import styles from '@/components/reservations/match.module.css';
 import { useSession } from '@/lib/supabase/SessionProvider';
@@ -67,33 +68,98 @@ function visitTitle(r: Reservation) {
   return formatWhen(r.visitDate || r.reservationDate) || '방문일 미정';
 }
 
-/** 조건 칩 — 결제 방식 · 담당 의사 · 일정 변경 */
-function reservationTags(r: Reservation): string[] {
-  const tags: string[] = [];
-  tags.push(r.paymentMethod === '앱결제' ? '앱결제' : '현장결제');
-  if (r.assignedDoctor) tags.push(`${r.assignedDoctor} ${r.assignedDoctorTitle || '원장'}`.trim());
-  if (r.scheduleHistory?.length) tags.push('일정 변경됨');
-  return tags;
+/** 상태 한 줄 안내 — 예약 상세와 같은 문구(실제 상태로만) */
+function statusGuide(r: Reservation) {
+  if (r.status === 'pending') return `${r.hospitalName || '병원'}에서 예약을 확인하고 있어요`;
+  if (r.status === 'confirmed') return r.scheduleHistory?.[0]?.content || '예약이 확정됐어요. 늦지 않게 방문해 주세요';
+  if (r.status === 'completed') return '시술을 마쳤어요. 후기를 남기면 500P를 드려요';
+  return '취소된 예약이에요';
 }
 
-/** 진행 문구(굴러 바뀜) — 실제 상태로만 만든다. 끝난 예약(완료·취소)은 할 일이 없어 문구 없이 */
-function reservationHero(r: Reservation): { lines: string[]; sub: string } | null {
-  const hospital = r.hospitalName || '병원';
-  const when = formatWhen(r.visitDate || r.reservationDate);
-  if (r.status === 'pending') {
-    return {
-      lines: [`${hospital}에서 예약을 확인하고 있어요`, ...(when ? [`${when} 방문으로 요청했어요`] : [])],
-      sub: '확정되면 알림으로 바로 알려드릴게요',
-    };
-  }
-  if (r.status === 'confirmed') {
-    const change = r.scheduleHistory?.[0]?.content;
-    return {
-      lines: [`${hospital} 예약이 확정됐어요`, ...(change ? [change] : when ? [`${when}에 만나요`] : [])],
-      sub: '방문 당일 늦지 않게 도착해 주세요',
-    };
-  }
-  return null;
+const Band = () => <div className="h-2.5 bg-[#F2F4F6] pc:rounded-full" />;
+
+/** 같은 줄 행동 버튼(같은 폭) — 회색 면 · 15 */
+const ACTION_BTN =
+  'flex h-12 flex-1 items-center justify-center rounded-[14px] bg-[#F2F4F6] text-[15px] font-semibold tracking-[-0.2px] transition-all active:scale-[0.98] active:bg-[#E5E8EB]';
+
+function ReservationCard({ r, onCancel, onReview }: { r: Reservation; onCancel: (id: string) => void; onReview: (r: Reservation) => void }) {
+  const productImage = resolveProductImageUrl(r.productImage, r.productId ?? r.id);
+  const rows: { label: string; value: React.ReactNode; clamp?: boolean }[] = [
+    { label: '방문 일시', value: visitTitle(r) },
+    {
+      label: '결제',
+      value: (
+        <>
+          {r.paymentMethod === '앱결제' ? '앱결제' : '현장결제'} · <span className="font-semibold tabular-nums text-[#1E3A78]">{r.amount.toLocaleString()}원</span>
+        </>
+      ),
+    },
+    ...(r.assignedDoctor ? [{ label: '담당', value: `${r.assignedDoctor} ${r.assignedDoctorTitle || '원장'}` }] : []),
+    ...(r.status === 'cancelled' && r.cancelReason ? [{ label: '취소 사유', value: r.cancelReason, clamp: true }] : []),
+  ];
+
+  return (
+    <section className="px-5 py-6 pc:px-0">
+      <Link
+        href={`/reservations/${r.id}`}
+        className="-mx-2 block rounded-[18px] px-2 py-1.5 transition-colors active:bg-[#F9FAFB] pc:hover:bg-[#F9FAFB]"
+      >
+        {/* 상태 배지 + 한 줄 안내 */}
+        <div className="flex items-center gap-2">
+          <StatusTag status={r.status} />
+          <span className="min-w-0 flex-1 truncate text-[14.5px] tracking-[-0.2px] text-[#4E5968]">{statusGuide(r)}</span>
+          <ChevronRight size={20} className="shrink-0 text-[#B0B8C1]" />
+        </div>
+
+        {/* 예약한 상품 — 사진 60 · 이름 17 굵게 · 병원 14 회색 */}
+        <div className="mt-3.5 flex items-center gap-3.5">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={productImage} alt="" loading="lazy" className="h-[60px] w-[60px] shrink-0 rounded-[14px] bg-[#F2F4F6] object-cover" />
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-[17px] font-bold tracking-[-0.3px] text-[#191F28]">{r.productTitle || '시술 상품'}</span>
+            <span className="mt-0.5 block truncate text-[14px] tracking-[-0.2px] text-[#8B95A1]">
+              {r.hospitalName || '병원 정보 없음'}{r.location ? ` · ${r.location}` : ''}
+            </span>
+          </span>
+        </div>
+
+        {/* 정보 줄 — 회색 면(테두리 없음) · 라벨 회색 · 값 진한 회색 */}
+        <dl className="mt-4 rounded-[14px] bg-[#F2F4F6] px-4 py-2.5">
+          {rows.map((row) => (
+            <div key={row.label} className="flex items-start py-1.5">
+              <dt className="w-[72px] shrink-0 text-[15px] leading-[1.45] tracking-[-0.2px] text-[#8B95A1]">{row.label}</dt>
+              <dd className={`min-w-0 flex-1 text-[15px] leading-[1.45] tracking-[-0.2px] text-[#333D4B] ${row.clamp ? 'line-clamp-2 break-words' : 'truncate'}`}>
+                {row.value}
+              </dd>
+            </div>
+          ))}
+        </dl>
+      </Link>
+
+      {/* 행동 — 확인 중이면 예약 취소, 시술을 마쳤으면 리뷰 쓰기(같은 줄 버튼은 같은 폭) */}
+      {(r.status === 'pending' || r.status === 'completed') && (
+        <div className="mt-3 flex gap-2">
+          {r.status === 'pending' && (
+            <button type="button" onClick={() => onCancel(r.id)} className={`${ACTION_BTN} text-[#F04452]`}>
+              예약 취소
+            </button>
+          )}
+          <Link href={`/reservations/${r.id}`} className={`${ACTION_BTN} text-[#333D4B]`}>
+            예약 상세
+          </Link>
+          {r.status === 'completed' && (
+            <button
+              type="button"
+              onClick={() => onReview(r)}
+              className="flex h-12 flex-1 items-center justify-center rounded-[14px] bg-[#EFF5FE] text-[15px] font-bold tracking-[-0.2px] text-[#2F6FE4] transition-all active:scale-[0.98] active:bg-[#E2ECFD]"
+            >
+              리뷰 쓰고 500P
+            </button>
+          )}
+        </div>
+      )}
+    </section>
+  );
 }
 
 export default function ReservationsPage() {
@@ -242,124 +308,75 @@ export default function ReservationsPage() {
                   시술 둘러보기
                 </Link>
               </div>
-            ) : visible.length === 0 ? (
-              <div className="px-6 py-24 text-center text-[13px] text-[#8B95A1]">
-                {filter === 'all' ? '예약' : statusLabel[filter]} 상태인 예약이 없어요
-              </div>
             ) : (
-              <div key={filter} className={filterSwitched ? styles.listSwitch : undefined}>
-                {visible.map((r) => {
-                  const hero = reservationHero(r);
-                  const tags = reservationTags(r);
-                  const enter = enterProps(r.id);
-                  const productImage = resolveProductImageUrl(r.productImage, r.productId ?? r.id);
-                  const createdAt = formatWhen(r.date);
-                  return (
-                    // 웨딩숲 글 카드(.tcard) 계층 — 제목(16 굵게, 방문 일시)/메타(14 회색)/본문(16.5, 병원)/상품 줄(댓글 계층)
-                    <section
-                      key={r.id}
-                      className={`border-b border-[#F2F4F6] px-4 pb-4 pt-[18px] last:border-b-0 min-[601px]:pb-[18px] min-[601px]:pt-[22px] pc:px-0 ${enter.className ?? ''}`}
-                      style={enter.style}
-                    >
-                      {hero && (
-                        // 진행 칸 — 굴러 바뀌는 문구. 박스 없이 화면에 바로, 위아래 간격 촘촘하게
-                        <div className="mb-3 text-center">
-                          <RollingText items={hero.lines} className="text-[17px] font-bold leading-[1.4] tracking-[-0.3px] text-[#191F28]" />
-                          <p className="mt-0.5 text-[14px] tracking-[-0.2px] text-[#8B95A1]">{hero.sub}</p>
-                        </div>
-                      )}
-
-                      {/* 제목 — 방문 일시 */}
-                      <p className="truncate pt-px text-[16px] font-bold tracking-[-0.3px] text-[#191F28] min-[601px]:text-[17px]">{visitTitle(r)}</p>
-                      {/* 메타 — 예약일 · 결제 금액(회색 14) */}
-                      <p className="mt-1 text-[14px] tracking-[-0.2px] text-[#8B95A1] min-[601px]:text-[15px]">
-                        {createdAt ? `${createdAt} 예약 · ` : ''}{r.amount.toLocaleString()}원
-                      </p>
-
-                      {/* 본문(16.5) — 병원 */}
-                      <p className="mt-3 flex items-center gap-1.5 text-[16.5px] leading-[1.5] tracking-[-0.3px] text-[#191F28] min-[601px]:text-[17.5px]">
-                        <MonoIcon name="pin-location" size={18} color="#B0B8C1" />
-                        <span className="min-w-0 truncate">{r.hospitalName || '병원 정보 없음'}</span>
-                        {r.location && <span className="shrink-0 text-[14px] text-[#8B95A1]">{r.location}</span>}
-                      </p>
-
-                      {/* 조건 — 웨딩숲 카테고리 칩(회색 · 모서리 6 · 13) */}
-                      {tags.length > 0 && (
-                        <div className="mt-2.5 flex flex-wrap gap-x-2 gap-y-1.5">
-                          {tags.map((tag) => (
-                            <span key={tag} className="rounded-[6px] bg-[#F2F4F6] px-[9px] py-1 text-[13px] font-semibold text-[#6B7684]">{tag}</span>
-                          ))}
-                        </div>
-                      )}
-
-                      {/* 예약한 상품 — 웨딩숲 댓글 줄 계층(사진 40 · 이름 15 굵게 · 상태 배지 · 오른쪽 동작) */}
-                      <div className="mt-3.5 flex items-center overflow-hidden rounded-[16px] bg-[#F9FAFB]">
-                        <Link
-                          href={`/reservations/${r.id}`}
-                          className="flex min-w-0 flex-1 items-center gap-2.5 py-3 pl-3.5 pr-2 text-left transition-colors active:bg-[#F2F4F6] pc:hover:bg-[#F2F4F6]"
+              <>
+                {/* 모바일 상태별 개수 — 회색 면 4칸. 누르면 그 상태만, 다시 누르면 전체 */}
+                <div className="px-5 pb-5 pt-1 pc:hidden">
+                  <div className="grid grid-cols-4 rounded-[16px] bg-[#F2F4F6] py-3.5">
+                    {STATUS_ORDER.map((s) => {
+                      const on = filter === s;
+                      return (
+                        <button
+                          key={s}
+                          type="button"
+                          aria-pressed={on}
+                          onClick={() => pickFilter(on ? 'all' : s)}
+                          className="flex flex-col items-center gap-0.5 transition-transform active:scale-95"
                         >
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={productImage} alt="" className="h-10 w-10 shrink-0 rounded-[10px] bg-[#F2F3F5] object-cover" loading="lazy" />
-                          <span className="min-w-0 flex-1">
-                            <span className="flex min-w-0 items-center gap-1.5">
-                              <span className="min-w-0 truncate text-[15px] font-bold tracking-[-0.2px] text-[#333D4B]">{r.productTitle || '시술 상품'}</span>
-                              <StatusTag status={r.status} />
-                            </span>
-                            {r.status === 'cancelled' && r.cancelReason ? (
-                              <span className="mt-1 line-clamp-2 break-words text-[14px] leading-[1.45] tracking-[-0.2px] text-[#191F28]">취소 사유 · {r.cancelReason}</span>
-                            ) : (
-                              <span className="mt-0.5 block truncate text-[13px] tracking-[-0.2px] text-[#8B95A1]">
-                                {r.paymentMethod === '앱결제' ? '앱결제' : '현장결제'} {r.amount.toLocaleString()}원
-                              </span>
-                            )}
+                          <span className={`text-[20px] font-bold tabular-nums tracking-[-0.4px] transition-colors ${on ? 'text-[#2F6FE4]' : counts[s] ? 'text-[#191F28]' : 'text-[#B0B8C1]'}`}>
+                            {counts[s]}
                           </span>
-                        </Link>
-                        {/* 예약 취소 — 아직 병원이 확인 중인 예약만 */}
-                        {r.status === 'pending' && (
-                          <button
-                            type="button"
-                            onClick={() => handleCancel(r.id)}
-                            className="mr-3 h-9 shrink-0 rounded-full bg-white px-3 text-[13.5px] font-semibold tracking-[-0.2px] text-[#6B7684] transition active:scale-95"
-                          >
-                            예약 취소
-                          </button>
-                        )}
-                        {/* 리뷰 쓰기 — 시술을 마친 예약만(연파랑 면 · 파랑 굵은 글자) */}
-                        {r.status === 'completed' && (
-                          <button
-                            type="button"
-                            onClick={() => writeReview(r)}
-                            className="mr-3 h-9 shrink-0 rounded-full bg-[#E8F3FF] px-3 text-[13.5px] font-bold tracking-[-0.2px] text-[#3180F7] transition active:scale-95"
-                          >
-                            리뷰 쓰고 500P
-                          </button>
-                        )}
-                        {(r.status === 'confirmed' || r.status === 'cancelled') && (
-                          <Link
-                            href={`/reservations/${r.id}`}
-                            aria-label="예약 상세"
-                            className="mr-3 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-[#B0B8C1] transition active:scale-90"
-                          >
-                            <ChevronRight size={20} />
-                          </Link>
-                        )}
-                      </div>
-                    </section>
-                  );
-                })}
-              </div>
+                          <span className={`text-[13px] font-semibold tracking-[-0.2px] transition-colors ${on ? 'text-[#2F6FE4]' : 'text-[#8B95A1]'}`}>{statusLabel[s]}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+                <div className="pc:hidden"><Band /></div>
+
+                {visible.length === 0 ? (
+                  // 고른 상태에 예약이 없을 때 — 회색 둥근 칸 아이콘 · 19 굵은 제목 · 15 회색 부제
+                  <div className="flex flex-col items-center px-6 py-20 text-center">
+                    <span className="flex h-[72px] w-[72px] items-center justify-center rounded-[24px] bg-[#F2F4F6]">
+                      <MonoIcon name="calendar-x" size={34} color="#B0B8C1" />
+                    </span>
+                    <p className="mt-5 text-[19px] font-bold tracking-[-0.4px] text-[#191F28]">
+                      {filter === 'all' ? '예약' : statusLabel[filter]} 상태인 예약이 없어요
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => pickFilter('all')}
+                      className="mt-1.5 text-[15px] tracking-[-0.2px] text-[#3180F7] active:opacity-70"
+                    >
+                      전체 예약 보기
+                    </button>
+                  </div>
+                ) : (
+                  <div key={filter} className={filterSwitched ? styles.listSwitch : undefined}>
+                    {visible.map((r, i) => {
+                      const enter = enterProps(r.id);
+                      return (
+                        <div key={r.id} className={enter.className} style={enter.style}>
+                          {i > 0 && <Band />}
+                          <ReservationCard r={r} onCancel={handleCancel} onReview={writeReview} />
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </>
             )}
           </div>
 
           {/* PC 오른쪽 요약 — 상태별 개수(누르면 그 상태만) + 다음 행동. self-stretch 가 있어야 sticky 가 붙을 자리가 생긴다 */}
           <aside className="hidden pc:block pc:self-stretch">
             <div className="sticky top-[92px] space-y-4">
-              <div className="rounded-[24px] bg-[#F9FAFB] p-5">
+              <div className="rounded-[20px] bg-[#F2F4F6] p-5">
                 <div className="flex items-center gap-2">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src="/icons/toss/calendar-check.svg" alt="" className="h-5 w-5" />
-                  <h2 className="text-[15px] font-bold text-[#191F28]">진행 현황</h2>
-                  <span className="ml-auto rounded-full bg-white px-2 py-0.5 text-[11px] font-semibold text-[#4E5968]">{counts.all}건</span>
+                  <h2 className="text-[17px] font-bold text-[#191F28]">진행 현황</h2>
+                  <span className="ml-auto rounded-[6px] bg-white px-2 py-0.5 text-[13px] font-semibold tabular-nums text-[#4E5968]">{counts.all}건</span>
                 </div>
                 <ul className="mt-3 flex flex-col gap-1">
                   {STATUS_ORDER.map((s) => (
@@ -367,32 +384,32 @@ export default function ReservationsPage() {
                       <button
                         type="button"
                         onClick={() => pickFilter(filter === s ? 'all' : s)}
-                        className={`flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-[13px] transition-colors ${filter === s ? 'bg-white' : 'hover:bg-white'}`}
+                        className={`flex w-full items-center gap-2.5 rounded-[12px] px-2.5 py-2.5 text-[15px] transition-colors ${filter === s ? 'bg-white' : 'hover:bg-white/70'}`}
                       >
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={statusIcon[s]} alt="" className="h-[22px] w-[22px]" />
-                        <span className="flex-1 text-left font-medium text-[#191F28]">{statusLabel[s]}</span>
-                        <span className="font-semibold tabular-nums text-[#4E5968]">{counts[s]}</span>
+                        <span className={`flex-1 text-left ${filter === s ? 'font-semibold text-[#191F28]' : 'text-[#333D4B]'}`}>{statusLabel[s]}</span>
+                        <span className={`font-semibold tabular-nums ${filter === s ? 'text-[#2F6FE4]' : 'text-[#8B95A1]'}`}>{counts[s]}</span>
                       </button>
                     </li>
                   ))}
                 </ul>
               </div>
 
-              <div className="rounded-[24px] bg-[#F9FAFB] p-5">
-                <p className="text-[13px] font-bold text-[#191F28]">다음 시술을 찾고 있나요?</p>
-                <p className="mt-1 text-[12px] leading-5 text-[#8B95A1]">
+              <div className="rounded-[20px] bg-[#F2F4F6] p-5">
+                <p className="text-[17px] font-bold text-[#191F28]">다음 시술을 찾고 있나요?</p>
+                <p className="mt-1.5 text-[14px] leading-[1.55] text-[#6B7684]">
                   병원이 예약을 확인하면 알림으로 알려드려요. 포켓에 담아 둔 상품도 바로 예약할 수 있어요.
                 </p>
                 <Link
                   href="/search"
-                  className="mt-4 flex h-11 w-full items-center justify-center rounded-[14px] bg-[#3180F7] text-[14px] font-bold text-white transition-colors hover:bg-[#2272EB] active:scale-[0.98]"
+                  className="mt-4 flex h-12 w-full items-center justify-center rounded-[14px] bg-[#4A82EE] text-[15px] font-bold text-white transition-all hover:bg-[#3F76E2] active:scale-[0.98]"
                 >
                   시술 더 찾아보기
                 </Link>
                 <Link
                   href="/wishlist"
-                  className="mt-2 flex h-11 w-full items-center justify-center gap-1.5 rounded-[14px] bg-white text-[13px] font-bold text-[#4E5968] transition-colors hover:bg-[#F2F4F6]"
+                  className="mt-2 flex h-12 w-full items-center justify-center gap-1.5 rounded-[14px] bg-white text-[15px] font-semibold text-[#4E5968] transition-all hover:bg-[#F9FAFB] active:scale-[0.98]"
                 >
                   <PocketIcon size={17} />
                   포켓 보기

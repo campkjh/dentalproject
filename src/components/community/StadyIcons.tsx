@@ -103,6 +103,7 @@ const TONE_GREEN = mk('#77d4a5', '#74d2a2', '#fff', '#1fa36a');
 const TONES: Record<string, BoardTone> = {
   임플란트: TONE_BLUE, 교정: TONE_GREEN, 치아미백: TONE_YELLOW, 사랑니: TONE_ORANGE, 스케일링: TONE_GRAY, 일반진료: TONE_RED,
   질문: TONE_ORANGE, 자유: TONE_BLUE, 치과: TONE_GREEN,
+  자유수다: TONE_BLUE, 시술질문: TONE_ORANGE, 병원추천: TONE_GREEN,
 };
 const FALLBACK = [TONE_YELLOW, TONE_GRAY, TONE_GREEN, TONE_BLUE];
 export function boardTone(name: string): BoardTone {
@@ -122,4 +123,7 @@ export const categoryIcons: Record<string, string> = {
   전체: '/icons/stady/cg-all-on.svg', 임플란트: '/icons/stady/cat-implant.svg', 교정: '/icons/stady/cat-ortho.svg',
   치아미백: '/icons/stady/cat-whitening.svg', 사랑니: '/icons/stady/cat-wisdom.svg', 스케일링: '/icons/stady/cat-scaling.svg',
   일반진료: '/icons/stady/cat-general.svg',
+  // 261101 고객 커뮤니티 주제 탭(토스 컬러 아이콘)
+  자유수다: '/icons/stady/cat-free-talk.svg', 시술질문: '/icons/stady/cat-question.svg', 병원추천: '/icons/stady/cat-hospital.svg',
+  의사꿀팁: '/icons/stady/cat-tip.svg',
 };

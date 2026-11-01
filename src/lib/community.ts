@@ -8,7 +8,17 @@ export const TIP_TAG = '의사꿀팁';
 // 예전에 의사 계정이 질문 게시판에 쓴 글(표시 없음)도 꿀팁으로 본다 — 고객 질문 칸·답변 대기에 섞이지 않게
 export const isTipPost = (post: Pick<Post, 'boardType' | 'tags' | 'authorTitle'>) => post.boardType === 'question' && (post.tags.includes(TIP_TAG) || post.authorTitle === '의사');
 
-export const communityCategories = ['전체', '임플란트', '교정', '치아미백', '사랑니', '스케일링', '일반진료'];
+// 고객 커뮤니티 주제(261101) — 진료 과목(임플란트·교정…) 대신 글 성격으로 나눈다. 의사꿀팁 = 의사가 쓴 글(TIP_TAG).
+export const communityTopicTags = ['자유수다', '시술질문', '병원추천'];
+export const communityCategories = ['전체', ...communityTopicTags, TIP_TAG];
+/** 탭 거르기 — 의사꿀팁은 꿀팁 글만, 시술질문엔 주제 태그가 없는 예전 질문(임플란트·교정 태그 등)도 넣는다 */
+export function postInCategory(post: Pick<Post, 'boardType' | 'tags' | 'authorTitle'>, category: string) {
+  if (category === '전체') return true;
+  if (category === TIP_TAG) return isTipPost(post);
+  if (isTipPost(post)) return false;
+  if (post.tags.includes(category)) return true;
+  return category === '시술질문' && !post.tags.some(t => communityTopicTags.includes(t));
+}
 export const communityBoards = [
   { value: 'question', label: '의사에게 질문', icon: '/icons/community-doctor-board-v2.svg' },
   { value: 'free', label: '자유익명게시판', icon: '/icons/nav-community.svg' },

@@ -1,7 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createPortal } from 'react-dom';
@@ -16,6 +16,21 @@ import HomeBannerSlider from '@/components/home/HomeBannerSlider';
 import { useStore } from '@/store';
 import { resolveHospitalImageUrl } from '@/lib/images';
 import { siteConfig } from '@/lib/site-config';
+import MonoIcon from '@/components/common/MonoIcon';
+import {
+  areaKey,
+  areaLabel,
+  areaOfAddress,
+  detectNearArea,
+  hospitalInArea,
+  parseAreaKey,
+  type AreaChoice,
+  type HospitalArea,
+  type NearArea,
+} from '@/lib/home-area';
+
+/** 고른 지역은 이 기기에만 기억한다(다음에 열어도 같은 지역) */
+const AREA_STORAGE_KEY = 'md-home-area';
 
 const searchPlaceholders = [
   '입술필러 검색해보세요',
@@ -24,31 +39,6 @@ const searchPlaceholders = [
   '치아미백 검색해보세요',
   '보톡스 검색해보세요',
 ];
-
-const DISTRICTS = [
-  { name: '강남구', lat: 37.4979, lng: 127.0276 },
-  { name: '서초구', lat: 37.4837, lng: 127.0324 },
-  { name: '송파구', lat: 37.5145, lng: 127.1050 },
-  { name: '강동구', lat: 37.5301, lng: 127.1237 },
-  { name: '마포구', lat: 37.5564, lng: 126.9236 },
-  { name: '종로구', lat: 37.5735, lng: 126.9790 },
-  { name: '중구', lat: 37.5636, lng: 126.9976 },
-  { name: '영등포구', lat: 37.5247, lng: 126.8965 },
-  { name: '동작구', lat: 37.5124, lng: 126.9396 },
-  { name: '관악구', lat: 37.4784, lng: 126.9516 },
-  { name: '양천구', lat: 37.5170, lng: 126.8664 },
-  { name: '금천구', lat: 37.4568, lng: 126.8956 },
-];
-
-function detectDistrict(lat: number, lng: number): string {
-  let closest = DISTRICTS[0];
-  let minDist = Infinity;
-  for (const d of DISTRICTS) {
-    const dist = Math.hypot(lat - d.lat, lng - d.lng);
-    if (dist < minDist) { minDist = dist; closest = d; }
-  }
-  return closest.name;
-}
 
 export default function HomePage() {
   const router = useRouter();
@@ -64,44 +54,112 @@ export default function HomePage() {
   const showScrollTopRef = useRef(false);
   const scrolledRef = useRef(false);
   const scrollTopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [currentLocation, setCurrentLocation] = useState('내 근처');
+  // 지역 거르기 — 'near'(내 위치, 기본) · 'all'(전체) · 'city|district'(고른 지역)
+  const [near, setNear] = useState<NearArea | null>(null);
+  const [nearState, setNearState] = useState<'finding' | 'ok' | 'denied'>('finding');
+  const [areaChoice, setAreaChoice] = useState<AreaChoice>('near');
+  const [areaMenuAt, setAreaMenuAt] = useState<{ left: number; top: number } | null>(null);
 
   useEffect(() => {
     if (isLoggedIn && isDoctor) router.replace('/partner');
   }, [isLoggedIn, isDoctor, router]);
 
-  // Detect current location on mount — silent fallback, never shows error
+  // 고른 지역 되살리기(이 기기에 기억한 값)
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    if (!navigator?.geolocation) return;
     try {
+      const saved = localStorage.getItem(AREA_STORAGE_KEY);
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- 저장소 값은 화면이 붙은 뒤에만 읽을 수 있다
+      if (saved) setAreaChoice(saved);
+    } catch { /* 저장소 막힘 — 기본(내 위치) */ }
+  }, []);
+
+  // 내 위치 — 브라우저 좌표로 대략 지역을 찾는다(권한이 없으면 조용히 '내 근처'). 결과는 콜백에서만 상태에 넣는다
+  const locate = () => {
+    try {
+      if (!navigator?.geolocation) throw new Error('no geolocation');
       navigator.geolocation.getCurrentPosition(
         (pos) => {
-          const { latitude, longitude } = pos.coords;
-          const detected = detectDistrict(latitude, longitude);
-          setCurrentLocation(detected);
+          setNear(detectNearArea(pos.coords.latitude, pos.coords.longitude));
+          setNearState('ok');
         },
-        () => {
-          // Permission denied or timeout — just keep "내 근처" silently
-        },
+        () => setNearState('denied'),
         { enableHighAccuracy: false, timeout: 8000, maximumAge: 300000 }
       );
     } catch {
-      // Ignore — geolocation not available
+      queueMicrotask(() => setNearState('denied'));
     }
+  };
+  useEffect(() => {
+    locate();
   }, []);
 
-  const popularProducts = products.slice(0, 6);
+  const chooseArea = (choice: AreaChoice) => {
+    setAreaChoice(choice);
+    setAreaMenuAt(null);
+    try { localStorage.setItem(AREA_STORAGE_KEY, choice); } catch { /* 저장 못 해도 지금 화면엔 반영 */ }
+    if (choice === 'near' && nearState !== 'ok') {
+      setNearState('finding');
+      locate();
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // 메뉴에 띄울 지역 — 병원 주소에서 모은다(병원 많은 순)
+  const areaOptions = useMemo(() => {
+    const map = new Map<string, { area: HospitalArea; count: number }>();
+    hospitals.forEach((h) => {
+      const area = areaOfAddress(h.address);
+      if (!area) return;
+      const key = areaKey(area);
+      const cur = map.get(key);
+      if (cur) cur.count += 1;
+      else map.set(key, { area, count: 1 });
+    });
+    return [...map.entries()]
+      .map(([key, v]) => ({ key, label: areaLabel(v.area), count: v.count }))
+      .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label, 'ko'));
+  }, [hospitals]);
+
+  // 실제로 거를 지역 — 내 위치에 병원이 하나도 없으면 전체를 보여 주고 그렇다고 알린다
+  const target = areaChoice === 'all' ? null : areaChoice === 'near' ? near : parseAreaKey(areaChoice);
+  const targetCity = target?.city ?? null;
+  const targetDistrict = target?.district ?? null;
+  const areaHospitalIds = useMemo(() => {
+    if (!targetCity) return null;
+    const where = { city: targetCity, district: targetDistrict };
+    return new Set(hospitals.filter((h) => hospitalInArea(h.address, where)).map((h) => h.id));
+  }, [hospitals, targetCity, targetDistrict]);
+  const nearFallback = areaChoice === 'near' && !!near && hospitals.length > 0 && areaHospitalIds?.size === 0;
+  const filterIds = areaHospitalIds && areaHospitalIds.size > 0 ? areaHospitalIds : null;
+  const headerAreaLabel = areaChoice === 'all'
+    ? '전체 지역'
+    : areaChoice === 'near'
+      ? near?.label ?? '내 근처'
+      : areaLabel(parseAreaKey(areaChoice));
+  const areaProducts = filterIds ? products.filter((p) => filterIds.has(p.hospitalId)) : products;
+  const areaHospitals = filterIds ? hospitals.filter((h) => filterIds.has(h.id)) : hospitals;
+
+  // 지역 메뉴는 스크롤하거나 Esc 를 누르면 닫는다
+  useEffect(() => {
+    if (!areaMenuAt) return;
+    const close = () => setAreaMenuAt(null);
+    const key = (e: KeyboardEvent) => { if (e.key === 'Escape') close(); };
+    window.addEventListener('scroll', close, { passive: true, capture: true });
+    window.addEventListener('keydown', key);
+    return () => { window.removeEventListener('scroll', close, { capture: true }); window.removeEventListener('keydown', key); };
+  }, [areaMenuAt]);
+
+  const popularProducts = areaProducts.slice(0, 6);
   const recentProducts = recentlyViewed
     .map(id => products.find(p => p.id === id))
     .filter(Boolean) as typeof products;
 
   // 이번 주 인기 많은 패키지: 리뷰 많은 순
-  const weeklyPopularPackages = [...products].sort((a, b) => b.reviewCount - a.reviewCount).slice(0, 8);
+  const weeklyPopularPackages = [...areaProducts].sort((a, b) => b.reviewCount - a.reviewCount).slice(0, 8);
   // 이런 패키지는 어때요?: 할인율 높은 순
-  const suggestedPackages = [...products].filter(p => p.discount).sort((a, b) => (b.discount || 0) - (a.discount || 0)).slice(0, 8);
+  const suggestedPackages = [...areaProducts].filter(p => p.discount).sort((a, b) => (b.discount || 0) - (a.discount || 0)).slice(0, 8);
   // 요즘 뜨고 있는 병원
-  const trendingHospitals = hospitals.slice(0, 6);
+  const trendingHospitals = areaHospitals.slice(0, 6);
 
   // Scroll detection
   useEffect(() => {
@@ -195,7 +253,15 @@ export default function HomePage() {
         <div aria-hidden className="pointer-events-none absolute inset-0" style={{ background: 'linear-gradient(180deg, #FFFFFF 0%, rgba(255,255,255,0.88) 55%, rgba(255,255,255,0) 100%)' }} />
         <div aria-hidden className="pointer-events-none absolute inset-0 bg-white transition-opacity duration-300" style={{ opacity: scrolled ? 1 : 0 }} />
         <div className="relative h-16">
-        <MobileHomeHeader hidden={scrolled} />
+        <MobileHomeHeader
+          hidden={scrolled}
+          areaLabel={headerAreaLabel}
+          areaOpen={!!areaMenuAt}
+          onAreaClick={(el) => {
+            const r = el.getBoundingClientRect();
+            setAreaMenuAt(areaMenuAt ? null : { left: Math.max(12, r.left), top: r.bottom + 6 });
+          }}
+        />
 
         {/* Scrolled Header — flat #F2F4F6 bar, 12px radius, no border.
             Search icon docks left; location text + chevron precede a thin
@@ -229,7 +295,7 @@ export default function HomePage() {
                 className="text-[14px] font-semibold whitespace-nowrap"
                 style={{ color: 'rgba(3, 24, 50, 0.7)' }}
               >
-                {currentLocation}
+                {headerAreaLabel}
               </span>
               <ChevronDown size={14} style={{ color: 'rgba(3, 24, 50, 0.46)' }} />
             </span>
@@ -351,7 +417,29 @@ export default function HomePage() {
           <PcCategoryRow />
         </div>
 
+        {/* 지역 거르기 알림 — 고른 지역 병원만 보이는 중이면 몇 곳인지 + 전체 보기, 내 위치에 병원이 없으면 그렇다고 */}
+        {(filterIds || nearFallback) && (
+          <div className="qd-a-item mx-[10px] mb-5 flex items-center gap-2 rounded-[14px] bg-[#F2F4F6] py-3 pl-4 pr-3 pc:mx-0">
+            <MonoIcon name="pin-location" size={18} color="#8B95A1" />
+            <p className="min-w-0 flex-1 break-keep text-[14px] leading-[1.45] tracking-[-0.2px] text-[#4E5968]">
+              {nearFallback
+                ? `${near?.label ?? '내 위치'} 근처엔 아직 병원이 없어 전체 지역을 보여 드려요`
+                : `${headerAreaLabel} 병원 ${filterIds?.size ?? 0}곳만 보고 있어요`}
+            </p>
+            {!nearFallback && (
+              <button
+                type="button"
+                onClick={() => chooseArea('all')}
+                className="h-8 shrink-0 rounded-[8px] px-2.5 text-[14px] font-semibold text-[#3180F7] transition active:scale-[0.96] active:bg-[#E5E8EB]"
+              >
+                전체 보기
+              </button>
+            )}
+          </div>
+        )}
+
         {/* 인기 상품 */}
+        {popularProducts.length > 0 && (
         <div className="mb-6">
           <SectionHeader
             title="인기 상품"
@@ -364,6 +452,7 @@ export default function HomePage() {
             </div>
           </div>
         </div>
+        )}
 
         {/* 최근 본 태그 */}
         <RecentTagsSection tags={recentSearches} onRemove={removeRecentSearch} />
@@ -384,6 +473,7 @@ export default function HomePage() {
         </div>
 
         {/* 이번 주 인기 많은 패키지 */}
+        {weeklyPopularPackages.length > 0 && (
         <div className="mb-8">
           <SectionHeader
             title="이번 주 인기 많은 패키지"
@@ -398,8 +488,10 @@ export default function HomePage() {
             </div>
           </div>
         </div>
+        )}
 
         {/* 이런 패키지는 어때요? */}
+        {suggestedPackages.length > 0 && (
         <div className="mb-8">
           <SectionHeader
             title="이런 패키지는 어때요?"
@@ -414,8 +506,10 @@ export default function HomePage() {
             </div>
           </div>
         </div>
+        )}
 
         {/* 요즘 뜨고 있는 병원 */}
+        {trendingHospitals.length > 0 && (
         <div className="mb-8">
           <SectionHeader title="요즘 뜨고 있는 병원" />
           <div className="px-[10px] pc:px-0">
@@ -454,6 +548,7 @@ export default function HomePage() {
             </div>
           </div>
         </div>
+        )}
 
       </div>{/* End desktop content wrapper */}
 
@@ -481,6 +576,46 @@ export default function HomePage() {
         </p>
         <p className="mt-1">Copyright(c) {siteConfig.copyrightName}. All right reserved.</p>
       </div>
+
+      {/* 지역 메뉴 — 토스 팝 메뉴(.pop-menu). 내 위치 · 전체 지역 · 병원이 있는 지역(병원 수) */}
+      {areaMenuAt &&
+        createPortal(
+          <>
+            <div className="fixed inset-0 z-[130]" onClick={() => setAreaMenuAt(null)} aria-hidden="true" />
+            <div role="menu" aria-label="지역" className="pop-menu fixed z-[131] max-h-[60vh] overflow-y-auto" style={{ left: areaMenuAt.left, top: areaMenuAt.top, transformOrigin: 'top left' }}>
+              {[
+                { key: 'near', label: '내 위치', sub: nearState === 'ok' ? near?.label ?? '지원 지역 밖' : nearState === 'denied' ? '위치 권한 필요' : '찾는 중', icon: 'pin' as const },
+                { key: 'all', label: '전체 지역', sub: `${hospitals.length}곳`, icon: 'all' as const },
+                ...areaOptions.map((o) => ({ key: o.key, label: o.label, sub: `${o.count}곳`, icon: 'area' as const })),
+              ].map((item, i) => {
+                const on = areaChoice === item.key;
+                return (
+                  <button
+                    key={item.key}
+                    type="button"
+                    role="menuitemradio"
+                    aria-checked={on}
+                    className="pop-menu-item"
+                    style={{ animationDelay: `${0.04 + Math.min(i, 8) * 0.05}s`, ...(on ? { color: '#2F6FE4', fontWeight: 700 } : {}) }}
+                    onClick={() => chooseArea(item.key)}
+                  >
+                    {item.icon === 'all' ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src="/icons/color/grid.svg" alt="" />
+                    ) : (
+                      <span className="flex h-6 w-6 shrink-0 items-center justify-center">
+                        <MonoIcon name={item.icon === 'pin' ? 'pin-location' : 'hospital'} size={22} color={on ? '#2F6FE4' : '#6B7684'} />
+                      </span>
+                    )}
+                    <span className="flex-1">{item.label}</span>
+                    <span className={`ml-4 text-[15px] tabular-nums ${on ? 'text-[#2F6FE4]' : 'text-[#8B95A1]'}`}>{item.sub}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </>,
+          document.body
+        )}
 
       {showScrollTop &&
         createPortal(

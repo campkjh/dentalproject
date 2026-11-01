@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -739,6 +739,9 @@ export default function PartnerHomePage() {
   const [filterMenuAt, setFilterMenuAt] = useState<{ right: number; top: number } | null>(null);
   // 등록 상품 승인 현황 = 제목 '등록 상품 ⌄' → 툴팁 메뉴(승인완료·승인대기·반려)
   const [productMenuAt, setProductMenuAt] = useState<{ left: number; top: number } | null>(null);
+  // '⊞ 전체 ⌄' 버튼 폭 — 등록 상품 탭으로 가면 이 폭에서 0 으로 줄며 사라진다(뚝 사라지지 않게)
+  const filterBtnRef = useRef<HTMLButtonElement>(null);
+  const [filterBtnW, setFilterBtnW] = useState<number | null>(null);
   const thumbnailInputRef = useRef<HTMLInputElement>(null);
   const detailInputRef = useRef<HTMLInputElement>(null);
   const [productModal, setProductModal] = useState<{ mode: 'create' | 'edit'; product?: ProductRow } | null>(null);
@@ -771,6 +774,11 @@ export default function PartnerHomePage() {
     window.addEventListener('keydown', key);
     return () => { window.removeEventListener('scroll', close, { capture: true }); window.removeEventListener('keydown', key); };
   }, [filterMenuAt, productMenuAt]);
+
+  // 버튼 글자(전체·새예약…)가 바뀌면 폭을 다시 잰다 — 접힐 때 이 폭에서 0 으로 줄어든다
+  useLayoutEffect(() => {
+    if (filterBtnRef.current) setFilterBtnW(filterBtnRef.current.offsetWidth);
+  }, [filter]);
 
   const counts = useMemo(() => {
     return {
@@ -1095,7 +1103,7 @@ export default function PartnerHomePage() {
       </header>
 
       {/* 예약 · 상품 — 회색 트랙 위 미끄러지는 흰 알약 */}
-      <div className="flex items-center gap-2 px-5 pb-3 pt-1">
+      <div className="flex items-center px-5 pb-3 pt-1">
         <nav className="pd-seg is-wide min-w-0 flex-1" aria-label="홈 탭" style={{ ['--n' as string]: HOME_TABS.length, ['--i' as string]: HOME_TABS.indexOf(homeTab) }}>
           <span className="pd-seg-thumb" aria-hidden />
           {HOME_TABS.map((tab) => (
@@ -1110,23 +1118,34 @@ export default function PartnerHomePage() {
             </button>
           ))}
         </nav>
-        {homeTab === 'reservations' && (
+        {/* 상태 거르기 — 예약 탭에서만. 등록 상품으로 가면 폭이 줄며 흐려지고(옆 탭 트랙이 같이 늘어난다), 돌아오면 다시 펼쳐진다 */}
+        <div
+          aria-hidden={homeTab !== 'reservations'}
+          className="shrink-0 overflow-hidden transition-[width,margin-left,opacity] duration-[380ms] ease-[cubic-bezier(.22,1,.36,1)]"
+          style={{
+            width: homeTab === 'reservations' ? (filterBtnW ?? 'auto') : 0,
+            marginLeft: homeTab === 'reservations' ? 8 : 0,
+            opacity: homeTab === 'reservations' ? 1 : 0,
+          }}
+        >
           <button
+            ref={filterBtnRef}
             type="button"
+            tabIndex={homeTab === 'reservations' ? undefined : -1}
             aria-haspopup="menu"
             aria-expanded={!!filterMenuAt}
             onClick={(e) => {
               const r = e.currentTarget.getBoundingClientRect();
               setFilterMenuAt(filterMenuAt ? null : { right: Math.max(12, window.innerWidth - r.right), top: r.bottom + 6 });
             }}
-            className={`inline-flex h-[42px] shrink-0 items-center gap-1.5 rounded-[12px] px-1.5 text-[14.5px] font-bold transition-all active:scale-[0.97] active:bg-[#F2F4F6] ${filter === 'all' ? 'text-[#333D4B]' : 'text-[#2F6FE4]'}`}
+            className={`inline-flex h-[42px] items-center gap-1.5 whitespace-nowrap rounded-[12px] px-1.5 text-[14.5px] font-bold transition-all duration-300 active:scale-[0.97] active:bg-[#F2F4F6] ${homeTab === 'reservations' ? 'scale-100' : 'scale-90'} ${filter === 'all' ? 'text-[#333D4B]' : 'text-[#2F6FE4]'}`}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={FILTER_ICON[filter]} alt="" width={20} height={20} />
             {FILTER_LABEL[filter]}
             <ChevronDown size={16} strokeWidth={2.4} className={`text-[#8B95A1] transition-transform ${filterMenuAt ? 'rotate-180' : ''}`} />
           </button>
-        )}
+        </div>
       </div>
 
       {homeTab === 'products' ? (

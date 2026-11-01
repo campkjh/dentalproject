@@ -7371,6 +7371,13 @@ textarea.qd-input { height: auto; min-height: 140px; padding: 16px 18px; line-he
 @keyframes qdSlideIn { from { opacity: 0; transform: translateX(22px); } to { opacity: 1; transform: translateX(0); } }
 @media (prefers-reduced-motion: reduce) { .qd-a-item, .qd-body > * { animation: none !important; } }
 
+/* 병원 예약관리 달력 — 달을 넘기면 넘긴 쪽에서 살짝 밀려 들어온다(261101) */
+.cal-swap-next { animation: calSwapNext .34s cubic-bezier(.22, 1, .36, 1) both; }
+.cal-swap-prev { animation: calSwapPrev .34s cubic-bezier(.22, 1, .36, 1) both; }
+@keyframes calSwapNext { from { opacity: 0; transform: translateX(18px); } to { opacity: 1; transform: none; } }
+@keyframes calSwapPrev { from { opacity: 0; transform: translateX(-18px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .cal-swap-next, .cal-swap-prev { animation: none; } }
+
 /* ─── 토스 말풍선(꼬리 아래) — 프리티풀 .qm-bubble* 모양·움직임 그대로, 위아래만 뒤집음(components/common/TossBubble) ─── */
 .toss-bubble {
   position: relative; width: fit-content; max-width: 100%; padding-bottom: 13px;

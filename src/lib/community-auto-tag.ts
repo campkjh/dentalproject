@@ -1,15 +1,19 @@
 // 커뮤니티 글 자동 태그(261031) — 글을 읽고 정해진 태그 목록에서만 고른다.
 //  · ANTHROPIC_API_KEY 가 있으면 Claude, 없으면 GEMINI_API_KEY 로 Gemini, 둘 다 없거나 실패하면 낱말 규칙.
-//  · 고객 질문·의사 꿀팁(question) = 진료 카테고리 최대 2개 / 의사 라운지(free·dental) = 의사 태그 최대 3개.
+//  · 고객 커뮤니티(question) = 주제(자유수다·시술질문·병원추천) 최대 2개 / 의사 라운지(free·dental) = 의사 태그 최대 3개.
+//    의사꿀팁은 의사가 쓸 때 글쓰기에서 붙이므로 AI 가 고르지 않는다.
 import Anthropic from '@anthropic-ai/sdk';
 import { z } from 'zod';
 import { zodOutputFormat } from '@anthropic-ai/sdk/helpers/zod';
-import { communityCategories } from '@/lib/community';
+import { communityTopicTags } from '@/lib/community';
 import { communityTags } from '@/lib/mock-data';
 
 const TagSchema = z.object({ tags: z.array(z.string()) });
 
 const RULES: Record<string, string[]> = {
+  자유수다: ['수다', '잡담', '일상', '고민', '심심', '얘기', '이야기', '근황'],
+  시술질문: ['시술', '치료', '통증', '아파', '아프', '비용', '가격', '얼마', '궁금', '부작용', '회복', '임플란트', '교정', '미백', '사랑니', '스케일링', '충치', '보톡스', '필러'],
+  병원추천: ['추천', '어디가', '어디서', '잘하는', '병원', '원장님', '소개'],
   임플란트: ['임플란트', '뼈이식', '픽스처', '지대주', '상악동'],
   교정: ['교정', '인비절라인', '브라켓', '유지장치', '덧니', '돌출입'],
   치아미백: ['미백', '화이트닝', '누런', '착색'],
@@ -30,7 +34,7 @@ const RULES: Record<string, string[]> = {
 };
 
 export function allowedTagsFor(board: string) {
-  return board === 'question' ? communityCategories.slice(1) : communityTags;
+  return board === 'question' ? communityTopicTags : communityTags;
 }
 
 function ruleTags(text: string, allowed: string[], max: number) {
@@ -42,8 +46,15 @@ function ruleTags(text: string, allowed: string[], max: number) {
     .map(x => x.tag);
 }
 
+const TAG_HINTS: Record<string, string> = {
+  자유수다: '일상·잡담·가벼운 고민 나눔',
+  시술질문: '시술·치료 방법, 통증, 비용, 회복을 묻는 글',
+  병원추천: '병원이나 의사를 추천해 달라거나 추천하는 글',
+};
+
 function prompt(allowed: string[], max: number) {
-  return `너는 치과·의료 커뮤니티 글에 태그를 붙인다. 아래 목록에 있는 태그만, 글과 분명히 관련된 것을 최대 ${max}개 고른다. 관련된 게 없으면 빈 배열. 목록: ${allowed.join(', ')}`;
+  const hints = allowed.filter(t => TAG_HINTS[t]).map(t => `${t}=${TAG_HINTS[t]}`).join(' / ');
+  return `너는 치과·의료 커뮤니티 글에 태그를 붙인다. 아래 목록에 있는 태그만, 글과 분명히 관련된 것을 최대 ${max}개 고른다. 관련된 게 없으면 빈 배열. 목록: ${allowed.join(', ')}${hints ? `\n뜻: ${hints}` : ''}`;
 }
 
 async function claudeTags(text: string, allowed: string[], max: number) {
