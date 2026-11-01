@@ -11,12 +11,15 @@ if (!url || !serviceKey) {
   process.exit(1);
 }
 
-const email = process.argv[2];
+// '@' 없는 아이디(mydocadmin)는 어드민 로그인 판과 같은 규칙으로 이메일을 만든다(src/components/admin/AdminGate.tsx ADMIN_ID_DOMAIN)
+const ADMIN_ID_DOMAIN = 'my-doc.co.kr';
+const rawId = process.argv[2]?.trim().toLowerCase();
+const email = rawId && !rawId.includes('@') ? `${rawId}@${ADMIN_ID_DOMAIN}` : rawId;
 const password = process.argv[3];
 const name = process.argv[4] ?? '관리자';
 
 if (!email || !password) {
-  console.error('Usage: node scripts/create-admin.mjs <email> <password> [name]');
+  console.error('Usage: node scripts/create-admin.mjs <아이디 또는 email> <password> [name]');
   process.exit(1);
 }
 

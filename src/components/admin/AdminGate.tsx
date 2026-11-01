@@ -9,10 +9,19 @@ import { useSession } from '@/lib/supabase/SessionProvider';
  *  · 예전엔 껍데기가 그대로 열리고 화면마다 '로그인이 필요합니다'만 떴다.
  *  · 로그인은 앱 /login 과 같은 signInWithEmail — 성공하면 껍데기가 is_admin 을 보고 바로 바뀐다.
  *  · 로그인 중엔 세션 loading 이 켜져도 이 판을 내리지 않는다(내리면 입력·오류가 날아간다).
+ *  · 아이디 로그인 — Supabase 는 이메일만 받아서 '@' 없는 아이디(mydocadmin)는 ADMIN_ID_DOMAIN 을 붙여 이메일로 본다.
+ *    scripts/create-admin.mjs 도 같은 규칙이다(바꾸면 둘 다).
  * ──────────────────────────────────────────────────────────── */
 
+const ADMIN_ID_DOMAIN = 'my-doc.co.kr';
+
+function loginEmail(idOrEmail: string) {
+  const v = idOrEmail.trim().toLowerCase();
+  return v.includes('@') ? v : `${v}@${ADMIN_ID_DOMAIN}`;
+}
+
 const ERRORS: Record<string, string> = {
-  'Invalid login credentials': '이메일 또는 비밀번호가 맞지 않아요.',
+  'Invalid login credentials': '아이디 또는 비밀번호가 맞지 않아요.',
   'Email not confirmed': '이메일 인증이 아직 안 된 계정이에요.',
   'Supabase not configured': '서버 설정이 끝나지 않았어요. 잠시 뒤 다시 시도해 주세요.',
 };
@@ -53,14 +62,14 @@ export function AdminLogin({ booting }: { booting: boolean }) {
   // 첫 세션 확인 중(로그인 버튼을 누른 게 아닐 때)엔 판 대신 빙글이
   if (booting && !pending) return <AdminGateLoading />;
 
-  const canSubmit = email.trim().length > 3 && password.length > 0 && !pending;
+  const canSubmit = email.trim().length >= 2 && password.length > 0 && !pending;
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!canSubmit) return;
     setPending(true);
     setError('');
-    const { error: err, isAdmin } = await signInWithEmail(email.trim(), password);
+    const { error: err, isAdmin } = await signInWithEmail(loginEmail(email), password);
     setPending(false);
     if (err) setError(translate(err));
     else if (!isAdmin) setError('관리자 권한이 없는 계정이에요.');
@@ -71,15 +80,17 @@ export function AdminLogin({ booting }: { booting: boolean }) {
       <form className="adm-gate-card" onSubmit={submit} noValidate>
         <Brand />
         <h1 className="adm-gate-title">관리자 로그인</h1>
-        <p className="adm-gate-desc">관리자 계정의 이메일과 비밀번호를 넣어 주세요</p>
+        <p className="adm-gate-desc">관리자 아이디와 비밀번호를 넣어 주세요</p>
 
         <div className="adm-gate-fields">
           <input
             className="adm-gate-input"
-            type="email"
-            inputMode="email"
+            type="text"
             autoComplete="username"
-            placeholder="이메일"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            placeholder="아이디 또는 이메일"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             autoFocus
