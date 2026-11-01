@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Plus, Image as ImageIcon, ArrowLeft, LayoutGrid } from 'lucide-react';
 import { useStore } from '@/store';
 import { ImageUploader } from '@/components/admin/ImageUploader';
+import { useDragSort } from '@/components/admin/useDragSort';
 import {
   PageHeader, StatCard, StatRow, PillButton, EmptyState, LoadingRows, Switch, SectionCard,
 } from '@/components/admin/ui';
@@ -17,6 +18,17 @@ type Category = {
 };
 
 type ViewMode = 'list' | 'form';
+
+// 손잡이 ⠿(점 6개)
+function GripIcon() {
+  return (
+    <svg width="14" height="20" viewBox="0 0 14 20" fill="currentColor" aria-hidden="true">
+      <circle cx="4" cy="4" r="1.8" /><circle cx="10" cy="4" r="1.8" />
+      <circle cx="4" cy="10" r="1.8" /><circle cx="10" cy="10" r="1.8" />
+      <circle cx="4" cy="16" r="1.8" /><circle cx="10" cy="16" r="1.8" />
+    </svg>
+  );
+}
 
 function FieldRow({ label, required, hint, children }: { label: string; required?: boolean; hint?: string; children: React.ReactNode }) {
   return (
@@ -33,6 +45,7 @@ function FieldRow({ label, required, hint, children }: { label: string; required
 export default function AdminCategoriesPage() {
   const showAlert = useStore((s) => s.showAlert);
   const showConfirm = useStore((s) => s.showConfirm);
+  const showToast = useStore((s) => s.showToast);
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -40,7 +53,7 @@ export default function AdminCategoriesPage() {
 
   const [mode, setMode] = useState<ViewMode>('list');
   const [editId, setEditId] = useState<string | null>(null);
-  const [form, setForm] = useState({ id: '', name: '', icon: '', popular: false, sortOrder: 0 });
+  const [form, setForm] = useState({ id: '', name: '', icon: '', popular: false });
   const [busy, setBusy] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -66,14 +79,14 @@ export default function AdminCategoriesPage() {
 
   const openCreate = () => {
     setEditId(null);
-    setForm({ id: '', name: '', icon: '', popular: false, sortOrder: 0 });
+    setForm({ id: '', name: '', icon: '', popular: false });
     setFormError(null);
     setMode('form');
   };
 
   const openEdit = (cat: Category) => {
     setEditId(cat.id);
-    setForm({ id: cat.id, name: cat.name, icon: cat.icon ?? '', popular: cat.popular, sortOrder: cat.sort_order });
+    setForm({ id: cat.id, name: cat.name, icon: cat.icon ?? '', popular: cat.popular });
     setFormError(null);
     setMode('form');
   };
@@ -94,7 +107,8 @@ export default function AdminCategoriesPage() {
           name: form.name.trim(),
           icon: form.icon.trim() || `/icons/${form.id.trim()}.svg`,
           popular: form.popular,
-          sort_order: form.sortOrder,
+          // 새 카테고리는 맨 뒤에 붙는다(순서는 목록에서 끌어서 바꾼다)
+          ...(editId ? {} : { sort_order: categories.reduce((m, c) => Math.max(m, c.sort_order), 0) + 10 }),
         }),
       });
       if (!res.ok) {
@@ -145,6 +159,26 @@ export default function AdminCategoriesPage() {
       showAlert(data?.error ?? '인기 설정 변경에 실패했어요.');
     }
   };
+
+  // 노출 순서 — 끌어서 놓으면 바로 저장(실패하면 되돌림)
+  const saveOrder = useCallback(async (next: Category[]) => {
+    setCategories(next.map((c, i) => ({ ...c, sort_order: (i + 1) * 10 })));
+    const res = await fetch('/api/admin/categories', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ order: next.map((c) => c.id) }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      showAlert(data?.error ?? '순서를 저장하지 못했어요.');
+      void loadCategories(); // 저장된 순서로 되돌린다
+      return;
+    }
+    if (Array.isArray(data.categories)) setCategories(data.categories);
+    showToast('노출 순서를 바꿨어요');
+  }, [showAlert, showToast]);
+
+  const sort = useDragSort(categories, saveOrder);
 
   // ---------- 추가·수정 폼 ----------
   if (mode === 'form') {
@@ -216,14 +250,6 @@ export default function AdminCategoriesPage() {
               ariaLabel="인기 카테고리로 노출"
             />
           </FieldRow>
-          <FieldRow label="정렬 순서" hint="숫자가 작을수록 위에 표시됩니다.">
-            <input
-              type="number"
-              value={form.sortOrder}
-              onChange={(e) => setForm({ ...form, sortOrder: Number(e.target.value) || 0 })}
-              className="adm-input max-w-[160px]"
-            />
-          </FieldRow>
         </section>
 
         {/* 연결된 상품 */}
@@ -235,7 +261,7 @@ export default function AdminCategoriesPage() {
   }
 
   // ---------- 목록 ----------
-  const GRID = 'grid grid-cols-[60px_1fr_1fr_80px_100px_auto] gap-4 items-center';
+  const GRID = 'grid grid-cols-[26px_60px_1fr_1fr_64px_100px_auto] gap-4 items-center';
 
   return (
     <div className="adm-stack">
@@ -255,6 +281,11 @@ export default function AdminCategoriesPage() {
       </StatRow>
 
       <div className="adm-listcard">
+        {!loading && categories.length > 1 && (
+          <p className="adm-sort-hint">
+            <GripIcon /> 손잡이를 끌어서 놓으면 앱에 보이는 순서가 바로 바뀌어요
+          </p>
+        )}
         {loading ? (
           <LoadingRows />
         ) : categories.length === 0 ? (
@@ -262,15 +293,24 @@ export default function AdminCategoriesPage() {
         ) : (
           <>
             <div className={`${GRID} adm-ghead`}>
+              <div />
               <div>아이콘</div>
               <div>ID</div>
               <div>이름</div>
-              <div>정렬</div>
+              <div>순서</div>
               <div>인기</div>
               <div className="text-right">관리</div>
             </div>
-            {categories.map((cat) => (
-              <div key={cat.id} className={`${GRID} adm-grow`}>
+            {categories.map((cat, i) => (
+              <div
+                key={cat.id}
+                ref={sort.rowRef(cat.id)}
+                className={`${GRID} adm-grow ${sort.rowClass(cat.id)}`}
+                style={sort.rowStyle(cat.id, i)}
+              >
+                <button type="button" className="adm-grip" aria-label={`${cat.name} 순서 바꾸기(위아래 화살표로도 옮겨요)`} {...sort.handleProps(i)}>
+                  <GripIcon />
+                </button>
                 <div className="adm-thumb flex items-center justify-center">
                   {cat.icon ? (
                     <img
@@ -285,7 +325,7 @@ export default function AdminCategoriesPage() {
                 </div>
                 <div className="adm-mono truncate">{cat.id}</div>
                 <div className="adm-cell-main">{cat.name}</div>
-                <div className="adm-num">{cat.sort_order}</div>
+                <div className="adm-num">{i + 1}</div>
                 <div>
                   <Switch checked={cat.popular} onChange={() => togglePopular(cat)} ariaLabel={`${cat.name} 인기 노출`} />
                 </div>

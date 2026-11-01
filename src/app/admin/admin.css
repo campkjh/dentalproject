@@ -516,3 +516,13 @@ body:has(.adm-gate) { background-color: #FFFFFF; }
 .adm-gate-dots i:nth-child(2) { animation-delay: .15s; }
 .adm-gate-dots i:nth-child(3) { animation-delay: .3s; }
 @keyframes admGateDot { 0%, 80%, 100% { opacity: .35; transform: scale(.85); } 40% { opacity: 1; transform: scale(1); } }
+
+/* 끌어서 순서 바꾸기(261101, useDragSort) — 손잡이 ⠿ · 들린 줄은 흰 판 + 그림자로 떠오른다 */
+.adm-grip { display: grid; place-items: center; width: 32px; height: 40px; margin-left: -6px; padding: 0; border: 0; border-radius: 10px; background: none; color: #C4CAD1; cursor: grab; touch-action: none; transition: background-color .15s ease, color .15s ease; }
+.adm-grip:hover { background: #F2F4F6; color: #8B95A1; }
+.adm-grip:active { cursor: grabbing; }
+.adm-grip:focus-visible { outline: 2px solid var(--admin-blue); outline-offset: 1px; }
+.adm-sort-row.lifted, .adm-sort-row.dropping { background: #FFFFFF !important; border-radius: 14px; border-bottom-color: transparent; box-shadow: 0 12px 32px rgba(0, 25, 54, .12), 0 2px 6px rgba(0, 25, 54, .06); }
+.adm-sort-row.lifted { scale: 1.015; }
+.adm-sort-row.lifted .adm-grip { background: #F2F4F6; color: var(--admin-blue); }
+.adm-sort-hint { display: flex; align-items: center; gap: 6px; margin: 0 0 10px; color: var(--admin-ph); font-size: 13px; font-weight: 500; }
