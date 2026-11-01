@@ -1,10 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useSession } from '@/lib/supabase/SessionProvider';
 import { useStore } from '@/store';
+import { AdminDenied, AdminGateLoading, AdminLogin } from '@/components/admin/AdminGate';
 import { Menu, X } from 'lucide-react';
 import './admin.css';
 
@@ -143,8 +144,9 @@ function SideNav({ pathname, onNavigate }: { pathname: string; onNavigate?: () =
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const router = useRouter();
-  const { signOut } = useSession();
+  const { signOut, loading, authUser } = useSession();
+  const isLoggedIn = useStore((s) => s.isLoggedIn);
+  const isAdmin = useStore((s) => s.isAdmin);
   const showConfirm = useStore((s) => s.showConfirm);
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -152,10 +154,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     showConfirm(
       '로그아웃',
       '관리자 계정에서 로그아웃하시겠습니까?',
-      async () => {
-        await signOut();
-        router.replace('/login');
-      },
+      // 로그아웃하면 이 주소 그대로 입구(로그인 판)가 뜬다 — 다시 들어오면 보던 화면으로
+      () => signOut(),
       { confirmText: '로그아웃', cancelText: '취소' }
     );
   };
@@ -193,6 +193,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     if (mainRef.current) mainRef.current.scrollTop = 0;
     syncScrolled();
   }, [pathname, syncScrolled]);
+
+  // 입구 — 로그인 안 했으면 로그인 판, 관리자가 아니면 권한 없음 판(훅은 모두 위에서 부른 뒤)
+  if (!isLoggedIn) return <AdminLogin booting={loading} />;
+  if (!isAdmin) return loading ? <AdminGateLoading /> : <AdminDenied email={authUser?.email} onLogout={() => void signOut()} />;
 
   const bell = (
     <Link href="/admin/notifications" className="adm-ubtn" aria-label="공지/알림 관리" title="공지/알림 관리">

@@ -488,3 +488,31 @@ select.adm-input { padding-right: 36px; -webkit-appearance: none; appearance: no
 .adm-check { display: inline-grid; place-items: center; flex: none; width: 20px; height: 20px; padding: 0; border: 0; border-radius: 6px; background: #fff; box-shadow: inset 0 0 0 2px #D1D6DB; color: #fff; cursor: pointer; transition: background-color .15s ease, box-shadow .15s ease; }
 .adm-check:hover { box-shadow: inset 0 0 0 2px #B0B8C1; }
 .adm-check.on { background: var(--admin-blue); box-shadow: none; }
+
+/* 입구(261101) — 로그인 판 · 권한 없음 판. 흰 바탕 가운데 한 줄, 칸 = 회색 판(앱 /login 결) */
+.adm-gate { display: flex; align-items: center; justify-content: center; min-height: 100vh; min-height: 100dvh; padding: 24px 16px; background: #FFFFFF; }
+body:has(.adm-gate) { background-color: #FFFFFF; }
+.adm-gate-card { display: flex; flex-direction: column; width: 100%; max-width: 400px; animation: admFade .3s ease both; }
+.adm-gate-brand { display: flex; align-items: center; gap: 8px; margin-bottom: 28px; }
+.adm-gate-logo { width: 36px; height: 36px; object-fit: contain; }
+.admin-shell .adm-gate-title { margin: 0; color: var(--admin-ink); font-size: 26px; font-weight: 700; line-height: 1.35; letter-spacing: -0.6px; }
+.adm-gate-desc { margin: 8px 0 0; color: var(--admin-muted); font-size: 15px; line-height: 1.55; }
+.adm-gate-desc b { color: var(--admin-ink); font-weight: 600; }
+.adm-gate-fields { display: flex; flex-direction: column; gap: 10px; margin-top: 32px; }
+.admin-shell .adm-gate-input { width: 100%; height: 56px; padding: 0 18px; border: 1.5px solid transparent; border-radius: 16px; background: #F2F4F6; color: var(--admin-ink); font-family: inherit; font-size: 16px; font-weight: 500; outline: none; transition: background-color .15s ease, border-color .15s ease; }
+.admin-shell .adm-gate-input::placeholder { color: #B0B8C1; }
+.admin-shell .adm-gate-input:focus { border-color: var(--admin-blue); background: #FFFFFF; }
+.adm-gate-pw { position: relative; }
+.adm-gate-pw .adm-gate-input { padding-right: 52px; }
+.adm-gate-eye { position: absolute; top: 50%; right: 8px; display: grid; place-items: center; width: 40px; height: 40px; padding: 0; border: 0; border-radius: 12px; background: none; transform: translateY(-50%); cursor: pointer; }
+.adm-gate-eye-ic { width: 22px; height: 22px; background-color: #B0B8C1; -webkit-mask: center / contain no-repeat; mask: center / contain no-repeat; transition: background-color .15s ease; }
+.adm-gate-eye:hover .adm-gate-eye-ic { background-color: #6B7684; }
+.adm-gate-error { margin: 12px 0 0; padding-left: 4px; color: var(--admin-red); font-size: 14px; font-weight: 500; animation: admFade .2s ease both; }
+.adm-gate-submit { width: 100%; margin-top: 24px; }
+.adm-gate-home { align-self: center; margin-top: 18px; padding: 6px 8px; color: var(--admin-ph); font-size: 14px; font-weight: 500; text-decoration: none; }
+.adm-gate-home:hover { color: var(--admin-sub); }
+.adm-gate-dots { display: inline-flex; gap: 5px; }
+.adm-gate-dots i { width: 7px; height: 7px; border-radius: 50%; background: currentColor; animation: admGateDot 1s ease-in-out infinite; }
+.adm-gate-dots i:nth-child(2) { animation-delay: .15s; }
+.adm-gate-dots i:nth-child(3) { animation-delay: .3s; }
+@keyframes admGateDot { 0%, 80%, 100% { opacity: .35; transform: scale(.85); } 40% { opacity: 1; transform: scale(1); } }
