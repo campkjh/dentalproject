@@ -43,7 +43,13 @@ if (createError) {
     console.error('user exists but id not found');
     process.exit(1);
   }
-  console.log('user already existed, promoting to admin:', userId);
+  // 이미 있는 계정이면 비밀번호를 새로 정한다(비밀번호는 저장소·DB 어디에서도 읽을 수 없어서 잊으면 이걸로 다시 정한다)
+  const { error: pwError } = await admin.auth.admin.updateUserById(userId, { password, email_confirm: true });
+  if (pwError) {
+    console.error('password update failed:', pwError.message);
+    process.exit(1);
+  }
+  console.log('user already existed, password reset + promoting to admin:', userId);
 }
 
 const { error: profileError } = await admin
@@ -55,4 +61,4 @@ if (profileError) {
   process.exit(1);
 }
 
-console.log('OK', { id: userId, email, password });
+console.log('OK', { id: userId, email });

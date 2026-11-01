@@ -210,7 +210,7 @@ export default function AdminNotificationsPage() {
       <StatRow cols={3}>
         <StatCard label="전체 공지" value={items.length} suffix="개" />
         <StatCard label="게시 중" value={publishedCount} suffix="개" accent="#1AB554" />
-        <StatCard label="예약" value={scheduledCount} suffix="개" accent="#3182F6" />
+        <StatCard label="예약" value={scheduledCount} suffix="개" accent="#4A82EE" />
       </StatRow>
 
       <AdminListCard

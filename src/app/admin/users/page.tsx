@@ -56,7 +56,7 @@ function Avatar({ name, uid }: { name: string; uid: string }) {
   // uid 로 고정 색(토스 결 색)
   const hash = uid.split('').reduce((s, c) => (s * 31 + c.charCodeAt(0)) >>> 0, 0);
   const palette = [
-    ['#E8F3FF', '#3182F6'],
+    ['#EFF5FE', '#2F6FE4'],
     ['#FFF1E5', '#F46A00'],
     ['#E5F8EF', '#03B26C'],
     ['#FFEEEF', '#F04452'],
@@ -195,7 +195,7 @@ export default function AdminUsersPage() {
       <StatRow cols={4}>
         <StatCard label="전체 회원" value={counts.total} suffix="명" />
         <StatCard label="일반" value={counts.일반} suffix="명" />
-        <StatCard label="의사" value={counts.의사} suffix="명" accent="#3182F6" />
+        <StatCard label="의사" value={counts.의사} suffix="명" accent="#4A82EE" />
         <StatCard label="병원관리자" value={counts.병원관리자} suffix="명" accent="#F59E0B" />
       </StatRow>
 

@@ -94,7 +94,7 @@ export function Dropdown<T extends string | number>({
                   <span>{opt.label}</span>
                   {isActive && (
                     <svg width="18" height="18" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                      <path d="M3 8.5L6.5 12L13 4" stroke="#3182F6" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+                      <path d="M3 8.5L6.5 12L13 4" stroke="#4A82EE" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                   )}
                 </button>

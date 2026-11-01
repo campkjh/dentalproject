@@ -205,13 +205,13 @@ export default function AdminCouponsPage() {
       {activeTab === 'coupons' ? (
         <StatRow cols={4}>
           <StatCard label="총 발급" value={couponStats.total} suffix="개" />
-          <StatCard label="사용가능" value={couponStats.available} suffix="개" accent="#3182F6" />
+          <StatCard label="사용가능" value={couponStats.available} suffix="개" accent="#4A82EE" />
           <StatCard label="사용완료" value={couponStats.used} suffix="개" accent="#1AB554" />
           <StatCard label="기간만료" value={couponStats.expired} suffix="개" accent="#E54848" />
         </StatRow>
       ) : (
         <StatRow cols={3}>
-          <StatCard label="총 적립" value={`${pointStats.total_earned.toLocaleString()}P`} accent="#3182F6" />
+          <StatCard label="총 적립" value={`${pointStats.total_earned.toLocaleString()}P`} accent="#4A82EE" />
           <StatCard label="사용된 포인트" value={`${pointStats.total_used.toLocaleString()}P`} accent="#1AB554" />
           <StatCard label="미사용 잔액" value={`${pointStats.outstanding.toLocaleString()}P`} accent="#F59E0B" />
         </StatRow>
@@ -258,7 +258,7 @@ export default function AdminCouponsPage() {
                     {c.description && <p className="adm-cell-sub truncate">{c.description}</p>}
                   </div>
                   <div className="adm-cell truncate">{c.user_name}</div>
-                  <div className="adm-num text-[#3182F6]">{c.discount_amount.toLocaleString()}원</div>
+                  <div className="adm-num text-[#2F6FE4]">{c.discount_amount.toLocaleString()}원</div>
                   <div className="adm-cell">{c.expiry_date ? new Date(c.expiry_date).toLocaleDateString('ko-KR') : '무제한'}</div>
                   <div><StatusBadge tone={statusTone[c.status]}>{statusLabel[c.status]}</StatusBadge></div>
                   <div className="adm-cell dim">{formatDate(c.created_at)}</div>
@@ -286,7 +286,7 @@ export default function AdminCouponsPage() {
                   <div className="adm-cell-main">{h.user_name}</div>
                   <div><StatusBadge tone={h.type === 'earn' ? 'blue' : 'orange'}>{h.type === 'earn' ? '적립' : '사용'}</StatusBadge></div>
                   <div className="adm-cell truncate">{h.description ?? '-'}</div>
-                  <div className={`adm-num ${h.type === 'earn' ? 'text-[#3182F6]' : 'text-[#F46A00]'}`}>
+                  <div className={`adm-num ${h.type === 'earn' ? 'text-[#2F6FE4]' : 'text-[#F46A00]'}`}>
                     {h.type === 'earn' ? '+' : '-'}{h.amount.toLocaleString()}P
                   </div>
                   <div className="adm-cell dim">{formatDate(h.created_at)}</div>

@@ -11,7 +11,7 @@ import { Dropdown } from '@/components/admin/Dropdown';
 import { SectionCard, StatCard, StatRow, StatusBadge, EmptyState } from '@/components/admin/ui';
 
 const COLORS = {
-  primary: '#3182F6',
+  primary: '#4A82EE',
   primaryLight: '#90C2FF',
   green: '#03B26C',
   yellow: '#F46A00',
@@ -133,7 +133,7 @@ export default function AdminDashboard() {
       {/* 인사 줄 — 대시보드는 레이아웃이 제목을 그리지 않는다 */}
       <div className="flex items-end justify-between gap-4">
         <div className="min-w-0">
-          <p className="text-[14px] font-semibold text-[#3182F6]">{mounted ? todayLabel() : '\u00a0'}</p>
+          <p className="text-[14px] font-semibold text-[#2F6FE4]">{mounted ? todayLabel() : '\u00a0'}</p>
           <h1 className="adm-title hello">대시보드</h1>
           <p className="adm-desc">{loading ? '불러오는 중…' : `${periodLabel} 기준 전체 현황이에요`}</p>
         </div>
@@ -151,7 +151,7 @@ export default function AdminDashboard() {
       <StatRow cols={4}>
         <StatCard label="총 회원수" value={s.totalUsers ?? 0} suffix="명" />
         <StatCard label="등록 병원" value={s.totalHospitals ?? 0} suffix="곳" sub={`승인 ${s.approvedHospitals ?? 0}곳`} />
-        <StatCard label="이번 달 예약" value={s.monthReservations ?? 0} suffix="건" accent="#3182F6" />
+        <StatCard label="이번 달 예약" value={s.monthReservations ?? 0} suffix="건" accent="#4A82EE" />
         <StatCard label="이번 달 매출" value={formatKRW(s.monthRevenue ?? 0)} suffix="원" accent="#1AB554" />
       </StatRow>
 
@@ -171,7 +171,7 @@ export default function AdminDashboard() {
       </StatRow>
 
       {/* 매출 + 예약 */}
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+      <div className="grid grid-cols-1 gap-10 xl:grid-cols-2">
         <SectionCard title="매출 추이" sub="단위 만원">
           <div className="h-72 px-4 pb-5">
             {mounted && (
@@ -219,7 +219,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* 카테고리 비중 + 가입 추이 */}
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+      <div className="grid grid-cols-1 gap-10 xl:grid-cols-2">
         <SectionCard title="카테고리별 매출 비중">
           <div className="h-72 px-4 pb-5">
             {mounted && (

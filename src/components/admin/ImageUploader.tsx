@@ -47,7 +47,7 @@ export function ImageUploader({
   return (
     <div className="space-y-2">
       <div
-        className="relative overflow-hidden rounded-[14px] border-[1.5px] border-dashed border-[#D1D6DB] bg-[#FAFBFC]"
+        className="relative overflow-hidden rounded-[14px] bg-[#F2F4F6]"
         style={{ aspectRatio: aspect }}
       >
         {value ? (
@@ -67,7 +67,7 @@ export function ImageUploader({
             type="button"
             onClick={() => inputRef.current?.click()}
             disabled={uploading}
-            className="absolute inset-0 flex flex-col items-center justify-center text-[#6B7684] hover:text-[#3182F6] hover:bg-[#F4F8FF] transition-colors disabled:opacity-50"
+            className="absolute inset-0 flex flex-col items-center justify-center text-[#6B7684] hover:text-[#2F6FE4] hover:bg-[#F4F8FF] transition-colors disabled:opacity-50"
           >
             <Upload size={20} className="mb-1.5" />
             <span className="text-[13px] font-semibold">

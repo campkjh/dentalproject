@@ -170,15 +170,15 @@ export default function AdminSearchPromoPage() {
                   role="radio"
                   aria-checked={isSelected}
                   onClick={() => setSelectedId(p.id)}
-                  className={`adm-grow clickable flex w-full items-center gap-3 text-left ${isSelected ? '!bg-[#E8F3FF]' : ''}`}
+                  className={`adm-grow clickable flex w-full items-center gap-3 text-left ${isSelected ? '!bg-[#EFF5FE]' : ''}`}
                 >
                   {/* 라디오 점(.adm-radio-dot 결) */}
                   <span
                     aria-hidden="true"
                     className="relative h-5 w-5 flex-shrink-0 rounded-full bg-white transition-shadow"
-                    style={{ boxShadow: `inset 0 0 0 2px ${isSelected ? '#3182F6' : '#D1D6DB'}` }}
+                    style={{ boxShadow: `inset 0 0 0 2px ${isSelected ? '#4A82EE' : '#D1D6DB'}` }}
                   >
-                    {isSelected && <span className="absolute inset-[5px] rounded-full bg-[#3182F6]" />}
+                    {isSelected && <span className="absolute inset-[5px] rounded-full bg-[#4A82EE]" />}
                   </span>
                   <div className="flex-1 min-w-0">
                     <p className="adm-cell-main truncate">{p.name || '(이름 없음)'}</p>

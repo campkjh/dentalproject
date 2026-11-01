@@ -57,7 +57,7 @@ const methodTone: Record<PaymentMethod, Tone> = {
 };
 
 // 차트 색 — 파랑 계열 우선
-const PIE_COLORS = ['#3182F6', '#90C2FF', '#03B26C', '#F46A00', '#F04452'];
+const PIE_COLORS = ['#4A82EE', '#90C2FF', '#03B26C', '#F46A00', '#F04452'];
 const TOOLTIP_STYLE = { border: 0, borderRadius: 12, boxShadow: '0 8px 24px rgba(0,0,0,.12)', fontSize: 12 };
 const TICK = { fontSize: 12, fill: '#8B95A1' };
 
@@ -215,7 +215,7 @@ export default function AdminPaymentsPage() {
       {/* 요약 숫자 + 7일 꺾은선 */}
       <StatRow cols={4}>
         {[
-          { label: '총 매출', value: totalRevenue, color: '#3182F6', factor: 1 },
+          { label: '총 매출', value: totalRevenue, color: '#4A82EE', factor: 1 },
           { label: '순매출', value: netRevenue, color: '#03B26C', factor: 0.9 },
           { label: '환불액', value: refundAmount, color: '#F04452', factor: 0.05, sub: `환불률 ${refundRate}%` },
           { label: '수수료 수익', value: feeIncome, color: '#F46A00', factor: 0.1 },
@@ -239,8 +239,8 @@ export default function AdminPaymentsPage() {
               <AreaChart data={dailyData} margin={{ top: 8, right: 16, left: 0, bottom: 4 }}>
                 <defs>
                   <linearGradient id="rev-gradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#3182F6" stopOpacity={0.18} />
-                    <stop offset="100%" stopColor="#3182F6" stopOpacity={0.01} />
+                    <stop offset="0%" stopColor="#4A82EE" stopOpacity={0.18} />
+                    <stop offset="100%" stopColor="#4A82EE" stopOpacity={0.01} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#F2F4F6" vertical={false} />
@@ -250,7 +250,7 @@ export default function AdminPaymentsPage() {
                   contentStyle={TOOLTIP_STYLE}
                   formatter={(v: any) => [`${Number(v).toLocaleString()}만원`, '매출']}
                 />
-                <Area type="monotone" dataKey="revenue" stroke="#3182F6" strokeWidth={2.5} fill="url(#rev-gradient)" activeDot={{ r: 5, fill: '#3182F6', stroke: '#fff', strokeWidth: 2 }} />
+                <Area type="monotone" dataKey="revenue" stroke="#4A82EE" strokeWidth={2.5} fill="url(#rev-gradient)" activeDot={{ r: 5, fill: '#4A82EE', stroke: '#fff', strokeWidth: 2 }} />
               </AreaChart>
             </ResponsiveContainer>
           )}
@@ -309,7 +309,7 @@ export default function AdminPaymentsPage() {
                   />
                   <Bar dataKey="revenue" radius={[0, 8, 8, 0]} barSize={14}>
                     {hospitalsData.map((_, i) => (
-                      <Cell key={i} fill={i < 3 ? '#3182F6' : i < 6 ? '#90C2FF' : '#C9E2FF'} />
+                      <Cell key={i} fill={i < 3 ? '#4A82EE' : i < 6 ? '#90C2FF' : '#C9E2FF'} />
                     ))}
                   </Bar>
                 </BarChart>

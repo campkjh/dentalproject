@@ -251,7 +251,7 @@ export default function AdminCategoriesPage() {
 
       <StatRow cols={2}>
         <StatCard label="전체 카테고리" value={categories.length} suffix="개" />
-        <StatCard label="인기 카테고리" value={categories.filter((c) => c.popular).length} suffix="개" accent="#3182F6" />
+        <StatCard label="인기 카테고리" value={categories.filter((c) => c.popular).length} suffix="개" accent="#4A82EE" />
       </StatRow>
 
       <div className="adm-listcard">

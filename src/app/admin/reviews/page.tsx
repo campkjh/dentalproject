@@ -308,7 +308,7 @@ function CheckBox({ checked, onClick, ariaLabel }: { checked: boolean; onClick: 
       aria-label={ariaLabel}
       onClick={onClick}
       className="flex h-5 w-5 items-center justify-center rounded-md border-[1.5px] transition-colors"
-      style={{ background: checked ? '#3182F6' : '#FFFFFF', borderColor: checked ? '#3182F6' : '#D1D6DB' }}
+      style={{ background: checked ? '#4A82EE' : '#FFFFFF', borderColor: checked ? '#4A82EE' : '#D1D6DB' }}
     >
       {checked && (
         <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true">

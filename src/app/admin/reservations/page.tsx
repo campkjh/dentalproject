@@ -172,7 +172,7 @@ export default function AdminReservationsPage() {
       <StatRow cols={5}>
         <StatCard label="전체" value={apiReservations.length} suffix="건" />
         <StatCard label="확인중" value={counts.pending} suffix="건" accent="#F59E0B" />
-        <StatCard label="확정" value={counts.confirmed} suffix="건" accent="#3182F6" />
+        <StatCard label="확정" value={counts.confirmed} suffix="건" accent="#4A82EE" />
         <StatCard label="완료" value={counts.completed} suffix="건" accent="#1AB554" />
         <StatCard label="취소" value={counts.cancelled} suffix="건" accent="#E54848" />
       </StatRow>

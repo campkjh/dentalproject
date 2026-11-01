@@ -5,32 +5,13 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useSession } from '@/lib/supabase/SessionProvider';
 import { useStore } from '@/store';
-import {
-  Home,
-  Users,
-  Building2,
-  Package,
-  CalendarDays,
-  MessageSquare,
-  CreditCard,
-  Bell,
-  Settings,
-  Ticket,
-  Menu,
-  X,
-  LayoutGrid,
-  Images,
-  Megaphone,
-  Star,
-  FileText,
-  ExternalLink,
-} from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import './admin.css';
 
 /* ─────────────────────────────────────────────────────────────
- * 어드민 껍데기 — 프리티풀 어드민 2.0 톤앤매너(토스 결) 그대로.
- *  · 왼쪽 흰 사이드바(로고·메뉴·내 계정) + 회색 바탕(#F2F4F6) 본문(흰 카드).
- *  · 고른 메뉴 = 연한 파랑 알약이 메뉴 사이를 스르르 옮겨 다닌다. 아이콘은 회색, 고른 것만 파랑.
+ * 어드민 껍데기 — 마이닥 앱 톤앤매너(261101 다시 맞춤, 예전 = 프리티풀 어드민 2.0).
+ *  · 왼쪽 옅은 회색 판(로고·메뉴·내 계정, 선 없음) + 흰 바탕 본문(카드 없이 펼친 구역).
+ *  · 고른 메뉴 = 흰 알약이 메뉴 사이를 스르르 옮겨 다닌다(앱 탭 고르기 결). 아이콘 = 토스 흑백(마스크), 고른 것만 파랑.
  *  · 페이지 머리(큰 제목 26 · 설명 · 제목 탭)는 여기서 그린다 — 페이지는 본문만, 오른쪽 버튼은 PageHeader 가 #adm-head-act 로 보낸다.
  *  · 본문을 내리면 머리 아래 그라데이션 + 데스크톱 머리에 작은 제목이 올라온다.
  * ──────────────────────────────────────────────────────────── */
@@ -38,7 +19,8 @@ import './admin.css';
 type Item = {
   href: string;
   label: string;
-  icon: React.ComponentType<{ size?: number; strokeWidth?: number; className?: string }>;
+  /** 토스 흑백 아이콘 경로(마스크로 칠한다) */
+  icon: string;
   exact?: boolean;
   /** 이 메뉴로 칠 다른 주소들(통합 메뉴) */
   paths?: string[];
@@ -49,40 +31,40 @@ type Group = { name?: string; items: Item[] };
 
 const NAV: Group[] = [
   {
-    items: [{ href: '/admin', label: '대시보드', icon: Home, exact: true, desc: '' }],
+    items: [{ href: '/admin', label: '대시보드', icon: '/icons/mono/chart-bar.svg', exact: true, desc: '' }],
   },
   {
     name: '운영',
     items: [
-      { href: '/admin/users', label: '회원 관리', icon: Users, desc: '가입한 회원을 조회하고 정지·탈퇴 처리를 할 수 있어요' },
-      { href: '/admin/hospitals', label: '병원 관리', icon: Building2, desc: '등록된 병원을 조회하고 승인·정지 처리를 할 수 있어요' },
-      { href: '/admin/products', label: '상품 관리', icon: Package, desc: '병원이 등록한 상품을 승인하고 노출 상태를 관리해요' },
-      { href: '/admin/reservations', label: '예약 관리', icon: CalendarDays, desc: '앱에서 들어온 예약을 조회하고 확정·취소 처리해요' },
+      { href: '/admin/users', label: '회원 관리', icon: '/icons/mono/user.svg', desc: '가입한 회원을 조회하고 정지·탈퇴 처리를 할 수 있어요' },
+      { href: '/admin/hospitals', label: '병원 관리', icon: '/icons/mono/hospital.svg', desc: '등록된 병원을 조회하고 승인·정지 처리를 할 수 있어요' },
+      { href: '/admin/products', label: '상품 관리', icon: '/icons/mono/tag.svg', desc: '병원이 등록한 상품을 승인하고 노출 상태를 관리해요' },
+      { href: '/admin/reservations', label: '예약 관리', icon: '/icons/mono/calendar-check.svg', desc: '앱에서 들어온 예약을 조회하고 확정·취소 처리해요' },
     ],
   },
   {
     name: '콘텐츠',
     items: [
-      { href: '/admin/banners', label: '홈 배너', icon: Images, desc: '고객 홈 상단 슬라이드 배너를 추가·수정·삭제해요' },
-      { href: '/admin/search-promo', label: '검색 추천 상품', icon: Megaphone, desc: '검색 화면 "인기검색어" 위 "추천(AD)" 자리에 노출할 상품을 골라요' },
-      { href: '/admin/categories', label: '카테고리', icon: LayoutGrid, desc: '검색·상품 분류에 쓰는 카테고리를 관리해요' },
-      { href: '/admin/community', label: '커뮤니티', icon: MessageSquare, paths: ['/admin/community'], desc: '게시글과 신고를 살피고 처리해요' },
-      { href: '/admin/reviews', label: '리뷰 관리', icon: Star, desc: '부적절한 리뷰를 숨기거나 삭제해요' },
+      { href: '/admin/banners', label: '홈 배너', icon: '/icons/mono/picture.svg', desc: '고객 홈 상단 슬라이드 배너를 추가·수정·삭제해요' },
+      { href: '/admin/search-promo', label: '검색 추천 상품', icon: '/icons/mono/megaphone.svg', desc: '검색 화면 "인기검색어" 위 "추천(AD)" 자리에 노출할 상품을 골라요' },
+      { href: '/admin/categories', label: '카테고리', icon: '/icons/toss/list.svg', desc: '검색·상품 분류에 쓰는 카테고리를 관리해요' },
+      { href: '/admin/community', label: '커뮤니티', icon: '/icons/mono/chat-bubble.svg', paths: ['/admin/community'], desc: '게시글과 신고를 살피고 처리해요' },
+      { href: '/admin/reviews', label: '리뷰 관리', icon: '/icons/mono/star.svg', desc: '부적절한 리뷰를 숨기거나 삭제해요' },
     ],
   },
   {
     name: '정산',
     items: [
-      { href: '/admin/payments', label: '매출/결제', icon: CreditCard, desc: '결제 내역과 매출 추이를 확인하고 환불 처리해요' },
-      { href: '/admin/coupons', label: '쿠폰/포인트', icon: Ticket, desc: '회원에게 발급된 쿠폰과 포인트 적립·사용 내역을 관리해요' },
+      { href: '/admin/payments', label: '매출/결제', icon: '/icons/mono/receipt.svg', desc: '결제 내역과 매출 추이를 확인하고 환불 처리해요' },
+      { href: '/admin/coupons', label: '쿠폰/포인트', icon: '/icons/mono/coin.svg', desc: '회원에게 발급된 쿠폰과 포인트 적립·사용 내역을 관리해요' },
     ],
   },
   {
     name: '시스템',
     items: [
-      { href: '/admin/notifications', label: '알림/공지', icon: Bell, desc: '앱 공지사항을 쓰고 푸시 알림을 보내요' },
-      { href: '/admin/terms', label: '약관 관리', icon: FileText, desc: '약관 본문을 고쳐요 — 저장하면 바로 사용자 화면에 반영돼요' },
-      { href: '/admin/settings', label: '설정', icon: Settings, desc: '플랫폼 기본 정보와 관리자 권한, 정산 정책을 관리해요' },
+      { href: '/admin/notifications', label: '알림/공지', icon: '/icons/mono/bell.svg', desc: '앱 공지사항을 쓰고 푸시 알림을 보내요' },
+      { href: '/admin/terms', label: '약관 관리', icon: '/icons/mono/document-check.svg', desc: '약관 본문을 고쳐요 — 저장하면 바로 사용자 화면에 반영돼요' },
+      { href: '/admin/settings', label: '설정', icon: '/icons/toss/setting-mono.svg', desc: '플랫폼 기본 정보와 관리자 권한, 정산 정책을 관리해요' },
     ],
   },
 ];
@@ -96,6 +78,18 @@ const TITLE_TABS: { href: string; label: string }[][] = [
 ];
 
 const ALL_ITEMS = NAV.flatMap((g) => g.items);
+
+/** 토스 흑백 아이콘 — 마스크라 색은 CSS(.adm-nav-ic 의 background-color)나 color 로 고른다 */
+function MaskIcon({ src, size = 22, className = '', color }: { src: string; size?: number; className?: string; color?: string }) {
+  const url = `url(${src})`;
+  return (
+    <i
+      aria-hidden
+      className={`inline-block shrink-0 ${className}`}
+      style={{ width: size, height: size, ...(color ? { backgroundColor: color } : null), WebkitMaskImage: url, maskImage: url, WebkitMaskSize: 'contain', maskSize: 'contain', WebkitMaskRepeat: 'no-repeat', maskRepeat: 'no-repeat', WebkitMaskPosition: 'center', maskPosition: 'center' }}
+    />
+  );
+}
 
 function matchItem(item: Item, pathname: string) {
   if (item.exact) return pathname === item.href;
@@ -127,7 +121,6 @@ function SideNav({ pathname, onNavigate }: { pathname: string; onNavigate?: () =
           {group.name && <p className="adm-nav-label">{group.name}</p>}
           {group.items.map((item) => {
             const on = item.href === activeHref;
-            const Icon = item.icon;
             return (
               <Link
                 key={item.href}
@@ -137,7 +130,7 @@ function SideNav({ pathname, onNavigate }: { pathname: string; onNavigate?: () =
                 className={`adm-nav-item ${on ? 'on' : ''}`}
                 aria-current={on ? 'page' : undefined}
               >
-                <Icon size={22} strokeWidth={2} className="adm-nav-ic" />
+                <MaskIcon src={item.icon} className="adm-nav-ic" />
                 <span className="adm-nav-text">{item.label}</span>
               </Link>
             );
@@ -203,14 +196,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   const bell = (
     <Link href="/admin/notifications" className="adm-ubtn" aria-label="공지/알림 관리" title="공지/알림 관리">
-      <Bell size={22} strokeWidth={2} />
+      <MaskIcon src="/icons/mono/bell.svg" color="#4E5968" />
     </Link>
   );
 
   const brand = (
     <Link href="/admin" className="adm-brand" aria-label="마이닥 관리자 홈">
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/icons/brand-logo.svg" alt="" className="adm-brand-logo" />
+      <img src="/icons/brand-logo-mark.png" alt="" className="adm-brand-logo" />
       <span className="adm-brand-name">마이닥</span>
       <span className="adm-brand-tag">관리자</span>
     </Link>
@@ -221,7 +214,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <SideNav pathname={pathname} onNavigate={onNavigate} />
       <div className="adm-side-foot">
         <Link href="/" onClick={onNavigate} className="adm-nav-item">
-          <ExternalLink size={22} strokeWidth={2} className="adm-nav-ic" />
+          <MaskIcon src="/icons/toss/share.svg" className="adm-nav-ic" />
           <span className="adm-nav-text">서비스 홈</span>
         </Link>
         <div className="adm-account">

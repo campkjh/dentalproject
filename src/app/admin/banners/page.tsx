@@ -257,7 +257,7 @@ export default function AdminBannersPage() {
                       <p className="adm-cell-main mt-2 truncate">{banner.title}</p>
                       {banner.subtitle && <p className="adm-cell-sub truncate">{banner.subtitle}</p>}
                       <p className="adm-cell dim mt-2">{formatPeriod(banner)}</p>
-                      {banner.targetUrl && <p className="adm-cell mt-1 truncate text-[#3182F6]">{banner.targetUrl}</p>}
+                      {banner.targetUrl && <p className="adm-cell mt-1 truncate text-[#2F6FE4]">{banner.targetUrl}</p>}
                     </div>
                     <div className="adm-actions flex-shrink-0">
                       <button

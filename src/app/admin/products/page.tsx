@@ -186,8 +186,7 @@ export default function AdminProductsPage() {
       aria-label={label}
       aria-pressed={on}
       onClick={onClick}
-      className="w-5 h-5 rounded-md border flex items-center justify-center"
-      style={{ background: on ? '#3182F6' : '#FFFFFF', borderColor: on ? '#3182F6' : '#C9CDD2' }}
+      className={`adm-check${on ? ' on' : ''}`}
     >
       {on && <Check size={13} color="#fff" strokeWidth={3} />}
     </button>

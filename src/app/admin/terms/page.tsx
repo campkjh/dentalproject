@@ -110,10 +110,10 @@ export default function AdminTermsPage() {
                   key={t.id}
                   type="button"
                   onClick={() => setActiveId(t.id)}
-                  className={`adm-grow clickable block w-full text-left ${on ? '!bg-[#E8F3FF]' : ''}`}
+                  className={`adm-grow clickable block w-full text-left ${on ? '!bg-[#EFF5FE]' : ''}`}
                   aria-current={on ? 'true' : undefined}
                 >
-                  <div className={`adm-cell-main truncate ${on ? '!text-[#3182F6]' : ''}`}>{t.title}</div>
+                  <div className={`adm-cell-main truncate ${on ? '!text-[#2F6FE4]' : ''}`}>{t.title}</div>
                   <div className="mt-1 flex items-center gap-1.5">
                     <StatusBadge tone={t.content ? 'green' : 'gray'}>{t.content ? '편집됨' : '기본'}</StatusBadge>
                     {t.updatedAt && <span className="adm-cell dim">{new Date(t.updatedAt).toLocaleDateString('ko-KR')}</span>}
