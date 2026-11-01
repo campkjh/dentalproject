@@ -492,11 +492,9 @@ export default function HomePage() {
             style={{
               bottom: '104px',
               right: '16px',
-              background: 'rgba(255, 255, 255, 0.82)',
-              border: '1px solid rgba(229, 231, 235, 0.92)',
-              boxShadow: '0 12px 34px rgba(17, 24, 39, 0.22)',
-              backdropFilter: 'blur(18px) saturate(170%)',
-              WebkitBackdropFilter: 'blur(18px) saturate(170%)',
+              background: '#FFFFFF',
+              border: 'none',
+              boxShadow: '0 4px 14px rgba(17, 24, 39, 0.06)',
             }}
           >
             <span className="scroll-top-button-inner">
