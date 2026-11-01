@@ -1,7 +1,7 @@
 'use client';
 
 // 리뷰어 프로필(261101) — 리뷰 카드의 프사·이름을 누르면 온다.
-//  · 머리 = 프사 72 · 이름 · 평균 별점 → 회색 숫자 칸 3개(리뷰 · 팔로워 · 팔로잉, 뒤 둘은 누르면 그 탭) → 팔로우 큰 버튼.
+//  · 머리 = 프사 72 · 이름(옆에 작은 팔로우) · 평균 별점 → 숫자 줄(리뷰 · 팔로워 · 팔로잉, 누르면 그 탭).
 //  · 탭 = 리뷰 · 팔로워 · 팔로잉(회색 트랙 위 흰 알약). 리뷰 = 그 사람이 쓴 리뷰 전부(상품 머리 + 별점·본문·사진).
 //  · 팔로우는 낙관적으로 바로 바꾸고, 실패하면 되돌린다. 비로그인은 로그인 시트를 띄운다.
 import { useCallback, useEffect, useState } from 'react';
@@ -140,7 +140,24 @@ export default function ReviewerProfilePage() {
         <div className="qd-a-item flex items-center gap-4">
           <Avatar seed={user.id} size={72} alt="" className="shrink-0" />
           <div className="min-w-0 flex-1">
-            <p className="truncate text-[24px] font-bold tracking-[-0.6px] text-[#191F28]">{user.name}</p>
+            {/* 이름 + 바로 옆 팔로우(261101 사장) — 내 프로필이거나 팔로우 표가 아직 없으면 숨긴다 */}
+            <div className="flex items-center gap-2">
+              <p className="min-w-0 truncate text-[24px] font-bold tracking-[-0.6px] text-[#191F28]">{user.name}</p>
+              {!data.isMe && data.followReady && (
+                <button
+                  type="button"
+                  onClick={toggleFollow}
+                  disabled={busy}
+                  aria-pressed={data.isFollowing}
+                  className={`flex h-8 shrink-0 items-center gap-1 rounded-[8px] px-3 text-[14px] font-bold transition-all active:scale-95 ${
+                    data.isFollowing ? 'bg-[#F2F4F6] text-[#6B7684]' : 'bg-[#4A82EE] text-white'
+                  }`}
+                >
+                  {data.isFollowing && <Check size={15} strokeWidth={2.6} />}
+                  {data.isFollowing ? '팔로잉' : '팔로우'}
+                </button>
+              )}
+            </div>
             {stats.reviewCount > 0 ? (
               <div className="mt-1 flex items-center gap-1.5">
                 <StarRating value={stats.avgRating} size={16} />
@@ -167,23 +184,6 @@ export default function ReviewerProfilePage() {
             </button>
           ))}
         </div>
-
-        {/* 팔로우 — 내 프로필이거나 팔로우 표가 아직 없으면 숨긴다 */}
-        {!data.isMe && data.followReady && (
-          <button
-            type="button"
-            onClick={toggleFollow}
-            disabled={busy}
-            aria-pressed={data.isFollowing}
-            className={`qd-a-item mt-3 flex h-14 w-full items-center justify-center gap-1.5 rounded-[18px] text-[17px] font-bold transition-all active:scale-[0.98] ${
-              data.isFollowing ? 'bg-[#F2F4F6] text-[#4E5968]' : 'bg-[#4A82EE] text-white'
-            }`}
-            style={{ animationDelay: '.1s' }}
-          >
-            {data.isFollowing && <Check size={20} strokeWidth={2.4} />}
-            {data.isFollowing ? '팔로잉' : '팔로우'}
-          </button>
-        )}
       </div>
 
       {/* ─── 탭 ─── */}
