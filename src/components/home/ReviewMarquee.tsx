@@ -29,7 +29,7 @@ function ReviewCard({ review, products }: { review: Review; products: Product[] 
           ))}
         </div>
       )}
-      <ReviewCommentRow compact review={{ id: review.id, name: review.authorName, avatarSeed: review.authorId || review.authorName, rating: review.rating, date: review.date, content: review.content }} />
+      <ReviewCommentRow compact review={{ id: review.id, name: review.authorName, avatarSeed: review.authorId || review.authorName, authorId: review.authorId || undefined, rating: review.rating, date: review.date, content: review.content }} />
       <p className="mt-auto truncate rounded-[10px] bg-[#F7F8FA] px-2.5 py-2 pt-2 text-[12.5px] font-semibold text-[#4E5968]" style={{ marginTop: 10 }}>
         {review.treatmentName} · {review.totalCost.toLocaleString()}원
       </p>

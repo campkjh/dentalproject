@@ -18,10 +18,12 @@ export async function GET() {
   await cancelExpiredPendingReservations(admin, { userId: user.id });
   await completePastConfirmedReservations(admin, { userId: user.id });
 
-  const [profile, wishlist, recentlyViewed, reservations, coupons, notifications, pointHistory, interestedCats, recentSearches] =
+  const [profile, wishlist, postPockets, recentlyViewed, reservations, coupons, notifications, pointHistory, interestedCats, recentSearches] =
     await Promise.all([
       sb.from('profiles').select('*').eq('id', user.id).maybeSingle(),
       sb.from('wishlists').select('product_id').eq('user_id', user.id),
+      // 커뮤니티 글 포켓(0021) — 표가 아직 없으면 data 가 비어 빈 목록이 된다
+      sb.from('post_pockets').select('post_id').eq('user_id', user.id).order('created_at', { ascending: false }),
       sb.from('recently_viewed').select('product_id, viewed_at').eq('user_id', user.id).order('viewed_at', { ascending: false }).limit(20),
       sb
         .from('reservations')
@@ -73,6 +75,7 @@ export async function GET() {
       profile: profile.data,
     },
     wishlist: (wishlist.data ?? []).map((w: any) => w.product_id),
+    postPockets: (postPockets.data ?? []).map((p: any) => p.post_id),
     recentlyViewed: (recentlyViewed.data ?? []).map((r: any) => r.product_id),
     reservations: reservationsWithHistory,
     coupons: coupons.data ?? [],

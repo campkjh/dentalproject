@@ -9,7 +9,7 @@ import {
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-function normalizeOptionalImage(value: unknown) {
+export function normalizeOptionalImage(value: unknown) {
   if (typeof value !== 'string') return undefined;
   const trimmed = value.trim();
   if (!trimmed) return undefined;

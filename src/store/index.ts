@@ -148,6 +148,9 @@ interface AppState {
   products: Product[];
   wishlist: string[];
   toggleWishlist: (productId: string) => void;
+  /** 포켓에 담은 커뮤니티 글 id(최근 담은 순) */
+  postPockets: string[];
+  togglePostPocket: (postId: string) => void;
   recentlyViewed: string[];
   addRecentlyViewed: (productId: string) => void;
 
@@ -273,6 +276,7 @@ export const useStore = create<AppState>((set, get) => ({
       }
       set({
         wishlist: data.wishlist ?? [],
+        postPockets: data.postPockets ?? [],
         recentlyViewed: data.recentlyViewed ?? [],
         reservations: (data.reservations ?? []).map(reservationFromRow),
         interestedCategories: data.interestedCategories ?? [],
@@ -299,6 +303,7 @@ export const useStore = create<AppState>((set, get) => ({
   resetMe: () => {
     set({
       wishlist: [],
+      postPockets: [],
       recentlyViewed: [],
       reservations: mockReservations,
       interestedCategories: [],
@@ -369,6 +374,30 @@ export const useStore = create<AppState>((set, get) => ({
       // rollback on auth/network error
       set({ wishlist: wasIn ? [...get().wishlist, productId] : get().wishlist.filter((id) => id !== productId) });
     });
+  },
+
+  // 커뮤니티 글 포켓 — 상품 포켓과 같은 결(바로 바꾸고, 서버가 거절하면 되돌리며 이유를 알려 준다)
+  postPockets: [],
+  togglePostPocket: (postId) => {
+    const wasIn = get().postPockets.includes(postId);
+    set({ postPockets: wasIn ? get().postPockets.filter((id) => id !== postId) : [postId, ...get().postPockets] });
+    get().showToast(wasIn ? '포켓에서 뺐어요.' : '포켓에 담았어요!');
+    const rollback = (message: string) => {
+      const now = get().postPockets.filter((id) => id !== postId);
+      set({ postPockets: wasIn ? [postId, ...now] : now });
+      get().showToast(message);
+    };
+    void fetch('/api/post-pockets', {
+      method: wasIn ? 'DELETE' : 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ postId }),
+    })
+      .then(async (res) => {
+        if (res.ok) return;
+        const payload = await res.json().catch(() => ({}));
+        rollback(payload.error || '포켓을 저장하지 못했어요.');
+      })
+      .catch(() => rollback('포켓을 저장하지 못했어요.'));
   },
 
   recentlyViewed: [],

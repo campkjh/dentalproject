@@ -2,8 +2,11 @@
 
 // 상세 화면 공통 조각 — 프리티풀 사회자 상세(pros/[id])·리뷰 줄(ReviewCommentRow) 그대로 이식.
 //  Reveal(닿으면 위로 페이드) · StarRating(반짝 별) · SectionHead(아이콘 + 19 굵게) · 흘러가는 리뷰 카드 · 댓글형 리뷰 줄.
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type MouseEvent, type ReactNode } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import Avatar from '@/components/common/Avatar';
+import { reviewerHref } from '@/lib/reviewer';
 
 export const BRAND = '#3180F7';
 
@@ -105,6 +108,8 @@ export type ReviewRowData = {
   id: string;
   name: string;
   avatarSeed?: string;
+  /** 작성자 — 있으면 프사·이름을 누르면 리뷰어 프로필(/user/[id]) */
+  authorId?: string;
   rating: number;
   date?: string;
   content: string;
@@ -116,14 +121,16 @@ export type ReviewRowData = {
 /** 리뷰 한 줄 — 댓글형(프사 36 · 이름 15 굵게 + 별 · 본문 16 · 사진 · 회색 날짜). compact = 흘러가는 카드용 */
 export function ReviewCommentRow({ review, first = false, menu, compact = false }: { review: ReviewRowData; first?: boolean; menu?: ReactNode; compact?: boolean }) {
   const photos = review.photos || [];
+  const avatar = <Avatar seed={review.avatarSeed || review.name} size={compact ? 28 : 36} alt="" className="shrink-0" />;
+  const name = <span className={`font-bold tracking-[-0.2px] text-[#333D4B] ${compact ? 'text-[14px]' : 'text-[15px]'}`}>{review.name}</span>;
   return (
     <div className={compact ? '' : `py-4 ${first ? '' : 'border-t border-[#F2F4F6]'}`}>
       <div className={`flex ${compact ? 'gap-2' : 'gap-2.5'}`}>
-        <Avatar seed={review.avatarSeed || review.name} size={compact ? 28 : 36} alt="" className="shrink-0" />
+        {review.authorId ? <AuthorLink authorId={review.authorId} label={`${review.name} 프로필`} nested={compact} className="flex shrink-0 self-start rounded-full">{avatar}</AuthorLink> : avatar}
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
             <div className={`flex flex-wrap items-center gap-x-1.5 gap-y-1 ${compact ? 'min-h-[28px]' : 'min-h-[20px]'}`}>
-              <span className={`font-bold tracking-[-0.2px] text-[#333D4B] ${compact ? 'text-[14px]' : 'text-[15px]'}`}>{review.name}</span>
+              {review.authorId ? <AuthorLink authorId={review.authorId} nested={compact}>{name}</AuthorLink> : name}
               {review.rating > 0 && <ReviewStars value={review.rating} size={compact ? 12 : 13} />}
             </div>
             {menu}
@@ -149,6 +156,25 @@ export function ReviewCommentRow({ review, first = false, menu, compact = false 
         </div>
       </div>
     </div>
+  );
+}
+
+/** 리뷰 작성자 → 리뷰어 프로필. nested = 카드 전체가 이미 링크일 때(홈 흐르는 후기) — a 안에 a 를 못 넣어 span 이 대신 간다 */
+function AuthorLink({ authorId, nested, label, className = '', children }: { authorId: string; nested?: boolean; label?: string; className?: string; children: ReactNode }) {
+  const router = useRouter();
+  const href = reviewerHref(authorId);
+  if (!nested) {
+    return <Link href={href} aria-label={label} className={`transition-opacity active:opacity-60 ${className}`}>{children}</Link>;
+  }
+  const go = (e: MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    router.push(href);
+  };
+  return (
+    <span role="link" tabIndex={0} aria-label={label} onClick={go} onKeyDown={(e) => { if (e.key === 'Enter') go(e as unknown as MouseEvent); }} className={`cursor-pointer transition-opacity active:opacity-60 ${className}`}>
+      {children}
+    </span>
   );
 }
 

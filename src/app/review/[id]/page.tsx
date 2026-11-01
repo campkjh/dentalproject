@@ -8,6 +8,7 @@ import TopBar from '@/components/common/TopBar';
 import Avatar from '@/components/common/Avatar';
 import { useStore } from '@/store';
 import { resolveHospitalImageUrl, resolveProductImageUrl } from '@/lib/images';
+import { reviewerHref } from '@/lib/reviewer';
 
 export default function ReviewDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -90,8 +91,8 @@ export default function ReviewDetailPage() {
         }
       />
 
-      {/* Author row */}
-      <div className="px-2.5 pt-3 pb-4 flex items-center gap-3 border-b border-gray-100">
+      {/* Author row — 누르면 리뷰어 프로필(그 사람이 쓴 리뷰 전부 · 팔로우) */}
+      <Link href={reviewerHref(review.authorId || review.id)} className="px-2.5 pt-3 pb-4 flex items-center gap-3 border-b border-gray-100 active:bg-[#F9FAFB]">
         <Avatar seed={review.authorId || review.id} size={40} />
         <div className="flex-1 min-w-0">
           <p className="text-[14px] font-semibold text-gray-900 leading-tight">
@@ -114,7 +115,8 @@ export default function ReviewDetailPage() {
             <span className="text-[11px] text-gray-400">· {review.date}</span>
           </div>
         </div>
-      </div>
+        <ChevronRight size={18} className="shrink-0 text-[#B0B8C1]" />
+      </Link>
 
       {/* Before / After (only when uploaded) */}
       {imgs && (imgs.before || imgs.after) && (

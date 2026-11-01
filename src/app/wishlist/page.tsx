@@ -6,33 +6,38 @@
 //  · 예약은 상품 하나씩이라 — 1개 고르면 바로 /booking, 여러 개면 시트에서 먼저 예약할 상품을 고른다.
 //  · 데이터는 store 의 wishlist/toggleWishlist 그대로(이름만 화면에서 '포켓').
 //  · 포켓 줄을 오른쪽→왼쪽으로 밀면 예약하기 · 결제하기(프리티풀 채팅 목록 밀기) — 상품 상세 바닥 버튼과 같은 곳으로 간다.
+//  · 탭 = 상품 · 커뮤니티 · 최근 본(261101). 커뮤니티 = 담아 둔 글(/api/post-pockets) — 누르면 글 상세, × 로 빼기.
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowUp } from 'lucide-react';
 import { useStore } from '@/store';
-import type { Product } from '@/types';
+import type { Post, Product } from '@/types';
 import LoginRequired from '@/components/common/LoginRequired';
 import ProductCard from '@/components/common/ProductCard';
 import { HeaderSearchIcon } from '@/components/icons/HeaderIcons';
 import { PocketIcon } from '@/components/icons/PocketIcon';
 import PocketEmpty from '@/components/pocket/PocketEmpty';
 import PocketRow, { CheckCircle } from '@/components/pocket/PocketRow';
+import PocketPostRow from '@/components/pocket/PocketPostRow';
 import pocketStyles from '@/components/pocket/pocket.module.css';
 import { useListEntrance, useTabEntrance } from '@/components/reservations/useTabEntrance';
 import matchStyles from '@/components/reservations/match.module.css';
 import { resolveProductImageUrl } from '@/lib/images';
 
-type Tab = 'pocket' | 'recent';
+type Tab = 'pocket' | 'posts' | 'recent';
 
-const tabKeys: Tab[] = ['pocket', 'recent'];
+const tabKeys: Tab[] = ['pocket', 'posts', 'recent'];
+const TAB_LABEL: Record<Tab, string> = { pocket: '상품', posts: '커뮤니티', recent: '최근 본' };
+// 흰 알약 한 칸 너비 — 트랙 안쪽 여백 4 · 칸 사이 4
+const PILL_W = `((100% - ${8 + (tabKeys.length - 1) * 4}px) / ${tabKeys.length})`;
 const LEAVE_MS = 260;
 
 const won = (n: number) => `${n.toLocaleString()}원`;
 
 export default function PocketPage() {
   const router = useRouter();
-  const { isLoggedIn, products, wishlist, recentlyViewed, toggleWishlist, showConfirm, showToast } = useStore();
+  const { isLoggedIn, products, wishlist, recentlyViewed, toggleWishlist, showConfirm, showToast, postPockets, togglePostPocket, meHydrated } = useStore();
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>('pocket');
   const activeIndex = tabKeys.indexOf(activeTab);
@@ -51,6 +56,26 @@ export default function PocketPage() {
   );
   const hasNew = recentProducts.length > 0;
 
+  // 담아 둔 커뮤니티 글 — 들어올 때 한 번 받아 오고, 보이는 건 store 의 postPockets 로 거른다(빼기·되돌리기가 바로 반영)
+  const [savedPosts, setSavedPosts] = useState<Post[] | null>(null);
+  const [leavingPosts, setLeavingPosts] = useState<Set<string>>(() => new Set());
+  useEffect(() => {
+    if (!isLoggedIn) return;
+    const controller = new AbortController();
+    fetch('/api/post-pockets', { signal: controller.signal, cache: 'no-store' })
+      .then(async (res) => {
+        const payload = await res.json().catch(() => ({}));
+        if (!controller.signal.aborted) setSavedPosts(res.ok && Array.isArray(payload.posts) ? (payload.posts as Post[]) : []);
+      })
+      .catch(() => { if (!controller.signal.aborted) setSavedPosts([]); });
+    return () => controller.abort();
+  }, [isLoggedIn]);
+  const pocketPosts = useMemo(
+    () => (savedPosts ?? []).filter((p) => !meHydrated || postPockets.includes(p.id)),
+    [savedPosts, meHydrated, postPockets],
+  );
+  const postsLoading = isLoggedIn && savedPosts === null;
+
   const selected = useMemo(() => pocketProducts.filter((p) => !unchecked.has(p.id) && !leaving.has(p.id)), [pocketProducts, unchecked, leaving]);
   const allChecked = pocketProducts.length > 0 && selected.length === pocketProducts.filter((p) => !leaving.has(p.id)).length;
   const total = selected.reduce((sum, p) => sum + p.price, 0);
@@ -67,9 +92,9 @@ export default function PocketPage() {
 
   // 첫 진입 = 프리티풀 탭 등장(제목↑ · 줄 ←) — 뒤로가기·30초 안 재진입은 생략
   const entrance = useTabEntrance('pocket');
-  const displayed = activeTab === 'pocket' ? pocketProducts : recentProducts;
+  const displayed: { id: string }[] = activeTab === 'pocket' ? pocketProducts : activeTab === 'posts' ? pocketPosts : recentProducts;
   // 빈 화면 — 머리부터 탭까지 하늘빛 그라데이션이 끊김 없이 이어져 아래로 흰 바탕에 녹는다
-  const emptyView = isLoggedIn && displayed.length === 0;
+  const emptyView = isLoggedIn && displayed.length === 0 && !(activeTab === 'posts' && postsLoading);
   const enterProps = useListEntrance(displayed.map((p) => `${activeTab}:${p.id}`), entrance);
 
   useEffect(() => {
@@ -104,6 +129,20 @@ export default function PocketPage() {
       });
       setUnchecked((prev) => {
         if (!prev.has(id)) return prev;
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+    }, LEAVE_MS);
+  };
+
+  // 글 빼기 — 옆으로 밀리며 접힌 뒤 포켓에서 뺀다(실패하면 store 가 되돌려 줄이 다시 보인다)
+  const removePost = (id: string) => {
+    if (leavingPosts.has(id)) return;
+    setLeavingPosts((prev) => new Set(prev).add(id));
+    window.setTimeout(() => {
+      togglePostPocket(id);
+      setLeavingPosts((prev) => {
         const next = new Set(prev);
         next.delete(id);
         return next;
@@ -178,15 +217,15 @@ export default function PocketPage() {
                 aria-hidden
                 className="absolute bottom-1 top-1 rounded-[13px] bg-white shadow-[0_1px_4px_rgba(25,31,40,0.08)] transition-all duration-500"
                 style={{
-                  left: `calc(4px + ${activeIndex * 50}% - ${activeIndex * 4}px)`,
-                  width: 'calc(50% - 6px)',
+                  left: `calc(4px + ${activeIndex} * (${PILL_W} + 4px))`,
+                  width: `calc(${PILL_W})`,
                   transitionTimingFunction: 'cubic-bezier(0.22, 1, 0.36, 1)',
                 }}
               />
               {tabKeys.map((tab) => {
                 const active = activeTab === tab;
-                const label = tab === 'pocket' ? '포켓' : '최근 본';
-                const count = tab === 'pocket' ? pocketProducts.length : recentProducts.length;
+                const label = TAB_LABEL[tab];
+                const count = tab === 'pocket' ? pocketProducts.length : tab === 'posts' ? pocketPosts.length : recentProducts.length;
                 return (
                   <button
                     key={tab}
@@ -204,16 +243,27 @@ export default function PocketPage() {
             </div>
           </div>
 
-          {displayed.length === 0 ? (
+          {activeTab === 'posts' && postsLoading ? (
+            <p className="py-20 text-center text-[15px] text-[#8B95A1]">불러오는 중…</p>
+          ) : displayed.length === 0 ? (
             <>
               {/* 빈 화면 — 사장 시안: 은은한 그라데이션 위 장바구니·동전 둥실 + 안내 · 둘러보기 */}
-              <PocketEmpty
-                title={activeTab === 'pocket' ? '아직 포켓에 담은 상품이 없어요' : '최근 본 상품이 없어요'}
-                sub={activeTab === 'pocket' ? '마음에 드는 시술을 포켓에 담아 두고 한 번에 비교해 보세요' : '상품을 둘러보면 여기에 차례로 모여요'}
-              />
+              {activeTab === 'posts' ? (
+                <PocketEmpty
+                  title="아직 포켓에 담은 글이 없어요"
+                  sub="커뮤니티에서 다시 보고 싶은 글을 포켓에 담아 보세요"
+                  href="/community"
+                  cta="커뮤니티 둘러보기"
+                />
+              ) : (
+                <PocketEmpty
+                  title={activeTab === 'pocket' ? '아직 포켓에 담은 상품이 없어요' : '최근 본 상품이 없어요'}
+                  sub={activeTab === 'pocket' ? '마음에 드는 시술을 포켓에 담아 두고 한 번에 비교해 보세요' : '상품을 둘러보면 여기에 차례로 모여요'}
+                />
+              )}
 
               {/* 실시간 TOP 10 인기 시술 */}
-              {topProducts.length > 0 && (
+              {activeTab !== 'posts' && topProducts.length > 0 && (
                 <section className="mt-2 pb-10 pt-6">
                   <h2 className="mb-4 px-4 text-[20px] font-bold leading-[28px] tracking-[-0.4px] text-[#191F28] pc:px-0">
                     실시간 <span className="text-[#3180F7]">TOP 10</span> 인기 시술
@@ -302,6 +352,25 @@ export default function PocketPage() {
                   <p className="mt-3 text-center text-[12px] leading-5 text-[#8B95A1]">예약은 상품 하나씩 진행돼요. 가격은 병원 사정에 따라 바뀔 수 있어요.</p>
                 </div>
               </aside>
+            </div>
+          ) : activeTab === 'posts' ? (
+            <div key="posts" className="list-fade-slide pc:pt-4">
+              <ul className="px-4 pc:mx-auto pc:max-w-[720px] pc:px-0">
+                {pocketPosts.map((post) => {
+                  const enter = enterProps(`posts:${post.id}`);
+                  return (
+                    <PocketPostRow
+                      key={post.id}
+                      post={post}
+                      leaving={leavingPosts.has(post.id)}
+                      onRemove={() => removePost(post.id)}
+                      className={enter.className}
+                      style={enter.style}
+                    />
+                  );
+                })}
+              </ul>
+              <div className="h-24 pc:hidden" />
             </div>
           ) : (
             <div key="recent" className="list-fade-slide pc:pt-4">

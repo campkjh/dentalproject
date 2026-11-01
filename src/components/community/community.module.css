@@ -193,6 +193,8 @@ button.tagBadge:hover { border-color: #d1d5db; }
 .pill:active { transform: scale(.96); }
 .pill[data-icon=true] { width: 38px; padding: 0; justify-content: center; }
 .pill[aria-pressed=true] { color: #f04452; background: rgba(240,68,82,.1); }
+/* 포켓 담긴 글 — 상품 포켓과 같은 파랑 */
+.pill[data-pocket=true][aria-pressed=true] { color: #3180f7; background: #eff5fe; }
 .pill[aria-pressed=true] svg { animation: likePop .4s cubic-bezier(.34,1.56,.64,1); }
 .band { height: 10px; background: #f2f4f6; }
 .cpdComments { padding: 0 20px; animation: cardIn .22s ease; }

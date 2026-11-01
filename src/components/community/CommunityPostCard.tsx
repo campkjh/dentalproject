@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type KeyboardEvent, type MouseEvent } from
 import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import Avatar from '@/components/common/Avatar';
+import { PocketIcon } from '@/components/icons/PocketIcon';
 import { useStore } from '@/store';
 import { communityRelativeTime, isTipPost } from '@/lib/community';
 import type { Post } from '@/types';
@@ -23,6 +24,10 @@ export default function CommunityPostCard({ post, detail = false, basePath = '/c
   const user = useStore(s => s.user);
   const showToast = useStore(s => s.showToast);
   const showModal = useStore(s => s.showModal);
+  const pocketed = useStore(s => s.postPockets.includes(post.id));
+  const togglePostPocket = useStore(s => s.togglePostPocket);
+  // 포켓은 고객 화면에만(의사 라운지 /partner/community 엔 포켓 화면이 없다)
+  const canPocket = !basePath.startsWith('/partner');
   const [liked, setLiked] = useState(initialLiked);
   const [count, setCount] = useState(post.likeCount);
   const [source, setSource] = useState({ count: post.likeCount, liked: initialLiked });
@@ -84,6 +89,12 @@ export default function CommunityPostCard({ post, detail = false, basePath = '/c
     }
   }
 
+  // 포켓 담기 — 상품 상세 포켓과 같은 결(비로그인은 로그인 시트)
+  function togglePocket() {
+    if (!user) { window.dispatchEvent(new Event('dental:login')); return; }
+    togglePostPocket(post.id);
+  }
+
   function remove() {
     setSheet(null);
     showModal('게시글을 삭제할까요?', '삭제하면 되돌릴 수 없어요.', async () => {
@@ -134,6 +145,7 @@ export default function CommunityPostCard({ post, detail = false, basePath = '/c
     ] : [
       { key: 'report', label: '신고하기', icon: '/icons/toss/siren.svg', run: () => { if (!user) showToast('로그인이 필요합니다.'); else setSheet('reason'); } },
     ]),
+    ...(canPocket ? [{ key: 'pocket', label: pocketed ? '포켓에서 빼기' : '포켓에 담기', icon: '/icons/toss/pocket.svg', run: togglePocket }] : []),
     { key: 'share', label: '공유하기', icon: '/icons/toss/share.svg', run: () => void share() },
   ];
   const popMenu = menuAt && typeof document !== 'undefined' && createPortal(<>
@@ -210,6 +222,7 @@ export default function CommunityPostCard({ post, detail = false, basePath = '/c
       <button type="button" className={styles.pill} aria-label="좋아요" aria-pressed={liked} onClick={toggleLike}><TossHeartIcon filled={liked} /><span>좋아요 {formatCount(count)}</span></button>
       <button type="button" className={styles.pill} aria-label="댓글" onClick={() => onComments?.(post)}><TossCommentIcon /><span>댓글 {formatCount(post.commentCount)}</span></button>
       <button type="button" className={styles.pill} data-icon="true" aria-label="공유" onClick={share}><TossShareIcon /></button>
+      {canPocket && <button type="button" className={styles.pill} data-icon="true" data-pocket="true" aria-label={pocketed ? '포켓에서 빼기' : '포켓에 담기'} aria-pressed={pocketed} onClick={togglePocket}><PocketIcon filled={pocketed} strokeWidth={1.8} /></button>}
     </div>
     {actionSheet}
     {popMenu}

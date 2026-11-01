@@ -116,6 +116,7 @@ export default function HospitalDetailPage() {
       id: r.id,
       name: r.authorName,
       avatarSeed: r.authorId || r.authorName,
+      authorId: r.authorId || undefined,
       rating: r.rating,
       date: r.date,
       content: r.content,

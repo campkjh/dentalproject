@@ -101,6 +101,7 @@ export default function MyReviewsPage() {
                   id: review.id,
                   name: review.authorName,
                   avatarSeed: review.authorId || review.authorName,
+                  authorId: review.authorId || undefined,
                   rating: review.rating,
                   content: review.content,
                   photos,
