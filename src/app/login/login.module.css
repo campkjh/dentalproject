@@ -181,6 +181,7 @@
 .socialBtn:disabled { opacity: .6; cursor: default; }
 .kakao { background: #fee500; color: #191919; }
 .apple { background: #000; color: #fff; }
+.partner { margin-top: 6px; background: #eff5fe; color: #2f6fe4; text-decoration: none; }
 
 /* ── 아래 큰 버튼 ── */
 .ctaWrap {

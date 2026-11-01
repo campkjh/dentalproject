@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { ChevronLeft } from 'lucide-react';
 import { useSession } from '@/lib/supabase/SessionProvider';
 import { useStore } from '@/store';
+import MonoIcon from '@/components/common/MonoIcon';
 import { startNativeKakaoLogin } from './kakao-login';
 import styles from './onboarding.module.css';
 
@@ -173,6 +174,9 @@ export default function LoginOnboarding({ onClose }: { onClose: () => void }) {
   const goEmailLogin = () => {
     router.push(`/login?next=${encodeURIComponent(currentPath())}`);
   };
+  const goPartnerLogin = () => {
+    router.push('/partner/login');
+  };
   const startKakao = () => {
     if (kakaoPending) return;
     setKakaoPending(true);
@@ -298,6 +302,11 @@ export default function LoginOnboarding({ onClose }: { onClose: () => void }) {
                 {kakaoPending ? '카카오로 이동 중…' : '카카오로 시작하기'}
               </button>
               <button type="button" className={styles.email} onClick={goEmailLogin}>이메일로 로그인</button>
+              {/* 병원 회원은 병원페이지(/partner/login)로 — 연파랑으로 손님 로그인과 구분 */}
+              <button type="button" className={styles.partner} onClick={goPartnerLogin}>
+                <MonoIcon name="hospital" size={20} color="#2F6FE4" />
+                병원페이지로 로그인
+              </button>
               <button type="button" className={styles.sheetCancel} onClick={closeSheet}>닫기</button>
             </div>
           </div>

@@ -1,10 +1,12 @@
 'use client';
 
 import { Suspense, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ChevronLeft, Eye, EyeOff } from 'lucide-react';
 import { useSession } from '@/lib/supabase/SessionProvider';
 import { useStore } from '@/store';
+import MonoIcon from '@/components/common/MonoIcon';
 import { safeNextPath, startNativeKakaoLogin } from '@/components/auth/kakao-login';
 import styles from './login.module.css';
 
@@ -378,6 +380,13 @@ function LoginInner() {
                 <AppleIcon />
                 {socialPending === 'apple' ? 'Apple로 이동 중…' : `Apple로 ${isLogin ? '로그인' : '시작하기'}`}
               </button>
+              {/* 병원 회원은 병원페이지 로그인으로 */}
+              {isLogin && (
+                <Link href="/partner/login" className={`${styles.socialBtn} ${styles.partner}`}>
+                  <MonoIcon name="hospital" size={20} color="#2F6FE4" />
+                  병원페이지로 로그인
+                </Link>
+              )}
             </div>
           )}
         </main>

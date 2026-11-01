@@ -298,7 +298,8 @@
   color: var(--ob-label);
 }
 .kakao,
-.email {
+.email,
+.partner {
   width: 100%;
   height: 56px;
   display: flex;
@@ -320,6 +321,8 @@
 .kakao:disabled { opacity: .6; cursor: default; }
 .email { background: var(--ob-gray); color: var(--ob-weak); }
 .email:active { transform: scale(.985); background: var(--ob-gray-press); }
+.partner { background: #eff5fe; color: #2f6fe4; }
+.partner:active { transform: scale(.985); background: #e1ecfd; }
 .sheetCancel {
   align-self: center;
   margin-top: 2px;
@@ -362,6 +365,7 @@
   .primary:hover { background: var(--ob-btn-press); }
   .secondary:hover,
   .email:hover { background: var(--ob-gray-press); }
+  .partner:hover { background: #e1ecfd; }
   .sheet { border-radius: 24px 24px 0 0; padding-bottom: 20px; }
   .actions { padding-bottom: 20px; }
 }
