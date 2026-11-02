@@ -9,6 +9,7 @@
 import { useState, type CSSProperties, type ReactNode } from 'react';
 import s from './register.module.css';
 import { haptic } from '@/lib/haptics';
+import { HomeTabIcon } from '@/components/common/BottomNav';
 
 const cx = (...names: (string | false | null | undefined)[]) => names.filter(Boolean).join(' ');
 
@@ -29,20 +30,6 @@ function BackIcon() {
         maskPosition: 'center',
       }}
     />
-  );
-}
-
-/** 홈 — 뒤로 화살표와 같은 굵기의 집 */
-function HomeIcon() {
-  return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path
-        d="M4 10.4 12 4l8 6.4V19a1.6 1.6 0 0 1-1.6 1.6h-3.6v-5.4H9.2v5.4H5.6A1.6 1.6 0 0 1 4 19z"
-        stroke="#191F28"
-        strokeWidth="2"
-        strokeLinejoin="round"
-      />
-    </svg>
   );
 }
 
@@ -104,7 +91,7 @@ export function RegisterShell({
           )}
           {onHome && (
             <button type="button" onClick={() => { haptic('light'); onHome(); }} aria-label="홈으로" className="qd-back">
-              <HomeIcon />
+              <span className="flex text-[#191F28]"><HomeTabIcon /></span>
             </button>
           )}
           {step && total ? <RegisterProgress step={step} total={total} /> : <div className="flex-1" />}
