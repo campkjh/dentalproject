@@ -1,25 +1,29 @@
 'use client';
 
-// 병원 신청 — 프리티풀 파트너 신청(RegisterKit) 결: 한 화면 한 질문 · 진행 막대 N/8 · 선택 카드 · 칩 · 스위치 · 아래 큰 버튼.
-//  · 단계·입력 항목·검증(canProceed)·중간저장(localStorage hospitalRegisterDraft)·제출(/api/hospital-applications)은 옛 화면 그대로.
-//  · 부품 = components/hospital-register(RegisterKit · 약관 시트 · 서류 올리기), 약관 문안 = agreements.ts.
+// 병원 신청 — 프리티풀 파트너 신청(RegisterKit) 결: 한 화면 한 질문 · 진행 막대 N/전체 · 리스트 · 선택 카드 · 스위치 · 아래 큰 버튼.
+//  · 흐름 두 갈래(261102): 병원 등록 8단계 / 원장 등록 6단계 = 기존 병원을 찾아 골라 그 병원에 소속을 요청(병원 대표가 수락).
+//  · 과는 고르면 바로 다음 · 과·진료과목은 리스트(과는 검색, 진료과목은 전체 선택) · 머리 = 뒤로 + 홈.
+//  · 중간저장(localStorage hospitalRegisterDraft)·제출(/api/hospital-applications) — 원장 등록은 doctorInfo.hospitalId 로 보낸다.
+//  · 부품 = components/hospital-register(RegisterKit · HospitalPicker · 약관 시트 · 서류 올리기), 약관 문안 = agreements.ts.
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useStore } from '@/store';
+import { haptic } from '@/lib/haptics';
 import { useSession } from '@/lib/supabase/SessionProvider';
 import {
   RegisterShell,
   RgCheck,
-  RgChip,
-  RgChips,
   RgCta,
+  RgEmpty,
   RgField,
   RgHeaderButton,
   RgList,
   RgNote,
   RgOption,
-  RgTile,
-  RgTiles,
+  RgRow,
+  RgRowMark,
+  RgRows,
+  RgSearch,
   RgToggle,
   rgCx as cx,
   rgStyles as s,
@@ -27,6 +31,7 @@ import {
 import { agreementItems, type AgreementItem } from '@/components/hospital-register/agreements';
 import { AgreementSheet, SequentialAgreeFlow } from '@/components/hospital-register/AgreementSheets';
 import { DocUploadRow, ProfilePhotoUploader } from '@/components/hospital-register/Uploaders';
+import HospitalPicker, { hospitalImageFallback, type PickedHospital } from '@/components/hospital-register/HospitalPicker';
 import AddressSearchSheet from '@/components/common/AddressSearchSheet';
 import {
   defaultTreatments,
@@ -35,22 +40,33 @@ import {
   treatmentsBySpecialty,
 } from '@/components/hospital-register/register-data';
 
-const TOTAL_STEPS = 8;
+type StepKey = 'specialty' | 'treatments' | 'type' | 'address' | 'agree' | 'info' | 'hours' | 'owner' | 'hospital' | 'doctor';
+
+// 등록 유형을 고르기 전(1~3단계)은 두 흐름이 같다
+const HOSPITAL_FLOW: StepKey[] = ['specialty', 'treatments', 'type', 'address', 'agree', 'info', 'hours', 'owner'];
+const DOCTOR_FLOW: StepKey[] = ['specialty', 'treatments', 'type', 'hospital', 'agree', 'doctor'];
 
 // 주소를 고른 뒤 시트가 내려가고 나서 상세 주소 칸에 커서
 const LEAVE_FOCUS_MS = 320;
+// 과를 고르고 체크가 보인 뒤 다음 단계로
+const PICK_ADVANCE_MS = 260;
 
 /** 단계별 제목 — 위 작은 파란 글씨 · 큰 제목 · 회색 한 줄 */
-const STEP_META: Record<number, { eyebrow: string; title: string; sub: string }> = {
-  1: { eyebrow: '과 선택', title: '어떤 과에 해당하시나요?', sub: '해당하는 과를 하나 골라 주세요.' },
-  2: { eyebrow: '진료과목', title: '진료과목을 골라 주세요', sub: '여러 개 고를 수 있어요.' },
-  3: { eyebrow: '등록 유형', title: '어떻게 등록할까요?', sub: '병원을 새로 등록하거나, 기존 병원에 원장으로 등록할 수 있어요.' },
-  4: { eyebrow: '병원 주소', title: '병원 주소를 알려 주세요', sub: '환자에게 보이는 위치 정보예요.' },
-  5: { eyebrow: '약관 동의', title: '약관에 동의해 주세요', sub: '서비스 이용을 위해 약관 동의가 필요해요.' },
-  6: { eyebrow: '병원 기본정보', title: '병원 기본정보를 입력해 주세요', sub: '환자에게 보이는 정보예요. 정확히 입력해 주세요.' },
-  7: { eyebrow: '운영시간', title: '운영시간을 알려 주세요', sub: '요일마다 진료 여부와 시간을 정해요.' },
-  8: { eyebrow: '대표 원장 정보', title: '원장 정보를 입력해 주세요', sub: '자격 서류는 앞에서 첨부했어요. 환자에게 보일 기본 정보만 입력해 주세요.' },
+const STEP_META: Record<StepKey, { eyebrow: string; title: string; sub: string }> = {
+  specialty: { eyebrow: '과 선택', title: '어떤 과에 해당하시나요?', sub: '해당하는 과를 하나 골라 주세요.' },
+  treatments: { eyebrow: '진료과목', title: '진료과목을 골라 주세요', sub: '여러 개 고를 수 있어요.' },
+  type: { eyebrow: '등록 유형', title: '어떻게 등록할까요?', sub: '병원을 새로 등록하거나, 기존 병원에 원장으로 등록할 수 있어요.' },
+  address: { eyebrow: '병원 주소', title: '병원 주소를 알려 주세요', sub: '환자에게 보이는 위치 정보예요.' },
+  agree: { eyebrow: '약관 동의', title: '약관에 동의해 주세요', sub: '서비스 이용을 위해 약관 동의가 필요해요.' },
+  info: { eyebrow: '병원 기본정보', title: '병원 기본정보를 입력해 주세요', sub: '환자에게 보이는 정보예요. 정확히 입력해 주세요.' },
+  hours: { eyebrow: '운영시간', title: '운영시간을 알려 주세요', sub: '요일마다 진료 여부와 시간을 정해요.' },
+  owner: { eyebrow: '대표 원장 정보', title: '원장 정보를 입력해 주세요', sub: '자격 서류는 앞에서 첨부했어요. 환자에게 보일 기본 정보만 입력해 주세요.' },
+  hospital: { eyebrow: '소속 병원', title: '어느 병원에 소속되시나요?', sub: '병원을 찾아 고르면 그 병원에 원장 등록을 요청해요.' },
+  doctor: { eyebrow: '원장 정보', title: '원장 정보를 입력해 주세요', sub: '병원에서 요청을 확인할 때 보는 정보예요.' },
 };
+
+// 검색 비교용 — 띄어쓰기·대소문자 무시
+const squash = (v: string) => v.toLowerCase().replace(/\s+/g, '');
 
 const REQUIRED_DOCS = [
   { title: '사업자등록증', desc: '국세청 발급, 의료기관 명의' },
@@ -78,18 +94,29 @@ export default function HospitalRegisterPage() {
   const [selectedSpecialty, setSelectedSpecialty] = useState<string | null>(null);
   const [selectedTreatments, setSelectedTreatments] = useState<Set<string>>(new Set());
   const [registerType, setRegisterType] = useState<'hospital' | 'doctor' | null>(null);
+  // 원장 등록 — 병원 찾기 검색어(병원 새로 등록으로 넘어가면 병원명에 미리 채움) · 고른 병원
   const [hospitalSearch, setHospitalSearch] = useState('');
+  const [targetHospital, setTargetHospital] = useState<PickedHospital | null>(null);
+  const [specialtyQuery, setSpecialtyQuery] = useState('');
+  const [done, setDone] = useState(false);
+  const flow = registerType === 'doctor' ? DOCTOR_FLOW : HOSPITAL_FLOW;
+  const total = flow.length;
+  const stepKey = flow[Math.min(step, total) - 1];
   // 주소 검색 시트(다음 우편번호를 시트 안에) · 고르면 상세 주소 칸으로
   const [addrOpen, setAddrOpen] = useState(false);
   const addrDetailRef = useRef<HTMLInputElement>(null);
 
-  // 검색어를 들고 들어왔으면 6단계 병원명에 미리 채운다
+  // 검색어를 들고 들어왔으면 병원 기본정보 병원명에 미리 채운다
   useEffect(() => {
-    if (step === 6 && hospitalSearch && !hospitalInfo.name) {
-      setHospitalInfo((prev) => ({ ...prev, name: hospitalSearch }));
+    if (stepKey === 'info' && hospitalSearch.trim() && !hospitalInfo.name) {
+      setHospitalInfo((prev) => ({ ...prev, name: hospitalSearch.trim() }));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step]);
+  }, [stepKey]);
+
+  // 과를 고르면 잠깐 체크를 보여 주고 다음 단계로
+  const advanceTimer = useRef(0);
+  useEffect(() => () => window.clearTimeout(advanceTimer.current), []);
   const [agreements, setAgreements] = useState<Set<string>>(new Set());
   const [viewingAgreement, setViewingAgreement] = useState<AgreementItem | null>(null);
   const [hospitalInfo, setHospitalInfo] = useState({
@@ -132,6 +159,7 @@ export default function HospitalRegisterPage() {
       if (Array.isArray(d.selectedTreatments)) setSelectedTreatments(new Set(d.selectedTreatments));
       if (d.registerType) setRegisterType(d.registerType);
       if (typeof d.hospitalSearch === 'string') setHospitalSearch(d.hospitalSearch);
+      if (d.targetHospital?.id) setTargetHospital(d.targetHospital);
       if (Array.isArray(d.agreements)) setAgreements(new Set(d.agreements));
       if (d.hospitalInfo) setHospitalInfo(d.hospitalInfo);
       if (Array.isArray(d.operatingHours)) setOperatingHours(d.operatingHours);
@@ -140,7 +168,7 @@ export default function HospitalRegisterPage() {
     } catch {}
   }, []);
 
-  const saveDraft = () => {
+  const saveDraft = (message = '입력한 내용이 저장되었습니다.') => {
     try {
       const payload = {
         step,
@@ -148,6 +176,7 @@ export default function HospitalRegisterPage() {
         selectedTreatments: Array.from(selectedTreatments),
         registerType,
         hospitalSearch,
+        targetHospital,
         agreements: Array.from(agreements),
         hospitalInfo,
         operatingHours,
@@ -156,19 +185,52 @@ export default function HospitalRegisterPage() {
         savedAt: new Date().toISOString(),
       };
       localStorage.setItem('hospitalRegisterDraft', JSON.stringify(payload));
-      showToast('입력한 내용이 저장되었습니다.');
+      showToast(message);
     } catch {
       showToast('저장에 실패했습니다. 다시 시도해주세요.');
     }
   };
 
   const handleNext = () => {
-    if (step < TOTAL_STEPS) setStep(step + 1);
+    if (step < total) setStep(step + 1);
+  };
+
+  // 홈 — 고른 게 있으면 중간저장해 두고 나간다(다시 들어오면 이어서)
+  const goHome = () => {
+    window.clearTimeout(advanceTimer.current);
+    if (selectedSpecialty) saveDraft('입력한 내용은 중간저장해 뒀어요.');
+    router.push('/');
+  };
+
+  const pickSpecialty = (id: string) => {
+    if (advanceTimer.current) return;
+    if (id !== selectedSpecialty) {
+      setSelectedSpecialty(id);
+      setSelectedTreatments(new Set());
+    }
+    advanceTimer.current = window.setTimeout(() => {
+      advanceTimer.current = 0;
+      setStep(2);
+    }, PICK_ADVANCE_MS);
+  };
+
+  // 찾는 병원이 없을 때 — 병원 등록 흐름의 주소 단계로 건너간다
+  const switchToNewHospital = () => {
+    haptic('light');
+    setRegisterType('hospital');
+    setTargetHospital(null);
+    setStep(HOSPITAL_FLOW.indexOf('address') + 1);
   };
 
   const handleBack = () => {
     if (step > 1) setStep(step - 1);
     else router.back();
+  };
+
+  const treatmentList = (selectedSpecialty && treatmentsBySpecialty[selectedSpecialty]) || defaultTreatments;
+  const allTreatmentsOn = treatmentList.every((t) => selectedTreatments.has(t));
+  const toggleAllTreatments = () => {
+    setSelectedTreatments(allTreatmentsOn ? new Set() : new Set(treatmentList));
   };
 
   const toggleTreatment = (t: string) => {
@@ -208,23 +270,26 @@ export default function HospitalRegisterPage() {
   const allRequiredAgreed = agreementItems.filter((a) => a.required).every((a) => agreements.has(a.id));
 
   const canProceed = (): boolean => {
-    switch (step) {
-      case 1:
+    switch (stepKey) {
+      case 'specialty':
         return !!selectedSpecialty;
-      case 2:
+      case 'treatments':
         return selectedTreatments.size > 0;
-      case 3:
+      case 'type':
         return !!registerType;
-      case 4:
+      case 'address':
         return !!(hospitalInfo.postalCode && hospitalInfo.address);
-      case 5:
+      case 'agree':
         return allRequiredAgreed;
-      case 6:
+      case 'info':
         return !!(hospitalInfo.name && hospitalInfo.ownerName && hospitalInfo.phone && hospitalInfo.businessNumber);
-      case 7:
+      case 'hours':
+      case 'owner':
         return true;
-      case 8:
-        return true;
+      case 'hospital':
+        return !!targetHospital;
+      case 'doctor':
+        return !!(doctorInfo.name.trim() && doctorInfo.profileImage && documents['의사 면허증']);
       default:
         return false;
     }
@@ -259,6 +324,7 @@ export default function HospitalRegisterPage() {
           operatingHours,
           doctorInfo: {
             ...doctorInfo,
+            hospitalId: registerType === 'doctor' ? targetHospital?.id ?? '' : undefined,
             licenseImage: documents['의사 면허증'] || '',
             certificationImage: documents['전문의 자격증'] || '',
           },
@@ -273,7 +339,7 @@ export default function HospitalRegisterPage() {
       try {
         localStorage.removeItem('hospitalRegisterDraft');
       } catch {}
-      setStep(TOTAL_STEPS + 1);
+      setDone(true);
     } catch {
       showToast('네트워크 오류가 발생했습니다.');
     } finally {
@@ -282,47 +348,68 @@ export default function HospitalRegisterPage() {
   };
 
   const renderStep = () => {
-    switch (step) {
-      case 1:
+    switch (stepKey) {
+      case 'specialty': {
+        // 과 이름 또는 그 과의 진료(예: 임플란트 → 치과)로 찾는다
+        const q = squash(specialtyQuery);
+        const rows = specialties.flatMap((sp) => {
+          if (!q || squash(sp.name).includes(q)) return [{ sp, hit: '' }];
+          const hit = (treatmentsBySpecialty[sp.id] ?? []).find((t) => squash(t).includes(q));
+          return hit ? [{ sp, hit }] : [];
+        });
         return (
-          <RgTiles>
-            {specialties.map((sp) => (
-              <RgTile
-                key={sp.id}
-                on={selectedSpecialty === sp.id}
-                onClick={() => {
-                  setSelectedSpecialty(sp.id);
-                  setSelectedTreatments(new Set());
-                }}
-                // eslint-disable-next-line @next/next/no-img-element
-                icon={<img src={sp.icon} alt="" className="h-8 w-8" />}
-                label={sp.name}
-              />
-            ))}
-          </RgTiles>
-        );
-
-      case 2: {
-        const list = selectedSpecialty ? treatmentsBySpecialty[selectedSpecialty] ?? defaultTreatments : defaultTreatments;
-        return (
-          <>
-            <RgChips>
-              {list.map((t) => (
-                <RgChip key={t} on={selectedTreatments.has(t)} onClick={() => toggleTreatment(t)}>
-                  {t}
-                </RgChip>
-              ))}
-            </RgChips>
-            {selectedTreatments.size > 0 && (
-              <p className={s.hint} style={{ marginTop: 16 }}>
-                <b className="font-semibold text-[#3180F7]">{selectedTreatments.size}개</b> 골랐어요
-              </p>
+          <div>
+            <RgSearch value={specialtyQuery} onChange={setSpecialtyQuery} placeholder="과 이름이나 진료로 찾기" />
+            {rows.length ? (
+              <RgRows role="radiogroup" label="과">
+                {rows.map(({ sp, hit }) => {
+                  const on = selectedSpecialty === sp.id;
+                  return (
+                    <RgRow
+                      key={sp.id}
+                      on={on}
+                      onClick={() => pickSpecialty(sp.id)}
+                      // eslint-disable-next-line @next/next/no-img-element
+                      lead={<span className={s.rowIcon}><img src={sp.icon} alt="" /></span>}
+                      label={sp.name}
+                      sub={hit || undefined}
+                      trail={<RgRowMark on={on} />}
+                    />
+                  );
+                })}
+              </RgRows>
+            ) : (
+              <RgEmpty title={`‘${specialtyQuery.trim()}’에 맞는 과가 없어요`} desc="다른 말로 찾아 보세요." />
             )}
-          </>
+          </div>
         );
       }
 
-      case 3:
+      case 'treatments':
+        return (
+          <RgRows label="진료과목">
+            <RgRow
+              role="checkbox"
+              strong
+              on={allTreatmentsOn}
+              onClick={toggleAllTreatments}
+              lead={<RgCheck on={allTreatmentsOn} />}
+              label="전체 선택"
+              trail={
+                <span className={s.rowCount}>
+                  <b>{selectedTreatments.size}</b> / {treatmentList.length}
+                </span>
+              }
+            />
+            <div className={s.rowsGap} aria-hidden="true" />
+            {treatmentList.map((t) => {
+              const on = selectedTreatments.has(t);
+              return <RgRow key={t} role="checkbox" on={on} onClick={() => toggleTreatment(t)} lead={<RgCheck on={on} />} label={t} />;
+            })}
+          </RgRows>
+        );
+
+      case 'type':
         return (
           <RgList>
             <RgOption
@@ -337,12 +424,67 @@ export default function HospitalRegisterPage() {
               on={registerType === 'doctor'}
               onClick={() => setRegisterType('doctor')}
               label="원장 등록"
-              hint="기존 병원에 원장으로 등록을 요청해요"
+              hint="마이닥에 있는 병원을 찾아 소속을 요청해요"
             />
           </RgList>
         );
 
-      case 4:
+      case 'hospital':
+        return (
+          <HospitalPicker
+            category={selectedSpecialty}
+            categoryName={specialties.find((c) => c.id === selectedSpecialty)?.name ?? ''}
+            query={hospitalSearch}
+            onQuery={setHospitalSearch}
+            picked={targetHospital}
+            onPick={setTargetHospital}
+            onRegisterNew={switchToNewHospital}
+          />
+        );
+
+      case 'doctor':
+        return (
+          <div>
+            {targetHospital && (
+              <div className={s.picked}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={targetHospital.image} alt="" onError={hospitalImageFallback} className={s.rowThumb} />
+                <span className={s.pickedT}>
+                  <span className={s.pickedEyebrow}>요청할 병원</span>
+                  <span className={s.pickedName}>{targetHospital.name}</span>
+                </span>
+              </div>
+            )}
+            <ProfilePhotoUploader value={doctorInfo.profileImage} onChange={(url) => setDoctorInfo((prev) => ({ ...prev, profileImage: url }))} />
+            <RgField label="원장명" required>
+              <input
+                type="text"
+                value={doctorInfo.name}
+                onChange={(e) => setDoctorInfo((prev) => ({ ...prev, name: e.target.value }))}
+                placeholder="원장명을 입력해 주세요"
+                className="qd-input"
+              />
+            </RgField>
+            <RgField label="전문분야" hint="선택 사항이에요.">
+              <input
+                type="text"
+                value={doctorInfo.specialty}
+                onChange={(e) => setDoctorInfo((prev) => ({ ...prev, specialty: e.target.value }))}
+                placeholder="예) 임플란트, 보철"
+                className="qd-input"
+              />
+            </RgField>
+            <RgField label="자격 서류" hint="PDF · JPG · PNG (각 10MB 이하)">
+              <RgList>
+                <DocUploadRow title="의사 면허증" desc="보건복지부 발급, 본인 명의" required value={documents['의사 면허증'] ?? ''} onChange={setDoc('의사 면허증')} />
+                <DocUploadRow title="전문의 자격증" desc="해당 진료과 전문의일 때" value={documents['전문의 자격증'] ?? ''} onChange={setDoc('전문의 자격증')} />
+              </RgList>
+              <RgNote>병원 대표 원장이 요청을 확인하고 수락하면 그 병원 소속 원장으로 등록돼요. 서류는 자격 확인 외에 쓰지 않아요.</RgNote>
+            </RgField>
+          </div>
+        );
+
+      case 'address':
         return (
           <div>
             <RgField label="우편번호">
@@ -383,7 +525,7 @@ export default function HospitalRegisterPage() {
           </div>
         );
 
-      case 5:
+      case 'agree':
         return (
           <div>
             <RgOption on={allChecked} onClick={() => toggleAgreement('all')} label="모두 동의합니다" hint="필수 약관을 한 장씩 읽고 서명해요" />
@@ -421,7 +563,7 @@ export default function HospitalRegisterPage() {
           </div>
         );
 
-      case 6:
+      case 'info':
         return (
           <div>
             <RgField label="병원명" required>
@@ -485,7 +627,7 @@ export default function HospitalRegisterPage() {
           </div>
         );
 
-      case 7:
+      case 'hours':
         return (
           <RgList>
             {operatingHours.map((oh, idx) => (
@@ -532,7 +674,7 @@ export default function HospitalRegisterPage() {
           </RgList>
         );
 
-      case 8:
+      case 'owner':
         return (
           <div>
             <ProfilePhotoUploader value={doctorInfo.profileImage} onChange={(url) => setDoctorInfo((prev) => ({ ...prev, profileImage: url }))} />
@@ -562,8 +704,27 @@ export default function HospitalRegisterPage() {
     }
   };
 
-  // 완료 화면
-  if (step > TOTAL_STEPS) {
+  // 완료 화면 — 원장 등록은 병원이 수락하기 전이라 홈으로
+  if (done && registerType === 'doctor') {
+    return (
+      <RegisterShell showBack={false} cta={<RgCta onClick={() => router.push('/')}>홈으로</RgCta>}>
+        <div className="flex min-h-full flex-col items-center justify-center pb-10 pt-16 text-center">
+          <span className={s.doneIcon}>
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="m5 12.5 4.5 4.5L19 7.5" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </span>
+          <h1 className="qd-a-title m-0 text-[24px] font-semibold leading-[1.4] tracking-[-0.4px] text-[#191F28]">원장 등록을 요청했어요</h1>
+          <p className="qd-a-sub m-0 mt-2.5 text-[15px] leading-[1.6] text-[#8B95A1]">
+            {targetHospital?.name ?? '병원'}에서 요청을 수락하면
+            <br />
+            알림으로 알려드릴게요.
+          </p>
+        </div>
+      </RegisterShell>
+    );
+  }
+  if (done) {
     return (
       <RegisterShell showBack={false} cta={<RgCta onClick={() => router.push('/partner')}>시작하기</RgCta>}>
         <div className="flex min-h-full flex-col items-center justify-center pb-10 pt-16 text-center">
@@ -583,26 +744,28 @@ export default function HospitalRegisterPage() {
     );
   }
 
-  const meta = STEP_META[step];
+  const meta = STEP_META[stepKey];
+  const isLast = step >= total;
   return (
     <>
       <RegisterShell
-        step={step}
-        total={TOTAL_STEPS}
+        step={Math.min(step, total)}
+        total={total}
         eyebrow={meta?.eyebrow}
         title={meta?.title}
         sub={meta?.sub}
         onBack={handleBack}
-        right={<RgHeaderButton onClick={saveDraft}>중간저장</RgHeaderButton>}
+        onHome={goHome}
+        right={<RgHeaderButton onClick={() => saveDraft()}>중간저장</RgHeaderButton>}
         cta={
           <RgCta
             disabled={!canProceed() || submitting}
             onClick={() => {
-              if (step === TOTAL_STEPS) void submit();
+              if (isLast) void submit();
               else handleNext();
             }}
           >
-            {submitting ? '제출 중…' : step === TOTAL_STEPS ? '완료' : '다음'}
+            {submitting ? '제출 중…' : isLast ? (registerType === 'doctor' ? '원장 등록 요청하기' : '완료') : '다음'}
           </RgCta>
         }
       >

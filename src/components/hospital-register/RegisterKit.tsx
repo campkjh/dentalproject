@@ -4,6 +4,7 @@
 //  · RegisterShell: 머리(퀵매칭 뒤로 화살표 + 진행 막대 'N / 전체' — 앞 단계 자리에서 지금 단계까지 차오른다) · 제목 아래→위 페이드 ·
 //    본문 칸은 오른쪽→왼쪽 순차 슬라이드(globals .qd-body) · 아래 흰 페이드 위 고정 버튼.
 //  · RgOption(선택 카드) · RgTile(과 선택 타일) · RgCheck(동그라미 체크) · RgChip(칩) · RgToggle(스위치) · RgField(라벨·도움말·오류) · RgCta(버튼).
+//  · RgSearch(회색 검색칸) · RgRows/RgRow(테두리 없는 리스트 줄) · RgRowMark(› / 체크) · RgEmpty(빈 결과) — 과·진료과목·병원 찾기.
 //  · 스타일은 register.module.css + globals .qd-input / .qd-cta.
 import { useState, type CSSProperties, type ReactNode } from 'react';
 import s from './register.module.css';
@@ -28,6 +29,20 @@ function BackIcon() {
         maskPosition: 'center',
       }}
     />
+  );
+}
+
+/** 홈 — 뒤로 화살표와 같은 굵기의 집 */
+function HomeIcon() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M4 10.4 12 4l8 6.4V19a1.6 1.6 0 0 1-1.6 1.6h-3.6v-5.4H9.2v5.4H5.6A1.6 1.6 0 0 1 4 19z"
+        stroke="#191F28"
+        strokeWidth="2"
+        strokeLinejoin="round"
+      />
+    </svg>
   );
 }
 
@@ -56,6 +71,7 @@ export function RegisterShell({
   eyebrow,
   right,
   onBack,
+  onHome,
   cta,
   children,
   showBack = true,
@@ -70,6 +86,8 @@ export function RegisterShell({
   /** 머리 오른쪽(중간저장 등) */
   right?: ReactNode;
   onBack?: () => void;
+  /** 있으면 뒤로 옆에 홈 버튼 */
+  onHome?: () => void;
   showBack?: boolean;
   /** 아래 고정 칸(버튼) */
   cta?: ReactNode;
@@ -82,6 +100,11 @@ export function RegisterShell({
           {showBack && (
             <button type="button" onClick={onBack} aria-label="뒤로 가기" className="qd-back">
               <BackIcon />
+            </button>
+          )}
+          {onHome && (
+            <button type="button" onClick={() => { haptic('light'); onHome(); }} aria-label="홈으로" className="qd-back">
+              <HomeIcon />
             </button>
           )}
           {step && total ? <RegisterProgress step={step} total={total} /> : <div className="flex-1" />}
@@ -154,7 +177,13 @@ export function RgOption({
   role?: 'checkbox' | 'radio';
 }) {
   return (
-    <button type="button" role={role} aria-checked={on} onClick={onClick} className={cx(s.opt, !!(hint || icon) && s.tall, on && s.on)}>
+    <button
+      type="button"
+      role={role}
+      aria-checked={on}
+      onClick={() => { haptic('selection'); onClick(); }}
+      className={cx(s.opt, !!(hint || icon) && s.tall, on && s.on)}
+    >
       {check && <RgCheck on={on} />}
       {icon}
       <span className={s.optT}>
@@ -224,6 +253,111 @@ export function RgField({ label, required, hint, error, children, className = ''
       {label && <span className={s.label}>{label}{required && <span className={s.req} aria-hidden="true">*</span>}</span>}
       {children}
       {error ? <p className={s.error}>{error}</p> : hint ? <p className={s.hint}>{hint}</p> : null}
+    </div>
+  );
+}
+
+/** 검색칸 — 회색 칸 · 돋보기 · 지우기. 목록을 내려도 위에 붙어 있다 */
+export function RgSearch({ value, onChange, placeholder }: { value: string; onChange: (next: string) => void; placeholder: string }) {
+  return (
+    <div className={s.searchWrap}>
+      <label className={s.searchBox}>
+        <i aria-hidden="true" className={s.searchIcon} />
+        <input
+          type="search"
+          enterKeyHint="search"
+          autoComplete="off"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
+          placeholder={placeholder}
+          aria-label={placeholder}
+          className={s.searchInput}
+        />
+        {value && (
+          <button type="button" className={s.searchClear} onClick={() => onChange('')} aria-label="검색어 지우기">
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
+              <path d="M1.5 1.5l7 7M8.5 1.5l-7 7" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" />
+            </svg>
+          </button>
+        )}
+      </label>
+    </div>
+  );
+}
+
+/** 리스트 묶음 — 줄 사이 선 없이, 누른 줄만 회색 */
+export function RgRows({ children, label, role }: { children: ReactNode; label: string; role?: 'radiogroup' | 'group' }) {
+  return <div role={role ?? 'group'} aria-label={label} className={s.rows}>{children}</div>;
+}
+
+/** 리스트 한 줄 — 앞(아이콘·체크) · 이름(+회색 한 줄) · 뒤(› · 체크 · 숫자) */
+export function RgRow({
+  on,
+  onClick,
+  lead,
+  label,
+  sub,
+  trail,
+  role = 'radio',
+  strong,
+}: {
+  on: boolean;
+  onClick: () => void;
+  lead?: ReactNode;
+  label: ReactNode;
+  sub?: ReactNode;
+  trail?: ReactNode;
+  role?: 'radio' | 'checkbox';
+  /** 전체 선택처럼 굵은 줄 */
+  strong?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      role={role}
+      aria-checked={on}
+      onClick={() => { haptic('selection'); onClick(); }}
+      className={cx(s.row, on && s.on, strong && s.rowStrong)}
+    >
+      {lead}
+      <span className={s.rowT}>
+        {label}
+        {sub && <span className={s.rowSub}>{sub}</span>}
+      </span>
+      {trail}
+    </button>
+  );
+}
+
+/** 줄 끝 표시 — 안 고른 줄은 회색 ›, 고른 줄은 파란 체크 */
+export function RgRowMark({ on }: { on: boolean }) {
+  return (
+    <span className={s.rowMark} aria-hidden="true">
+      {on ? (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+          <path d="M5 12.5l4.5 4.5L19 7.5" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      ) : (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+          <path d="M9 5l7 7-7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      )}
+    </span>
+  );
+}
+
+/** 빈 결과 — 제목 · 회색 설명 · (버튼) */
+export function RgEmpty({ title, desc, action }: { title: ReactNode; desc?: ReactNode; action?: { label: string; onClick: () => void } }) {
+  return (
+    <div className={s.empty}>
+      <p className={s.emptyT}>{title}</p>
+      {desc && <p className={s.emptyD}>{desc}</p>}
+      {action && (
+        <button type="button" className={s.emptyBtn} onClick={action.onClick}>
+          {action.label}
+        </button>
+      )}
     </div>
   );
 }
