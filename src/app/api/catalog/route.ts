@@ -25,7 +25,7 @@ export async function GET() {
       .select(
         `id, slug, name, category, location, phone, tags, logo_url, cover_images,
          introduction, holiday_notice, address, address_detail, rating, review_count,
-         doctors (id, name, title, specialty, profile_image, is_owner),
+         doctors (id, name, title, specialty, profile_image, is_owner, bio, careers),
          operating_hours (day, start_time, end_time, is_closed)`
       )
       .eq('status', 'approved'),

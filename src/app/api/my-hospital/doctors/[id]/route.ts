@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse, type NextRequest } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
+import { sanitizeCareers } from '@/lib/doctor-careers';
 
 export const dynamic = 'force-dynamic';
 
@@ -120,6 +121,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (body.specialty !== undefined) patch.specialty = body.specialty;
   if (body.bio !== undefined) patch.bio = body.bio;
   if (body.profileImage !== undefined) patch.profile_image = body.profileImage;
+  const careers = sanitizeCareers(body.careers);
+  if (careers) patch.careers = careers;
 
   const { error } = await admin.from('doctors').update(patch).eq('id', id);
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });

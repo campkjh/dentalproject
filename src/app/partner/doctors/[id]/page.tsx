@@ -8,9 +8,14 @@ import { createClient, hasSupabaseEnv } from '@/lib/supabase/client';
 import { compressImage } from '@/lib/compressImage';
 import { resolveDoctorImageUrl } from '@/lib/images';
 import MonoIcon from '@/components/common/MonoIcon';
+import { CAREER_SECTIONS, encodeCareers, parseCareers, type CareerSectionKey } from '@/lib/doctor-careers';
 
 const MAX_PROFILE_IMAGE_SIZE = 10 * 1024 * 1024;
 const PROFILE_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/avif'];
+
+type CareerText = Record<CareerSectionKey, string>;
+const EMPTY_CAREER_TEXT: CareerText = { education: '', training: '', society: '', career: '' };
+const careerLines = (text: string) => text.split('\n').map((line) => line.trim()).filter(Boolean);
 
 export default function DoctorEditPage() {
   const params = useParams();
@@ -29,6 +34,8 @@ export default function DoctorEditPage() {
     profile_image: '',
     is_owner: false,
   });
+  // 이력 — 칸마다 한 줄에 하나(학력 · 자격 및 수련 · 학회 및 인증 · 경력), 모두 선택
+  const [careerText, setCareerText] = useState<CareerText>(EMPTY_CAREER_TEXT);
   const [hospitalName, setHospitalName] = useState('');
   const [selfDoctorId, setSelfDoctorId] = useState<string | null>(null);
   const [loading, setLoading] = useState(!isNew);
@@ -74,6 +81,13 @@ export default function DoctorEditPage() {
             bio: data.bio ?? '',
             profile_image: data.profile_image ?? '',
             is_owner: data.is_owner ?? false,
+          });
+          const sections = parseCareers(data.careers);
+          setCareerText({
+            education: sections.education.join('\n'),
+            training: sections.training.join('\n'),
+            society: sections.society.join('\n'),
+            career: sections.career.join('\n'),
           });
           const hospital = Array.isArray(data.hospital) ? data.hospital[0] : data.hospital;
           setHospitalName(hospital?.name ?? '');
@@ -135,6 +149,12 @@ export default function DoctorEditPage() {
         specialty: form.specialty.trim() || null,
         bio: form.bio.trim() || null,
         profileImage: form.profile_image || null,
+        careers: encodeCareers({
+          education: careerLines(careerText.education),
+          training: careerLines(careerText.training),
+          society: careerLines(careerText.society),
+          career: careerLines(careerText.career),
+        }),
       };
       const res = await fetch(isNew ? '/api/my-hospital/doctors' : `/api/my-hospital/doctors/${id}`, {
         method: isNew ? 'POST' : 'PATCH',
@@ -241,7 +261,33 @@ export default function DoctorEditPage() {
             />
           </label>
 
-          <section className="qd-a-item mt-5" aria-label="병원설정" style={{ animationDelay: '.18s' }}>
+          <section className="qd-a-item mt-8" aria-label="이력" style={{ animationDelay: '.18s' }}>
+            <div className="flex items-baseline justify-between gap-3">
+              <h2 className="text-[17px] font-bold text-[#191F28]">이력</h2>
+              <span className="text-[13px] text-[#8B95A1]">선택 · 한 줄에 하나씩</span>
+            </div>
+            {CAREER_SECTIONS.map((section) => {
+              const value = careerText[section.key];
+              const count = careerLines(value).length;
+              return (
+                <label key={section.key} className="mt-4 block">
+                  <span className="mb-2 flex items-center justify-between text-[15px] font-semibold text-[#4E5968]">
+                    {section.label}
+                    {count > 0 && <span className="text-[13px] font-medium text-[#3180F7]">{count}개</span>}
+                  </span>
+                  <textarea
+                    value={value}
+                    rows={Math.max(2, Math.min(12, value.split('\n').length + (value ? 1 : 0)))}
+                    onChange={(event) => setCareerText((current) => ({ ...current, [section.key]: event.target.value }))}
+                    placeholder={section.placeholder}
+                    className={AREA}
+                  />
+                </label>
+              );
+            })}
+          </section>
+
+          <section className="qd-a-item mt-8" aria-label="병원설정" style={{ animationDelay: '.24s' }}>
             <h2 className="mb-2 text-[15px] font-semibold text-[#4E5968]">병원설정</h2>
             <div className="flex min-h-14 items-center gap-3 rounded-[14px] bg-[#F2F4F6] py-2 pl-4 pr-2">
               <MonoIcon name="hospital" size={20} color="#8B95A1" />
@@ -276,3 +322,4 @@ export default function DoctorEditPage() {
 
 /* 입력 칸 — 회색 면 · 테두리 없음 · 16 글자. .partner-page input 전역 결(테두리·15px)을 ! 로 덮는다 */
 const FIELD = 'block w-full !min-h-14 !rounded-[14px] !border-0 !bg-[#F2F4F6] !px-4 !text-[16px] !font-normal !text-[#191F28] outline-none transition-colors focus:!bg-[#EDEFF2] focus:!shadow-none';
+const AREA = 'block w-full resize-none !rounded-[14px] !border-0 !bg-[#F2F4F6] !px-4 !py-3.5 !text-[16px] !font-normal !leading-[1.6] !text-[#191F28] outline-none transition-colors placeholder:!text-[#B0B8C1] focus:!bg-[#EDEFF2] focus:!shadow-none';

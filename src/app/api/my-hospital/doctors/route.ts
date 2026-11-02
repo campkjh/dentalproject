@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
+import { sanitizeCareers } from '@/lib/doctor-careers';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,6 +32,7 @@ export async function POST(req: NextRequest) {
       specialty: body.specialty ?? '',
       bio: body.bio ?? null,
       profile_image: body.profileImage ?? null,
+      careers: sanitizeCareers(body.careers) ?? [],
       is_owner: false,
       is_active: true,
       member_status: 'active',

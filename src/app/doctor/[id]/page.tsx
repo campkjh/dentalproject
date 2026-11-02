@@ -12,6 +12,10 @@ import MonoIcon from '@/components/common/MonoIcon';
 import { Reveal, StarRating, SingleStar, ReviewCommentRow } from '@/components/detail/DetailKit';
 import { useStore } from '@/store';
 import { resolveHospitalImageUrl } from '@/lib/images';
+import { CAREER_SECTIONS, parseCareers } from '@/lib/doctor-careers';
+
+// 이력 칸 아이콘(public/icons/mono)
+const CAREER_ICONS = { education: 'document-check', training: 'stethoscope', society: 'medal', career: 'briefcase' } as const;
 
 export default function DoctorDetailPage() {
   const params = useParams();
@@ -28,6 +32,8 @@ export default function DoctorDetailPage() {
   })();
 
   const doctorReviews = reviews.filter((r) => r.doctorId === doctor?.id);
+  const parsedCareers = parseCareers(doctor?.careers);
+  const careerSections = CAREER_SECTIONS.map((section) => ({ section, items: parsedCareers[section.key] })).filter((s) => s.items.length > 0);
 
   const doctorAvgRating = (() => {
     if (doctorReviews.length === 0) return '0.0';
@@ -89,7 +95,7 @@ export default function DoctorDetailPage() {
         </div>
 
         {/* ─── 의사 소개 · 경력 · 자격증 ─── */}
-        {(doctor.bio || (doctor.careers && doctor.careers.length > 0) || (doctor.certifications && doctor.certifications.length > 0)) && (
+        {(doctor.bio || careerSections.length > 0 || (doctor.certifications && doctor.certifications.length > 0)) && (
           <>
             <div className="h-2.5 bg-[#F2F4F6]" />
             <div className="px-5 py-7">
@@ -100,22 +106,23 @@ export default function DoctorDetailPage() {
                 </Reveal>
               )}
 
-              {doctor.careers && doctor.careers.length > 0 && (
-                <Reveal>
+              {/* 이력 — 학력 · 자격 및 수련 · 학회 및 인증 · 경력(칸 이름 없는 옛 항목) */}
+              {careerSections.map(({ section, items }) => (
+                <Reveal key={section.key}>
                   <h3 className="mt-8 flex items-center gap-1.5 text-[17px] font-bold text-[#191F28]">
-                    <MonoIcon name="briefcase" size={18} color="#8B95A1" />
-                    경력
+                    <MonoIcon name={CAREER_ICONS[section.key]} size={18} color="#8B95A1" />
+                    {section.label}
                   </h3>
                   <ul className="mt-2.5 space-y-1.5">
-                    {doctor.careers.map((career, i) => (
+                    {items.map((item, i) => (
                       <li key={i} className="flex gap-2.5 text-[16px] leading-[1.6] text-[#333D4B]">
                         <span className="mt-[11px] h-1 w-1 shrink-0 rounded-full bg-[#B0B8C1]" />
-                        <span className="min-w-0 flex-1">{career}</span>
+                        <span className="min-w-0 flex-1 break-keep">{item}</span>
                       </li>
                     ))}
                   </ul>
                 </Reveal>
-              )}
+              ))}
 
               {doctor.certifications && doctor.certifications.length > 0 && (
                 <Reveal>
