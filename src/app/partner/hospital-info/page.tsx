@@ -9,6 +9,8 @@ import { compressImage } from '@/lib/compressImage';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import NaverMap from '@/components/common/NaverMap';
 import MonoIcon from '@/components/common/MonoIcon';
+import AddressSearchSheet from '@/components/common/AddressSearchSheet';
+import { loadDaumPostcode, type DaumPostcodeData } from '@/lib/daum-postcode';
 
 type OperatingHour = {
   day?: string | null;
@@ -38,23 +40,9 @@ type HospitalRow = {
 
 type Mode = 'overview' | 'cover' | 'hours' | 'intro' | 'location';
 type HourDraft = { day: string; start_time: string; end_time: string };
-type DaumPostcodeData = {
-  address?: string;
-  roadAddress?: string;
-};
-
-declare global {
-  interface Window {
-    daum?: {
-      Postcode: new (options: { oncomplete: (data: DaumPostcodeData) => void }) => { open: () => void };
-    };
-  }
-}
 
 const DISPLAY_DAY_ORDER = ['월', '화', '수', '목', '금', '토', '일'];
 const EDIT_DAY_ORDER = ['일', '월', '화', '수', '목', '금', '토'];
-const DAUM_POSTCODE_SCRIPT_ID = 'daum-postcode-script';
-let daumPostcodeLoader: Promise<void> | null = null;
 
 function usableImage(src?: string | null) {
   if (!src) return null;
@@ -62,7 +50,6 @@ function usableImage(src?: string | null) {
   if (src.startsWith('data:')) return null;
   return src;
 }
-
 function buildHourDrafts(hospital: HospitalRow | null): HourDraft[] {
   return EDIT_DAY_ORDER.map((day) => {
     const row = hospital?.operating_hours?.find((item) => item.day === day);
@@ -83,31 +70,6 @@ function hourLines(hospital: HospitalRow) {
       if (row.is_closed || !row.start_time || !row.end_time) return `${row.day} 휴진`;
       return `${row.day} ${row.start_time}~${row.end_time}`;
     });
-}
-
-function loadDaumPostcode() {
-  if (typeof window === 'undefined') return Promise.reject(new Error('주소 검색을 사용할 수 없습니다.'));
-  if (window.daum?.Postcode) return Promise.resolve();
-  if (daumPostcodeLoader) return daumPostcodeLoader;
-
-  daumPostcodeLoader = new Promise((resolve, reject) => {
-    const existing = document.getElementById(DAUM_POSTCODE_SCRIPT_ID) as HTMLScriptElement | null;
-    if (existing) {
-      existing.addEventListener('load', () => resolve(), { once: true });
-      existing.addEventListener('error', () => reject(new Error('주소 검색을 불러오지 못했습니다.')), { once: true });
-      return;
-    }
-
-    const script = document.createElement('script');
-    script.id = DAUM_POSTCODE_SCRIPT_ID;
-    script.src = 'https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js';
-    script.async = true;
-    script.onload = () => resolve();
-    script.onerror = () => reject(new Error('주소 검색을 불러오지 못했습니다.'));
-    document.head.appendChild(script);
-  });
-
-  return daumPostcodeLoader;
 }
 
 export default function PartnerHospitalInfoPage() {
@@ -311,24 +273,16 @@ export default function PartnerHospitalInfoPage() {
     finally { setSaving(false); }
   };
 
-  const openPostcode = async () => {
-    try {
-      await loadDaumPostcode();
-      if (!window.daum?.Postcode) throw new Error('주소 검색을 불러오지 못했습니다.');
-      new window.daum.Postcode({
-        oncomplete: (data) => {
-          const selectedAddress = data.roadAddress || data.address || '';
-          if (!selectedAddress) {
-            showToast('선택한 주소를 확인할 수 없습니다.');
-            return;
-          }
-          setAddressDraft(selectedAddress);
-          window.setTimeout(() => addressDetailInputRef.current?.focus(), 0);
-        },
-      }).open();
-    } catch (e) {
-      showToast(e instanceof Error ? e.message : '주소 검색을 불러오지 못했습니다.');
+  // 주소 검색 — 새 창(.open) 대신 시트 안에 끼워 넣는다(앱 웹뷰 흰 화면, 261102)
+  const [addrOpen, setAddrOpen] = useState(false);
+  const pickAddress = (data: DaumPostcodeData) => {
+    const selectedAddress = data.roadAddress || data.address || '';
+    if (!selectedAddress) {
+      showToast('선택한 주소를 확인할 수 없습니다.');
+      return;
     }
+    setAddressDraft(selectedAddress);
+    window.setTimeout(() => addressDetailInputRef.current?.focus(), 320);
   };
 
   const updateHourDraft = (day: string, field: 'start_time' | 'end_time', value: string) => {
@@ -512,7 +466,7 @@ export default function PartnerHospitalInfoPage() {
               />
               <button
                 type="button"
-                onClick={openPostcode}
+                onClick={() => setAddrOpen(true)}
                 className="h-14 shrink-0 rounded-[14px] bg-[#EFF5FE] px-4 text-[16px] font-semibold text-[#2F6FE4] transition-all active:scale-[0.98]"
               >
                 주소 검색
@@ -532,6 +486,7 @@ export default function PartnerHospitalInfoPage() {
           </div>
         </section>
         <SaveBar onClick={saveLocation} disabled={saving} label={saving ? '저장 중...' : '저장하기'} />
+        {addrOpen && <AddressSearchSheet initialQuery={addressDraft} onSelect={pickAddress} onClose={() => setAddrOpen(false)} />}
       </div>
     );
   }

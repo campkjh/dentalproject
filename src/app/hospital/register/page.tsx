@@ -27,15 +27,18 @@ import {
 import { agreementItems, type AgreementItem } from '@/components/hospital-register/agreements';
 import { AgreementSheet, SequentialAgreeFlow } from '@/components/hospital-register/AgreementSheets';
 import { DocUploadRow, ProfilePhotoUploader } from '@/components/hospital-register/Uploaders';
+import AddressSearchSheet from '@/components/common/AddressSearchSheet';
 import {
   defaultTreatments,
   formatBiznum,
   formatPhone,
-  openPostcode,
   treatmentsBySpecialty,
 } from '@/components/hospital-register/register-data';
 
 const TOTAL_STEPS = 8;
+
+// 주소를 고른 뒤 시트가 내려가고 나서 상세 주소 칸에 커서
+const LEAVE_FOCUS_MS = 320;
 
 /** 단계별 제목 — 위 작은 파란 글씨 · 큰 제목 · 회색 한 줄 */
 const STEP_META: Record<number, { eyebrow: string; title: string; sub: string }> = {
@@ -76,6 +79,9 @@ export default function HospitalRegisterPage() {
   const [selectedTreatments, setSelectedTreatments] = useState<Set<string>>(new Set());
   const [registerType, setRegisterType] = useState<'hospital' | 'doctor' | null>(null);
   const [hospitalSearch, setHospitalSearch] = useState('');
+  // 주소 검색 시트(다음 우편번호를 시트 안에) · 고르면 상세 주소 칸으로
+  const [addrOpen, setAddrOpen] = useState(false);
+  const addrDetailRef = useRef<HTMLInputElement>(null);
 
   // 검색어를 들고 들어왔으면 6단계 병원명에 미리 채운다
   useEffect(() => {
@@ -348,9 +354,9 @@ export default function HospitalRegisterPage() {
                   readOnly
                   placeholder="우편번호"
                   className="qd-input min-w-0 flex-1 cursor-pointer"
-                  onClick={() => openPostcode(setHospitalInfo)}
+                  onClick={() => setAddrOpen(true)}
                 />
-                <button type="button" onClick={() => openPostcode(setHospitalInfo)} className={s.smallBtn}>
+                <button type="button" onClick={() => setAddrOpen(true)} className={s.smallBtn}>
                   주소 검색
                 </button>
               </div>
@@ -369,6 +375,7 @@ export default function HospitalRegisterPage() {
                 type="text"
                 value={hospitalInfo.addressDetail}
                 onChange={(e) => setHospitalInfo((prev) => ({ ...prev, addressDetail: e.target.value }))}
+                ref={addrDetailRef}
                 placeholder="건물명, 동·호수 등"
                 className="qd-input"
               />
@@ -601,6 +608,17 @@ export default function HospitalRegisterPage() {
       >
         {renderStep()}
       </RegisterShell>
+
+      {addrOpen && (
+        <AddressSearchSheet
+          initialQuery={hospitalInfo.address}
+          onSelect={(data) => {
+            setHospitalInfo((prev) => ({ ...prev, postalCode: data.zonecode, address: data.address }));
+            window.setTimeout(() => addrDetailRef.current?.focus(), LEAVE_FOCUS_MS);
+          }}
+          onClose={() => setAddrOpen(false)}
+        />
+      )}
 
       {/* 약관 한 장 보기 */}
       {viewingAgreement && (

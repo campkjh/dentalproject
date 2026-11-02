@@ -1,0 +1,93 @@
+/* 주소 검색 시트 — 마이 시트(screens.module.css .sheet) 톤: 딤 페이드 · 아래서 스프링 · 모서리 28 · PC 는 가운데 카드 */
+
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.4);
+  animation: scrimIn 0.26s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.scrim.leaving { animation: scrimOut 0.24s cubic-bezier(0.4, 0, 1, 1) both; }
+
+.sheet {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 500px;
+  height: 92vh;
+  height: 92dvh;
+  padding: 12px 0 env(safe-area-inset-bottom, 0px);
+  border-radius: 28px 28px 0 0;
+  background: #fff;
+  overflow: hidden;
+  overscroll-behavior: contain;
+  animation: sheetUp 0.5s cubic-bezier(0.2, 1.08, 0.36, 1) both;
+}
+.leaving .sheet { animation: sheetDown 0.24s cubic-bezier(0.4, 0, 1, 1) both; }
+
+.grab { flex: none; width: 36px; height: 4px; margin: 0 auto 14px; border-radius: 2px; background: #E5E8EB; }
+
+.head { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 12px 0 24px; }
+.title { margin: 0; font-size: 21px; font-weight: 700; line-height: 1.4; letter-spacing: -0.5px; color: #191F28; }
+.close {
+  display: flex;
+  width: 44px;
+  height: 44px;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #4E5968;
+  cursor: pointer;
+  transition: background-color 0.15s, transform 0.08s;
+}
+.close:active { background: #F2F4F6; transform: scale(0.94); }
+.sub { flex: none; margin: 2px 24px 14px; font-size: 15px; line-height: 1.5; color: #8B95A1; }
+
+/* 검색 화면 칸 — 다음 iframe 이 꽉 채운다(양옆 여백은 다음 화면 자체 여백에 맞춰 12) */
+.frame { position: relative; flex: 1; min-height: 0; margin: 0 12px; }
+.embed { position: absolute; inset: 0; z-index: 1; }
+.embed > div { width: 100% !important; height: 100% !important; }
+
+.skeleton { position: absolute; inset: 0; display: flex; flex-direction: column; gap: 14px; padding: 8px 4px; }
+.skSearch { height: 48px; border-radius: 14px; background: #F2F4F6; }
+.skLine { height: 16px; border-radius: 8px; background: #F2F4F6; animation: skPulse 1.2s ease-in-out infinite; }
+.skSearch + .skLine { margin-top: 10px; }
+
+.error { position: absolute; inset: 0; z-index: 2; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 0 24px; background: #fff; text-align: center; }
+.errorTitle { margin: 0; font-size: 17px; font-weight: 700; color: #191F28; }
+.errorDesc { margin: 0 0 14px; font-size: 15px; color: #8B95A1; }
+.retry {
+  height: 48px;
+  padding: 0 22px;
+  border: 0;
+  border-radius: 14px;
+  background: #EFF5FE;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  color: #2F6FE4;
+  cursor: pointer;
+  transition: transform 0.08s;
+}
+.retry:active { transform: scale(0.98); }
+
+@media (width >= 1024px) {
+  .scrim { align-items: center; }
+  .sheet { max-width: 480px; height: min(680px, 86vh); padding-bottom: 12px; border-radius: 28px; animation-name: sheetPop; }
+  .leaving .sheet { animation-name: sheetFade; }
+  .grab { visibility: hidden; margin-bottom: 6px; }
+}
+
+@keyframes scrimIn { from { background: rgba(0, 0, 0, 0); } to { background: rgba(0, 0, 0, 0.4); } }
+@keyframes scrimOut { from { background: rgba(0, 0, 0, 0.4); } to { background: rgba(0, 0, 0, 0); } }
+@keyframes sheetUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+@keyframes sheetDown { from { transform: translateY(0); } to { transform: translateY(100%); } }
+@keyframes sheetPop { from { opacity: 0; transform: scale(0.94); } to { opacity: 1; transform: scale(1); } }
+@keyframes sheetFade { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(0.96); } }
+@keyframes skPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
