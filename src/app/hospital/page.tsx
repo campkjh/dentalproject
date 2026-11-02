@@ -6,6 +6,7 @@ import EmptyState from '@/components/common/EmptyState';
 import { useStore } from '@/store';
 import { Reservation } from '@/types';
 import { resolveProductImageUrl } from '@/lib/images';
+import { haptic } from '@/lib/haptics';
 
 type ProductApprovalTab = 'approved' | 'pending' | 'rejected';
 
@@ -180,7 +181,7 @@ export default function HospitalHomePage() {
           {tabs.map((tab) => (
             <button
               key={tab.label}
-              onClick={() => setActiveTab(tab.label)}
+              onClick={() => { if (tab.label !== activeTab) haptic('selection'); setActiveTab(tab.label); }}
               className={`px-2.5 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
                 activeTab === tab.label
                   ? 'bg-gray-900 text-white'

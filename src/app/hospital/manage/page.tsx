@@ -10,6 +10,7 @@ import MonoIcon from '@/components/common/MonoIcon';
 import { useStore } from '@/store';
 import { useSession } from '@/lib/supabase/SessionProvider';
 import { resolveHospitalImageUrl } from '@/lib/images';
+import { haptic } from '@/lib/haptics';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type HospitalRow = {
@@ -185,7 +186,7 @@ function SegTabs({ tabs, active, onChange }: { tabs: string[]; active: string; o
         <button
           key={tab}
           type="button"
-          onClick={() => onChange(tab)}
+          onClick={() => { if (tab !== active) haptic('selection'); onChange(tab); }}
           className={`relative h-9 flex-1 rounded-[10px] text-[15px] transition-colors duration-300 ${active === tab ? 'font-bold text-[#191F28]' : 'font-semibold text-[#8B95A1]'}`}
         >
           {tab}

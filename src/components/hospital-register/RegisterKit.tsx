@@ -7,6 +7,7 @@
 //  · 스타일은 register.module.css + globals .qd-input / .qd-cta.
 import { useState, type CSSProperties, type ReactNode } from 'react';
 import s from './register.module.css';
+import { haptic } from '@/lib/haptics';
 
 const cx = (...names: (string | false | null | undefined)[]) => names.filter(Boolean).join(' ');
 
@@ -202,7 +203,7 @@ export function RgToggle({ checked, onChange, label, hint, disabled }: { checked
       role="switch"
       aria-checked={checked}
       disabled={disabled}
-      onClick={() => onChange(!checked)}
+      onClick={() => { haptic('light'); onChange(!checked); }}
       className="flex w-full items-center justify-between gap-4 py-2.5 text-left disabled:opacity-50"
     >
       <span className="min-w-0">

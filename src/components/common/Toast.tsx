@@ -4,12 +4,17 @@
 // 머리 줄 아래에서 톡 튀어 내려오고(정비율 팝 + 흐림→선명) 사라질 땐 위로 빠진다. 누르면 바로 닫힌다.
 // 아이콘은 문구로 고른다 — 실패·거부·오류=빨강 느낌표 · 확인 필요=노랑 · 했어요·완료=파랑 체크 · 그 밖=파랑 안내.
 import { useStore } from '@/store';
+import { toneOfMessage } from '@/lib/haptics';
+
+const TOAST_ICONS = {
+  error: '/icons/color/warning-red.svg',
+  warning: '/icons/color/exclamation-yellow.svg',
+  success: '/icons/color/check-circle.svg',
+  info: '/icons/color/info-blue.svg',
+} as const;
 
 function toastIcon(msg: string) {
-  if (/실패|거부|오류|에러|못했|못 했|없어요|안 돼|안돼|만료|제한/.test(msg)) return '/icons/color/warning-red.svg';
-  if (/해 주세요|해주세요|확인해|입력해|골라|선택해|필요/.test(msg)) return '/icons/color/exclamation-yellow.svg';
-  if (/했어요|됐어요|되었|완료|복사|담았|저장|보냈|등록/.test(msg)) return '/icons/color/check-circle.svg';
-  return '/icons/color/info-blue.svg';
+  return TOAST_ICONS[toneOfMessage(msg)];
 }
 
 export default function Toast() {

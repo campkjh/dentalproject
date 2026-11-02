@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import TopBar from '@/components/common/TopBar';
 import { useStore } from '@/store';
+import { haptic } from '@/lib/haptics';
 
 interface DaySchedule {
   day: string;
@@ -193,7 +194,7 @@ export default function HoursEditPage() {
                     role="switch"
                     aria-checked={s.isClosed}
                     aria-label={`${s.day}요일 휴진`}
-                    onClick={() => toggleClosed(idx)}
+                    onClick={() => { haptic('light'); toggleClosed(idx); }}
                     className={`relative h-[30px] w-[50px] rounded-full transition-colors duration-300 ${s.isClosed ? 'bg-[#2F6FE4]' : 'bg-[#E5E8EB]'}`}
                   >
                     <span

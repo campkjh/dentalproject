@@ -4,6 +4,7 @@ import { useLayoutEffect, useRef, useState } from 'react';
 import { FlowSheet, cx, useFlowSheet } from './FlowKit';
 import { DAY_LABELS } from './schedule';
 import s from './flow.module.css';
+import { haptic } from '@/lib/haptics';
 
 /* ── 방문 일시 시트 — 프리티풀 퀵매칭 QmDateTimeSheet(토스 '가는 날' 화이트판) 그대로.
  *  달력(6줄 고정·달마다 줄이 한 줄씩 올라옴) + 시 칩 줄(옆으로 넘김) + 분 칩 줄 + 다음.
@@ -87,10 +88,10 @@ export default function BookingDateTimeSheet({ date, time, nowMs, isDayOpen, slo
   });
   const minIdx = now.getFullYear() * 12 + now.getMonth();
   const curIdx = ym.y * 12 + ym.m;
-  const goMonth = (delta: number) => setYm(({ y, m }) => {
+  const goMonth = (delta: number) => { haptic('light'); setYm(({ y, m }) => {
     const t = Math.max(minIdx, Math.min(minIdx + MONTHS_AHEAD, y * 12 + m + delta));
     return { y: Math.floor(t / 12), m: t % 12 };
-  });
+  }); };
 
   const slots = sel ? slotsOf(sel) : { all: [], available: [] };
   const avail = new Set(slots.available);
@@ -102,6 +103,7 @@ export default function BookingDateTimeSheet({ date, time, nowMs, isDayOpen, slo
 
   /** 날짜를 고르면 — 고른 시각이 그날 안 되면 그날 첫 빈 칸으로 */
   const pickDay = (key: string) => {
+    if (key !== sel) haptic('selection');
     setSel(key);
     const day = slotsOf(key).available;
     if (timeStr && day.includes(timeStr)) return;
@@ -111,6 +113,7 @@ export default function BookingDateTimeSheet({ date, time, nowMs, isDayOpen, slo
   };
   /** 시를 고르면 — 그 시에 지금 분이 안 되면 되는 분으로 */
   const pickHour = (h: number) => {
+    if (h !== hour) haptic('selection');
     setHour(h);
     if (!avail.has(`${pad2(h)}:${pad2(minute)}`)) {
       const mm = SLOT_MINS.find((x) => avail.has(`${pad2(h)}:${pad2(x)}`));
@@ -182,7 +185,7 @@ export default function BookingDateTimeSheet({ date, time, nowMs, isDayOpen, slo
                 {SLOT_MINS.map((mm) => {
                   const ok = hour !== null && avail.has(`${pad2(hour)}:${pad2(mm)}`);
                   return (
-                    <button key={mm} type="button" className={cx(s.tchip, ok && mm === minute && s.on)} disabled={!ok} aria-pressed={ok && mm === minute} onClick={() => setMinute(mm)}>
+                    <button key={mm} type="button" className={cx(s.tchip, ok && mm === minute && s.on)} disabled={!ok} aria-pressed={ok && mm === minute} onClick={() => { if (mm !== minute) haptic('selection'); setMinute(mm); }}>
                       {pad2(mm)}분
                     </button>
                   );

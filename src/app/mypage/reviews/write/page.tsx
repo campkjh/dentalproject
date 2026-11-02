@@ -8,6 +8,7 @@ import TopBar from '@/components/common/TopBar';
 import { useStore } from '@/store';
 import Avatar from '@/components/common/Avatar';
 import { resolveProductImageUrl } from '@/lib/images';
+import { haptic } from '@/lib/haptics';
 
 export default function ReviewWritePageWrapper() {
   return (
@@ -197,7 +198,7 @@ ${hasAspectFeedback && aspects.kindness >= 4 ? '원장님과 스태프분들의 
                 <button
                   key={v}
                   type="button"
-                  onClick={() => setRating(v)}
+                  onClick={() => { if (v !== rating) haptic('selection'); setRating(v); }}
                   aria-label={`${v}점`}
                   className="flex h-14 w-14 items-center justify-center rounded-[14px] active:bg-[#F9FAFB]"
                 >
@@ -236,9 +237,10 @@ ${hasAspectFeedback && aspects.kindness >= 4 ? '원장님과 스태프분들의 
                           <button
                             key={v}
                             type="button"
-                            onClick={() =>
-                              setAspects((p) => ({ ...p, [a.key]: p[a.key] === v ? 0 : v }))
-                            }
+                            onClick={() => {
+                              haptic('selection');
+                              setAspects((p) => ({ ...p, [a.key]: p[a.key] === v ? 0 : v }));
+                            }}
                             aria-label={`${a.label} ${v}점`}
                             className="flex h-9 w-9 items-center justify-center"
                           >

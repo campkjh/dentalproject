@@ -12,6 +12,7 @@ import Link from 'next/link';
 import type { HomeBanner } from '@/types';
 import { defaultHomeBanners } from '@/lib/home-banners';
 import { useImageTone } from '@/lib/image-tone';
+import { haptic } from '@/lib/haptics';
 
 /** 카드 폭 — 모바일 화면의 76%(옆 카드가 보이게), 넓은 화면은 420 */
 const cardWidth = (w: number) => Math.min(w * 0.76, 420);
@@ -187,6 +188,8 @@ export default function HomeBannerSlider() {
     // 빠르게 튕기면 그쪽으로 한 장, 아니면 가까운 장 — 한 번에 한 장까지만
     const flick = Math.abs(d.v) > 0.35 ? -Math.sign(d.v) * 0.5 : 0;
     const target = Math.max(Math.round(d.start) - 1, Math.min(Math.round(d.start) + 1, Math.round(posRef.current + flick)));
+    // 손으로 넘겨 다음 장이 오면 한 칸 '딱'(제자리로 돌아오면 조용히)
+    if (target !== Math.round(d.start)) haptic('selection');
     animateTo(target, 380);
   };
 

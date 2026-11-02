@@ -24,6 +24,7 @@ import pocketStyles from '@/components/pocket/pocket.module.css';
 import { useListEntrance, useTabEntrance } from '@/components/reservations/useTabEntrance';
 import matchStyles from '@/components/reservations/match.module.css';
 import { resolveProductImageUrl } from '@/lib/images';
+import { haptic } from '@/lib/haptics';
 
 type Tab = 'pocket' | 'posts' | 'recent';
 
@@ -230,7 +231,7 @@ export default function PocketPage() {
                   <button
                     key={tab}
                     type="button"
-                    onClick={() => { setActiveTab(tab); setOpenSwipeId(null); }}
+                    onClick={() => { if (tab !== activeTab) haptic('selection'); setActiveTab(tab); setOpenSwipeId(null); }}
                     aria-pressed={active}
                     className={`relative flex flex-1 items-center justify-center gap-1 rounded-[13px] py-2.5 text-[14px] transition-colors duration-300 ${active ? 'font-bold text-[#191F28]' : 'font-semibold text-[#8B95A1]'}`}
                   >

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useStore } from '@/store';
 import { animateNavigationIcon } from '@/lib/ui-motion';
+import { haptic } from '@/lib/haptics';
 import { PocketIcon } from '@/components/icons/PocketIcon';
 import styles from './app-ui.module.css';
 
@@ -121,6 +122,7 @@ export function TabBarNav({ items: tabs, label = '주요 메뉴' }: { items: Tab
       <Link key={href} href={href} aria-current={active ? 'page' : undefined} onClick={event => {
         onPress?.(event);
         if (event.defaultPrevented) return;
+        haptic('selection');
         if (active) {
           event.preventDefault();
           const behavior = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth';

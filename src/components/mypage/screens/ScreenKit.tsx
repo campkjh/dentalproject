@@ -6,6 +6,7 @@
 import Link from 'next/link';
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import s from './screens.module.css';
+import { haptic } from '@/lib/haptics';
 
 export { s as screenCss };
 
@@ -27,7 +28,7 @@ export function TossIcon({ name, size = 24, className = '' }: { name: string; si
 /** 토스 스위치 */
 export function TossSwitch({ on, onToggle, label, disabled }: { on: boolean; onToggle: () => void; label: string; disabled?: boolean }) {
   return (
-    <button type="button" role="switch" aria-checked={on} aria-label={label} disabled={disabled} onClick={onToggle} className={s.switch}>
+    <button type="button" role="switch" aria-checked={on} aria-label={label} disabled={disabled} onClick={() => { haptic('light'); onToggle(); }} className={s.switch}>
       <span className={s.knob} />
     </button>
   );

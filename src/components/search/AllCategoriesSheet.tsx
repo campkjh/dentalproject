@@ -6,6 +6,7 @@
 //  · 오른쪽에서 밀려 들어오고, 뒤로(화면 버튼·브라우저 뒤로) 하면 닫힌다. 고르면 그 진료과로 바꾸고 닫는다.
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { haptic } from '@/lib/haptics';
 
 export type SheetCategory = { id: string; name: string; icon?: string };
 
@@ -90,6 +91,7 @@ export default function AllCategoriesSheet({
     else close();
   };
   const pick = (id: string) => {
+    haptic('selection');
     rememberCategory(id);
     onPick(id);
     goBack();

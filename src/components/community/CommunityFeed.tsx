@@ -15,6 +15,7 @@ import CommunityDetail, { CommunitySkeleton } from './CommunityDetail';
 import { useCommunityPosts } from './useCommunityPosts';
 import { categoryIcons, CloseIcon, CommentFillIcon, EyeFillIcon, HeartFillIcon, SearchIcon, SortArrowsIcon } from './StadyIcons';
 import styles from './community.module.css';
+import { haptic } from '@/lib/haptics';
 
 const SORTS = [
   { key: 'latest', label: '최신순' },
@@ -167,6 +168,7 @@ export default function CommunityFeed({ partner = false }: { partner?: boolean }
     if (params.has('q')) router.replace(basePath, { scroll: false });
   }
   function selectCategory(next: string) {
+    if (next !== category || mine) haptic('selection');
     setMine(false);
     setCategory(next);
   }
@@ -184,6 +186,7 @@ export default function CommunityFeed({ partner = false }: { partner?: boolean }
   }
   function toggleMine() {
     if (!user) { window.dispatchEvent(new CustomEvent('dental:login')); return; }
+    haptic('selection');
     setMine(v => !v);
   }
 
@@ -230,8 +233,8 @@ export default function CommunityFeed({ partner = false }: { partner?: boolean }
         {doctorSpaces && <div className="pb-1 pt-1">
           <nav className="pd-seg is-wide" aria-label="커뮤니티 나누기" style={{ ['--n' as string]: 2, ['--i' as string]: space === 'doctor' ? 0 : 1 }}>
             <span className="pd-seg-thumb" aria-hidden />
-            <button type="button" className={space === 'doctor' ? 'is-active' : undefined} onClick={() => { setSpace('doctor'); setCategory('전체'); setMine(false); }}>의사 라운지</button>
-            <button type="button" className={space === 'customer' ? 'is-active' : undefined} onClick={() => { setSpace('customer'); setCategory('전체'); setMine(false); }}>고객 상담</button>
+            <button type="button" className={space === 'doctor' ? 'is-active' : undefined} onClick={() => { if (space !== 'doctor') haptic('selection'); setSpace('doctor'); setCategory('전체'); setMine(false); }}>의사 라운지</button>
+            <button type="button" className={space === 'customer' ? 'is-active' : undefined} onClick={() => { if (space !== 'customer') haptic('selection'); setSpace('customer'); setCategory('전체'); setMine(false); }}>고객 상담</button>
           </nav>
           <p className="mt-2.5 flex items-center gap-1.5 px-1 text-[13.5px] text-[#8B95A1]">
             <img src={space === 'doctor' ? '/icons/mono/lock.svg' : '/icons/mono/chat-bubble.svg'} alt="" width={14} height={14} className="opacity-50" />
@@ -248,7 +251,7 @@ export default function CommunityFeed({ partner = false }: { partner?: boolean }
 
         {showWeeklyTabs && <section className={styles.weekly} aria-label="주간 인기글">
           <h2 className={styles.weeklyTitle} role="tablist" aria-label="게시글 보기">
-            <button type="button" role="tab" aria-selected={!mine} className={styles.wpTab} onClick={() => setMine(false)}>주간 인기글</button>
+            <button type="button" role="tab" aria-selected={!mine} className={styles.wpTab} onClick={() => { if (mine) haptic('selection'); setMine(false); }}>주간 인기글</button>
             <button type="button" role="tab" aria-selected={mine} className={styles.wpTab} onClick={toggleMine}>내가 쓴 글</button>
           </h2>
           {!mine && popular.length > 0 && <WeeklyCards posts={popular} onOpen={open} />}
@@ -260,7 +263,7 @@ export default function CommunityFeed({ partner = false }: { partner?: boolean }
             <button type="button" className={styles.sortButton} aria-haspopup="listbox" aria-expanded={sortOpen} onClick={() => setSortOpen(v => !v)}>{SORTS.find(x => x.key === sort)?.label}<SortArrowsIcon /></button>
             {sortOpen && <>
               <div className={styles.sortBackdrop} onClick={() => setSortOpen(false)} />
-              <div className={styles.sortMenu} role="listbox">{SORTS.map(x => <button key={x.key} type="button" role="option" aria-selected={sort === x.key} className={styles.sortItem} onClick={() => { setSortOpen(false); setSort(x.key); }}>{x.label}</button>)}</div>
+              <div className={styles.sortMenu} role="listbox">{SORTS.map(x => <button key={x.key} type="button" role="option" aria-selected={sort === x.key} className={styles.sortItem} onClick={() => { if (x.key !== sort) haptic('selection'); setSortOpen(false); setSort(x.key); }}>{x.label}</button>)}</div>
             </>}
           </div>
         </div>
@@ -452,7 +455,7 @@ const WeeklyCards = memo(function WeeklyCards({ posts, onOpen }: { posts: Post[]
 // 칩 한 줄(새 톤 r8) — 의사 라운지·고객 상담·고객 커뮤니티 공용
 function FilterChips({ items, value, onChange }: { items: readonly (readonly [string, string])[]; value: string; onChange: (value: string) => void }) {
   return <div className="no-scrollbar mt-2.5 flex gap-1.5 overflow-x-auto pb-1" role="tablist">
-    {items.map(([key, label]) => <button key={key} type="button" role="tab" aria-selected={value === key} onClick={() => onChange(key)}
+    {items.map(([key, label]) => <button key={key} type="button" role="tab" aria-selected={value === key} onClick={() => { if (key !== value) haptic('selection'); onChange(key); }}
       className={`h-9 shrink-0 rounded-[8px] px-3 text-[14.5px] font-semibold tracking-[-0.2px] transition-colors active:scale-[0.97] ${value === key ? 'bg-[#EFF5FE] text-[#2F6FE4]' : 'bg-[#F2F4F6] text-[#4E5968]'}`}>{label}</button>)}
   </div>;
 }

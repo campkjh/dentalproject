@@ -19,6 +19,7 @@ import {
   type ScheduleSettings,
 } from '@/components/booking/schedule';
 import s from '@/components/booking/flow.module.css';
+import { haptic } from '@/lib/haptics';
 
 /* ─────────────────────────────────────────────────────────────
  * 예약 — 프리티풀 퀵매칭 어법. 한 화면 한 질문 · 진행 막대 · 아래 큰 버튼.
@@ -217,7 +218,7 @@ function BookingPage() {
           <div className={s.ctaWrap}>
             <div className={s.btnRow}>
               <button type="button" className={cx(s.cta, s.ghost)} onClick={() => { setStep('date'); setSheetOpen(true); }}>다시 선택</button>
-              <button type="button" className={s.cta} onClick={handleConfirm}>결제하기</button>
+              <button type="button" className={s.cta} onClick={() => { haptic('medium'); handleConfirm(); }}>결제하기</button>
             </div>
           </div>
         </div>

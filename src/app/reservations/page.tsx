@@ -25,6 +25,7 @@ import { Reservation } from '@/types';
 import { resolveProductImageUrl } from '@/lib/images';
 import { formatWhen } from '@/lib/reservation-format';
 import MonoIcon from '@/components/common/MonoIcon';
+import { haptic } from '@/lib/haptics';
 
 type Status = Reservation['status'];
 type FilterKey = Status | 'all';
@@ -243,7 +244,7 @@ export default function ReservationsPage() {
       count: counts[s],
     })),
   ];
-  const pickFilter = (key: FilterKey) => { setFilter(key); setFilterSwitched(true); };
+  const pickFilter = (key: FilterKey) => { if (key !== filter) haptic('selection'); setFilter(key); setFilterSwitched(true); };
   const titleEnter = entrance ? styles.enterTitle : '';
 
   return (

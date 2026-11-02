@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { User, Reservation, Product, Post, Comment, Review, Hospital, Notification, PointHistory } from '@/types';
 import { pickCustomerProfileAvatarBySeed } from '@/lib/customer-profile-avatars';
 import { resolveHospitalImageUrl, resolveProductImageUrl } from '@/lib/images';
+import { haptic, toneOfMessage } from '@/lib/haptics';
 import {
   products as mockProducts,
   hospitals as mockHospitals,
@@ -638,6 +639,9 @@ export const useStore = create<AppState>((set, get) => ({
   showToast: (message) => {
     const key = get().toastKey + 1;
     set({ toast: message, toastKey: key, toastLeaving: false });
+    // 결과 진동 — 문구로 고른다(토스트 아이콘과 같은 규칙): 실패=error · 확인 필요=warning · 됐어요=success · 그 밖=light
+    const tone = toneOfMessage(message);
+    haptic(tone === 'info' ? 'light' : tone);
     // 뒤에 띄운 문구가 있으면 그쪽 타이머가 닫는다
     setTimeout(() => { if (get().toastKey === key) get().hideToast(); }, 2800);
   },
@@ -661,7 +665,10 @@ export const useStore = create<AppState>((set, get) => ({
         cancelText: opts?.cancelText,
       },
     }),
-  showAlert: (title, message = '', opts) =>
+  showAlert: (title, message = '', opts) => {
+    // 실패·확인 필요 알림창은 같이 떨린다(그냥 안내는 조용히)
+    const tone = toneOfMessage(`${title} ${message}`);
+    if (tone === 'error' || tone === 'warning') haptic(tone);
     set({
       modal: {
         title,
@@ -670,6 +677,7 @@ export const useStore = create<AppState>((set, get) => ({
         confirmText: opts?.confirmText ?? '확인',
         singleButton: true,
       },
-    }),
+    });
+  },
   hideModal: () => set({ modal: null }),
 }));

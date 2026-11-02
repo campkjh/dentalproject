@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import MonoIcon from '@/components/common/MonoIcon';
 import { siteConfig } from '@/lib/site-config';
 import { clearPendingPayment } from '@/lib/pending-payment';
+import { haptic } from '@/lib/haptics';
 
 /** 사용자가 결제창을 닫거나 취소했을 때 토스가 failUrl에 붙여 보내는 코드. */
 const USER_CANCEL_CODES = new Set(['PAY_PROCESS_CANCELED', 'USER_CANCEL']);
@@ -29,6 +30,11 @@ function PaymentFailPage() {
   const message = searchParams.get('message');
   const reservationId = searchParams.get('reservationId');
   const isUserCancel = code ? USER_CANCEL_CODES.has(code) : false;
+
+  // 결제 실패 진동(내가 결제창을 닫은 건 조용히)
+  useEffect(() => {
+    if (!isUserCancel) haptic('error');
+  }, [isUserCancel]);
 
   // 결제 페이지는 결제창을 열기 전에 예약을 먼저 만든다.
   // 결제가 완료되지 않았으므로 그 예약을 취소해 '결제 대기' 예약이 남지 않게 한다.

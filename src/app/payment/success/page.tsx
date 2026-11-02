@@ -6,6 +6,7 @@ import { Loader2 } from 'lucide-react';
 import { resolveProductImageUrl } from '@/lib/images';
 import { useStore } from '@/store';
 import { clearPendingPayment } from '@/lib/pending-payment';
+import { haptic } from '@/lib/haptics';
 
 type VirtualAccountInfo = {
   bankCode: string | null;
@@ -73,6 +74,12 @@ function PaymentSuccessPage() {
   // 무통장입금이면 confirm 응답에 발급된 가상계좌 정보가 담겨 온다.
   const [virtualAccount, setVirtualAccount] = useState<VirtualAccountInfo | null>(null);
   const confirmStartedRef = useRef(false);
+
+  // 결제 결과 진동 — 승인되면 성공, 승인 실패면 실패
+  useEffect(() => {
+    if (status === 'done') haptic('success');
+    else if (status === 'error') haptic('error');
+  }, [status]);
 
   useEffect(() => {
     if (!needsConfirm || confirmStartedRef.current) return;

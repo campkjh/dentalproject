@@ -11,6 +11,7 @@ import type { Post } from '@/types';
 import CommunityModal from './CommunityModal';
 import { boardTone, CommentFillIcon, DotsIcon, formatCount, postPillName, QBadge, TossCommentIcon, TossHeartIcon, TossShareIcon } from './StadyIcons';
 import styles from './community.module.css';
+import { haptic } from '@/lib/haptics';
 
 const REPORT_REASONS = ['부적절한 의료 정보', '불법 광고/스팸', '욕설/비방', '허위/사기 정보', '저작권 침해', '기타'];
 
@@ -64,6 +65,7 @@ export default function CommunityPostCard({ post, detail = false, basePath = '/c
     if (busy.current) return;
     busy.current = true;
     const previous = { liked, count };
+    haptic(liked ? 'light' : 'medium');
     setLiked(!liked);
     setCount(Math.max(0, count + (liked ? -1 : 1)));
     try {
@@ -154,7 +156,7 @@ export default function CommunityPostCard({ post, detail = false, basePath = '/c
       style={{ right: menuAt.right, top: menuAt.top, bottom: menuAt.bottom, transformOrigin: menuAt.bottom !== undefined ? 'bottom right' : 'top right' }}
       onClick={e => e.stopPropagation()}>
       {menuItems.map((item, i) => <button key={item.key} type="button" role="menuitem" className={`pop-menu-item${item.danger ? ' danger' : ''}`}
-        style={{ animationDelay: `${0.04 + i * 0.05}s` }} onClick={() => { setMenuAt(null); item.run(); }}>
+        style={{ animationDelay: `${0.04 + i * 0.05}s` }} onClick={() => { haptic('light'); setMenuAt(null); item.run(); }}>
         <img src={item.icon} alt="" />{item.label}
       </button>)}
     </div>

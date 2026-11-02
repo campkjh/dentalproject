@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type CSSProperties, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import s from './flow.module.css';
+import { haptic } from '@/lib/haptics';
 
 /** 클래스 합치기 — 빈 값은 버린다 */
 export const cx = (...names: (string | false | null | undefined)[]) => names.filter(Boolean).join(' ');
@@ -51,7 +52,7 @@ export function FlowHeader({ onBack, progress, title }: { onBack: () => void; pr
 export function FlowCta({ disabled, onClick, children }: { disabled?: boolean; onClick: () => void; children: ReactNode }) {
   return (
     <div className={s.ctaWrap}>
-      <button type="button" className={s.cta} disabled={disabled} onClick={onClick}>{children}</button>
+      <button type="button" className={s.cta} disabled={disabled} onClick={() => { haptic('light'); onClick(); }}>{children}</button>
     </div>
   );
 }

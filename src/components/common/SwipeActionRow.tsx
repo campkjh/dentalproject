@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, type ReactNode } from 'react';
 import MonoIcon from '@/components/common/MonoIcon';
+import { haptic } from '@/lib/haptics';
 
 /* ════════════════════════════════════════════════════════════════
  * 밀어서 버튼 꺼내는 줄 — 프리티풀 채팅 목록(ChatSwipeRow, 당근 어법) 동작을 그대로 옮겼다(261101 사장 지시: 포켓).
@@ -254,6 +255,8 @@ export default function SwipeActionRow({
     const willOpen = v > FLICK ? true : v < -FLICK ? false : s.x > width * OPEN_RATIO;
     s.target = willOpen ? width : 0;
     kick();
+    // 밀어서 버튼이 열리는 순간 톡
+    if (willOpen && !openRef.current) haptic('light');
     if (willOpen !== openRef.current) changeRef.current(willOpen);
   };
 

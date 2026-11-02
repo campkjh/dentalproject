@@ -15,6 +15,7 @@ import { StarRating, ReviewStars } from '@/components/detail/DetailKit';
 import { useStore } from '@/store';
 import { resolveProductImageUrl } from '@/lib/images';
 import { reviewerHref, type FollowUser, type ReviewerProfile, type ReviewerReview } from '@/lib/reviewer';
+import { haptic } from '@/lib/haptics';
 
 type Tab = 'reviews' | 'followers' | 'following';
 const TABS: { key: Tab; label: string }[] = [
@@ -56,6 +57,7 @@ export default function ReviewerProfilePage() {
   }, [id]);
 
   const openTab = (key: Tab) => {
+    if (key !== tab) haptic('selection');
     setTab(key);
     if (key !== 'reviews' && !lists[key]) loadList(key);
   };

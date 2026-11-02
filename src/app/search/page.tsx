@@ -12,6 +12,7 @@ import EmptyState from '@/components/common/EmptyState';
 import AllCategoriesSheet, { rememberCategory } from '@/components/search/AllCategoriesSheet';
 import ProductCard from '@/components/common/ProductCard';
 import MonoIcon from '@/components/common/MonoIcon';
+import { haptic } from '@/lib/haptics';
 
 const PROVINCES: Record<string, string[]> = {
   '서울': ['전체', '강남구', '서초구', '송파구', '강동구', '마포구', '용산구', '성동구', '광진구', '동대문구', '중랑구', '성북구', '강북구', '도봉구', '노원구', '은평구', '서대문구', '종로구', '중구', '동작구', '관악구', '금천구', '구로구', '영등포구', '양천구'],
@@ -847,7 +848,7 @@ function SearchPage() {
         <FilterModal title="정렬" onClose={() => setShowSortModal(false)}>
           <div className="flex-1 overflow-y-auto">
             {sortOptions.map((o) => (
-              <button key={o} onClick={() => { setSelectedSort(o); setShowSortModal(false); }}
+              <button key={o} onClick={() => { if (o !== selectedSort) haptic('selection'); setSelectedSort(o); setShowSortModal(false); }}
                 className={`w-full flex items-center justify-between px-5 py-3.5 text-sm hover:bg-gray-50 ${selectedSort === o ? 'text-[#3180F7] font-medium bg-[#EDF4FF]' : 'text-gray-700'}`}>
                 <span>{o}</span>{selectedSort === o && <Check size={16} className="text-[#3180F7]" />}
               </button>
@@ -1034,7 +1035,7 @@ function FiltersBottomSheet({
                 <button
                   key={t.key}
                   type="button"
-                  onClick={() => setActiveTab(t.key)}
+                  onClick={() => { if (t.key !== activeTab) haptic('selection'); setActiveTab(t.key); }}
                   className={`relative z-[1] flex h-10 flex-1 items-center justify-center gap-1 text-[15.5px] transition-colors ${isActive ? 'font-bold text-[#191F28]' : 'font-semibold text-[#8B95A1]'}`}
                 >
                   {t.label}
@@ -1052,7 +1053,7 @@ function FiltersBottomSheet({
             <div className="flex h-full overflow-hidden">
               <ProvinceDial provinces={provinceKeys} active={activeProvince} onChange={setActiveProvince} marked={(prov) => selectedRegions.some((r) => r.split(' ')[0] === prov)} />
               <div className="flex-1 overflow-y-auto px-5">
-                <button type="button" onClick={onLocate} className="mt-2 flex h-11 w-full items-center justify-center gap-1.5 rounded-[12px] bg-[#EFF5FE] text-[15px] font-bold text-[#2F6FE4] transition-all active:scale-[0.98]">
+                <button type="button" onClick={() => { haptic('light'); onLocate(); }} className="mt-2 flex h-11 w-full items-center justify-center gap-1.5 rounded-[12px] bg-[#EFF5FE] text-[15px] font-bold text-[#2F6FE4] transition-all active:scale-[0.98]">
                   <MonoIcon name="pin-location" size={17} color="#2F6FE4" />
                   {locating ? '위치 찾는 중…' : '현재 위치로 설정'}
                 </button>
@@ -1061,7 +1062,7 @@ function FiltersBottomSheet({
                   const isChecked = selectedRegions.includes(fullKey);
                   const label = district === '전체' ? `${activeProvince} 전체` : district;
                   return (
-                    <button key={district} type="button" onClick={() => toggleRegion(fullKey)} className="flex w-full items-center gap-3 py-3.5 text-left">
+                    <button key={district} type="button" onClick={() => { haptic('selection'); toggleRegion(fullKey); }} className="flex w-full items-center gap-3 py-3.5 text-left">
                       {checkDot(isChecked)}
                       <span className={`text-[17px] ${isChecked ? 'font-semibold text-[#2F6FE4]' : 'text-[#333D4B]'}`}>{label}</span>
                     </button>
@@ -1089,7 +1090,7 @@ function FiltersBottomSheet({
               {bookingMethods.map((m) => {
                 const isChecked = selectedBooking === m;
                 return (
-                  <button key={m} type="button" onClick={() => setSelectedBooking(m)} className="flex w-full items-center gap-3 py-3.5 text-left">
+                  <button key={m} type="button" onClick={() => { if (m !== selectedBooking) haptic('selection'); setSelectedBooking(m); }} className="flex w-full items-center gap-3 py-3.5 text-left">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={BOOKING_ICONS[m]} alt="" width={22} height={22} className="shrink-0" />
                     <span className={`min-w-0 flex-1 text-[17px] transition-colors ${isChecked ? 'font-semibold text-[#2F6FE4]' : 'text-[#333D4B]'}`}>{m}</span>
@@ -1105,7 +1106,7 @@ function FiltersBottomSheet({
         <div className="relative flex shrink-0 gap-2 bg-white px-5 pt-2" style={{ paddingBottom: 'max(calc(env(safe-area-inset-bottom, 0px) + 12px), 16px)' }}>
           {/* 선 대신 위로 흰 그라데이션 — 목록이 버튼 밑으로 녹아든다 */}
           <span aria-hidden className="pointer-events-none absolute inset-x-0 bottom-full h-8 bg-gradient-to-b from-white/0 to-white" />
-          <button type="button" onClick={resetAll} className="flex h-14 flex-1 items-center justify-center rounded-[18px] bg-[#F2F4F6] text-[17px] font-bold text-[#4E5968] transition-all active:scale-[0.98]">
+          <button type="button" onClick={() => { haptic('light'); resetAll(); }} className="flex h-14 flex-1 items-center justify-center rounded-[18px] bg-[#F2F4F6] text-[17px] font-bold text-[#4E5968] transition-all active:scale-[0.98]">
             초기화
           </button>
           <button type="button" onClick={requestClose} className="flex h-14 flex-1 items-center justify-center rounded-[18px] bg-[#4A82EE] text-[17px] font-bold text-white transition-all active:scale-[0.98]">
@@ -1118,14 +1119,22 @@ function FiltersBottomSheet({
   );
 }
 
+// 다이얼 글자 — 초점 밖(회색 보통) ↔ 초점 안(검정 굵게)
+const DIAL_FAR = [107, 118, 132]; // #6B7684
+const DIAL_NEAR = [25, 31, 40]; // #191F28
+
 /** 지역 시·도 다이얼 — 가운데(초점) 줄이 가장 진하고 크며, 멀어질수록 흐려지고 작아지고 살짝 눕는다(휠 피커).
- *  굴리다 멈추면 가운데 줄이 골라지고, 줄을 누르면 그 줄이 가운데로 굴러온다. 위아래 여백으로 첫·끝 줄도 가운데에 설 수 있다. */
+ *  굴리다 멈추면 가운데 줄이 골라지고, 줄을 누르면 그 줄이 가운데로 굴러온다. 위아래 여백으로 첫·끝 줄도 가운데에 설 수 있다.
+ *  · 글자 굵기·색은 '골라진 뒤'가 아니라 줄이 가운데 알약에 들어오는 만큼 스르르 굵고 진해진다(굴리는 손을 그대로 따라감).
+ *  · 진동(261102) = 줄이 가운데 선을 넘을 때마다 '드' 한 칸(selection) — 빨리 굴리면 드드드륵. 사람이 굴릴 때만(열릴 때 저절로 맞추는 굴림은 조용히). */
 function ProvinceDial({ provinces, active, onChange, marked }: { provinces: string[]; active: string; onChange: (p: string) => void; marked: (p: string) => boolean }) {
   const ref = useRef<HTMLDivElement>(null);
   const settle = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const tickAt = useRef(-1);
+  const handling = useRef(false);
   const ROW = 52;
 
-  // 줄마다 가운데와의 거리로 투명도·크기·기울기·흐림을 바로 칠한다(렌더 없이)
+  // 줄마다 가운데와의 거리로 투명도·크기·기울기·흐림·굵기·색을 바로 칠한다(렌더 없이)
   const paint = useCallback(() => {
     const el = ref.current;
     if (!el) return;
@@ -1136,6 +1145,15 @@ function ProvinceDial({ provinces, active, onChange, marked }: { provinces: stri
       row.style.opacity = String(Math.max(0.28, 1 - d * 0.22));
       row.style.transform = `perspective(400px) rotateX(${Math.max(-50, Math.min(50, ((mid - c) / ROW) * 14))}deg) scale(${1 - d * 0.07})`;
       row.style.filter = d > 0.6 ? `blur(${Math.min(1.6, (d - 0.6) * 0.7)}px)` : 'none';
+      // 초점 — 0.85칸 밖 = 보통, 0.15칸 안 = 굵게. 한글 글꼴은 굵기가 100 단위로만 있어서
+      // 단계 사이는 같은 색 테두리(text-stroke)로 메운다 → 끊기지 않고 스르르 굵어진다
+      const t = Math.max(0, Math.min(1, (0.85 - d) / 0.7));
+      const f = t * t * (3 - 2 * t);
+      const w = 400 + 300 * f;
+      const step = Math.min(700, Math.floor(w / 100) * 100);
+      row.style.fontWeight = String(step);
+      row.style.setProperty('-webkit-text-stroke', `${(((w - step) / 100) * 0.35).toFixed(3)}px currentColor`);
+      row.style.color = `rgb(${DIAL_FAR.map((v, k) => Math.round(v + (DIAL_NEAR[k] - v) * f)).join(',')})`;
     });
   }, []);
 
@@ -1152,17 +1170,23 @@ function ProvinceDial({ provinces, active, onChange, marked }: { provinces: stri
 
   const onScroll = () => {
     paint();
+    const el = ref.current;
+    if (!el) return;
+    // 가운데 선을 넘은 줄이 바뀌면 한 칸 '드'
+    const at = Math.max(0, Math.min(provinces.length - 1, Math.round(el.scrollTop / ROW)));
+    if (at !== tickAt.current) {
+      if (handling.current && tickAt.current >= 0) haptic('selection');
+      tickAt.current = at;
+    }
     if (settle.current) clearTimeout(settle.current);
     settle.current = setTimeout(() => {
-      const el = ref.current;
-      if (!el) return;
+      handling.current = false;
       const i = Math.max(0, Math.min(provinces.length - 1, Math.round(el.scrollTop / ROW)));
-      if (provinces[i] !== active) {
-        onChange(provinces[i]);
-        navigator.vibrate?.(4);
-      }
+      if (provinces[i] !== active) onChange(provinces[i]);
     }, 140);
   };
+  // 사람이 만졌다(손가락·마우스 휠·줄 누르기) — 이때부터 멈출 때까지 굴림이 진동을 낸다
+  const grab = () => { handling.current = true; };
 
   return (
     <div className="relative w-[112px] shrink-0 bg-[#F9FAFB]">
@@ -1171,6 +1195,9 @@ function ProvinceDial({ provinces, active, onChange, marked }: { provinces: stri
       <div
         ref={ref}
         onScroll={onScroll}
+        onPointerDown={grab}
+        onTouchStart={grab}
+        onWheel={grab}
         className="relative h-full snap-y snap-mandatory overflow-y-auto hide-scrollbar"
       >
         {/* 위 여백 — 칸 높이의 반(첫 줄도 가운데에 선다) */}
@@ -1182,8 +1209,9 @@ function ProvinceDial({ provinces, active, onChange, marked }: { provinces: stri
               key={prov}
               data-dial-row
               type="button"
-              onClick={() => onChange(prov)}
-              className={`flex w-full snap-center items-center justify-center gap-1.5 text-[16.5px] transition-colors duration-200 ${on ? 'font-bold text-[#191F28]' : 'text-[#6B7684]'}`}
+              onClick={() => { grab(); onChange(prov); }}
+              aria-current={on ? 'true' : undefined}
+              className={`flex w-full snap-center items-center justify-center gap-1.5 text-[16.5px] ${on ? 'font-bold text-[#191F28]' : 'text-[#6B7684]'}`}
               style={{ height: ROW, transformOrigin: 'center', willChange: 'transform, opacity' }}
             >
               {prov}
@@ -1223,7 +1251,7 @@ function PriceScrubField({ label, value, onChange, placeholder }: { label: strin
           st.active = true;
           setScrubbing(true);
           inputRef.current?.blur();
-          navigator.vibrate?.(8);
+          haptic('medium');
         }, 350);
         press.current = st;
       }}
@@ -1241,7 +1269,7 @@ function PriceScrubField({ label, value, onChange, placeholder }: { label: strin
         st.last = steps;
         const next = Math.max(0, Math.min(PRICE_CAP, st.base + steps * PRICE_STEP));
         onChange(next === 0 && label === '최대' ? null : next);
-        navigator.vibrate?.(3);
+        haptic('selection');
       }}
       onPointerUp={(e) => { if (end()) e.preventDefault(); }}
       onPointerCancel={end}
@@ -1335,7 +1363,7 @@ function ListPageFilters({
           {bookingOn ? selectedBooking : '예약방법'}
           {caret(bookingOn)}
         </button>
-        <button type="button" onClick={() => setSelectedBooking(isAppPay ? '전체' : '앱결제')} aria-pressed={isAppPay} className={`${chip(isAppPay)} !gap-1 !px-3`}>
+        <button type="button" onClick={() => { haptic('light'); setSelectedBooking(isAppPay ? '전체' : '앱결제'); }} aria-pressed={isAppPay} className={`${chip(isAppPay)} !gap-1 !px-3`}>
           <span className={`flex h-[18px] w-[18px] items-center justify-center rounded-full transition-colors ${isAppPay ? 'bg-[#2F6FE4]' : 'border-[1.6px] border-[#C9CED6]'}`}>
             {isAppPay && <Check size={12} strokeWidth={3.4} className="text-white" />}
           </span>
@@ -1366,7 +1394,7 @@ function ListPageFilters({
                       type="button"
                       role="menuitemradio"
                       aria-checked={on}
-                      onClick={() => { setSelectedSort(o); setSortOpen(false); }}
+                      onClick={() => { if (o !== selectedSort) haptic('selection'); setSelectedSort(o); setSortOpen(false); }}
                       className="pop-menu-item flex w-full items-center gap-3 py-[9px] pl-5 pr-6 text-left"
                       style={{ animationDelay: `${0.07 + i * 0.035}s` }}
                     >

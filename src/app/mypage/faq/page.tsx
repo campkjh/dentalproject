@@ -6,6 +6,7 @@ import { useLayoutEffect, useRef, useState, useEffect } from 'react';
 import TopBar from '@/components/common/TopBar';
 import { QdBody, MySectionTitle, MY_CARD } from '@/components/detail/QdKit';
 import { Screen, EmptyBlock, screenCss as s } from '@/components/mypage/screens/ScreenKit';
+import { haptic } from '@/lib/haptics';
 
 const tabs = ['이용문의', '결제문의', '서비스문의', '기타문의'];
 
@@ -89,6 +90,7 @@ export default function FAQPage() {
   }, [activeIdx]);
 
   const changeTab = (t: string) => {
+    if (t !== activeTab) haptic('selection');
     setActiveTab(t);
     setOpenId(null);
   };

@@ -17,6 +17,7 @@ import { toneAccent, useImageTone } from '@/lib/image-tone';
 import { resolveHospitalImageUrl, resolveProductImageUrl } from '@/lib/images';
 import MonoIcon from '@/components/common/MonoIcon';
 import TossBubble, { BubbleMoonIcon } from '@/components/common/TossBubble';
+import { haptic } from '@/lib/haptics';
 
 const faqItems = [
   {
@@ -253,6 +254,7 @@ export default function ProductDetailPage() {
   const toggleLike = () => {
     if (!user) { window.dispatchEvent(new Event('dental:login')); return; }
     const next = !liked;
+    haptic(next ? 'medium' : 'light');
     setLiked(next);
     writeLikedLocal(product.id, next);
     if (next) { setLikeAnim(true); setTimeout(() => setLikeAnim(false), 450); }
@@ -506,7 +508,7 @@ export default function ProductDetailPage() {
                 <button
                   type="button"
                   key={tab.id}
-                  onClick={() => scrollToSection(tab.id)}
+                  onClick={() => { if (tab.id !== activeSection) haptic('selection'); scrollToSection(tab.id); }}
                   className={`relative flex-1 rounded-[13px] py-2 text-[13px] transition-colors duration-300 ${activeSection === tab.id ? 'font-bold text-[#2B313D]' : 'font-semibold text-[#A4ABBA] hover:text-[#51535C]'}`}
                 >
                   {tab.label}
@@ -550,7 +552,7 @@ export default function ProductDetailPage() {
                     <button
                       key={o.id}
                       type="button"
-                      onClick={() => setOptionId(o.id)}
+                      onClick={() => { if (!on) haptic('selection'); setOptionId(o.id); }}
                       className={`flex w-full items-center gap-3.5 rounded-[16px] px-4 py-4 text-left transition-colors ${on ? 'bg-[#EFF5FE]' : 'bg-white active:bg-[#F9FAFB]'}`}
                     >
                       <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full transition-colors ${on ? 'bg-[#2F6FE4]' : 'border-2 border-[#E5E8EB]'}`}>

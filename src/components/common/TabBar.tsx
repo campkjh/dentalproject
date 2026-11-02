@@ -1,5 +1,7 @@
 'use client';
 
+import { haptic } from '@/lib/haptics';
+
 interface TabBarProps {
   tabs: string[];
   activeTab: string;
@@ -15,7 +17,7 @@ export default function TabBar({ tabs, activeTab, onTabChange, variant = 'pill',
         {tabs.map((tab) => (
           <button
             key={tab}
-            onClick={() => onTabChange(tab)}
+            onClick={() => { if (tab !== activeTab) haptic('selection'); onTabChange(tab); }}
             className={`flex-1 py-3 text-sm font-medium border-b-2 transition-all duration-300 ${
               activeTab === tab
                 ? 'border-[#8037FF] text-[#8037FF]'
@@ -36,7 +38,7 @@ export default function TabBar({ tabs, activeTab, onTabChange, variant = 'pill',
         {tabs.map((tab) => (
           <button
             key={tab}
-            onClick={() => onTabChange(tab)}
+            onClick={() => { if (tab !== activeTab) haptic('selection'); onTabChange(tab); }}
             className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all duration-300 ${
               activeTab === tab
                 ? 'bg-white text-black shadow-sm'
@@ -56,7 +58,7 @@ export default function TabBar({ tabs, activeTab, onTabChange, variant = 'pill',
       {tabs.map((tab) => (
         <button
           key={tab}
-          onClick={() => onTabChange(tab)}
+          onClick={() => { if (tab !== activeTab) haptic('selection'); onTabChange(tab); }}
           className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-300 btn-press ${
             activeTab === tab
               ? 'bg-gray-900 text-white'

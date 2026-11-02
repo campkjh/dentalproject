@@ -10,6 +10,7 @@ import type { Post } from '@/types';
 import CommunityPostCard from './CommunityPostCard';
 import { BackIcon, CloseIcon, EmojiBar, formatCount, ReplyArrowIcon, SendUpIcon, SortArrowsIcon, TossHeartIcon } from './StadyIcons';
 import styles from './community.module.css';
+import { haptic } from '@/lib/haptics';
 
 interface CommunityComment {
   id: string; postId: string; authorId: string; authorName: string;
@@ -140,6 +141,7 @@ export default function CommunityDetail({ postId, commentsOnly = false, onClose,
     if (!user) { showToast('로그인이 필요합니다.'); return; }
     if (commentLikesBusy.current.has(comment.id)) return;
     commentLikesBusy.current.add(comment.id);
+    haptic(comment.liked ? 'light' : 'medium');
     setComments(current => current.map(c => c.id === comment.id ? { ...c, liked: !c.liked, likeCount: Math.max(0, c.likeCount + (c.liked ? -1 : 1)) } : c));
     try {
       const response = await fetch('/api/community/comment-like', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ commentId: comment.id }) });
@@ -222,7 +224,7 @@ export default function CommunityDetail({ postId, commentsOnly = false, onClose,
     <button type="button" className={styles.sortButton} aria-haspopup="listbox" aria-expanded={sortOpen} onClick={() => setSortOpen(v => !v)}>{COMMENT_SORTS.find(x => x.key === sort)?.label}<SortArrowsIcon /></button>
     {sortOpen && <>
       <div className={styles.sortBackdrop} onClick={() => setSortOpen(false)} />
-      <div className={styles.sortMenu} data-align="left" role="listbox">{COMMENT_SORTS.map(x => <button key={x.key} type="button" role="option" aria-selected={sort === x.key} className={styles.sortItem} onClick={() => { setSortOpen(false); setSort(x.key); }}>{x.label}</button>)}</div>
+      <div className={styles.sortMenu} data-align="left" role="listbox">{COMMENT_SORTS.map(x => <button key={x.key} type="button" role="option" aria-selected={sort === x.key} className={styles.sortItem} onClick={() => { if (x.key !== sort) haptic('selection'); setSortOpen(false); setSort(x.key); }}>{x.label}</button>)}</div>
     </>}
   </>;
 

@@ -9,6 +9,7 @@ import { useStore } from '@/store';
 import MonoIcon from '@/components/common/MonoIcon';
 import { startNativeKakaoLogin } from './kakao-login';
 import styles from './onboarding.module.css';
+import { haptic } from '@/lib/haptics';
 
 /* ─────────────────────────────────────────────────────────────
  * 로그인 진입 = 전체 화면 온보딩(토스 계열 앱 온보딩 견본).
@@ -156,8 +157,9 @@ export default function LoginOnboarding({ onClose }: { onClose: () => void }) {
     if (p.axis === 'x') {
       const dx = e.clientX - p.x;
       const fast = Math.abs(dx) / Math.max(1, performance.now() - p.t) > 0.45;
-      if (dx <= -SWIPE_PX || (fast && dx < -16)) setIndex((i) => Math.min(SLIDES.length - 1, i + 1));
-      else if (dx >= SWIPE_PX || (fast && dx > 16)) setIndex((i) => Math.max(0, i - 1));
+      // 손으로 넘기면 한 칸 '딱'(끝 장에서 더 밀면 조용히)
+      if (dx <= -SWIPE_PX || (fast && dx < -16)) { if (index < SLIDES.length - 1) haptic('selection'); setIndex((i) => Math.min(SLIDES.length - 1, i + 1)); }
+      else if (dx >= SWIPE_PX || (fast && dx > 16)) { if (index > 0) haptic('selection'); setIndex((i) => Math.max(0, i - 1)); }
     }
     setDrag(null);
   };
@@ -277,7 +279,7 @@ export default function LoginOnboarding({ onClose }: { onClose: () => void }) {
               aria-label={`${i + 1}번째 소개 보기`}
               className={styles.dot}
               data-active={i === index || undefined}
-              onClick={() => setIndex(i)}
+              onClick={() => { if (i !== index) haptic('selection'); setIndex(i); }}
             />
           ))}
         </div>

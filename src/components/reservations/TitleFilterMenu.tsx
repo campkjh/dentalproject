@@ -4,6 +4,7 @@
 //  · 제목을 누르면 토스 팝 메뉴(globals .pop-menu — 작게 시작해 커지고 항목은 오른쪽→왼쪽 촤라락)가 열리고, 고르면 제목이 그 이름으로 바뀐다.
 //  · 바깥 클릭판(fixed)이 transform 조상 안에 들어가면 그 조상 크기로 줄어든다 → 등장 애니는 버튼 안쪽 span 에만 건다.
 import { useState, type CSSProperties, type ReactNode } from 'react';
+import { haptic } from '@/lib/haptics';
 
 /** 툴팁 메뉴 항목 순차 등장 — globals.css `.pop-menu-item` 과 짝 */
 const popItemDelay = (i: number): CSSProperties => ({ animationDelay: `${0.07 + i * 0.035}s` });
@@ -72,7 +73,7 @@ export default function TitleFilterMenu<K extends string>({
                   type="button"
                   role="menuitemradio"
                   aria-checked={on}
-                  onClick={() => { onChange(o.key); setOpen(false); }}
+                  onClick={() => { if (o.key !== value) haptic('selection'); onChange(o.key); setOpen(false); }}
                   className="pop-menu-item flex w-full items-center gap-3.5 py-[9px] pl-5 pr-6 text-left"
                   style={popItemDelay(i)}
                 >
