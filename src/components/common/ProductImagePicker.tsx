@@ -5,12 +5,17 @@ import { Plus } from 'lucide-react';
 
 function SelectionPreview({ file }: { file: File }) {
   const imageRef = useRef<HTMLImageElement>(null);
+  const [failed, setFailed] = useState(false);
   useEffect(() => {
     const url = URL.createObjectURL(file);
     if (imageRef.current) imageRef.current.src = url;
     return () => URL.revokeObjectURL(url);
   }, [file]);
-  return <img ref={imageRef} alt={file.name} className="h-20 w-20 rounded-xl object-contain bg-white" />; // eslint-disable-line @next/next/no-img-element
+  return <div className="h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-white">
+    {/* eslint-disable-next-line @next/next/no-img-element */}
+    <img ref={imageRef} alt={file.name} onError={() => setFailed(true)} className={failed ? 'hidden' : 'h-full w-full object-contain'} />
+    {failed && <span className="flex h-full items-center p-2 text-xs text-[#D14343]">미리보기 불가 · 이미지 형식을 확인해주세요.</span>}
+  </div>;
 }
 
 /** Review only the files returned by this picker before adding them to the product. */
@@ -24,6 +29,8 @@ export default function ProductImagePicker({ label, className, disabled, uploadi
   onSelectionChange: (count: number) => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const previewRef = useRef<HTMLDivElement>(null);
+  const revealSelection = useRef(false);
   const working = useRef(false);
   const mounted = useRef(false);
   useEffect(() => {
@@ -31,6 +38,14 @@ export default function ProductImagePicker({ label, className, disabled, uploadi
     return () => { mounted.current = false; };
   }, []);
   const [selected, setSelected] = useState<{ id: string; file: File }[]>([]);
+  useEffect(() => {
+    if (!selected.length || !revealSelection.current) return;
+    const frame = requestAnimationFrame(() => {
+      revealSelection.current = false;
+      previewRef.current?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [selected]);
   const changeSelection = (next: typeof selected) => {
     setSelected(next);
     onSelectionChange(next.length);
@@ -45,9 +60,12 @@ export default function ProductImagePicker({ label, className, disabled, uploadi
         const files = Array.from(event.currentTarget.files ?? []);
         event.currentTarget.value = '';
         // Cancel preserves the current selection; a new selection replaces the staged batch.
-        if (files.length) changeSelection(files.map(file => ({ id: crypto.randomUUID(), file })));
+        if (files.length) {
+          revealSelection.current = true;
+          changeSelection(files.map(file => ({ id: crypto.randomUUID(), file })));
+        }
       }} />
-    {selected.length > 0 && <div className="flex flex-col gap-3 rounded-2xl bg-[#EFF5FE] p-3" aria-live="polite">
+    {selected.length > 0 && <div ref={previewRef} className="flex scroll-mt-4 flex-col gap-3 rounded-2xl bg-[#EFF5FE] p-3" aria-live="polite">
       <p className="text-sm font-semibold">{label} · 선택한 사진 {selected.length}장</p>
       <p className="text-xs text-[#6B7684]">아래 사진만 추가합니다. 기존 사진은 삭제 버튼으로 뺄 수 있어요.</p>
       {selected.map(item => <div key={item.id} className="flex items-center gap-3">
