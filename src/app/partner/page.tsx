@@ -1519,7 +1519,7 @@ export default function PartnerHomePage() {
 
             <div className="partner-product-images">
               <span className="partner-product-images-label">
-                썸네일 이미지 <b>{productForm.imageUrls.length}/{PRODUCT_THUMB_MAX}</b>
+                썸네일 이미지 <b>등록 {productForm.imageUrls.length}/{PRODUCT_THUMB_MAX}{productImageSelection.imageUrls > 0 ? ` · 선택 ${productImageSelection.imageUrls}장` : ''}</b>
               </span>
               <div className="partner-product-thumbs">
                 {productForm.imageUrls.map((url, i) => (
@@ -1545,7 +1545,7 @@ export default function PartnerHomePage() {
 
             <div className="partner-product-images">
               <span className="partner-product-images-label">
-                상세페이지 이미지 <b>{productForm.detailImageUrls.length}/{PRODUCT_DETAIL_MAX}</b>
+                상세페이지 이미지 <b>등록 {productForm.detailImageUrls.length}/{PRODUCT_DETAIL_MAX}{productImageSelection.detailImageUrls > 0 ? ` · 선택 ${productImageSelection.detailImageUrls}장` : ''}</b>
               </span>
               <LongPressSortList
                 items={productForm.detailImageUrls}
