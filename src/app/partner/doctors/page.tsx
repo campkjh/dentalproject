@@ -1,5 +1,7 @@
 'use client';
 
+import { specialtyLabel } from '@/lib/category-code';
+
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -220,7 +222,7 @@ export default function PartnerDoctorsPage() {
                         <span className="shrink-0 text-[14px] text-[#6B7684]">{title}</span>
                         {current && <span className="inline-flex h-5 shrink-0 items-center rounded-[5px] bg-[#EFF5FE] px-1.5 text-[12px] font-bold text-[#2F6FE4]">나</span>}
                       </p>
-                      <p className="mt-0.5 truncate text-[14px] text-[#8B95A1]">{doctor.specialty || doctor.bio || '전문분야 미등록'}</p>
+                      <p className="mt-0.5 truncate text-[14px] text-[#8B95A1]">{specialtyLabel(doctor.specialty) || doctor.bio || '전문분야 미등록'}</p>
                       <p className="truncate text-[14px] text-[#B0B8C1]">{hospitalName || '소속 병원 미등록'}</p>
                     </div>
                     <div className="flex shrink-0 items-center gap-1.5">
@@ -279,7 +281,7 @@ export default function PartnerDoctorsPage() {
                             <span className="truncate text-[17px] font-bold text-[#191F28]">{doctor.name}</span>
                             <span className="shrink-0 text-[14px] text-[#6B7684]">{doctor.title || '원장'}</span>
                           </p>
-                          <p className="mt-0.5 truncate text-[14px] text-[#8B95A1]">{doctor.specialty || doctor.bio || '전문분야 미등록'}</p>
+                          <p className="mt-0.5 truncate text-[14px] text-[#8B95A1]">{specialtyLabel(doctor.specialty) || doctor.bio || '전문분야 미등록'}</p>
                         </div>
                       </div>
                       <div className="mt-3 flex gap-2">

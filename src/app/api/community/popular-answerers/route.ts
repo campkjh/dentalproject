@@ -1,3 +1,4 @@
+import { specialtyLabel } from '@/lib/category-code';
 import { NextResponse, type NextRequest } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 
@@ -103,7 +104,7 @@ export async function POST(req: NextRequest) {
         name: profile.name ?? '전문의',
         profileImage: doctor?.profile_image ?? profile.profile_image ?? undefined,
         title: doctor?.title ?? undefined,
-        specialty: doctor?.specialty ?? undefined,
+        specialty: specialtyLabel(doctor?.specialty) || undefined,
         hospitalName: hospital?.name ?? undefined,
         answerCount: answerCounts.get(row.post_id) ?? 1,
       };

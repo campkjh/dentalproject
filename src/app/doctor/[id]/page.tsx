@@ -1,5 +1,7 @@
 'use client';
 
+import { specialtyLabel } from '@/lib/category-code';
+
 // 의사 프로필 — 상품 상세 '병원 정보'(261031 쿠팡 견본) 결: 사람 줄 · 회색 이름 정보 줄 · 20 굵은 제목 · 회색 띠로 칸 나눔.
 
 import { useParams, useRouter } from 'next/navigation';
@@ -81,7 +83,7 @@ export default function DoctorDetailPage() {
             <div className="mt-4">
               {[
                 ...(doctor.title && doctor.title !== roleLabel ? [{ label: '직함', value: doctor.title }] : []),
-                ...(doctor.specialty ? [{ label: '진료분야', value: doctor.specialty }] : []),
+                ...(doctor.specialty ? [{ label: '진료분야', value: specialtyLabel(doctor.specialty) }] : []),
                 { label: '소속', value: hospital.name },
                 { label: '평점', value: `${doctorAvgRating}점 · 리뷰 ${doctorReviews.length}건` },
               ].map((r) => (

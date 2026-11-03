@@ -1,5 +1,7 @@
 'use client';
 
+import { categoryLabel } from '@/lib/category-code';
+
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useSession } from '@/lib/supabase/SessionProvider';
@@ -658,7 +660,7 @@ export default function PartnerHospitalInfoPage() {
             )}
           </button>
           <div className="min-w-0 flex-1">
-            <span className="inline-flex h-6 items-center rounded-[6px] bg-[#EFF5FE] px-2 text-[13px] font-semibold text-[#2F6FE4]">{hospital.category ?? '진료과 미등록'}</span>
+            <span className="inline-flex h-6 items-center rounded-[6px] bg-[#EFF5FE] px-2 text-[13px] font-semibold text-[#2F6FE4]">{categoryLabel(hospital.category) || '진료과 미등록'}</span>
             <h2 className="mt-1 truncate text-[20px] font-bold tracking-[-0.4px] text-[#191F28]">{hospital.name ?? '병원명 미등록'}</h2>
           </div>
         </div>

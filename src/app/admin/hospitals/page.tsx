@@ -1,5 +1,7 @@
 'use client';
 
+import { categoryLabel, CATEGORY_OPTIONS } from '@/lib/category-code';
+
 import { useState, useEffect, useMemo } from 'react';
 import { Download, Plus, Building2 } from 'lucide-react';
 import { useStore } from '@/store';
@@ -37,9 +39,6 @@ const statusTone: Record<ApiStatus, 'orange' | 'green' | 'gray' | 'red'> = {
   suspended: 'red',
 };
 
-const categoryLabel: Record<string, string> = {
-  dental: '치과', plastic: '성형외과', dermatology: '피부과', eye: '안과', 'korean-medicine': '한의원',
-};
 
 const FILTER_TABS: { value: 'all' | ApiStatus; label: string }[] = [
   { value: 'all', label: '전체' },
@@ -60,7 +59,7 @@ function rowFromApi(h: any): HospitalRow {
     name: h.name,
     ceo: h.owner?.name ?? '-',
     phone: h.phone ?? h.owner?.phone ?? '-',
-    category: categoryLabel[h.category] ?? h.category ?? '기타',
+    category: categoryLabel(h.category) || '기타',
     doctorCount: (h.doctors ?? []).length,
     registeredDate: h.created_at ? new Date(h.created_at).toISOString().slice(0, 10) : '',
     status: h.status,
@@ -322,7 +321,7 @@ export default function AdminHospitalsPage() {
           <div className="adm-field">
             <label className="adm-label">카테고리 <span style={{ color: '#F04452' }}>*</span></label>
             <div className="adm-chips">
-              {Object.entries(categoryLabel).map(([k, v]) => (
+              {CATEGORY_OPTIONS.map(({ value: k, label: v }) => (
                 <button
                   key={k}
                   type="button"

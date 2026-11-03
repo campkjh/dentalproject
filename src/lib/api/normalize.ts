@@ -1,4 +1,5 @@
 import type { Hospital, Product, Doctor, Review, OperatingHour } from '@/types';
+import { categoryLabel, categoryName, specialtyLabel, toCategoryCode } from '@/lib/category-code';
 import {
   extractProductDetailImageUrl,
   getVisibleProductTags,
@@ -28,10 +29,7 @@ export function normalizeHospital(row: any): Hospital {
   return {
     id: row.slug ?? row.id,
     name: row.name,
-    category:
-      row.category === 'dental' ? '치과'
-        : row.category === 'plastic' ? '성형외과'
-        : row.category ?? '',
+    category: categoryLabel(row.category),
     location: row.location ?? '',
     phone: row.phone ?? '',
     tags: row.tags ?? [],
@@ -58,7 +56,7 @@ export function normalizeHospital(row: any): Hospital {
       id: d.id,
       name: d.name,
       title: d.title ?? '',
-      specialty: d.specialty ?? '',
+      specialty: specialtyLabel(d.specialty),
       hospitalName: row.name,
       hospitalId: row.slug ?? row.id,
       profileImage: d.profile_image ?? undefined,
@@ -91,8 +89,8 @@ export function normalizeProduct(row: any): Product {
     detailImageUrls: imageList(row.detail_image_urls),
     description: typeof row.description === 'string' ? row.description : undefined,
     tags: getVisibleProductTags(row.tags),
-    category: row.category ?? '',
-    subCategory: row.sub_category ?? '',
+    category: toCategoryCode(row.category) ?? row.category ?? '',
+    subCategory: specialtyLabel(row.sub_category),
     options: row.product_options
       ? row.product_options
           .sort((a: any, b: any) => a.sort_order - b.sort_order)
@@ -135,8 +133,8 @@ export function normalizeReview(row: any): Review {
 
 export function normalizeCategory(row: any) {
   return {
-    id: row.id,
-    name: row.name,
+    id: toCategoryCode(row.id) ?? row.id,
+    name: categoryName(row.name, row.id),
     icon: row.icon ?? '',
     popular: row.popular ?? false,
   };

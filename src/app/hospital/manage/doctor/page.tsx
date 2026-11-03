@@ -1,5 +1,7 @@
 'use client';
 
+import { specialtyLabel } from '@/lib/category-code';
+
 import { useState, Suspense, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Avatar from '@/components/common/Avatar';
@@ -210,7 +212,7 @@ function DoctorAssignPage() {
                     )}
                   </p>
                   {doctor.specialty && (
-                    <p className={`mt-0.5 truncate text-[14px] ${isUnavailable ? 'text-[#B0B8C1]' : 'text-[#8B95A1]'}`}>{doctor.specialty}</p>
+                    <p className={`mt-0.5 truncate text-[14px] ${isUnavailable ? 'text-[#B0B8C1]' : 'text-[#8B95A1]'}`}>{specialtyLabel(doctor.specialty)}</p>
                   )}
                   {isUnavailable && <p className="mt-0.5 text-[13px] text-[#F04452]">해당 시간 스케줄 있음</p>}
                 </div>

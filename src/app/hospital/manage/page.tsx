@@ -1,5 +1,7 @@
 'use client';
 
+import { categoryLabel, specialtyLabel } from '@/lib/category-code';
+
 // 병원관리 — 상품 상세(261031 쿠팡 견본) 톤: 세그먼트 탭 · 20 굵은 제목 · 회색 이름 정보 줄 · 회색 띠로 칸 나눔.
 import { useState, useEffect } from 'react';
 import { ChevronRight, Star } from 'lucide-react';
@@ -282,7 +284,7 @@ function HospitalTab({ hospital }: { hospital: HospitalRow }) {
           <img src={hospitalImage} alt="" className="h-[52px] w-[52px] shrink-0 rounded-[14px] bg-[#F2F4F6] object-cover" />
           <div className="min-w-0 flex-1">
             {hospital.category && (
-              <span className="inline-flex h-6 items-center rounded-[6px] bg-[#EFF5FE] px-2 text-[13px] font-semibold text-[#2F6FE4]">{hospital.category}</span>
+              <span className="inline-flex h-6 items-center rounded-[6px] bg-[#EFF5FE] px-2 text-[13px] font-semibold text-[#2F6FE4]">{categoryLabel(hospital.category)}</span>
             )}
             <p className="mt-0.5 truncate text-[17px] font-bold text-[#191F28]">{hospital.name}</p>
           </div>
@@ -385,7 +387,7 @@ function MemberTab({
                     <span className="inline-flex h-5 shrink-0 items-center rounded-[5px] bg-[#EFF5FE] px-1.5 text-[12px] font-bold text-[#2F6FE4]">나</span>
                   )}
                 </p>
-                {doctor.specialty && <p className="mt-0.5 truncate text-[14px] text-[#8B95A1]">{doctor.specialty}</p>}
+                {doctor.specialty && <p className="mt-0.5 truncate text-[14px] text-[#8B95A1]">{specialtyLabel(doctor.specialty)}</p>}
               </div>
               <div className="shrink-0">
                 {doctor.is_owner ? (
@@ -422,7 +424,7 @@ function MemberTab({
                         <span className="text-[17px] font-bold text-[#191F28]">{request.name}</span>
                         <span className="text-[14px] text-[#6B7684]">{request.title}</span>
                       </p>
-                      <p className="mt-0.5 text-[14px] text-[#8B95A1]">{request.specialty}</p>
+                      <p className="mt-0.5 text-[14px] text-[#8B95A1]">{specialtyLabel(request.specialty)}</p>
                     </div>
                   </div>
                   <div className="mt-3 flex gap-2">

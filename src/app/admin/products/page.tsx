@@ -1,5 +1,7 @@
 'use client';
 
+import { categoryLabel } from '@/lib/category-code';
+
 import { useEffect, useState, useMemo } from 'react';
 import { useStore } from '@/store';
 import { useInfiniteScroll } from '@/lib/hooks/useInfiniteScroll';
@@ -68,7 +70,7 @@ export default function AdminProductsPage() {
       const res = await fetch('/api/admin/products', { cache: 'no-store' });
       if (!res.ok) return;
       const data = await res.json();
-      setProducts(data.products ?? []);
+      setProducts((data.products ?? []).map((product: Product) => ({ ...product, category: categoryLabel(product.category) || '미분류' })));
     } finally {
       setLoading(false);
     }
@@ -238,7 +240,7 @@ export default function AdminProductsPage() {
               <FilterChips
                 value={categoryFilter}
                 onChange={setCategoryFilter}
-                options={categories.slice(0, 8).map((c) => ({ value: c, label: c }))}
+                options={categories.map((c) => ({ value: c, label: c }))}
                 ariaLabel="카테고리"
               />
             </Toolbar>

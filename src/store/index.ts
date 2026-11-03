@@ -3,6 +3,7 @@ import { User, Reservation, Product, Post, Comment, Review, Hospital, Notificati
 import { pickCustomerProfileAvatarBySeed } from '@/lib/customer-profile-avatars';
 import { resolveHospitalImageUrl, resolveProductImageUrl } from '@/lib/images';
 import { haptic, toneOfMessage } from '@/lib/haptics';
+import { normalizeCategory } from '@/lib/api/normalize';
 import {
   products as mockProducts,
   hospitals as mockHospitals,
@@ -233,7 +234,7 @@ export const useStore = create<AppState>((set, get) => ({
           hospitals: data.hospitals ?? get().hospitals,
           products: data.products ?? get().products,
           reviews: data.reviews ?? get().reviews,
-          categories: data.categories ?? get().categories,
+          categories: (data.categories ?? get().categories).map(normalizeCategory),
           posts: data.posts ?? get().posts,
           comments: data.comments ?? get().comments,
           announcements: data.announcements ?? get().announcements,
@@ -251,7 +252,7 @@ export const useStore = create<AppState>((set, get) => ({
         hospitals: data.hospitals?.length ? data.hospitals : get().hospitals,
         products: data.products?.length ? data.products : get().products,
         reviews: data.reviews?.length ? data.reviews : get().reviews,
-        categories: data.categories?.length ? data.categories : get().categories,
+        categories: (data.categories?.length ? data.categories : get().categories).map(normalizeCategory),
         posts: data.posts?.length ? data.posts : get().posts,
         comments: data.comments?.length ? data.comments : get().comments,
         announcements: data.announcements?.length ? data.announcements : get().announcements,

@@ -1,5 +1,7 @@
 'use client';
 
+import { specialtyLabel } from '@/lib/category-code';
+
 import { useEffect, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useStore } from '@/store';
@@ -77,7 +79,7 @@ export default function DoctorEditPage() {
           setForm({
             name: data.name ?? '',
             title: data.title ?? '원장',
-            specialty: data.specialty ?? '',
+            specialty: specialtyLabel(data.specialty),
             bio: data.bio ?? '',
             profile_image: data.profile_image ?? '',
             is_owner: data.is_owner ?? false,

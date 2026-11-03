@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from 'next/server';
+import { categoryLabel } from '@/lib/category-code';
 import { cancelExpiredPendingReservations, completePastConfirmedReservations } from '@/lib/db/reservation-status';
 import { createAdminClient, createClient } from '@/lib/supabase/server';
 
@@ -80,7 +81,7 @@ export async function GET(req: Request) {
   // Category distribution
   const catCount: Record<string, number> = {};
   for (const p of products) {
-    const c = (p as any).category ?? 'etc';
+    const c = categoryLabel((p as any).category) || '기타';
     catCount[c] = (catCount[c] ?? 0) + 1;
   }
   const categoryData = Object.entries(catCount)

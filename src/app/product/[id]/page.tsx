@@ -1,5 +1,7 @@
 'use client';
 
+import { categoryLabel, specialtyLabel } from '@/lib/category-code';
+
 import { useState, useEffect, useRef } from 'react';
 import { trackProduct } from '@/lib/product-tracking';
 import { useParams, useRouter } from 'next/navigation';
@@ -245,7 +247,7 @@ export default function ProductDetailPage() {
     return oh.isClosed ? '오늘 휴진' : `오늘 ${oh.startTime} ~ ${oh.endTime}`;
   })();
   const tagChips = product.tags.map(t => t.replace(/^#/, '').trim()).filter(Boolean);
-  const categoryName = categories.find(c => c.id === product.category)?.name;
+  const categoryName = categoryLabel(categories.find(c => c.id === product.category)?.name || product.category);
 
   const share = () => {
     if (navigator.share) navigator.share({ title: product.title, url: window.location.href }).catch(() => {});
@@ -738,7 +740,7 @@ export default function ProductDetailPage() {
                           <Avatar src={d.profileImage} role="doctor" seed={d.name} size={48} alt={d.name} className="shrink-0" />
                           <div className="min-w-0 flex-1">
                             <p className="text-[16px] font-medium text-[#191F28]">{d.name} <span className="text-[14px] text-[#6B7684]">{d.isOwner ? '대표원장' : d.title || '원장'}</span></p>
-                            {d.specialty && <p className="mt-0.5 truncate text-[14px] text-[#8B95A1]">{d.specialty}</p>}
+                            {d.specialty && <p className="mt-0.5 truncate text-[14px] text-[#8B95A1]">{specialtyLabel(d.specialty)}</p>}
                           </div>
                           <ChevronRight size={18} className="shrink-0 text-[#B0B8C1]" />
                         </Link>
