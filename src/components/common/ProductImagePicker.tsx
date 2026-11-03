@@ -53,13 +53,13 @@ export default function ProductImagePicker({ label, className, disabled, uploadi
       {selected.map(item => <div key={item.id} className="flex items-center gap-3">
         <SelectionPreview file={item.file} />
         <span className="min-w-0 flex-1 break-all text-xs">{item.file.name}</span>
-        <button type="button" disabled={disabled} aria-label={`${item.file.name} 선택 취소`}
+        <button type="button" className="shrink-0 rounded-lg px-2 py-2 text-sm text-[#6B7684] disabled:opacity-50" disabled={disabled} aria-label={`${item.file.name} 선택 취소`}
           onClick={() => changeSelection(selected.filter(candidate => candidate.id !== item.id))}>제외</button>
       </div>)}
       {selected.length > room && <p className="text-sm text-[#D14343]">최대 등록 수를 초과했어요. {selected.length - room}장을 제외해주세요.</p>}
       <div className="flex gap-3">
-        <button type="button" disabled={disabled} onClick={() => changeSelection([])}>선택 취소</button>
-        <button type="button" disabled={disabled || selected.length > room}
+        <button type="button" className="rounded-xl bg-white px-3 py-3 text-sm font-semibold disabled:opacity-50" disabled={disabled} onClick={() => changeSelection([])}>선택 취소</button>
+        <button type="button" className="rounded-xl bg-[#4A82EE] px-3 py-3 text-sm font-semibold text-white disabled:opacity-50" disabled={disabled || selected.length > room}
           onClick={async () => {
             if (working.current) return;
             working.current = true;
