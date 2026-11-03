@@ -43,21 +43,21 @@ export async function POST(req: NextRequest) {
     tokens = explicitTokens;
   } else {
     const admin = await createAdminClient();
-    const { data, error } = await admin.from('profiles').select('push_token').not('push_token', 'is', null);
+    const { data, error } = await admin.from('push_devices').select('token');
     if (error) {
       const text = `${error.message ?? ''} ${error.details ?? ''}`.toLowerCase();
-      if (text.includes('push_token')) {
+      if (text.includes('push_devices')) {
         return NextResponse.json({
-          error: 'profiles.push_token 컬럼이 없습니다. 토큰 수집/저장이 먼저 필요합니다.',
+          error: '네이티브 푸시 기기 저장소가 없습니다. 0025 마이그레이션을 적용해주세요.',
         }, { status: 400 });
       }
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
-    tokens = (data ?? []).map((r: any) => r.push_token).filter(Boolean);
+    tokens = (data ?? []).map((r: any) => r.token).filter(Boolean);
   }
 
   if (!tokens.length) return NextResponse.json({ error: '발송할 디바이스 토큰이 없습니다.' }, { status: 400 });
 
   const result = await sendPush({ title, body: message, tokens });
-  return NextResponse.json(result);
+  return NextResponse.json({ ok: result.ok, configured: result.configured, sent: result.sent, failed: result.failed, errors: result.errors });
 }

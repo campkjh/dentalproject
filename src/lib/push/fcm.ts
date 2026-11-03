@@ -7,6 +7,8 @@ type PushPayload = {
   title: string;
   body: string;
   data?: Record<string, string>;
+  notificationId?: string;
+  quiet?: boolean;
 };
 
 type PushResult = {
@@ -15,6 +17,7 @@ type PushResult = {
   sent: number;
   failed: number;
   errors: string[];
+  invalidTokens: string[];
 };
 
 let cachedToken: { token: string; expiresAt: number } | null = null;
@@ -60,6 +63,7 @@ async function getAccessToken(clientEmail: string, privateKeyPem: string): Promi
   const jwt = `${unsigned}.${sigB64}`;
 
   const res = await fetch('https://oauth2.googleapis.com/token', {
+    signal: AbortSignal.timeout(10000),
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({
@@ -68,7 +72,7 @@ async function getAccessToken(clientEmail: string, privateKeyPem: string): Promi
     }),
   });
   if (!res.ok) {
-    throw new Error(`token exchange failed: ${res.status} ${await res.text()}`);
+    throw new Error(`FCM authentication failed (${res.status})`);
   }
   const data = await res.json();
   cachedToken = { token: data.access_token, expiresAt: Date.now() + (data.expires_in - 60) * 1000 };
@@ -81,7 +85,7 @@ export function isPushConfigured() {
 
 export async function sendPush(payload: PushPayload): Promise<PushResult> {
   if (!isPushConfigured()) {
-    return { ok: false, configured: false, sent: 0, failed: 0, errors: ['FCM 환경변수가 설정되지 않았습니다.'] };
+    return { ok: false, configured: false, sent: 0, failed: 0, errors: ['FCM 환경변수가 설정되지 않았습니다.'], invalidTokens: [] };
   }
 
   const projectId = process.env.FCM_PROJECT_ID!;
@@ -92,15 +96,16 @@ export async function sendPush(payload: PushPayload): Promise<PushResult> {
   try {
     accessToken = await getAccessToken(clientEmail, privateKey);
   } catch (err: any) {
-    return { ok: false, configured: true, sent: 0, failed: 0, errors: [err.message ?? 'token error'] };
+    return { ok: false, configured: true, sent: 0, failed: payload.tokens.length, errors: [err.message ?? 'token error'], invalidTokens: [] };
   }
 
-  const result: PushResult = { ok: true, configured: true, sent: 0, failed: 0, errors: [] };
+  const result: PushResult = { ok: true, configured: true, sent: 0, failed: 0, errors: [], invalidTokens: [] };
   const endpoint = `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`;
 
-  for (const token of payload.tokens) {
+  for (const token of new Set(payload.tokens)) {
     try {
       const res = await fetch(endpoint, {
+        signal: AbortSignal.timeout(10000),
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -111,6 +116,14 @@ export async function sendPush(payload: PushPayload): Promise<PushResult> {
             token,
             notification: { title: payload.title, body: payload.body },
             data: payload.data ?? {},
+            android: {
+              priority: 'high',
+              notification: { channel_id: payload.quiet ? 'mydoc_quiet' : 'mydoc_activity', tag: payload.notificationId },
+            },
+            apns: {
+              headers: { 'apns-priority': '10', ...(payload.notificationId ? { 'apns-collapse-id': payload.notificationId } : {}) },
+              payload: { aps: { ...(payload.quiet ? {} : { sound: 'default' }) } },
+            },
           },
         }),
       });
@@ -118,7 +131,10 @@ export async function sendPush(payload: PushPayload): Promise<PushResult> {
         result.sent += 1;
       } else {
         result.failed += 1;
-        result.errors.push(`${res.status}: ${(await res.text()).slice(0, 120)}`);
+        const failure = await res.json().catch(() => ({}));
+        const code = failure.error?.details?.find((detail: { errorCode?: string }) => detail.errorCode)?.errorCode;
+        if (code === 'UNREGISTERED') result.invalidTokens.push(token);
+        result.errors.push(`FCM ${res.status}: ${code || failure.error?.status || 'send failed'}`);
       }
     } catch (err: any) {
       result.failed += 1;
@@ -126,5 +142,6 @@ export async function sendPush(payload: PushPayload): Promise<PushResult> {
     }
   }
 
+  result.ok = result.failed === 0;
   return result;
 }

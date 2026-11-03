@@ -9,7 +9,7 @@ import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ShieldCheck } from 'lucide-react';
 import PortOne from '@portone/browser-sdk/v2';
-import { createClient } from '@/lib/supabase/client';
+import { useSession } from '@/lib/supabase/SessionProvider';
 import { haptic } from '@/lib/haptics';
 
 const STORE_ID = process.env.NEXT_PUBLIC_PORTONE_STORE_ID ?? '';
@@ -32,6 +32,7 @@ export default function VerifyIdentityPageWrapper() {
 
 function VerifyIdentityPage() {
   const router = useRouter();
+  const { signOut } = useSession();
   const searchParams = useSearchParams();
   const [phase, setPhase] = useState<Phase>('idle');
   const [message, setMessage] = useState('');
@@ -117,8 +118,8 @@ function VerifyIdentityPage() {
   };
 
   const logout = async () => {
-    await createClient().auth.signOut().catch(() => undefined);
-    router.replace('/');
+    try { await signOut(); router.replace('/'); }
+    catch { setMessage('로그아웃하지 못했어요. 인터넷 연결을 확인해주세요.'); setPhase('error'); }
   };
 
   return (

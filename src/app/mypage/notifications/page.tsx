@@ -1,7 +1,8 @@
 'use client';
 
 // 알림 설정 — 프리티풀 마이 > 알림 설정 그대로: 묶음 제목 + 카드 한 줄(제목 17 · 회색 설명 13 · 토스 스위치).
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { PUSH_DEFAULTS, pushPreferences } from '@/lib/push/policy';
 import TopBar from '@/components/common/TopBar';
 import { useStore } from '@/store';
 import { QdBody, QdList, MySectionTitle, MY_CARD } from '@/components/detail/QdKit';
@@ -70,17 +71,37 @@ const sections: { title: string; items: NotifSetting[] }[] = [
 ];
 
 export default function NotificationSettingsPage() {
-  const { isLoggedIn } = useStore();
-  const [values, setValues] = useState<Record<NotifKey, boolean>>({
-    reservation: true,
-    message: true,
-    community: false,
-    event: true,
-    marketing: false,
-    night: true,
-  });
+  const isLoggedIn = useStore(s => s.isLoggedIn);
+  const userId = useStore(s => s.user?.id);
+  const showToast = useStore(s => s.showToast);
+  const [values, setValues] = useState(PUSH_DEFAULTS);
+  const [loadedFor, setLoadedFor] = useState<string>();
+  const ready = Boolean(userId && loadedFor === userId);
+  const [saving, setSaving] = useState(false);
+  useEffect(() => {
+    if (!userId) return;
+    const controller = new AbortController();
+    fetch('/api/push/preferences', { cache: 'no-store', signal: controller.signal })
+      .then(async response => {
+        if (!response.ok) throw new Error();
+        const data = await response.json();
+        if (!controller.signal.aborted) { setValues(pushPreferences(data.settings)); setLoadedFor(userId); }
+      })
+      .catch(() => { if (!controller.signal.aborted) showToast('알림 설정을 불러오지 못했습니다.'); });
+    return () => controller.abort();
+  }, [userId, showToast]);
 
-  const toggle = (k: NotifKey) => setValues((v) => ({ ...v, [k]: !v[k] }));
+  const toggle = async (k: NotifKey) => {
+    if (!ready || saving) return;
+    setSaving(true);
+    const settings = { ...values, [k]: !values[k] };
+    try {
+      const response = await fetch('/api/push/preferences', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ settings }) });
+      if (!response.ok) throw new Error();
+      setValues(settings);
+    } catch { showToast('알림 설정을 저장하지 못했습니다.'); }
+    finally { setSaving(false); }
+  };
 
   if (!isLoggedIn) {
     return (
@@ -106,7 +127,7 @@ export default function NotificationSettingsPage() {
                     <p className="text-[17px] font-semibold text-[#333D4B]">{item.label}</p>
                     <p className="mt-[3px] break-keep text-[13px] leading-[1.45] text-[#8B95A1]">{item.description}</p>
                   </div>
-                  <TossSwitch on={values[item.key]} onToggle={() => toggle(item.key)} label={item.label} />
+                  <TossSwitch on={values[item.key]} onToggle={() => toggle(item.key)} label={item.label} disabled={!ready || saving} />
                 </div>
               ))}
             </QdList>

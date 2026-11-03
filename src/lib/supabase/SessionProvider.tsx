@@ -447,6 +447,12 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     },
     async signOut() {
       const currentUserId = session?.user.id;
+      const { unregisterNativePush } = await import('@/lib/push/native-client');
+      try { await unregisterNativePush(); }
+      catch {
+        useStore.getState().showToast('로그아웃하지 못했어요. 인터넷 연결을 확인해주세요.');
+        throw new Error('Logout failed');
+      }
       if (supabase) await supabase.auth.signOut();
       clearCachedHospitalAccess(currentUserId);
       clearMyHospitalCache(currentUserId);

@@ -1,3 +1,4 @@
+import { writeNotifications } from '@/lib/push/delivery';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse, type NextRequest } from 'next/server';
 import { broadcastReservationChange } from '@/lib/realtime/server';
@@ -73,7 +74,7 @@ export async function POST(req: NextRequest) {
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
 
   // Create notification for the user
-  await sb.from('notifications').insert({
+  await writeNotifications({
     user_id: user.id,
     type: 'info',
     title: '예약이 접수되었습니다',
@@ -88,7 +89,7 @@ export async function POST(req: NextRequest) {
     .eq('id', hospitalId)
     .maybeSingle();
   if (hospitalRow?.owner_id) {
-    await sb.from('notifications').insert({
+    await writeNotifications({
       user_id: hospitalRow.owner_id,
       type: 'important',
       title: '새 예약이 들어왔습니다',

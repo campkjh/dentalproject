@@ -1,3 +1,4 @@
+import { writeNotifications } from '@/lib/push/delivery';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse, type NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
@@ -113,7 +114,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Notify reviewer
-  await sb.from('notifications').insert({
+  await writeNotifications({
     user_id: user.id,
     type: 'info',
     title: '후기 작성 완료',
@@ -129,7 +130,7 @@ export async function POST(req: NextRequest) {
       .eq('id', hospitalId)
       .maybeSingle();
     if (hospitalRow?.owner_id) {
-      await sb.from('notifications').insert({
+      await writeNotifications({
         user_id: hospitalRow.owner_id,
         type: 'important',
         title: '새 후기가 등록되었습니다',

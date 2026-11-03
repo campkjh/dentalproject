@@ -1,3 +1,4 @@
+import { writeNotifications } from '@/lib/push/delivery';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse, type NextRequest } from 'next/server';
 import { createAdminClient, createClient } from '@/lib/supabase/server';
@@ -9,8 +10,8 @@ type RegisterType = 'hospital' | 'doctor';
 // 병원 등록 필수 서류 — 화면(hospital/register REQUIRED_DOCS)과 같은 이름
 const REQUIRED_HOSPITAL_DOCS = ['사업자등록증', '의료기관 개설신고증', '의사 면허증', '대표자 신분증 사본'];
 
-async function notifyApplicant(admin: any, userId: string, title: string, content: string, link: string) {
-  await admin.from('notifications').insert({ user_id: userId, type: 'important', title, content, link });
+async function notifyApplicant(userId: string, title: string, content: string, link: string) {
+  await writeNotifications({ user_id: userId, type: 'important', title, content, link });
 }
 
 function isMissingDoctorColumn(error: { message?: string; details?: string | null; hint?: string | null } | null, column: string) {
@@ -145,7 +146,7 @@ export async function POST(req: NextRequest) {
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
 
     if (hospital.owner_id) {
-      await admin.from('notifications').insert({
+      await writeNotifications({
         user_id: hospital.owner_id,
         type: 'important',
         title: '새로운 멤버 신청이 도착했습니다',
@@ -160,7 +161,6 @@ export async function POST(req: NextRequest) {
       .eq('id', user.id);
 
     await notifyApplicant(
-      admin,
       user.id,
       '원장 등록 신청이 정상적으로 접수되었습니다',
       `${hospital.name}에서 요청을 확인하고 수락하면 알려드릴게요.`,
@@ -272,7 +272,6 @@ export async function POST(req: NextRequest) {
     .eq('id', user.id);
 
   await notifyApplicant(
-    admin,
     user.id,
     '병원 신청이 정상적으로 접수되었습니다',
     `${hospitalName} 신청 서류를 심사하고 있어요. 승인이 완료되면 알려드릴게요.`,

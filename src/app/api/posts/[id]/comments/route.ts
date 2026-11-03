@@ -1,5 +1,6 @@
+import { writeNotifications } from '@/lib/push/delivery';
 import { NextResponse } from 'next/server';
-import { createAdminClient, createClient } from '@/lib/supabase/server';
+import { createClient } from '@/lib/supabase/server';
 import { communityCommentNotifications } from '@/lib/community-comment-notification';
 import { isDoctorOnlyBoard } from '@/lib/community';
 import { canSeeSecretPost, getCommunityViewer, isMissingSecretColumn, viewerCanSeeDoctorBoards } from '@/lib/community-viewer';
@@ -103,9 +104,8 @@ export async function POST(request: Request, { params }: Context) {
     let notificationsDelivered = true;
     if (notifications.length) {
       try {
-        const admin = await createAdminClient();
-        let result = await admin.from('notifications').upsert(notifications, { onConflict: 'id', ignoreDuplicates: true });
-        if (result.error) result = await admin.from('notifications').upsert(notifications, { onConflict: 'id', ignoreDuplicates: true });
+        let result = await writeNotifications(notifications, { onConflict: 'id', ignoreDuplicates: true });
+        if (result.error) result = await writeNotifications(notifications, { onConflict: 'id', ignoreDuplicates: true });
         if (result.error) throw result.error;
       } catch {
         notificationsDelivered = false;

@@ -1,3 +1,4 @@
+import { writeNotifications } from '@/lib/push/delivery';
 import { NextResponse, type NextRequest } from 'next/server';
 import { createAdminClient, createClient } from '@/lib/supabase/server';
 
@@ -52,7 +53,7 @@ export async function POST(req: NextRequest) {
 
   const adminKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!adminKey) {
-    const { error } = await sb.from('notifications').insert(ownNotice);
+    const { error } = await writeNotifications(ownNotice);
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
     return NextResponse.json({ ok: true });
   }
@@ -68,7 +69,7 @@ export async function POST(req: NextRequest) {
       link: '/admin/notifications',
     })) ?? [];
 
-  const { error } = await admin.from('notifications').insert([ownNotice, ...adminNotices]);
+  const { error } = await writeNotifications([ownNotice, ...adminNotices]);
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
 
   return NextResponse.json({ ok: true });

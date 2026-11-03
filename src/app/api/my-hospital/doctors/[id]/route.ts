@@ -1,3 +1,4 @@
+import { writeNotifications } from '@/lib/push/delivery';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse, type NextRequest } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
@@ -102,7 +103,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       const { error: profileError } = await admin.from('profiles').update({ is_doctor: true, doctor_id: id }).eq('id', doc.user_id);
       if (profileError) return NextResponse.json({ error: '원장 권한 반영을 완료하지 못했어요. 수락을 다시 시도해주세요.' }, { status: 500 });
       const { data: hospital } = await admin.from('hospitals').select('name').eq('id', hospitalId).single();
-      const { error: notifyError } = await admin.from('notifications').upsert(
+      const { error: notifyError } = await writeNotifications(
         doctorAcceptedNotification(id, doc.user_id, hospital?.name || '소속 병원'),
         { onConflict: 'id', ignoreDuplicates: true }
       );

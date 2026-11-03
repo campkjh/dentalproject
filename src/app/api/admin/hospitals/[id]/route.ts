@@ -1,3 +1,4 @@
+import { writeNotifications } from '@/lib/push/delivery';
 import { revalidatePath } from 'next/cache';
 import { NextResponse, type NextRequest } from 'next/server';
 import { createAdminClient, createClient } from '@/lib/supabase/server';
@@ -69,7 +70,7 @@ export async function PATCH(
       suspended: 'important',
       pending: 'info',
     };
-    await admin.from('notifications').insert({
+    await writeNotifications({
       user_id: hospital.owner_id,
       type: typeMap[status],
       title: titleMap[status],
