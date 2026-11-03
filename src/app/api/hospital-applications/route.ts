@@ -161,7 +161,6 @@ export async function POST(req: NextRequest) {
       .eq('id', user.id);
 
     await notifyApplicant(
-      admin,
       user.id,
       '원장 등록 신청이 정상적으로 접수되었습니다',
       `${hospital.name}에서 요청을 확인하고 수락하면 알려드릴게요.`,
@@ -273,7 +272,6 @@ export async function POST(req: NextRequest) {
     .eq('id', user.id);
 
   await notifyApplicant(
-    admin,
     user.id,
     '병원 신청이 정상적으로 접수되었습니다',
     `${hospitalName} 신청 서류를 심사하고 있어요. 승인이 완료되면 알려드릴게요.`,
