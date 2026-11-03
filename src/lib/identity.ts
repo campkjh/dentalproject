@@ -13,6 +13,9 @@ import { createHash } from 'crypto';
 /** 이용 가능한 최소 만 나이 — 피부·미용 시술 플랫폼이라 성인만 가입한다. */
 export const MIN_AGE = 19;
 
+/** 인증 완료 후 이 시간 안에 확인(저장)해야 한다. */
+const VERIFICATION_MAX_AGE_MS = 30 * 60 * 1000;
+
 export function isIdentityVerificationRequired() {
   return (
     process.env.IDENTITY_VERIFICATION_REQUIRED === 'true' &&
@@ -47,6 +50,11 @@ export async function fetchIdentityVerification(
   if (!res.ok) return { ok: false, message: data?.message ?? '본인인증 결과를 확인하지 못했어요.' };
   if (data?.status !== 'VERIFIED' || !data?.verifiedCustomer?.ci || !data?.verifiedCustomer?.birthDate) {
     return { ok: false, message: '본인인증이 완료되지 않았어요.' };
+  }
+  // 오래된 인증 결과를 다시 쓰지 못하게 — 방금(30분 이내) 끝난 인증만 받는다
+  const verifiedAt = Date.parse(data?.verifiedAt ?? data?.statusChangedAt ?? '');
+  if (!Number.isFinite(verifiedAt) || Date.now() - verifiedAt > VERIFICATION_MAX_AGE_MS) {
+    return { ok: false, message: '본인인증 시간이 지났어요. 다시 인증해 주세요.' };
   }
   return { ok: true, customer: data.verifiedCustomer as VerifiedCustomer };
 }

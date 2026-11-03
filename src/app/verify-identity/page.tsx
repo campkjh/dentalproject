@@ -97,6 +97,14 @@ function VerifyIdentityPage() {
       redirectUrl: `${window.location.origin}/verify-identity`,
       // 앱 웹뷰에서는 팝업이 막히므로 항상 이 페이지로 돌아오게 한다
       forceRedirect: true,
+      bypass: {
+        danal: {
+          // 인증 창·다날 심사에 표시되는 서비스 URL(넘기지 않으면 '포트원'으로 나온다)
+          CPTITLE: 'my-doc.co.kr',
+          // 다날 인증 창에서부터 만 19세 미만을 막는다(서버에서도 다시 확인)
+          AGELIMIT: 19,
+        },
+      },
     }).catch((e: unknown) => ({ code: 'ERROR', message: (e as Error)?.message }));
     // PC 등 리디렉트 없이 끝난 경우
     if (!response) { setPhase('idle'); return; }
