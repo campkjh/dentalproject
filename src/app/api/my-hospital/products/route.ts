@@ -176,7 +176,7 @@ async function getOwnedProduct(admin: Awaited<ReturnType<typeof createAdminClien
     approvalColumnsAvailable = false;
   }
 
-  if (!product || !hospitalKeys(hospital).includes(product.hospital_id)) {
+  if (!product || product.status === 'removed' || !hospitalKeys(hospital).includes(product.hospital_id)) {
     return { error: NextResponse.json({ error: '상품을 찾을 수 없습니다.' }, { status: 404 }) };
   }
 

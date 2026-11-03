@@ -57,12 +57,22 @@ function formatPrice(n: number) {
 export default function AdminProductsPage() {
   const showAlert = useStore((s) => s.showAlert);
   const showConfirm = useStore((s) => s.showConfirm);
+  const showToast = useStore((s) => s.showToast);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('전체');
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [busyProductId, setBusyProductId] = useState<string | null>(null);
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const processing = busyProductId !== null || bulkBusy;
+
+  const applyDeletion = (result: { deletedIds?: string[] }) => {
+    const deletedIds = new Set(result.deletedIds ?? []);
+    setProducts(current => current.filter(product => !deletedIds.has(product.id)));
+    setSelected(current => new Set([...current].filter(id => !deletedIds.has(id))));
+    showToast(deletedIds.size ? `${deletedIds.size}개 상품을 삭제했습니다.` : '이미 삭제되었거나 찾을 수 없는 상품입니다.');
+  };
 
   const loadProducts = async () => {
     setLoading(true);
@@ -116,17 +126,20 @@ export default function AdminProductsPage() {
         return;
       }
       await loadProducts();
+    } catch (error) {
+      showAlert('처리 실패', error instanceof Error ? error.message : '네트워크 오류가 발생했습니다.');
     } finally {
       setBusyProductId(null);
     }
   }
 
   const handleSingleAction = (p: Product, action: 'deactivate' | 'activate' | 'delete') => {
+    if (processing) return;
     const labels = { deactivate: '비활성화', activate: '활성화', delete: '삭제' };
     const targetLabel = labels[action];
     showConfirm(
       `상품 ${targetLabel}`,
-      `"${p.name}"을(를) ${targetLabel}할까요?${action === 'delete' ? '\n되돌릴 수 없어요.' : ''}`,
+      `"${p.name}"을(를) ${targetLabel}할까요?${action === 'delete' ? '\n상품 목록과 고객 화면에서 제외되며 기존 예약 내역은 유지됩니다.' : ''}`,
       async () => {
         setBusyProductId(p.id);
         try {
@@ -141,7 +154,10 @@ export default function AdminProductsPage() {
             showAlert('처리 실패', data.error || '실패');
             return;
           }
+          if (action === 'delete') applyDeletion(await res.json());
           await loadProducts();
+        } catch (error) {
+          showAlert('처리 실패', error instanceof Error ? error.message : '네트워크 오류가 발생했습니다.');
         } finally {
           setBusyProductId(null);
         }
@@ -151,13 +167,14 @@ export default function AdminProductsPage() {
   };
 
   const handleBulkAction = (action: 'deactivate' | 'delete') => {
-    if (selected.size === 0) return;
+    if (processing || selected.size === 0) return;
     const ids = Array.from(selected);
     const labels = { deactivate: '비활성화', delete: '삭제' };
     showConfirm(
       `${labels[action]}`,
-      `선택한 ${ids.length}개 상품을 ${labels[action]}할까요?${action === 'delete' ? '\n되돌릴 수 없어요.' : ''}`,
+      `선택한 ${ids.length}개 상품을 ${labels[action]}할까요?${action === 'delete' ? '\n상품 목록과 고객 화면에서 제외되며 기존 예약 내역은 유지됩니다.' : ''}`,
       async () => {
+        setBulkBusy(true);
         try {
           const res =
             action === 'delete'
@@ -168,10 +185,13 @@ export default function AdminProductsPage() {
             showAlert('처리 실패', data.error || '실패');
             return;
           }
-          setSelected(new Set());
+          if (action === 'delete') applyDeletion(await res.json());
+          else setSelected(new Set());
           await loadProducts();
         } catch (err) {
           showAlert('처리 실패', err instanceof Error ? err.message : '네트워크 오류');
+        } finally {
+          setBulkBusy(false);
         }
       },
       { confirmText: labels[action], cancelText: '취소' }
@@ -219,11 +239,11 @@ export default function AdminProductsPage() {
         <div className="adm-selbar">
           <span className="text-[14px] font-semibold">{selected.size}개 선택됨</span>
           <span className="grow" />
-          <button type="button" className="adm-btn sm warn" onClick={() => handleBulkAction('deactivate')}>
+          <button type="button" className="adm-btn sm warn" disabled={processing} onClick={() => handleBulkAction('deactivate')}>
             일괄 비활성화
           </button>
-          <button type="button" className="adm-btn sm danger-solid" onClick={() => handleBulkAction('delete')}>
-            일괄 삭제
+          <button type="button" className="adm-btn sm danger-solid" disabled={processing} onClick={() => handleBulkAction('delete')}>
+            {bulkBusy ? '처리 중…' : '일괄 삭제'}
           </button>
         </div>
       )}
@@ -307,10 +327,10 @@ export default function AdminProductsPage() {
                     <div className="adm-actions">
                       {isPendingApproval ? (
                         <>
-                          <PillButton tone="green" disabled={busyProductId === p.id} onClick={() => handleApproval(p, 'approve')}>
+                          <PillButton tone="green" disabled={processing} onClick={() => handleApproval(p, 'approve')}>
                             승인
                           </PillButton>
-                          <PillButton tone="red" disabled={busyProductId === p.id} onClick={() => handleApproval(p, 'reject')}>
+                          <PillButton tone="red" disabled={processing} onClick={() => handleApproval(p, 'reject')}>
                             반려
                           </PillButton>
                           <a href={`/product/${p.id}`} target="_blank" rel="noreferrer" className="adm-btn sm weak">상세</a>
@@ -320,12 +340,12 @@ export default function AdminProductsPage() {
                           <a href={`/product/${p.id}`} target="_blank" rel="noreferrer" className="adm-btn sm weak">상세</a>
                           <PillButton
                             tone="orange"
-                            disabled={busyProductId === p.id}
+                            disabled={processing}
                             onClick={() => handleSingleAction(p, p.status === 'active' ? 'deactivate' : 'activate')}
                           >
                             {p.status === 'active' ? '비활성' : '활성'}
                           </PillButton>
-                          <PillButton tone="red" disabled={busyProductId === p.id} onClick={() => handleSingleAction(p, 'delete')}>
+                          <PillButton tone="red" disabled={processing} onClick={() => handleSingleAction(p, 'delete')}>
                             삭제
                           </PillButton>
                         </>

@@ -2,6 +2,7 @@
 import { revalidatePath } from 'next/cache';
 import { NextResponse, type NextRequest } from 'next/server';
 import { createAdminClient, createClient } from '@/lib/supabase/server';
+import { adminProductsQuery, removeAdminProducts } from '@/lib/admin-product-management';
 
 export const dynamic = 'force-dynamic';
 
@@ -44,28 +45,20 @@ export async function GET() {
   if (adminCheck.error) return adminCheck.error;
 
   const admin = await createAdminClient();
-  const productsRes = await admin
-    .from('products')
-    .select(
+  const productsRes = await adminProductsQuery(admin,
       `id, title, category, price, original_price, discount, rating, review_count, status,
        approval_status, pending_changes, created_at,
        hospital:hospitals (name)`
-    )
-    .order('created_at', { ascending: false })
-    .limit(500);
+    );
   let data: any[] | null = productsRes.data;
   let error = productsRes.error;
   let approvalColumnsAvailable = !productsRes.error;
 
   if (error) {
-    const fallback = await admin
-      .from('products')
-      .select(
+    const fallback = await adminProductsQuery(admin,
         `id, title, category, price, original_price, discount, rating, review_count, status, created_at,
          hospital:hospitals (name)`
-      )
-      .order('created_at', { ascending: false })
-      .limit(500);
+      );
     data = fallback.data;
     error = fallback.error;
     approvalColumnsAvailable = false;
@@ -99,16 +92,17 @@ export async function DELETE(req: NextRequest) {
 
   const body = await req.json().catch(() => ({}));
   const ids: string[] = Array.isArray(body.ids)
-    ? body.ids.filter((v: unknown): v is string => typeof v === 'string')
+    ? [...new Set(body.ids.filter((v: unknown): v is string => typeof v === 'string' && Boolean(v.trim())))] as string[]
     : typeof body.id === 'string'
       ? [body.id]
       : [];
   if (!ids.length) return NextResponse.json({ error: '삭제할 상품 ID가 필요합니다.' }, { status: 400 });
 
   const admin = await createAdminClient();
-  const { error } = await admin.from('products').update({ status: 'removed' }).in('id', ids);
+  const { data, error } = await removeAdminProducts(admin, ids);
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
-  return NextResponse.json({ ok: true, count: ids.length });
+  revalidatePath('/api/catalog');
+  return NextResponse.json({ ok: true, count: data?.length ?? 0, deletedIds: (data ?? []).map(product => product.id) });
 }
 
 export async function PATCH(req: NextRequest) {
@@ -132,7 +126,7 @@ export async function PATCH(req: NextRequest) {
 
   if (action === 'deactivate' || action === 'activate') {
     const nextStatus = action === 'deactivate' ? 'paused' : 'active';
-    const { error } = await admin.from('products').update({ status: nextStatus }).in('id', ids);
+    const { error } = await admin.from('products').update({ status: nextStatus }).in('id', ids).neq('status', 'removed');
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
     revalidatePath('/api/catalog');
     return NextResponse.json({ ok: true, count: ids.length });
@@ -146,6 +140,7 @@ export async function PATCH(req: NextRequest) {
     .from('products')
     .select('id, status, approval_status, pending_changes')
     .eq('id', ids[0])
+    .neq('status', 'removed')
     .maybeSingle();
   let approvalColumnsAvailable = !findError;
 
@@ -154,6 +149,7 @@ export async function PATCH(req: NextRequest) {
       .from('products')
       .select('id, status')
       .eq('id', ids[0])
+      .neq('status', 'removed')
       .maybeSingle();
     product = fallback.data as typeof product;
     findError = fallback.error;
@@ -172,7 +168,7 @@ export async function PATCH(req: NextRequest) {
 
   if (!approvalColumnsAvailable) {
     const legacyPatch = action === 'approve' ? { status: 'active' } : { status: 'removed' };
-    const { error } = await admin.from('products').update(legacyPatch).eq('id', ids[0]);
+    const { error } = await admin.from('products').update(legacyPatch).eq('id', ids[0]).neq('status', 'removed');
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
     revalidatePath('/api/catalog');
     return NextResponse.json({ ok: true });
@@ -186,7 +182,7 @@ export async function PATCH(req: NextRequest) {
         pending_changes: null,
         ...(approvalStatus === 'pending_create' ? { status: 'paused' } : {}),
       })
-      .eq('id', ids[0]);
+      .eq('id', ids[0]).neq('status', 'removed');
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
     return NextResponse.json({ ok: true });
   }
@@ -202,15 +198,15 @@ export async function PATCH(req: NextRequest) {
     patch.status = 'removed';
   }
 
-  let { error } = await admin.from('products').update(patch).eq('id', ids[0]);
+  let { error } = await admin.from('products').update(patch).eq('id', ids[0]).neq('status', 'removed');
   if (error && (isMissingProductColumn(error, 'image_urls') || isMissingProductColumn(error, 'detail_image_urls'))) {
     const { image_urls: _imageUrls, detail_image_urls: _detailImageUrls, ...rest } = patch;
     patch = rest;
-    const retry = await admin.from('products').update(patch).eq('id', ids[0]);
+    const retry = await admin.from('products').update(patch).eq('id', ids[0]).neq('status', 'removed');
     error = retry.error;
   }
   if (error && isMissingProductColumn(error, 'detail_image_url')) {
-    const retry = await admin.from('products').update(withoutDetailImageColumn(patch)).eq('id', ids[0]);
+    const retry = await admin.from('products').update(withoutDetailImageColumn(patch)).eq('id', ids[0]).neq('status', 'removed');
     error = retry.error;
   }
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
