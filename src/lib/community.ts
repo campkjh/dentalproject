@@ -38,12 +38,18 @@ export interface CommunityPostRow {
   view_count?: number;
   like_count?: number;
   comment_count?: number;
+  comments?: { count: number }[];
   image_url?: string | null;
   thumbnail_url?: string | null;
   tags?: string[];
   has_answer?: boolean;
   answer_count?: number;
   author?: { name?: string; is_doctor?: boolean; profile_image?: string } | null;
+}
+
+/** Prefer the live, viewer-visible count over the legacy cached counter. */
+export function communityCommentCount(row: Pick<CommunityPostRow, 'comments' | 'comment_count'>) {
+  return row.comments?.[0]?.count ?? row.comment_count ?? 0;
 }
 
 export function communityPostFromRow(p: CommunityPostRow): Post {
@@ -56,7 +62,7 @@ export function communityPostFromRow(p: CommunityPostRow): Post {
     isAnonymous: p.is_anonymous, anonymousId: p.anonymous_id ?? undefined, isSecret: Boolean(p.is_secret),
     date: p.created_at ? new Date(p.created_at).toLocaleDateString('ko-KR') : '',
     createdAt: p.created_at, viewCount: p.view_count ?? 0,
-    likeCount: p.like_count ?? 0, commentCount: p.comment_count ?? 0,
+    likeCount: p.like_count ?? 0, commentCount: communityCommentCount(p),
     imageUrl: p.image_url?.startsWith('data:') ? undefined : p.image_url || undefined,
     thumbnailUrl: p.thumbnail_url?.startsWith('data:') ? undefined : p.thumbnail_url || undefined,
     tags: p.tags ?? [], hasAnswer: p.has_answer ?? false, answerCount: p.answer_count ?? 0,

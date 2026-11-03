@@ -5,7 +5,7 @@ export async function listPosts(boardType?: 'question' | 'free' | 'dental', limi
   let q = sb
     .from('posts')
     .select(
-      `*, author:profiles!posts_author_id_fkey (id, name, profile_image, is_doctor)`
+      `*, comments(count), author:profiles!posts_author_id_fkey (id, name, profile_image, is_doctor)`
     )
     .order('created_at', { ascending: false })
     .limit(limit);
@@ -20,7 +20,7 @@ export async function getPost(id: string) {
   const { data, error } = await sb
     .from('posts')
     .select(
-      `*, author:profiles!posts_author_id_fkey (id, name, profile_image, is_doctor)`
+      `*, comments(count), author:profiles!posts_author_id_fkey (id, name, profile_image, is_doctor)`
     )
     .eq('id', id)
     .maybeSingle();

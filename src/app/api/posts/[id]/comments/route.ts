@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient, createClient } from '@/lib/supabase/server';
+import { communityCommentNotifications } from '@/lib/community-comment-notification';
 import { isDoctorOnlyBoard } from '@/lib/community';
 import { canSeeSecretPost, getCommunityViewer, isMissingSecretColumn, viewerCanSeeDoctorBoards } from '@/lib/community-viewer';
 
@@ -36,7 +37,7 @@ export async function GET(_request: Request, { params }: Context) {
     const commentIds = (rows ?? []).map(c => c.id);
     const { data: likes } = user && commentIds.length ? await sb.from('comment_likes').select('comment_id').eq('user_id', user.id).in('comment_id', commentIds) : { data: [] };
     const liked = new Set((likes ?? []).map(like => like.comment_id));
-    return NextResponse.json({ comments: comments.map(row => {
+    return NextResponse.json({ commentCount: comments.length, comments: comments.map(row => {
       const doctor = doctorMap.get(row.author_id);
       return {
         id: row.id, postId: row.post_id, authorId: row.author_id,
@@ -51,7 +52,7 @@ export async function GET(_request: Request, { params }: Context) {
         likeCount: row.like_count ?? 0, liked: liked.has(row.id),
         createdAt: row.created_at, date: row.created_at ? new Date(row.created_at).toLocaleDateString('ko-KR') : '',
       };
-    }) });
+    }) }, { headers: { 'Cache-Control': 'private, no-store' } });
   } catch {
     return NextResponse.json({ error: '댓글을 불러오지 못했습니다.' }, { status: 500 });
   }
@@ -66,14 +67,20 @@ export async function POST(request: Request, { params }: Context) {
     const body = await request.json();
     const content = typeof body.content === 'string' ? body.content.trim() : '';
     if (!content || content.length > 5000) return NextResponse.json({ error: '댓글은 1~5,000자로 입력해주세요.' }, { status: 400 });
-    const { data: post } = await sb.from('posts').select('board_type').eq('id', id).single();
+    const first = await sb.from('posts').select('board_type, author_id, is_secret').eq('id', id).maybeSingle();
+    let post = first.data;
+    if (isMissingSecretColumn(first.error)) post = (await sb.from('posts').select('board_type, author_id').eq('id', id).maybeSingle()).data as typeof post;
     if (!post) return NextResponse.json({ error: '게시글을 찾을 수 없습니다.' }, { status: 404 });
+    const viewer = await getCommunityViewer(sb);
+    if (!canSeeSecretPost(post, viewer)) return NextResponse.json({ error: '이 게시글에 댓글을 남길 수 없습니다.' }, { status: 403 });
     if (isDoctorOnlyBoard(post.board_type) && !(await viewerCanSeeDoctorBoards(sb))) {
       return NextResponse.json({ error: '의사 회원만 댓글을 남길 수 있어요.' }, { status: 403 });
     }
+    let parentAuthorId: string | undefined;
     if (body.parentCommentId) {
-      const { data: parent } = await sb.from('comments').select('id, parent_comment_id').eq('id', body.parentCommentId).eq('post_id', id).single();
+      const { data: parent } = await sb.from('comments').select('id, author_id, parent_comment_id').eq('id', body.parentCommentId).eq('post_id', id).single();
       if (!parent || parent.parent_comment_id) return NextResponse.json({ error: '답글을 작성할 댓글을 찾을 수 없습니다.' }, { status: 400 });
+      parentAuthorId = parent.author_id;
     }
     const anonymous = post.board_type === 'free';
     const secret = body.isSecret === true;
@@ -87,7 +94,26 @@ export async function POST(request: Request, { params }: Context) {
       if (secret && isMissingSecretColumn(error)) return NextResponse.json({ error: '비밀 댓글 기능을 준비하고 있어요. 잠시 뒤 다시 시도해 주세요.' }, { status: 503 });
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
-    return NextResponse.json({ id: data.id }, { status: 201 });
+    // Recipient RLS prevents a commenter from writing another member's inbox.
+    // Use the service client only after the authorized comment has been saved.
+    const notifications = communityCommentNotifications({
+      commentId: data.id, postId: id, board: post.board_type,
+      actorId: user.id, postAuthorId: post.author_id, parentAuthorId, secret,
+    });
+    let notificationsDelivered = true;
+    if (notifications.length) {
+      try {
+        const admin = await createAdminClient();
+        let result = await admin.from('notifications').upsert(notifications, { onConflict: 'id', ignoreDuplicates: true });
+        if (result.error) result = await admin.from('notifications').upsert(notifications, { onConflict: 'id', ignoreDuplicates: true });
+        if (result.error) throw result.error;
+      } catch {
+        notificationsDelivered = false;
+        console.error('Community comment notification delivery failed', { commentId: data.id });
+      }
+    }
+    const { count } = await sb.from('comments').select('id', { count: 'exact', head: true }).eq('post_id', id);
+    return NextResponse.json({ id: data.id, commentCount: count, notificationsDelivered }, { status: 201 });
   } catch {
     return NextResponse.json({ error: '댓글을 등록하지 못했습니다.' }, { status: 500 });
   }
@@ -105,7 +131,8 @@ export async function DELETE(request: Request, { params }: Context) {
     if (comment.author_id !== user.id) return NextResponse.json({ error: '본인의 댓글만 삭제할 수 있습니다.' }, { status: 403 });
     const { error } = await sb.from('comments').delete().eq('id', commentId).eq('post_id', id).eq('author_id', user.id);
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
-    return NextResponse.json({ ok: true });
+    const { count } = await sb.from('comments').select('id', { count: 'exact', head: true }).eq('post_id', id);
+    return NextResponse.json({ ok: true, commentCount: count });
   } catch {
     return NextResponse.json({ error: '댓글을 삭제하지 못했습니다.' }, { status: 500 });
   }

@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
     let query = sb
       .from('posts')
       .select(
-        `id, board_type, title, content, author_id, view_count, like_count, comment_count,
+        `id, board_type, title, content, author_id, view_count, like_count, comment_count, comments(count),
          tags, has_answer, answer_count, is_anonymous, anonymous_id, image_url,${secretColumn ? ' is_secret,' : ''}
          thumbnail_url, created_at, author:profiles!posts_author_id_fkey(name, is_doctor, profile_image)`
       )

@@ -80,6 +80,10 @@ export default function CommunityDetail({ postId, commentsOnly = false, onClose,
       .then(async response => {
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || '댓글을 불러오지 못했습니다.');
+        if (typeof data.commentCount === 'number' && !controller.signal.aborted) {
+          useStore.setState(state => ({ posts: state.posts.map(p => p.id === postId ? { ...p, commentCount: data.commentCount } : p) }));
+          setFetchedPost(p => p ? { ...p, commentCount: data.commentCount } : p);
+        }
         return data.comments as CommunityComment[];
       })
       .then(data => { if (!controller.signal.aborted) { setComments(data); setCommentsError(''); } })
@@ -107,9 +111,10 @@ export default function CommunityDetail({ postId, commentsOnly = false, onClose,
     return () => observer.disconnect();
   }, [commentsOnly]);
 
-  const updatePostCommentCount = (delta: number) => {
-    useStore.setState(state => ({ posts: state.posts.map(p => p.id === postId ? { ...p, commentCount: Math.max(0, p.commentCount + delta) } : p) }));
-    setFetchedPost(p => p ? { ...p, commentCount: Math.max(0, p.commentCount + delta) } : p);
+  const updatePostCommentCount = (count: number) => {
+    if (!Number.isFinite(count)) return;
+    useStore.setState(state => ({ posts: state.posts.map(p => p.id === postId ? { ...p, commentCount: Math.max(0, count) } : p) }));
+    setFetchedPost(p => p ? { ...p, commentCount: Math.max(0, count) } : p);
   };
 
   async function send() {
@@ -122,8 +127,9 @@ export default function CommunityDetail({ postId, commentsOnly = false, onClose,
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || '댓글을 등록하지 못했습니다.');
       if (!alive.current) return;
-      setText(''); setReply(null); updatePostCommentCount(1);
-      showToast(secret ? '비밀 댓글을 남겼어요' : '댓글이 등록되었습니다.');
+      setText(''); setReply(null); updatePostCommentCount(data.commentCount);
+      window.dispatchEvent(new Event('dental:community-comments'));
+      showToast(data.notificationsDelivered === false ? '댓글이 등록됐지만 알림을 전달하지 못했어요.' : secret ? '비밀 댓글을 남겼어요' : '댓글이 등록되었습니다.');
       setSecret(false);
       if (user.isDoctor && post?.boardType === 'question') {
         void fetch('/api/community/doctor-answered', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ postId }) }).then(r => r.ok ? r.json() : null).then(data => {
@@ -160,8 +166,8 @@ export default function CommunityDetail({ postId, commentsOnly = false, onClose,
         const response = await fetch(`/api/posts/${postId}/comments`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ commentId: comment.id }) });
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || '댓글을 삭제하지 못했습니다.');
-        const removed = comments.filter(c => c.id === comment.id || c.parentCommentId === comment.id).length;
-        updatePostCommentCount(-removed);
+        updatePostCommentCount(data.commentCount);
+        window.dispatchEvent(new Event('dental:community-comments'));
         if (reply?.id === comment.id) setReply(null);
         showToast('댓글이 삭제되었습니다.');
         await loadComments();

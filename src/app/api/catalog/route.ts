@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from 'next/server';
+import { communityCommentCount } from '@/lib/community';
 import { createClient } from '@/lib/supabase/server';
 import {
   normalizeHospital,
@@ -51,7 +52,7 @@ export async function GET() {
       .limit(50),
     sb
       .from('posts')
-      .select(`id, board_type, title, content, author_id, view_count, like_count, comment_count, tags, has_answer, answer_count, is_anonymous, anonymous_id, created_at,
+      .select(`id, board_type, title, content, author_id, view_count, like_count, comment_count, comments(count), tags, has_answer, answer_count, is_anonymous, anonymous_id, created_at,
          author:profiles!posts_author_id_fkey (name, is_doctor)`)
       .eq('board_type', 'question') // 의사 전용 게시판은 공용 카탈로그에 싣지 않는다
       .order('created_at', { ascending: false })
@@ -152,7 +153,7 @@ export async function GET() {
     date: p.created_at ? new Date(p.created_at).toLocaleDateString('ko-KR') : '',
     viewCount: p.view_count ?? 0,
     likeCount: p.like_count ?? 0,
-    commentCount: p.comment_count ?? 0,
+    commentCount: communityCommentCount(p),
     imageUrl: p.image_url ?? undefined,
     thumbnailUrl: p.thumbnail_url ?? undefined,
     tags: p.tags ?? [],
