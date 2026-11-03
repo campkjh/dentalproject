@@ -6,6 +6,8 @@ import type { Post } from '@/types';
 
 export function useCommunityPosts() {
   const posts = useStore(s => s.posts);
+  const userId = useStore(s => s.user?.id);
+  const isDoctor = useStore(s => s.isDoctor);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [revision, setRevision] = useState(0);
@@ -23,7 +25,7 @@ export function useCommunityPosts() {
       .catch(() => { if (!controller.signal.aborted) setError('게시글을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.'); })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
-  }, [revision]);
+  }, [revision, userId, isDoctor]);
 
   useEffect(() => {
     const refreshVisible = () => {
