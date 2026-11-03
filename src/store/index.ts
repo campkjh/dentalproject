@@ -177,6 +177,7 @@ interface AppState {
 
   // Notifications & point history (hydrated from /api/me)
   notifications: Notification[];
+  refreshNotifications: () => Promise<void>;
   markNotificationRead: (id: string) => void;
   pointHistory: PointHistory[];
 
@@ -571,6 +572,16 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   notifications: mockNotifications,
+  refreshNotifications: async () => {
+    const userId = get().user?.id;
+    if (!userId) return;
+    try {
+      const response = await fetch('/api/notifications', { cache: 'no-store' });
+      if (!response.ok) return;
+      const data = await response.json();
+      if (get().user?.id === userId) set({ notifications: (data.notifications ?? []).map(notificationFromRow) });
+    } catch { /* Keep existing messages when temporarily offline. */ }
+  },
   markNotificationRead: (id) => {
     set({
       notifications: get().notifications.map((notification) =>
@@ -600,7 +611,7 @@ export const useStore = create<AppState>((set, get) => ({
           rating: review.rating,
           content: review.content,
           treatmentName: review.treatmentName,
-          treatmentDate: review.treatmentDate,
+          treatmentDate: review.treatmentDate || undefined,
           totalCost: review.totalCost,
           beforeImage: review.beforeImage,
           afterImage: review.afterImage,

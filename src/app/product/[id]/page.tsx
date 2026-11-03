@@ -224,7 +224,7 @@ export default function ProductDetailPage() {
     date: r.date,
     content: r.content,
     meta: [r.treatmentName, r.totalCost ? `${r.totalCost.toLocaleString()}원` : '', r.treatmentDate].filter(Boolean).join(' · '),
-    photos: [r.beforeImage ? { src: r.beforeImage, label: '전' } : null, r.afterImage ? { src: r.afterImage, label: '후' } : null].filter(Boolean) as { src: string; label: string }[],
+    photos: [r.beforeImage ? { src: r.beforeImage, label: '전' } : null, r.afterImage ? { src: r.afterImage, label: r.beforeImage ? '후' : '사진' } : null].filter(Boolean) as { src: string; label: string }[],
   }));
   // 옵션 줄 — 옵션이 없으면 상품 자체가 옵션 1. 옵션 정가는 상품 할인율로 되짚는다(정가가 따로 없어서)
   const baseDiscount = product.discount ?? (product.originalPrice && product.originalPrice > product.price ? Math.round((1 - product.price / product.originalPrice) * 100) : 0);

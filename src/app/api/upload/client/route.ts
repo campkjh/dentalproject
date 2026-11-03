@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 // 브라우저에서 Vercel Blob 으로 바로 올릴 때 쓰는 토큰 발급 — 서버 함수 본문 한도(4.5MB)를 넘는
 // 상세 이미지(최대 25MB)·서류도 올릴 수 있다. 로그인한 사람만, 이미지·PDF만, 25MB까지.
 const MAX_BYTES = 25 * 1024 * 1024;
-const ALLOWED_FOLDERS = ['product-images', 'product-details', 'hospital-covers', 'hospital-logos', 'hospital-docs', 'doctor-profiles', 'images'];
+const ALLOWED_FOLDERS = ['product-images', 'product-details', 'hospital-covers', 'hospital-logos', 'hospital-docs', 'doctor-profiles', 'images', 'review-images'];
 
 export async function POST(request: NextRequest) {
   const body = (await request.json()) as HandleUploadBody;

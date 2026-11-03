@@ -2,6 +2,8 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { sanitizeCareers } from '@/lib/doctor-careers';
+import { getOwnedHospital } from '@/lib/owned-hospital';
+import { doctorAcceptedNotification } from '@/lib/doctor-membership-notification';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,9 +16,9 @@ type DoctorMembershipRow = {
   is_active?: boolean | null;
 };
 
-async function ownerHospitalId(sb: any, userId: string) {
-  const { data } = await sb.from('hospitals').select('id').eq('owner_id', userId).maybeSingle();
-  return data?.id ?? null;
+async function ownerHospitalId() {
+  const owned = await getOwnedHospital({ ownerOnly: true });
+  return owned.hospital?.id ?? null;
 }
 
 function isMissingDoctorColumn(error: { message?: string; details?: string | null; hint?: string | null } | null, column: string) {
@@ -77,7 +79,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const { data: { user } } = await sb.auth.getUser();
   if (!user) return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 });
 
-  const hospitalId = await ownerHospitalId(sb, user.id);
+  const hospitalId = await ownerHospitalId();
   const doc = await getDoctorMembership(sb, id);
   const canManage = Boolean(hospitalId && doc?.hospital_id === hospitalId);
   const isSelf = Boolean(doc?.user_id && doc.user_id === user.id);
@@ -97,7 +99,14 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     );
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
     if (doc.user_id) {
-      await admin.from('profiles').update({ is_doctor: true, doctor_id: id }).eq('id', doc.user_id);
+      const { error: profileError } = await admin.from('profiles').update({ is_doctor: true, doctor_id: id }).eq('id', doc.user_id);
+      if (profileError) return NextResponse.json({ error: '원장 권한 반영을 완료하지 못했어요. 수락을 다시 시도해주세요.' }, { status: 500 });
+      const { data: hospital } = await admin.from('hospitals').select('name').eq('id', hospitalId).single();
+      const { error: notifyError } = await admin.from('notifications').upsert(
+        doctorAcceptedNotification(id, doc.user_id, hospital?.name || '소속 병원'),
+        { onConflict: 'id', ignoreDuplicates: true }
+      );
+      if (notifyError) return NextResponse.json({ error: '원장 수락은 반영됐지만 쪽지를 보내지 못했어요. 수락을 다시 시도해주세요.' }, { status: 500 });
     }
     return NextResponse.json({ ok: true });
   }
@@ -135,7 +144,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   const { data: { user } } = await sb.auth.getUser();
   if (!user) return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 });
 
-  const ownedHospitalId = await ownerHospitalId(sb, user.id);
+  const ownedHospitalId = await ownerHospitalId();
 
   const doc = await getDoctorMembership(sb, id);
   const canManage = Boolean(ownedHospitalId && doc?.hospital_id === ownedHospitalId);

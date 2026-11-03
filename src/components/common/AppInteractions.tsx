@@ -10,6 +10,8 @@ export default function AppInteractions() {
   const pathname = usePathname();
   const [panel, setPanel] = useState<{ path: string; type: 'login' | 'notifications' } | null>(null);
   const user = useStore(s => s.user);
+  const refreshNotifications = useStore(s => s.refreshNotifications);
+  const userId = user?.id;
   const login = panel?.type === 'login';
   const notificationsOpen = panel?.type === 'notifications';
   const setLogin = (open: boolean) => setPanel(open ? { path: window.location.pathname, type: 'login' } : null);
@@ -21,6 +23,22 @@ export default function AppInteractions() {
     window.addEventListener('dental:notifications', showNotifications);
     return () => { window.removeEventListener('dental:login', showLogin); window.removeEventListener('dental:notifications', showNotifications); };
   }, []);
+
+  useEffect(() => {
+    if (!userId) return;
+    const refresh = () => { if (document.visibilityState === 'visible') void refreshNotifications(); };
+    refresh();
+    const interval = window.setInterval(refresh, 30000);
+    window.addEventListener('focus', refresh);
+    window.addEventListener('dental:notifications', refresh);
+    document.addEventListener('visibilitychange', refresh);
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener('focus', refresh);
+      window.removeEventListener('dental:notifications', refresh);
+      document.removeEventListener('visibilitychange', refresh);
+    };
+  }, [userId, refreshNotifications]);
 
   return <>
     {login && <LoginOnboarding onClose={() => setLogin(false)} />}

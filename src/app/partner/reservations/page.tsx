@@ -20,8 +20,8 @@ import { useSession } from '@/lib/supabase/SessionProvider';
 import { useReservationRealtimeRefresh } from '@/lib/realtime/reservations';
 import { useStore } from '@/store';
 import { haptic } from '@/lib/haptics';
+import { allSlotsForDay, type HoursByDow } from '@/components/booking/schedule';
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 type ReservationRow = {
   id: string;
   doctor_id?: string | null;
@@ -360,9 +360,8 @@ function ReservationScheduleCard({
   );
 }
 
-const SETTING_TIME_SLOTS = ['10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00'] as const;
-
 type ScheduleSettings = {
+  hoursByDow: HoursByDow;
   disabledDays: string[];
   disabledSlots: Record<string, string[]>;
 };
@@ -381,7 +380,7 @@ function dateFromKey(value: string) {
 }
 
 function timeHourLabel(time: string) {
-  return `${Number(time.slice(0, 2))}시`;
+  return `${Number(time.slice(0, 2))}시${time.slice(3) === '00' ? '' : ` ${Number(time.slice(3))}분`}`;
 }
 
 function memoTimestamp() {
@@ -425,7 +424,7 @@ function ScheduleSettingsView({
   const showConfirm = useStore((s) => s.showConfirm);
   const today = new Date();
   const [selected, setSelected] = useState(dateKey(today));
-  const [settings, setSettings] = useState<ScheduleSettings>({ disabledDays: [], disabledSlots: {} });
+  const [settings, setSettings] = useState<ScheduleSettings>({ disabledDays: [], disabledSlots: {}, hoursByDow: {} });
   const [loadingSettings, setLoadingSettings] = useState(true);
   const [savingAction, setSavingAction] = useState(false);
 
@@ -448,6 +447,7 @@ function ScheduleSettingsView({
         setSettings({
           disabledDays: Array.isArray(payload.disabledDays) ? payload.disabledDays : [],
           disabledSlots: payload.disabledSlots ?? {},
+          hoursByDow: payload.hoursByDow ?? {},
         });
       })
       .catch((error) => {
@@ -466,7 +466,9 @@ function ScheduleSettingsView({
   const selectedTitle = `${selectedIsToday ? '오늘 ' : ''}${selectedDate.getMonth() + 1}월${selectedDate.getDate()}일`;
   const disabledDaySet = useMemo(() => new Set(settings.disabledDays), [settings.disabledDays]);
   const selectedSlotSet = useMemo(() => new Set(settings.disabledSlots[selected] ?? []), [settings.disabledSlots, selected]);
-  const selectedDayDisabled = disabledDaySet.has(selected);
+  const selectedSlots = allSlotsForDay(selectedDate.getFullYear(), selectedDate.getMonth() + 1, selectedDate.getDate(), settings.hoursByDow);
+  const regularClosed = selectedSlots.length === 0;
+  const selectedDayDisabled = disabledDaySet.has(selected) || regularClosed;
 
   const reservationDates = useMemo(() => {
     const keys = new Set<string>();
@@ -498,6 +500,7 @@ function ScheduleSettingsView({
       setSettings({
         disabledDays: Array.isArray(payload.disabledDays) ? payload.disabledDays : [],
         disabledSlots: payload.disabledSlots ?? {},
+        hoursByDow: payload.hoursByDow ?? {},
       });
       const target = action.kind === 'day' ? '진료일' : '진료시간';
       showToast(`${target}을 ${action.disabled ? '비활성화' : '활성화'}했어요.`);
@@ -533,7 +536,7 @@ function ScheduleSettingsView({
         selected={selected}
         onSelect={(date) => setSelected(dateKey(date))}
         hasDot={(key) => reservationDates.has(key)}
-        isOff={(key) => disabledDaySet.has(key)}
+        isOff={(key) => { const date = dateFromKey(key); return disabledDaySet.has(key) || allSlotsForDay(date.getFullYear(), date.getMonth() + 1, date.getDate(), settings.hoursByDow).length === 0; }}
       />
 
       <div className="h-2.5 bg-[#F2F4F6]" />
@@ -544,22 +547,22 @@ function ScheduleSettingsView({
           <button
             type="button"
             onClick={() => promptScheduleAction({ kind: 'day', date: selected, disabled: !selectedDayDisabled })}
-            disabled={loadingSettings || savingAction}
+            disabled={loadingSettings || savingAction || regularClosed}
             className={`h-9 shrink-0 rounded-[10px] px-3 text-[14.5px] font-semibold transition-all active:scale-[0.97] disabled:opacity-40 ${
               selectedDayDisabled ? 'bg-[#EFF5FE] text-[#2F6FE4]' : 'bg-[#F2F4F6] text-[#F04452]'
             }`}
           >
-            {selectedDayDisabled ? '진료일 활성화' : '진료일 비활성화'}
+            {regularClosed ? '정기 휴무' : selectedDayDisabled ? '진료일 활성화' : '진료일 비활성화'}
           </button>
         </div>
 
         <p className="mt-4 flex gap-2 rounded-[14px] bg-[#F2F4F6] px-4 py-3.5 text-[14px] leading-[1.5] text-[#4E5968]">
           <MonoIcon name="info-circle" size={18} color="#B0B8C1" className="mt-px" />
-          {selectedDayDisabled ? '이 날은 진료를 쉬어요. 다시 열면 예약을 받을 수 있어요.' : '시간을 누르면 그 시간만 예약을 닫거나 다시 열 수 있어요.'}
+          {regularClosed ? '이 요일은 등록된 진료시간이 없어요. 병원관리에서 운영일 및 시간을 먼저 설정해 주세요.' : selectedDayDisabled ? '이 날은 진료를 쉬어요. 다시 열면 운영시간 내에서 예약을 받을 수 있어요.' : '병원 운영시간을 기준으로 30분마다 표시돼요. 시간을 누르면 사용자 화면에서도 해당 시간의 예약을 닫거나 다시 열 수 있어요.'}
         </p>
 
         <div className="mt-4 grid grid-cols-4 gap-2" aria-label={`${selectedTitle} 예약 시간 설정`}>
-          {SETTING_TIME_SLOTS.map((time) => {
+          {selectedSlots.map((time) => {
             const disabled = selectedDayDisabled || selectedSlotSet.has(time);
             return (
               <button

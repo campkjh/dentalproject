@@ -1,13 +1,12 @@
 'use client';
 
-import { useEffect, useState, useMemo, Suspense } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useStore } from '@/store';
 import { resolveProductImageUrl } from '@/lib/images';
 import BookingDateTimeSheet from '@/components/booking/BookingDateTimeSheet';
 import { FlowCta, FlowHeader, cx, stag } from '@/components/booking/FlowKit';
 import {
-  DOW_INDEX,
   allSlotsForDay,
   formatKDate,
   formatKTime,
@@ -15,11 +14,10 @@ import {
   isDayAvailable,
   parseDateKey,
   slotTimestamp,
-  type HoursByDow,
-  type ScheduleSettings,
 } from '@/components/booking/schedule';
 import s from '@/components/booking/flow.module.css';
 import { haptic } from '@/lib/haptics';
+import type { HospitalSchedule } from '@/lib/hospital-schedule';
 
 /* ─────────────────────────────────────────────────────────────
  * 예약 — 프리티풀 퀵매칭 어법. 한 화면 한 질문 · 진행 막대 · 아래 큰 버튼.
@@ -57,23 +55,13 @@ function BookingPage() {
   const product = products.find((p) => p.id === productId);
   const hospital = hospitals.find((h) => h.id === product?.hospitalId);
 
-  // Map operating hours by weekday index (0=Sun, 1=Mon...)
-  const hoursByDow = useMemo(() => {
-    const map: HoursByDow = {};
-    (hospital?.operatingHours ?? []).forEach((oh) => {
-      const idx = DOW_INDEX[oh.day];
-      if (idx === undefined) return;
-      map[idx] = { start: oh.startTime, end: oh.endTime, closed: oh.isClosed };
-    });
-    return map;
-  }, [hospital?.operatingHours]);
-
   const [nowMs, setNowMs] = useState(() => Date.now());
   const [step, setStep] = useState<Step>('date');
   const [date, setDate] = useState(''); // YYYY-MM-DD
   const [time, setTime] = useState(''); // HH:mm
   const [sheetOpen, setSheetOpen] = useState(false);
-  const [scheduleSettings, setScheduleSettings] = useState<ScheduleSettings>({ disabledDays: [], disabledSlots: {} });
+  const [scheduleSettings, setScheduleSettings] = useState<HospitalSchedule>({ disabledDays: [], disabledSlots: {}, hoursByDow: {} });
+  const hoursByDow = scheduleSettings.hoursByDow;
 
   useEffect(() => {
     const interval = window.setInterval(() => setNowMs(Date.now()), 30000);
@@ -81,25 +69,24 @@ function BookingPage() {
   }, []);
 
   useEffect(() => {
-    if (!hospital?.id) {
-      setScheduleSettings({ disabledDays: [], disabledSlots: {} });
-      return;
-    }
+    if (!hospital?.id) return;
     let cancelled = false;
-    fetch(`/api/hospital-schedule?hospitalId=${encodeURIComponent(hospital.id)}`, { cache: 'no-store' })
-      .then((res) => res.ok ? res.json() : null)
-      .then((data) => {
-        if (cancelled || !data) return;
-        setScheduleSettings({
-          disabledDays: Array.isArray(data.disabledDays) ? data.disabledDays : [],
-          disabledSlots: data.disabledSlots ?? {},
-        });
-      })
-      .catch(() => undefined);
-    return () => {
-      cancelled = true;
+    const refresh = async () => {
+      try {
+        const res = await fetch(`/api/hospital-schedule?hospitalId=${encodeURIComponent(hospital.id)}`, { cache: 'no-store' });
+        if (!res.ok) throw new Error('예약 가능 시간을 불러오지 못했어요. 잠시 후 다시 시도해주세요.');
+        const data = await res.json();
+        if (!cancelled) setScheduleSettings({ disabledDays: data.disabledDays ?? [], disabledSlots: data.disabledSlots ?? {}, hoursByDow: data.hoursByDow ?? {} });
+      } catch (error) {
+        if (!cancelled) { setScheduleSettings({ disabledDays: [], disabledSlots: {}, hoursByDow: {} }); showToast(error instanceof Error ? error.message : '예약 시간을 확인하지 못했어요.'); }
+      }
     };
-  }, [hospital?.id]);
+    void refresh();
+    const interval = window.setInterval(() => { void refresh(); }, 30000);
+    const onFocus = () => { void refresh(); };
+    window.addEventListener('focus', onFocus);
+    return () => { cancelled = true; window.clearInterval(interval); window.removeEventListener('focus', onFocus); };
+  }, [hospital?.id, showToast]);
 
   const isDayOpen = (key: string) => {
     const [y, m, d] = parseDateKey(key);

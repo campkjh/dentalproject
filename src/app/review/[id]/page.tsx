@@ -137,9 +137,9 @@ export default function ReviewDetailPage() {
             {imgs.after && (
               <div className="relative aspect-square rounded-xl overflow-hidden bg-gray-100">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={imgs.after} alt="후" className="w-full h-full object-cover" />
+                <img src={imgs.after} alt={imgs.before ? "시술 후" : "리뷰 사진"} className="w-full h-full object-cover" />
                 <span className="absolute top-2 left-2 px-2 py-0.5 text-[10px] font-bold rounded bg-[#8037FF] text-white">
-                  AFTER
+                  {imgs.before ? 'AFTER' : '사진'}
                 </span>
               </div>
             )}
