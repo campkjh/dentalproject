@@ -2,6 +2,7 @@ import { after } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { isPushConfigured, sendPush } from './fcm';
 import { nativePushPolicy, pushPreferences } from './policy';
+import { nativePushPresentation } from './presentation';
 
 type Notice = { id?: string; user_id: string; type: string; title: string; content: string; link?: string | null };
 
@@ -46,8 +47,8 @@ export async function flushNativePush(notificationIds?: string[]) {
       const policy = nativePushPolicy(notice.data, pushPreferences(settings.data?.settings));
       if (!policy.allowed) { await finish('skipped'); continue; }
       const tokens = devices.data.map((device: { token: string }) => device.token);
-      // Keep medical details and message contents off the lock screen and out of FCM.
-      const result = await sendPush({ tokens, title: '마이닥 알림', body: '새 알림이 도착했어요. 앱에서 확인해주세요.',
+      const presentation = nativePushPresentation(notice.data);
+      const result = await sendPush({ tokens, ...presentation,
         notificationId: item.notification_id, quiet: policy.quiet,
         data: { notificationId: item.notification_id, link: policy.link },
       });
