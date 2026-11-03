@@ -6,7 +6,7 @@ import Link from 'next/link';
 import PullToRefresh from '@/components/common/PullToRefresh';
 import { useStore } from '@/store';
 import { createClient, hasSupabaseEnv } from '@/lib/supabase/client';
-import { communityCategories, getWeeklyPopularPosts, isTipPost, postInCategory, TIP_TAG } from '@/lib/community';
+import { communityCategories, getWeeklyPopularPosts, postInCustomerConsult, postInCategory, TIP_TAG, type CustomerConsultFilter } from '@/lib/community';
 import type { Post } from '@/types';
 import CommunityPostCard from './CommunityPostCard';
 import CommunityModal from './CommunityModal';
@@ -41,9 +41,8 @@ export default function CommunityFeed({ partner = false }: { partner?: boolean }
   const doctorSpaces = partner && isDoctor;
   const [space, setSpace] = useState<'doctor' | 'customer'>('doctor');
   type LoungeFilter = 'all' | 'free' | 'dental' | 'mine';
-  type ConsultFilter = 'waiting' | 'all' | 'mytips';
   const [lounge, setLounge] = useState<LoungeFilter>('all');
-  const [consult, setConsult] = useState<ConsultFilter>('waiting');
+  const [consult, setConsult] = useState<CustomerConsultFilter>('all');
   const [mine, setMine] = useState(false);
   const [category, setCategory] = useState(() => communityCategories.includes(params.get('category') || '') ? params.get('category')! : '전체');
   const [query, setQuery] = useState(params.get('q') || '');
@@ -75,9 +74,7 @@ export default function CommunityFeed({ partner = false }: { partner?: boolean }
     }
     if (post.boardType !== 'question') return false;
     if (doctorSpaces) {
-      if (consult === 'waiting') return !isTipPost(post) && !(post.hasAnswer || post.answerCount);
-      if (consult === 'mytips') return isTipPost(post) && post.authorId === user?.id;
-      return !isTipPost(post);
+      return postInCustomerConsult(post, consult, user?.id);
     }
     return true;
   }, [doctorSpaces, space, lounge, consult, user?.id]);
@@ -243,9 +240,9 @@ export default function CommunityFeed({ partner = false }: { partner?: boolean }
           <FilterChips
             items={space === 'doctor'
               ? [['all', '전체'], ['free', '자유 (익명)'], ['dental', '과별'], ['mine', '내 글']]
-              : [['waiting', '답변 대기'], ['all', '전체 질문'], ['mytips', '내 꿀팁']]}
+              : [['all', '전체 글'], ['waiting', '답변 대기'], ['mytips', '내 꿀팁']]}
             value={space === 'doctor' ? lounge : consult}
-            onChange={v => { if (space === 'doctor') setLounge(v as LoungeFilter); else setConsult(v as ConsultFilter); }}
+            onChange={v => { if (space === 'doctor') setLounge(v as LoungeFilter); else setConsult(v as CustomerConsultFilter); }}
           />
         </div>}
 
@@ -290,7 +287,7 @@ export default function CommunityFeed({ partner = false }: { partner?: boolean }
         <div className={styles.panelBody}><CommunityDetail key={selected} postId={selected} basePath={basePath} onClose={() => setSelected(null)} /></div>
       </aside>
     </>}
-    {compose && <CommunityComposer sheet mode={composeMode} key={`${composeMode}-${activeBoard}-${category}-${user?.id || ''}`} initialBoard={activeBoard} initialCategory={category} onClose={() => setCompose(false)} onPosted={() => { setCompose(false); setMine(false); setCategory('전체'); setQuery(''); refresh(); }} />}
+    {compose && <CommunityComposer sheet mode={composeMode} key={`${composeMode}-${activeBoard}-${category}-${user?.id || ''}`} initialBoard={activeBoard} initialCategory={category} onClose={() => setCompose(false)} onPosted={() => { setCompose(false); setMine(false); setCategory('전체'); setQuery(''); if (composeMode === 'tip') setConsult('all'); refresh(); }} />}
     {commentPost && <CommunityModal label="게시글 댓글" onClose={() => setCommentPost(null)}><CommunityDetail key={commentPost} postId={commentPost} basePath={basePath} commentsOnly onClose={() => setCommentPost(null)} /></CommunityModal>}
   </div>;
 }
