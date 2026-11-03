@@ -8,6 +8,16 @@ export const TIP_TAG = '의사꿀팁';
 // 예전에 의사 계정이 질문 게시판에 쓴 글(표시 없음)도 꿀팁으로 본다 — 고객 질문 칸·답변 대기에 섞이지 않게
 export const isTipPost = (post: Pick<Post, 'boardType' | 'tags' | 'authorTitle'>) => post.boardType === 'question' && (post.tags.includes(TIP_TAG) || post.authorTitle === '의사');
 
+export type CustomerConsultFilter = 'all' | 'waiting' | 'mytips';
+
+/** The shared consultation feed includes both customer questions and doctors' tips. */
+export function postInCustomerConsult(post: Pick<Post, 'boardType' | 'tags' | 'authorTitle' | 'authorId' | 'hasAnswer' | 'answerCount'>, filter: CustomerConsultFilter, userId?: string) {
+  if (post.boardType !== 'question') return false;
+  if (filter === 'waiting') return !isTipPost(post) && !(post.hasAnswer || post.answerCount);
+  if (filter === 'mytips') return Boolean(userId) && isTipPost(post) && post.authorId === userId;
+  return true;
+}
+
 // 고객 커뮤니티 주제(261101) — 진료 과목(임플란트·교정…) 대신 글 성격으로 나눈다. 의사꿀팁 = 의사가 쓴 글(TIP_TAG).
 export const communityTopicTags = ['자유수다', '시술질문', '병원추천'];
 export const communityCategories = ['전체', ...communityTopicTags, TIP_TAG];
