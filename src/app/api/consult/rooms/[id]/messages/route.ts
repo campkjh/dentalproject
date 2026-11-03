@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { writeNotifications } from '@/lib/push/delivery';
 
 export const dynamic = 'force-dynamic';
 
@@ -37,6 +38,8 @@ export async function POST(
     .eq('id', roomId)
     .maybeSingle();
   if (!room) return NextResponse.json({ error: '채팅방을 찾을 수 없습니다.' }, { status: 404 });
+  const hospital = Array.isArray(room.hospitals) ? room.hospitals[0] : room.hospitals;
+  if (room.user_id !== user.id && hospital?.owner_id !== user.id) return NextResponse.json({ error: '채팅방에 접근할 수 없습니다.' }, { status: 403 });
 
   const senderType = room.user_id === user.id ? 'user' : 'hospital';
 
@@ -59,6 +62,16 @@ export async function POST(
     .from('consultation_rooms')
     .update({ last_message: body.content ?? '', last_at: new Date().toISOString() })
     .eq('id', roomId);
+
+  const recipient = senderType === 'user' ? hospital?.owner_id : room.user_id;
+  if (recipient && recipient !== user.id) {
+    const { error: notificationError } = await writeNotifications({
+      user_id: recipient, type: 'info', title: '새 상담 메시지가 도착했습니다',
+      content: '상담방에 새 메시지가 도착했어요. 앱에서 확인해주세요.',
+      link: senderType === 'user' ? `/partner/chat?roomId=${roomId}` : `/consult/${room.hospital_id}`,
+    });
+    if (notificationError) console.error('Consultation message notification failed', { messageId: data.id });
+  }
 
   return NextResponse.json({ id: data.id, createdAt: data.created_at });
 }

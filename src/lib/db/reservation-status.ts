@@ -1,3 +1,4 @@
+import { writeNotifications } from '@/lib/push/delivery';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { broadcastReservationChange } from '@/lib/realtime/server';
 
@@ -55,7 +56,7 @@ export async function completePastConfirmedReservations(admin: any, options: Com
     }));
 
   if (notifications.length > 0) {
-    await admin.from('notifications').insert(notifications);
+    await writeNotifications(notifications);
   }
 
   await Promise.all(
@@ -120,7 +121,7 @@ export async function cancelExpiredPendingReservations(admin: any, options: Comp
     }));
 
   if (notifications.length > 0) {
-    await admin.from('notifications').insert(notifications);
+    await writeNotifications(notifications);
   }
 
   await Promise.all(

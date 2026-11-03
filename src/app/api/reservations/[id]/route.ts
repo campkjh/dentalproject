@@ -1,3 +1,4 @@
+import { writeNotifications } from '@/lib/push/delivery';
 import { NextResponse, type NextRequest } from 'next/server';
 import {
   buildScheduleChangeContent,
@@ -366,7 +367,7 @@ export async function PATCH(
         completed: 'info',
         pending: 'info',
       };
-      await admin.from('notifications').insert({
+      await writeNotifications({
         user_id: reservation.user_id,
         type: typeMap[nextStatus] ?? 'info',
         title: titleMap[nextStatus] ?? '예약 상태가 변경되었습니다',
@@ -376,7 +377,7 @@ export async function PATCH(
     }
 
     if (nextStatus === 'cancelled' && isPatientOwner && hospitalRow?.owner_id && hospitalRow.owner_id !== user.id) {
-      await admin.from('notifications').insert({
+      await writeNotifications({
         user_id: hospitalRow.owner_id,
         type: 'important',
         title: '예약이 취소되었습니다',
@@ -389,7 +390,7 @@ export async function PATCH(
     const content = buildScheduleChangeContent(hospitalName, previousSchedule, nextSchedule);
 
     if (reservation.user_id) {
-      await admin.from('notifications').insert({
+      await writeNotifications({
         user_id: reservation.user_id,
         type: 'important',
         title: '예약 스케줄이 변경되었습니다',
@@ -399,7 +400,7 @@ export async function PATCH(
     }
 
     if (hospitalRow?.owner_id && hospitalRow.owner_id !== user.id) {
-      await admin.from('notifications').insert({
+      await writeNotifications({
         user_id: hospitalRow.owner_id,
         type: 'info',
         title: '예약 스케줄 변경내역',

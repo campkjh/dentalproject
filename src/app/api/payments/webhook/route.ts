@@ -1,3 +1,4 @@
+import { writeNotifications } from '@/lib/push/delivery';
 import { NextResponse, type NextRequest } from 'next/server';
 import { broadcastReservationChange } from '@/lib/realtime/server';
 import { createAdminClient } from '@/lib/supabase/server';
@@ -51,7 +52,7 @@ export async function POST(req: NextRequest) {
       .eq('id', reservation.id);
 
     if (reservation.user_id) {
-      await admin.from('notifications').insert({
+      await writeNotifications({
         user_id: reservation.user_id,
         type: 'important',
         title: '입금이 확인되었습니다',
@@ -78,7 +79,7 @@ export async function POST(req: NextRequest) {
       .eq('id', reservation.id);
 
     if (reservation.user_id && reservation.status !== 'cancelled') {
-      await admin.from('notifications').insert({
+      await writeNotifications({
         user_id: reservation.user_id,
         type: 'important',
         title: '예약이 취소되었습니다',

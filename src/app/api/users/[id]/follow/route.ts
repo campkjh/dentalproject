@@ -1,3 +1,4 @@
+import { writeNotifications } from '@/lib/push/delivery';
 import { NextResponse, type NextRequest } from 'next/server';
 import { createAdminClient, createClient } from '@/lib/supabase/server';
 import { isMissingTable, reviewerHref, reviewerName } from '@/lib/reviewer';
@@ -39,7 +40,7 @@ export async function POST(_req: NextRequest, { params }: Ctx) {
   // 새로 팔로우했을 때만 알림(이미 팔로우 중이던 다시 누름은 조용히)
   if (!error) {
     const { data: me } = await admin.from('profiles').select('name').eq('id', user.id).maybeSingle();
-    await admin.from('notifications').insert({
+    await writeNotifications({
       user_id: id,
       type: 'info',
       title: '새 팔로워',

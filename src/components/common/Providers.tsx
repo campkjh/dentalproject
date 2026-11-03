@@ -7,6 +7,7 @@ import { SessionProvider } from '@/lib/supabase/SessionProvider';
 import AppInteractions from './AppInteractions';
 import IdentityGate from '@/components/auth/IdentityGate';
 import SheetDragClose from './SheetDragClose';
+import NativePushBridge from '@/components/notifications/NativePushBridge';
 
 export default function Providers({ children }: { children?: React.ReactNode }) {
   return (
@@ -16,6 +17,7 @@ export default function Providers({ children }: { children?: React.ReactNode }) 
       <Modal />
       <Toast />
       <AppInteractions />
+      <NativePushBridge />
       <IdentityGate />
       <SheetDragClose />
     </SessionProvider>
