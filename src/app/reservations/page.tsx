@@ -250,7 +250,7 @@ export default function ReservationsPage() {
   return (
     <div className="min-h-screen bg-white pb-[86px] pc:pb-16">
       {/* 모바일 머리줄 — 프리티풀 탭 머리 표준(왼쪽 16 · 20 굵게 · 오른쪽 돋보기 하나) */}
-      <header className="sticky top-0 z-20 bg-white px-4 pb-2 pt-2 pc:hidden">
+      <header className="sticky top-0 z-20 bg-white px-4 pb-2 pt-[calc(8px+env(safe-area-inset-top))] pc:hidden">
         <div
           aria-hidden="true"
           className={`pointer-events-none absolute inset-x-0 top-full h-6 bg-gradient-to-b from-white via-white/70 to-white/0 transition-opacity duration-300 ${

@@ -88,7 +88,7 @@ export default function HospitalManagePage() {
 
   if (!authUser) {
     return (
-      <div className="mx-auto min-h-screen max-w-[500px] bg-white pt-14">
+      <div className="mx-auto min-h-screen max-w-[500px] bg-white pt-[calc(56px+env(safe-area-inset-top))]">
         <ManageHead />
         <LoginRequired />
       </div>
@@ -97,7 +97,7 @@ export default function HospitalManagePage() {
 
   if (!hospital) {
     return (
-      <div className="mx-auto min-h-screen max-w-[500px] bg-white pt-14">
+      <div className="mx-auto min-h-screen max-w-[500px] bg-white pt-[calc(56px+env(safe-area-inset-top))]">
         <ManageHead />
         <EmptyBlock icon="hospital" title="등록된 병원이 없어요" sub="병원 등록 신청을 먼저 진행해 주세요.">
           <Link
@@ -134,7 +134,7 @@ export default function HospitalManagePage() {
   };
 
   return (
-    <div className="mx-auto min-h-screen max-w-[500px] bg-white pb-[86px] pt-14 page-enter">
+    <div className="mx-auto min-h-screen max-w-[500px] bg-white pb-[86px] pt-[calc(56px+env(safe-area-inset-top))] page-enter">
       <ManageHead badge={hospital.status === 'pending'} />
 
       <div className="sticky top-14 z-40 bg-white px-5 pb-2 pt-1 lg:top-[168px]">
@@ -157,7 +157,7 @@ export default function HospitalManagePage() {
 
 function ManageHead({ badge }: { badge?: boolean }) {
   return (
-    <div className="fixed left-1/2 top-0 z-50 flex h-14 w-full max-w-[500px] -translate-x-1/2 items-center justify-between bg-white px-5 lg:top-[112px]">
+    <div className="fixed left-1/2 top-0 z-50 flex h-14 box-content pt-[env(safe-area-inset-top)] w-full max-w-[500px] -translate-x-1/2 items-center justify-between bg-white px-5 lg:top-[112px]">
       <h1 className="text-[20px] font-bold tracking-[-0.4px] text-[#191F28]">병원관리</h1>
       {badge && <span className="inline-flex h-6 items-center rounded-[6px] bg-[#F2F4F6] px-2 text-[13.5px] font-semibold text-[#6B7684]">승인대기</span>}
     </div>
