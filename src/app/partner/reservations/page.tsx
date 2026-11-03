@@ -435,29 +435,34 @@ function ScheduleSettingsView({
     }
 
     let cancelled = false;
-    setLoadingSettings(true);
-    fetch('/api/my-hospital/schedule-settings', { cache: 'no-store' })
-      .then(async (res) => {
+    let inFlight = false;
+    const refresh = async () => {
+      if (inFlight) return;
+      inFlight = true;
+      try {
+        const res = await fetch('/api/my-hospital/schedule-settings', { cache: 'no-store' });
         const payload = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(payload.error || '예약설정을 불러오지 못했습니다.');
-        return payload as ScheduleSettings;
-      })
-      .then((payload) => {
-        if (cancelled) return;
-        setSettings({
+        if (!cancelled) setSettings({
           disabledDays: Array.isArray(payload.disabledDays) ? payload.disabledDays : [],
           disabledSlots: payload.disabledSlots ?? {},
           hoursByDow: payload.hoursByDow ?? {},
         });
-      })
-      .catch((error) => {
+      } catch (error) {
         if (!cancelled) showToast(error instanceof Error ? error.message : '예약설정을 불러오지 못했습니다.');
-      })
-      .finally(() => {
+      } finally {
+        inFlight = false;
         if (!cancelled) setLoadingSettings(false);
-      });
+      }
+    };
+    const refreshVisible = () => { if (document.visibilityState === 'visible') void refresh(); };
+    void refresh();
+    window.addEventListener('focus', refreshVisible);
+    document.addEventListener('visibilitychange', refreshVisible);
     return () => {
       cancelled = true;
+      window.removeEventListener('focus', refreshVisible);
+      document.removeEventListener('visibilitychange', refreshVisible);
     };
   }, [hospitalId, showToast]);
 

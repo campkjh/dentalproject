@@ -83,9 +83,10 @@ function BookingPage() {
     };
     void refresh();
     const interval = window.setInterval(() => { void refresh(); }, 30000);
-    const onFocus = () => { void refresh(); };
+    const onFocus = () => { if (document.visibilityState === 'visible') void refresh(); };
     window.addEventListener('focus', onFocus);
-    return () => { cancelled = true; window.clearInterval(interval); window.removeEventListener('focus', onFocus); };
+    document.addEventListener('visibilitychange', onFocus);
+    return () => { cancelled = true; window.clearInterval(interval); window.removeEventListener('focus', onFocus); document.removeEventListener('visibilitychange', onFocus); };
   }, [hospital?.id, showToast]);
 
   const isDayOpen = (key: string) => {
