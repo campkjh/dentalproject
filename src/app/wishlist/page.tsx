@@ -192,7 +192,7 @@ export default function PocketPage() {
       style={emptyView ? { background: 'linear-gradient(180deg, #FFFFFF 0px, #FFFFFF 96px, #EEF4FF 170px, #E2ECFF 250px, #E8F0FF 340px, #F3F7FF 460px, #FFFFFF 680px)' } : undefined}
     >
       {/* 탭 머리 — 모바일은 프리티풀 탭 머리 표준(왼쪽 16 · 20 굵게 · 오른쪽 돋보기), PC 는 전체 헤더 아래 큰 제목 */}
-      <div className="sticky top-0 z-40 flex items-center justify-between bg-white px-4 pc:hidden" style={{ height: 56 }}>
+      <div className="sticky top-0 z-40 flex items-center justify-between bg-white px-4 pc:hidden" style={{ height: 'calc(56px + env(safe-area-inset-top, 0px))', paddingTop: 'env(safe-area-inset-top, 0px)' }}>
         <h1 className={`text-[20px] font-bold leading-none text-[#191F28] ${entrance ? matchStyles.enterTitle : ''}`}>포켓</h1>
         <Link href="/search" aria-label="시술 검색" className="-mr-1.5 flex h-11 w-11 items-center justify-center transition-transform active:scale-90">
           <HeaderSearchIcon />

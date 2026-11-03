@@ -118,9 +118,9 @@ export default function HospitalHomePage() {
   };
 
   return (
-    <div className="pb-[86px] pt-12 bg-white min-h-screen">
+    <div className="pb-[86px] pt-[calc(48px+env(safe-area-inset-top))] bg-white min-h-screen">
       {/* Header */}
-      <div className="fixed left-1/2 top-0 z-50 flex h-12 w-full max-w-[500px] -translate-x-1/2 items-center justify-between bg-white px-2.5 lg:top-[112px]">
+      <div className="fixed left-1/2 top-0 z-50 flex h-12 box-content pt-[env(safe-area-inset-top)] w-full max-w-[500px] -translate-x-1/2 items-center justify-between bg-white px-2.5 lg:top-[112px]">
         <h1 className="text-lg font-bold">홈</h1>
         <button className="p-1">
           <Bell size={22} className="text-gray-700" />

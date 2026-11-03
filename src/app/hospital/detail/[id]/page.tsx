@@ -145,7 +145,7 @@ export default function HospitalDetailPage() {
   return (
     <div className="min-h-screen bg-white pb-[110px]">
       {/* ─── 머리 — 떠 있는 둥근 버튼 → 스크롤하면 로고 + 이름 흰 머리 ─── */}
-      <div className={`fixed left-0 right-0 top-0 z-40 flex items-center gap-2 transition-all duration-300 min-[1024px]:hidden ${headerSolid ? 'h-[60px] bg-white px-3' : 'justify-between px-4 pb-3 pt-3'}`}>
+      <div className={`fixed left-0 right-0 top-0 z-40 flex items-center gap-2 transition-all duration-300 min-[1024px]:hidden ${headerSolid ? 'h-[calc(60px+env(safe-area-inset-top))] bg-white px-3 pt-[env(safe-area-inset-top)]' : 'justify-between px-4 pb-3 pt-[calc(12px+env(safe-area-inset-top))]'}`}>
         <button type="button" aria-label="뒤로" onClick={() => router.back()} className={roundBtn(headerSolid)}>
           <ChevronLeft size={28} strokeWidth={2.2} className="text-[#191F28]" />
         </button>
