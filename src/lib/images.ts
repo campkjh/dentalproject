@@ -55,6 +55,11 @@ export function resolveProductImageUrl(value?: string | null, seed?: string | nu
   return normalizeProductImageUrl(value) ?? getFallbackProductImage(seed);
 }
 
+export function productGalleryImages(product: { id: string; imageUrl?: string | null; imageUrls?: string[] }) {
+  const thumbnails = product.imageUrls?.length ? product.imageUrls : [resolveProductImageUrl(product.imageUrl, product.id)];
+  return [...new Set(thumbnails.map(url => normalizeProductImageUrl(url)).filter((url): url is string => Boolean(url)))].slice(0, 10);
+}
+
 export function resolveHospitalImageUrl(
   hospital?: {
     logoUrl?: string | null;
