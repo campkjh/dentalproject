@@ -74,6 +74,7 @@ async function fetchHospitalProducts(
       .from('products')
       .select(selectColumns)
       .eq('hospital_id', key)
+      .neq('status', 'removed')
       .order('created_at', { ascending: false });
 
     if (result.error) {
