@@ -129,7 +129,6 @@ export default function CommunityDetail({ postId, commentsOnly = false, onClose,
       if (!alive.current) return;
       setText(''); setReply(null); updatePostCommentCount(data.commentCount);
       window.dispatchEvent(new Event('dental:community-comments'));
-      window.dispatchEvent(new Event('dental:notifications'));
       showToast(data.notificationsDelivered === false ? '댓글이 등록됐지만 알림을 전달하지 못했어요.' : secret ? '비밀 댓글을 남겼어요' : '댓글이 등록되었습니다.');
       setSecret(false);
       if (user.isDoctor && post?.boardType === 'question') {
