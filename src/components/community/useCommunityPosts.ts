@@ -25,5 +25,21 @@ export function useCommunityPosts() {
     return () => controller.abort();
   }, [revision]);
 
+  useEffect(() => {
+    const refreshVisible = () => {
+      if (document.visibilityState === 'visible') setRevision(n => n + 1);
+    };
+    window.addEventListener('focus', refreshVisible);
+    window.addEventListener('dental:community-comments', refreshVisible);
+    document.addEventListener('visibilitychange', refreshVisible);
+    const timer = window.setInterval(refreshVisible, 30000);
+    return () => {
+      window.removeEventListener('focus', refreshVisible);
+      window.removeEventListener('dental:community-comments', refreshVisible);
+      document.removeEventListener('visibilitychange', refreshVisible);
+      window.clearInterval(timer);
+    };
+  }, []);
+
   return { posts, loading, error, refresh };
 }
