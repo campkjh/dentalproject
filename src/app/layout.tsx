@@ -16,6 +16,9 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
+  // iOS 앱 웹뷰는 상태바·홈 인디케이터 영역까지 그린다. cover여야 env(safe-area-inset-*)에
+  // 실제 값이 들어와 각 화면 머리·하단바가 그만큼 여백을 준다(안드로이드 앱은 0으로 들어옴).
+  viewportFit: 'cover',
 };
 
 export default function RootLayout({
