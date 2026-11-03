@@ -989,7 +989,7 @@ export default function PartnerHomePage() {
 
   const submitProductRequest = async () => {
     if (productUploadOperation.current) { showToast('이미지 업로드가 끝난 뒤 승인 요청을 보내주세요.'); return; }
-    if (productImageSelection.imageUrls || productImageSelection.detailImageUrls) { showToast('선택한 사진을 올리거나 선택을 취소해주세요.'); return; }
+    if (productImageSelection.imageUrls || productImageSelection.detailImageUrls) { showToast('실패한 사진을 다시 올리거나 선택을 취소해주세요.'); return; }
     if (!productForm.title.trim()) {
       showToast('상품명을 입력해주세요.');
       return;
@@ -1540,7 +1540,7 @@ export default function PartnerHomePage() {
                 onUpload={(files) => uploadProductImages('imageUrls', files)}
                 onSelectionChange={(count) => setProductImageSelection(prev => ({ ...prev, imageUrls: count }))}
               />
-              <span className="partner-product-description-hint">첫 장이 대표 이미지예요. 선택한 사진을 미리 확인한 뒤 올려주세요.</span>
+              <span className="partner-product-description-hint">사진을 선택하면 자동으로 올라갑니다. 첫 장이 대표 이미지예요.</span>
             </div>
 
             <div className="partner-product-images">
