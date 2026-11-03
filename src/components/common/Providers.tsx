@@ -5,6 +5,7 @@ import Toast from './Toast';
 import BottomNav from './BottomNav';
 import { SessionProvider } from '@/lib/supabase/SessionProvider';
 import AppInteractions from './AppInteractions';
+import IdentityGate from '@/components/auth/IdentityGate';
 
 export default function Providers({ children }: { children?: React.ReactNode }) {
   return (
@@ -14,6 +15,7 @@ export default function Providers({ children }: { children?: React.ReactNode }) 
       <Modal />
       <Toast />
       <AppInteractions />
+      <IdentityGate />
     </SessionProvider>
   );
 }

@@ -2,6 +2,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { broadcastReservationChange } from '@/lib/realtime/server';
 import { createAdminClient, createClient } from '@/lib/supabase/server';
+import { getIdentityStatus } from '@/lib/identity';
 
 export const dynamic = 'force-dynamic';
 
@@ -55,6 +56,12 @@ export async function POST(req: NextRequest) {
     data: { user },
   } = await sb.auth.getUser();
   if (!user) return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 });
+
+  // 본인인증(만 19세 이상)을 마치지 않은 고객은 예약할 수 없다 — 화면을 우회한 호출도 막는다
+  const identity = await getIdentityStatus(await createAdminClient(), user.id);
+  if (identity.required && !identity.verified) {
+    return NextResponse.json({ error: '본인인증 후 예약할 수 있어요.', code: 'IDENTITY_REQUIRED' }, { status: 403 });
+  }
 
   const hospitalId = await resolveHospitalId(sb, body.hospitalId);
   if (!hospitalId) return NextResponse.json({ error: '병원을 찾을 수 없습니다.' }, { status: 404 });
