@@ -13,6 +13,10 @@ export interface Product {
   likeCount: number;
   imageUrl: string;
   detailImageUrl?: string;
+  /** 썸네일 여러 장(첫 장 = imageUrl) */
+  imageUrls?: string[];
+  /** 상세페이지 이미지 여러 장(위에서 아래로) */
+  detailImageUrls?: string[];
   description?: string;
   tags: string[];
   category: string;

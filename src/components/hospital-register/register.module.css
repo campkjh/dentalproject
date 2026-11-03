@@ -4,6 +4,7 @@
  * 입력은 globals .qd-input, 큰 버튼은 .qd-cta 를 같이 쓴다. 글자 굵기 최대 700.
  * ──────────────────────────────────────────────────────────── */
 .shell {
+  padding-top: env(safe-area-inset-top, 0px);
   --blue: #3180F7;
   --blue-bg: #EDF4FF;
   --blue-soft: #E8F3FF;

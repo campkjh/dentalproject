@@ -157,7 +157,7 @@ export default function AdminReservationsPage() {
     { pending: 0, confirmed: 0, completed: 0, cancelled: 0 } as Record<ReservationStatus, number>
   );
 
-  const GRID = 'grid grid-cols-[1fr_1fr_1.4fr_1.1fr_140px_120px_90px_90px_auto] gap-4 items-center';
+  const GRID = 'grid grid-cols-[1fr_1fr_1.4fr_1.1fr_140px_120px_90px_90px_170px] gap-4 items-center';
 
   return (
     <div className="adm-stack">

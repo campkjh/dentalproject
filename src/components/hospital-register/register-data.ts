@@ -23,13 +23,13 @@ export const defaultTreatments = treatmentsBySpecialty['dental'];
 export function formatPhone(raw: string): string {
   const d = raw.replace(/\D/g, '').slice(0, 11);
   if (d.length <= 3) return d;
-  if (d.length <= 7) return `${d.slice(0, 3)} ${d.slice(3)}`;
+  if (d.length <= 7) return `${d.slice(0, 3)}-${d.slice(3)}`;
   return `${d.slice(0, 3)} ${d.slice(3, 7)} ${d.slice(7)}`;
 }
 
 export function formatBiznum(raw: string): string {
   const d = raw.replace(/\D/g, '').slice(0, 10);
   if (d.length <= 3) return d;
-  if (d.length <= 5) return `${d.slice(0, 3)} ${d.slice(3)}`;
-  return `${d.slice(0, 3)} ${d.slice(3, 5)} ${d.slice(5)}`;
+  if (d.length <= 5) return `${d.slice(0, 3)}-${d.slice(3)}`;
+  return `${d.slice(0, 3)}-${d.slice(3, 5)}-${d.slice(5)}`;
 }

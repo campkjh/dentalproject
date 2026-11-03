@@ -142,7 +142,7 @@ export default function AdminReviewsPage() {
     );
   };
 
-  const GRID = 'grid grid-cols-[36px_80px_1.6fr_1fr_1.2fr_0.8fr_1fr_auto] gap-4 items-center';
+  const GRID = 'grid grid-cols-[36px_80px_1.6fr_1fr_1.2fr_0.8fr_1fr_196px] gap-4 items-center';
   const allSel = pageData.length > 0 && pageData.every((r) => selected.has(r.id));
 
   return (

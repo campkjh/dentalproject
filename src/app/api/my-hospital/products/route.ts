@@ -3,6 +3,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { mergeProductDetailImageTag } from '@/lib/images';
 import { createAdminClient } from '@/lib/supabase/server';
 import { getOwnedHospital, hospitalKeys } from '@/lib/owned-hospital';
+import { toCategoryCode } from '@/lib/category-code';
 
 export const dynamic = 'force-dynamic';
 
@@ -68,6 +69,28 @@ function cleanTags(value: unknown) {
   return undefined;
 }
 
+function cleanUrlList(value: unknown) {
+  if (!Array.isArray(value)) return undefined;
+  return Array.from(new Set(value.map((item) => (typeof item === 'string' ? item.trim() : '')).filter(Boolean))).slice(0, 20);
+}
+
+// 여러 장 이미지 칸(0024_product_image_lists) — 아직 마이그레이션 전이면 빼고 다시 저장한다
+function isMissingImageListColumn(error: { message?: string; details?: string | null; hint?: string | null } | null) {
+  const text = `${error?.message ?? ''} ${error?.details ?? ''} ${error?.hint ?? ''}`.toLowerCase();
+  return text.includes('image_urls') || text.includes('detail_image_urls');
+}
+
+function withoutImageListColumns(patch: Record<string, any>) {
+  const { image_urls: _imageUrls, detail_image_urls: _detailImageUrls, ...rest } = patch;
+  return rest;
+}
+
+async function stripImageListsIfUnsupported(admin: Awaited<ReturnType<typeof createAdminClient>>, patch: Record<string, any>) {
+  if (!Object.hasOwn(patch, 'image_urls') && !Object.hasOwn(patch, 'detail_image_urls')) return patch;
+  const probe = await admin.from('products').select('image_urls, detail_image_urls').limit(1);
+  return probe.error && isMissingImageListColumn(probe.error) ? withoutImageListColumns(patch) : patch;
+}
+
 function withoutDetailImageColumn(patch: Record<string, any>) {
   if (!Object.hasOwn(patch, 'detail_image_url')) return patch;
   const { detail_image_url: _detailImageUrl, ...rest } = patch;
@@ -80,8 +103,11 @@ function buildProductPatch(body: any, required: boolean) {
   const category = cleanNullableText(body.category);
   const subCategory = cleanNullableText(body.subCategory);
   const location = cleanNullableText(body.location);
-  const imageUrl = cleanNullableText(body.imageUrl);
-  const detailImageUrl = cleanNullableText(body.detailImageUrl);
+  const imageUrls = cleanUrlList(body.imageUrls);
+  const detailImageUrls = cleanUrlList(body.detailImageUrls);
+  // 대표 이미지 = 첫 장(예전 칸 image_url·detail_image_url 도 같이 채워 둔다)
+  const imageUrl = imageUrls ? imageUrls[0] ?? null : cleanNullableText(body.imageUrl);
+  const detailImageUrl = detailImageUrls ? detailImageUrls[0] ?? null : cleanNullableText(body.detailImageUrl);
   const description = cleanNullableText(body.description);
   const price = cleanNumber(body.price);
   const originalPrice = cleanNullableNumber(body.originalPrice, Object.hasOwn(body, 'originalPrice'));
@@ -94,6 +120,8 @@ function buildProductPatch(body: any, required: boolean) {
   if (location !== undefined) patch.location = location;
   if (imageUrl !== undefined) patch.image_url = imageUrl;
   if (detailImageUrl !== undefined) patch.detail_image_url = detailImageUrl;
+  if (imageUrls !== undefined) patch.image_urls = imageUrls;
+  if (detailImageUrls !== undefined) patch.detail_image_urls = detailImageUrls;
   if (description !== undefined) patch.description = description;
   if (price !== undefined) patch.price = price;
   if (originalPrice !== undefined) patch.original_price = originalPrice;
@@ -110,6 +138,13 @@ function buildProductPatch(body: any, required: boolean) {
   if (Object.keys(patch).length === 0) return { error: '변경할 상품 정보가 없습니다.' };
 
   return { patch };
+}
+
+/** 상품 진료과 = 병원 진료과로 고정(치과 병원은 치과 상품만) */
+function lockCategory(patch: Record<string, any>, hospital: any) {
+  const code = toCategoryCode(hospital?.category);
+  if (code) patch.category = code;
+  return patch;
 }
 
 async function getOwnedProduct(admin: Awaited<ReturnType<typeof createAdminClient>>, hospital: any, id: unknown): Promise<OwnedProductResult | { error: NextResponse }> {
@@ -158,9 +193,8 @@ export async function POST(req: NextRequest) {
 
   const built = buildProductPatch(body, true);
   if (built.error) return NextResponse.json({ error: built.error }, { status: 400 });
-  const productPatch = built.patch as Record<string, any>;
-
   const admin = await createAdminClient();
+  const productPatch = await stripImageListsIfUnsupported(admin, lockCategory(built.patch as Record<string, any>, hospital));
   let { data, error: insertError } = await admin
     .from('products')
     .insert({
@@ -232,9 +266,11 @@ export async function PATCH(req: NextRequest) {
 
   const built = buildProductPatch(body, false);
   if (built.error) return NextResponse.json({ error: built.error }, { status: 400 });
-  const productPatch = built.patch as Record<string, any>;
+  let productPatch = built.patch as Record<string, any>;
+  if (Object.hasOwn(productPatch, 'category')) productPatch = lockCategory(productPatch, hospital);
 
   const admin = await createAdminClient();
+  productPatch = await stripImageListsIfUnsupported(admin, productPatch);
   const owned = await getOwnedProduct(admin, hospital, body.id);
   if ('error' in owned) return owned.error;
 

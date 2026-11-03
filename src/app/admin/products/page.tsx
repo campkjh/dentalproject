@@ -176,7 +176,7 @@ export default function AdminProductsPage() {
     );
   };
 
-  const GRID = 'grid grid-cols-[36px_1.8fr_1.1fr_100px_140px_140px_100px_auto] gap-4 items-center';
+  const GRID = 'grid grid-cols-[36px_1.8fr_1.1fr_100px_140px_140px_100px_176px] gap-4 items-center';
   const allSel = pageData.length > 0 && pageData.every((p) => selected.has(p.id));
 
   // 고르기 네모(파랑 채움)

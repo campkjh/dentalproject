@@ -6,6 +6,13 @@ export const dynamic = 'force-dynamic';
 
 type RegisterType = 'hospital' | 'doctor';
 
+// 병원 등록 필수 서류 — 화면(hospital/register REQUIRED_DOCS)과 같은 이름
+const REQUIRED_HOSPITAL_DOCS = ['사업자등록증', '의료기관 개설신고증', '의사 면허증', '대표자 신분증 사본'];
+
+async function notifyApplicant(admin: any, userId: string, title: string, content: string, link: string) {
+  await admin.from('notifications').insert({ user_id: userId, type: 'important', title, content, link });
+}
+
 function isMissingDoctorColumn(error: { message?: string; details?: string | null; hint?: string | null } | null, column: string) {
   const text = `${error?.message ?? ''} ${error?.details ?? ''} ${error?.hint ?? ''}`.toLowerCase();
   return text.includes(column.toLowerCase()) || text.includes(`doctors.${column.toLowerCase()}`);
@@ -33,6 +40,43 @@ async function insertDoctor(admin: any, payload: Record<string, any>) {
 
 function cleanString(value: unknown) {
   return typeof value === 'string' ? value.trim() : '';
+}
+
+export type ApplicationStatus = 'none' | 'pending' | 'approved' | 'rejected';
+
+/** 내 병원 신청 상태 — 마이페이지 '병원 신청' 줄(신청중 태그)·신청 화면에서 본다 */
+export async function GET() {
+  const sb = await createClient();
+  const { data: { user } } = await sb.auth.getUser();
+  if (!user) return NextResponse.json({ status: 'none' });
+
+  const admin = await createAdminClient();
+  const { data: hospitals } = await admin
+    .from('hospitals')
+    .select('id, name, status')
+    .eq('owner_id', user.id)
+    .order('created_at', { ascending: false })
+    .limit(1);
+  const hospital = hospitals?.[0];
+  if (hospital) {
+    const status: ApplicationStatus = hospital.status === 'approved' ? 'approved' : hospital.status === 'rejected' ? 'rejected' : 'pending';
+    return NextResponse.json({ status, kind: 'hospital', hospitalName: hospital.name });
+  }
+
+  const { data: doctors } = await admin
+    .from('doctors')
+    .select('id, member_status, is_active, hospital:hospitals (name)')
+    .eq('user_id', user.id)
+    .not('hospital_id', 'is', null)
+    .limit(1);
+  const doctor: any = doctors?.[0];
+  if (doctor && doctor.member_status !== 'left') {
+    const status: ApplicationStatus = doctor.member_status === 'pending'
+      ? 'pending'
+      : doctor.member_status === 'rejected' ? 'rejected' : 'approved';
+    return NextResponse.json({ status, kind: 'doctor', hospitalName: doctor.hospital?.name ?? '' });
+  }
+  return NextResponse.json({ status: 'none' });
 }
 
 export async function POST(req: NextRequest) {
@@ -115,6 +159,14 @@ export async function POST(req: NextRequest) {
       .update({ is_doctor: false, doctor_id: doctor?.id ?? null })
       .eq('id', user.id);
 
+    await notifyApplicant(
+      admin,
+      user.id,
+      '원장 등록 신청이 정상적으로 접수되었습니다',
+      `${hospital.name}에서 요청을 확인하고 수락하면 알려드릴게요.`,
+      '/mypage'
+    );
+
     return NextResponse.json({ id: doctor?.id, status: 'pending_member' });
   }
 
@@ -132,6 +184,25 @@ export async function POST(req: NextRequest) {
     body.documents && typeof body.documents === 'object' && !Array.isArray(body.documents)
       ? (body.documents as Record<string, string>)
       : {};
+  const missingDocs = REQUIRED_HOSPITAL_DOCS.filter((title) => !cleanString(submittedDocs[title]));
+  if (missingDocs.length) {
+    return NextResponse.json({ error: `필수 서류를 모두 올려 주세요. (${missingDocs.join(', ')})` }, { status: 400 });
+  }
+
+  // 이미 신청했거나 등록된 병원이 있으면 다시 만들지 않는다(같은 사람 병원이 둘이 되지 않게)
+  const { data: existingHospitals } = await admin
+    .from('hospitals')
+    .select('id, status')
+    .eq('owner_id', user.id)
+    .neq('status', 'rejected')
+    .limit(1);
+  if (existingHospitals?.[0]) {
+    const pending = existingHospitals[0].status === 'pending';
+    return NextResponse.json(
+      { error: pending ? '이미 병원 신청이 접수되어 심사 중이에요.' : '이미 등록된 병원이 있어요.' },
+      { status: 409 }
+    );
+  }
 
   const baseInsert: Record<string, any> = {
     name: hospitalName,
@@ -199,6 +270,14 @@ export async function POST(req: NextRequest) {
     .from('profiles')
     .update({ is_doctor: false, doctor_id: doctor?.id ?? null })
     .eq('id', user.id);
+
+  await notifyApplicant(
+    admin,
+    user.id,
+    '병원 신청이 정상적으로 접수되었습니다',
+    `${hospitalName} 신청 서류를 심사하고 있어요. 승인이 완료되면 알려드릴게요.`,
+    '/mypage'
+  );
 
   return NextResponse.json({ id: hospital.id, doctorId: doctor?.id, status: 'pending_hospital' });
 }

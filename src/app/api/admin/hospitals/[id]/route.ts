@@ -1,3 +1,4 @@
+import { revalidatePath } from 'next/cache';
 import { NextResponse, type NextRequest } from 'next/server';
 import { createAdminClient, createClient } from '@/lib/supabase/server';
 
@@ -73,9 +74,11 @@ export async function PATCH(
       type: typeMap[status],
       title: titleMap[status],
       content: `${hospital.name}의 상태가 변경되었습니다.`,
-      link: '/hospital/manage',
+      link: status === 'approved' ? '/partner' : '/mypage',
     });
   }
 
+  // 승인·정지가 고객 화면(카탈로그 5분 캐시)에 바로 보이게
+  revalidatePath('/api/catalog');
   return NextResponse.json({ ok: true });
 }

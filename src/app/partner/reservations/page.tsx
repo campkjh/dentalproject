@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -19,6 +19,7 @@ import {
 import { useSession } from '@/lib/supabase/SessionProvider';
 import { useReservationRealtimeRefresh } from '@/lib/realtime/reservations';
 import { useStore } from '@/store';
+import { haptic } from '@/lib/haptics';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type ReservationRow = {
@@ -93,11 +94,14 @@ function MonthCalendar({
   onSelect,
   hasDot,
   isOff,
+  dropOver,
 }: {
   selected: string;
   onSelect: (date: Date) => void;
   hasDot: (key: string) => boolean;
   isOff?: (key: string) => boolean;
+  /** 예약을 끌고 있을 때 손가락 아래 날짜(칸을 파랗게 테두리) */
+  dropOver?: string | null;
 }) {
   const today = new Date();
   const [expanded, setExpanded] = useState(false);
@@ -205,11 +209,12 @@ function MonthCalendar({
                       <button
                         key={key}
                         type="button"
+                        data-drop-date={key}
                         onClick={() => {
                           setCursor(date);
                           onSelect(date);
                         }}
-                        className="flex h-12 flex-col items-center justify-center transition-transform active:scale-[0.93]"
+                        className={`flex h-12 flex-col items-center justify-center rounded-[12px] transition-transform active:scale-[0.93] ${dropOver === key ? 'bg-[#E8F3FF] ring-2 ring-[#3180F7]' : ''}`}
                       >
                         <span
                           className={`flex h-9 w-9 items-center justify-center rounded-[12px] text-[16px] tabular-nums transition-colors ${
@@ -738,6 +743,53 @@ function CustomersView({ hospitalId, onTabChange, reloadKey }: { hospitalId: str
   );
 }
 
+type ReservationView = 'calendar' | 'list';
+const MOVABLE_STATUS: ReservationRow['status'][] = ['pending', 'confirmed'];
+const DRAG_HOLD_MS = 380;
+const DOCK_DAYS = 14;
+
+function dayLabel(key: string) {
+  const d = dateFromKey(key);
+  return `${d.getMonth() + 1}월 ${d.getDate()}일 (${WEEKDAYS[d.getDay()]})`;
+}
+
+/** 같은 시각으로 날짜만 바꾼 ISO */
+function moveToDate(iso: string, key: string) {
+  const from = new Date(iso);
+  const to = dateFromKey(key);
+  to.setHours(from.getHours(), from.getMinutes(), 0, 0);
+  return to.toISOString();
+}
+
+/** 달력 · 목록 — 회색 트랙 위 흰 알약 */
+function ViewToggle({ view, onChange }: { view: ReservationView; onChange: (view: ReservationView) => void }) {
+  const views = [
+    { key: 'calendar', label: '달력' },
+    { key: 'list', label: '목록' },
+  ] as const;
+  return (
+    <div className="relative flex w-[132px] rounded-[10px] bg-[#F2F4F6] p-[3px]" role="tablist" aria-label="보기 방식">
+      <span
+        aria-hidden
+        className="absolute bottom-[3px] top-[3px] rounded-[8px] bg-white shadow-[0_1px_4px_rgba(0,0,0,0.06)] transition-transform duration-300"
+        style={{ left: 3, width: 'calc((100% - 6px) / 2)', transform: `translateX(${view === 'list' ? 100 : 0}%)`, transitionTimingFunction: 'cubic-bezier(0.22, 1, 0.36, 1)' }}
+      />
+      {views.map((v) => (
+        <button
+          key={v.key}
+          type="button"
+          role="tab"
+          aria-selected={view === v.key}
+          onClick={() => { haptic('selection'); onChange(v.key); }}
+          className={`relative z-[1] flex h-8 flex-1 items-center justify-center text-[14px] transition-colors ${view === v.key ? 'font-bold text-[#191F28]' : 'font-semibold text-[#8B95A1]'}`}
+        >
+          {v.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export default function PartnerReservationsPage() {
   const router = useRouter();
   const { authUser } = useSession();
@@ -751,6 +803,14 @@ export default function PartnerReservationsPage() {
   const [memoTarget, setMemoTarget] = useState<ReservationRow | null>(null);
   const [memoDraft, setMemoDraft] = useState('');
   const [memoSaving, setMemoSaving] = useState(false);
+  const showConfirm = useStore((s) => s.showConfirm);
+  const [view, setView] = useState<ReservationView>(() => {
+    try { return localStorage.getItem('partner-reservation-view') === 'list' ? 'list' : 'calendar'; } catch { return 'calendar'; }
+  });
+  const changeView = (next: ReservationView) => {
+    setView(next);
+    try { localStorage.setItem('partner-reservation-view', next); } catch {}
+  };
   const {
     data: hospitalData,
     loading,
@@ -789,6 +849,161 @@ export default function PartnerReservationsPage() {
 
   const selectedDate = dateFromKey(selected);
   const isToday = selected === dateKey(now);
+  const todayKey = dateKey(now);
+
+  // 목록 보기 — 오늘부터 앞으로의 예약(취소 제외)을 날짜별로 1, 2, 3… 이어서
+  const listGroups = useMemo(() => {
+    const upcoming = items
+      .filter((row) => row.visit_at && row.status !== 'cancelled' && dateKey(new Date(row.visit_at)) >= todayKey)
+      .sort((a, b) => new Date(a.visit_at ?? 0).getTime() - new Date(b.visit_at ?? 0).getTime());
+    const groups: { key: string; rows: ReservationRow[] }[] = [];
+    for (const row of upcoming) {
+      const key = dateKey(new Date(row.visit_at!));
+      const last = groups[groups.length - 1];
+      if (last?.key === key) last.rows.push(row);
+      else groups.push({ key, rows: [row] });
+    }
+    return groups;
+  }, [items, todayKey]);
+
+  /* ── 꾹 눌러 끌어서 다른 날로 옮기기 ──
+   *  · 카드를 꾹(0.38초) 누르면 들어 올려지고, 아래쪽에 2주 날짜 판이 뜬다. 달력 칸·목록 날짜 머리에도 놓을 수 있다.
+   *  · 놓으면 '같은 시간으로 옮길까요?' 확인 → PATCH(reservationAt·visitAt, 서버가 고객에게 일정 변경 알림).
+   *  · 대기·확정 예약만 옮긴다. */
+  const [drag, setDrag] = useState<{ row: ReservationRow; x: number; y: number; over: string | null } | null>(null);
+  const press = useRef<{ row: ReservationRow; x: number; y: number; timer: number } | null>(null);
+  const suppressClick = useRef(false);
+  // 손을 뗄 때 읽는 최신 값(효과 안 클로저는 처음 값을 들고 있어서)
+  const dragLive = useRef<typeof drag>(null);
+
+  const startPress = (row: ReservationRow) => (e: React.PointerEvent) => {
+    if (!MOVABLE_STATUS.includes(row.status) || !row.visit_at) return;
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    const { clientX: x, clientY: y } = e;
+    window.clearTimeout(press.current?.timer);
+    press.current = {
+      row,
+      x,
+      y,
+      timer: window.setTimeout(() => {
+        haptic('medium');
+        suppressClick.current = true;
+        dragLive.current = { row, x, y, over: null };
+        setDrag(dragLive.current);
+      }, DRAG_HOLD_MS),
+    };
+  };
+
+  useEffect(() => {
+    const cancelPress = (e: PointerEvent) => {
+      const p = press.current;
+      if (!p || drag) return;
+      if (Math.abs(e.clientX - p.x) > 8 || Math.abs(e.clientY - p.y) > 8) { window.clearTimeout(p.timer); press.current = null; }
+    };
+    const endPress = () => { if (!drag && press.current) { window.clearTimeout(press.current.timer); press.current = null; } };
+    window.addEventListener('pointermove', cancelPress, { passive: true });
+    window.addEventListener('pointerup', endPress);
+    window.addEventListener('pointercancel', endPress);
+    return () => {
+      window.removeEventListener('pointermove', cancelPress);
+      window.removeEventListener('pointerup', endPress);
+      window.removeEventListener('pointercancel', endPress);
+    };
+  }, [drag]);
+
+  const moveReservation = async (row: ReservationRow, key: string) => {
+    if (!row.visit_at) return;
+    const nextAt = moveToDate(row.visit_at, key);
+    const previous = hospitalData;
+    mutateHospital((current) => current
+      ? { ...current, reservations: current.reservations.map((r) => (r.id === row.id ? { ...r, visit_at: nextAt, reservation_at: nextAt } : r)) }
+      : current
+    );
+    try {
+      const res = await fetch(`/api/reservations/${row.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reservationAt: nextAt, visitAt: nextAt }),
+      });
+      if (!res.ok) {
+        mutateHospital(() => previous ?? null);
+        const payload = await res.json().catch(() => ({}));
+        showToast(payload.error || '예약 일정을 옮기지 못했어요.');
+        return;
+      }
+      haptic('success');
+      showToast(`${dayLabel(key)}로 옮겼어요. 고객에게 알림을 보냈어요.`);
+      setSelected(key);
+      void refreshHospital({ force: true, showLoading: false });
+    } catch {
+      mutateHospital(() => previous ?? null);
+      showToast('네트워크 오류로 옮기지 못했어요.');
+    }
+  };
+
+  useEffect(() => {
+    if (!drag) return;
+    const block = (e: TouchEvent) => e.preventDefault();
+    const move = (e: PointerEvent) => {
+      const el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null;
+      const over = (el?.closest('[data-drop-date]') as HTMLElement | null)?.dataset.dropDate ?? null;
+      const d = dragLive.current;
+      if (!d) return;
+      if (over && over !== d.over) haptic('selection');
+      dragLive.current = { ...d, x: e.clientX, y: e.clientY, over };
+      setDrag(dragLive.current);
+    };
+    const up = () => {
+      const current = dragLive.current;
+      dragLive.current = null;
+      setDrag(null);
+      if (!current) return;
+      press.current = null;
+      window.setTimeout(() => { suppressClick.current = false; }, 50);
+      const from = current.row.visit_at ? dateKey(new Date(current.row.visit_at)) : null;
+      const to = current.over;
+      if (!to || to === from) return;
+      if (to < todayKey) { showToast('지난 날짜로는 옮길 수 없어요.'); return; }
+      const name = current.row.user?.name ?? current.row.customer_name ?? '환자';
+      showConfirm(
+        '예약 일정 옮기기',
+        `${name}님 예약을 ${dayLabel(to)} ${timeOf(current.row.visit_at)}로 옮길까요?\n고객에게 변경 알림이 가요.`,
+        () => { void moveReservation(current.row, to); },
+        { confirmText: '옮기기' }
+      );
+    };
+    document.addEventListener('touchmove', block, { passive: false });
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up, { once: true });
+    window.addEventListener('pointercancel', up, { once: true });
+    return () => {
+      document.removeEventListener('touchmove', block);
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+      window.removeEventListener('pointercancel', up);
+    };
+    // drag 가 바뀔 때마다 다시 달면 위치마다 다시 붙으므로 '들어 올린 그 예약'이 바뀔 때만
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [drag?.row.id]);
+
+  const draggableCard = (row: ReservationRow, index: number) => (
+    <div
+      key={row.id}
+      onPointerDown={startPress(row)}
+      onClickCapture={(e) => { if (suppressClick.current) { e.stopPropagation(); e.preventDefault(); } }}
+      onContextMenu={(e) => { if (MOVABLE_STATUS.includes(row.status)) e.preventDefault(); }}
+      className={`select-none transition-opacity ${drag?.row.id === row.id ? 'opacity-40' : ''}`}
+      style={{ WebkitTouchCallout: 'none' }}
+    >
+      <ReservationScheduleCard
+        row={row}
+        index={index}
+        onAssignRequest={openAssign}
+        onMemoRequest={openMemo}
+        onDetailRequest={(id) => router.push(`/partner/reservations/${id}`)}
+      />
+    </div>
+  );
 
   const openAssign = (row: ReservationRow) => {
     setAssignTarget(row);
@@ -918,51 +1133,134 @@ export default function PartnerReservationsPage() {
         <ReservationTabs active="reservations" onChange={setActiveTab} />
       </header>
 
-      <MonthCalendar
-        selected={selected}
-        onSelect={(date) => setSelected(dateKey(date))}
-        hasDot={(key) => (countByDate[key] ?? 0) > 0}
-      />
+      <div className="flex items-center justify-between px-5 pb-2 pt-1">
+        <ViewToggle view={view} onChange={changeView} />
+        <p className="text-[13px] text-[#8B95A1]">예약을 꾹 눌러 끌면 날짜를 옮겨요</p>
+      </div>
 
-      <div className="h-2.5 bg-[#F2F4F6]" />
+      {view === 'calendar' ? (
+        <>
+          <MonthCalendar
+            selected={selected}
+            onSelect={(date) => setSelected(dateKey(date))}
+            hasDot={(key) => (countByDate[key] ?? 0) > 0}
+            dropOver={drag?.over}
+          />
 
-      <section className="px-5 pb-10 pt-7">
-        <div className="flex items-baseline justify-between">
-          <h2 className="text-[20px]! font-bold leading-tight! tracking-[-0.4px] text-[#191F28]">
-            {isToday ? '오늘 ' : ''}
-            {selectedDate.getMonth() + 1}월 {selectedDate.getDate()}일
-          </h2>
-          {!loading && dayItems.length > 0 && (
-            <p className="text-[15px] text-[#6B7684]">
-              예약 <b className="font-bold tabular-nums text-[#191F28]">{dayItems.length}</b>건
-            </p>
+          <div className="h-2.5 bg-[#F2F4F6]" />
+
+          <section className="px-5 pb-10 pt-7">
+            <div className="flex items-baseline justify-between">
+              <h2 className="text-[20px]! font-bold leading-tight! tracking-[-0.4px] text-[#191F28]">
+                {isToday ? '오늘 ' : ''}
+                {selectedDate.getMonth() + 1}월 {selectedDate.getDate()}일
+              </h2>
+              {!loading && dayItems.length > 0 && (
+                <p className="text-[15px] text-[#6B7684]">
+                  예약 <b className="font-bold tabular-nums text-[#191F28]">{dayItems.length}</b>건
+                </p>
+              )}
+            </div>
+            {loading ? (
+              <p className="py-16 text-center text-[15px] text-[#8B95A1]">불러오는 중…</p>
+            ) : dayItems.length === 0 ? (
+              <div className="flex flex-col items-center py-14 text-center">
+                <span className="qd-a-item flex h-[72px] w-[72px] items-center justify-center rounded-[24px] bg-[#F2F4F6]">
+                  <MonoIcon name="calendar-x" size={34} color="#B0B8C1" />
+                </span>
+                <p className="qd-a-item mt-5 text-[19px] font-bold tracking-[-0.4px] text-[#191F28]" style={{ animationDelay: '.06s' }}>이 날은 예약이 없어요</p>
+                <p className="qd-a-item mt-1.5 text-[15px] leading-[1.6] text-[#8B95A1]" style={{ animationDelay: '.12s' }}>예약이 들어오면 시간 순서로 보여 드려요</p>
+              </div>
+            ) : (
+              <div className="mt-2">
+                {dayItems.map((row, index) => draggableCard(row, index))}
+              </div>
+            )}
+          </section>
+        </>
+      ) : (
+        <section className="px-5 pb-10 pt-3">
+          {loading ? (
+            <p className="py-16 text-center text-[15px] text-[#8B95A1]">불러오는 중…</p>
+          ) : listGroups.length === 0 ? (
+            <div className="flex flex-col items-center py-14 text-center">
+              <span className="qd-a-item flex h-[72px] w-[72px] items-center justify-center rounded-[24px] bg-[#F2F4F6]">
+                <MonoIcon name="calendar-x" size={34} color="#B0B8C1" />
+              </span>
+              <p className="qd-a-item mt-5 text-[19px] font-bold tracking-[-0.4px] text-[#191F28]">다가오는 예약이 없어요</p>
+              <p className="qd-a-item mt-1.5 text-[15px] leading-[1.6] text-[#8B95A1]">오늘부터의 예약을 날짜 순서로 보여 드려요</p>
+            </div>
+          ) : (
+            (() => {
+              let n = 0;
+              return listGroups.map((group) => (
+                <div
+                  key={group.key}
+                  data-drop-date={group.key}
+                  className={`-mx-2 rounded-[18px] px-2 pb-1 transition-colors ${drag?.over === group.key ? 'bg-[#E8F3FF] ring-2 ring-[#3180F7]' : ''}`}
+                >
+                  <div className="flex items-baseline justify-between pb-1 pt-5">
+                    <h2 className="text-[18px]! font-bold leading-tight! tracking-[-0.3px] text-[#191F28]">
+                      {group.key === todayKey ? '오늘 · ' : ''}{dayLabel(group.key)}
+                    </h2>
+                    <p className="text-[14px] text-[#6B7684]">
+                      <b className="font-bold tabular-nums text-[#191F28]">{group.rows.length}</b>건
+                    </p>
+                  </div>
+                  {group.rows.map((row) => {
+                    n += 1;
+                    return (
+                      <div key={row.id} className="flex gap-2">
+                        <span className="mt-[22px] flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#F2F4F6] text-[12.5px] font-bold tabular-nums text-[#4E5968]">{n}</span>
+                        <div className="min-w-0 flex-1">{draggableCard(row, n - 1)}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ));
+            })()
           )}
-        </div>
-        {loading ? (
-          <p className="py-16 text-center text-[15px] text-[#8B95A1]">불러오는 중…</p>
-        ) : dayItems.length === 0 ? (
-          <div className="flex flex-col items-center py-14 text-center">
-            <span className="qd-a-item flex h-[72px] w-[72px] items-center justify-center rounded-[24px] bg-[#F2F4F6]">
-              <MonoIcon name="calendar-x" size={34} color="#B0B8C1" />
-            </span>
-            <p className="qd-a-item mt-5 text-[19px] font-bold tracking-[-0.4px] text-[#191F28]" style={{ animationDelay: '.06s' }}>이 날은 예약이 없어요</p>
-            <p className="qd-a-item mt-1.5 text-[15px] leading-[1.6] text-[#8B95A1]" style={{ animationDelay: '.12s' }}>예약이 들어오면 시간 순서로 보여 드려요</p>
+        </section>
+      )}
+
+      {/* 끌고 있을 때 — 손가락을 따라오는 카드 + 아래 2주 날짜 판 */}
+      {drag && (
+        <>
+          <div
+            className="pointer-events-none fixed z-[120] -translate-x-1/2 -translate-y-1/2 rounded-[14px] bg-white px-4 py-2.5 shadow-[0_12px_32px_rgba(0,0,0,.22)]"
+            style={{ left: drag.x, top: drag.y - 36 }}
+          >
+            <p className="text-[15px] font-bold text-[#191F28]">
+              {timeOf(drag.row.visit_at)} {drag.row.user?.name ?? drag.row.customer_name ?? '환자'}
+            </p>
+            <p className="text-[13px] text-[#3180F7]">{drag.over ? `${dayLabel(drag.over)}로` : '옮길 날짜 위에 놓으세요'}</p>
           </div>
-        ) : (
-          <div className="mt-2">
-            {dayItems.map((row, index) => (
-              <ReservationScheduleCard
-                key={row.id}
-                row={row}
-                index={index}
-                onAssignRequest={openAssign}
-                onMemoRequest={openMemo}
-                onDetailRequest={(id) => router.push(`/partner/reservations/${id}`)}
-              />
-            ))}
+          <div
+            className="fixed inset-x-0 bottom-0 z-[110] border-t border-[#F2F4F6] bg-white px-3 pt-3 shadow-[0_-8px_24px_rgba(0,0,0,.08)]"
+            style={{ paddingBottom: 'max(calc(env(safe-area-inset-bottom, 0px) + 12px), 16px)' }}
+          >
+            <p className="mb-2 px-1 text-[13px] font-semibold text-[#6B7684]">옮길 날짜</p>
+            <div className="grid grid-cols-7 gap-1.5">
+              {Array.from({ length: DOCK_DAYS }, (_, i) => {
+                const d = addDays(now, i);
+                const key = dateKey(d);
+                const on = drag.over === key;
+                const from = drag.row.visit_at ? dateKey(new Date(drag.row.visit_at)) === key : false;
+                return (
+                  <div
+                    key={key}
+                    data-drop-date={key}
+                    className={`flex h-14 flex-col items-center justify-center rounded-[12px] transition-colors ${on ? 'bg-[#3180F7] text-white' : from ? 'bg-[#F2F4F6] text-[#B0B8C1]' : 'bg-[#F9FAFB] text-[#333D4B]'}`}
+                  >
+                    <span className={`text-[11px] ${on ? 'text-white/80' : 'text-[#8B95A1]'}`}>{WEEKDAYS[d.getDay()]}</span>
+                    <span className="text-[16px] font-bold tabular-nums">{d.getDate()}</span>
+                  </div>
+                );
+              })}
+            </div>
           </div>
-        )}
-      </section>
+        </>
+      )}
 
       {memoTarget && (
         <CommunityModal label="메모 수정" onClose={() => { if (!memoSaving) setMemoTarget(null); }}>

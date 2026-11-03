@@ -11,6 +11,9 @@ import NaverMap from '@/components/common/NaverMap';
 import MonoIcon from '@/components/common/MonoIcon';
 import AddressSearchSheet from '@/components/common/AddressSearchSheet';
 import { loadDaumPostcode, type DaumPostcodeData } from '@/lib/daum-postcode';
+import { uploadDirect } from '@/lib/upload';
+import { haptic } from '@/lib/haptics';
+import LongPressSortList from '@/components/common/LongPressSortList';
 
 type OperatingHour = {
   day?: string | null;
@@ -39,10 +42,12 @@ type HospitalRow = {
 };
 
 type Mode = 'overview' | 'cover' | 'hours' | 'intro' | 'location';
-type HourDraft = { day: string; start_time: string; end_time: string };
+type HourDraft = { day: string; start_time: string; end_time: string; closed: boolean };
 
 const DISPLAY_DAY_ORDER = ['월', '화', '수', '목', '금', '토', '일'];
-const EDIT_DAY_ORDER = ['일', '월', '화', '수', '목', '금', '토'];
+const EDIT_DAY_ORDER = ['월', '화', '수', '목', '금', '토', '일'];
+const DEFAULT_START = '10:00';
+const DEFAULT_END = '19:00';
 
 function usableImage(src?: string | null) {
   if (!src) return null;
@@ -53,10 +58,13 @@ function usableImage(src?: string | null) {
 function buildHourDrafts(hospital: HospitalRow | null): HourDraft[] {
   return EDIT_DAY_ORDER.map((day) => {
     const row = hospital?.operating_hours?.find((item) => item.day === day);
+    const closed = !row || !!row.is_closed || !row.start_time || !row.end_time;
+    // 휴무로 꺼 둬도 시간은 남겨 둔다 — 다시 켜면 그 시간으로
     return {
       day,
-      start_time: row?.is_closed ? '' : row?.start_time ?? '',
-      end_time: row?.is_closed ? '' : row?.end_time ?? '',
+      start_time: row?.start_time?.slice(0, 5) || DEFAULT_START,
+      end_time: row?.end_time?.slice(0, 5) || DEFAULT_END,
+      closed,
     };
   });
 }
@@ -146,9 +154,9 @@ export default function PartnerHospitalInfoPage() {
   const saveHoursAPI = async (hours: HourDraft[]) => {
     const payload = hours.map((r) => ({
       day: r.day,
-      start_time: r.start_time.trim() || null,
-      end_time: r.end_time.trim() || null,
-      is_closed: !r.start_time.trim() && !r.end_time.trim(),
+      start_time: r.closed ? null : r.start_time,
+      end_time: r.closed ? null : r.end_time,
+      is_closed: r.closed,
     }));
     const res = await fetch('/api/my-hospital/hours', {
       method: 'PUT',
@@ -162,19 +170,10 @@ export default function PartnerHospitalInfoPage() {
   };
 
   /* ── 이미지 업로드 공통 ── */
+  // 줄인 뒤 저장소로 바로 올린다 — 서버 함수 본문 한도(4.5MB)에 걸려 iOS 원본 사진이 실패하던 것
   const uploadFile = async (file: File, folder: string): Promise<string> => {
-    const compressed = await compressImage(file);
-    const fd = new FormData();
-    fd.append('file', compressed);
-    fd.append('folder', folder);
-    const res = await fetch('/api/upload', { method: 'POST', body: fd });
-    if (!res.ok) {
-      const j = await res.json().catch(() => ({}));
-      throw new Error((j as any).error || '이미지 업로드에 실패했습니다.');
-    }
-    const blob = await res.json();
-    if (!blob.url) throw new Error('업로드 URL을 확인할 수 없습니다.');
-    return blob.url as string;
+    const compressed = await compressImage(file).catch(() => file);
+    return uploadDirect(compressed, folder);
   };
 
   /* ── 대문사진 업로드 (기존에 추가) ── */
@@ -208,6 +207,20 @@ export default function PartnerHospitalInfoPage() {
     }
   };
 
+  /* ── 대문사진 순서 바꾸기(꾹 눌러 끌기) ── */
+  const handleCoverReorder = async (next: string[]) => {
+    const previous = hospital?.cover_images ?? [];
+    patchLocalHospital((prev) => prev ? { ...prev, cover_images: next } : prev);
+    setCoverIdx(0);
+    try {
+      await patchHospitalAPI({ coverImages: next });
+      showToast('사진 순서를 바꿨어요.');
+    } catch (e) {
+      patchLocalHospital((prev) => prev ? { ...prev, cover_images: previous } : prev);
+      showToast(e instanceof Error ? e.message : '순서를 저장하지 못했어요.');
+    }
+  };
+
   /* ── 프로필(로고) 업로드 ── */
   const handleLogoUpload = async (file: File) => {
     if (!file.type.startsWith('image/')) { showToast('이미지 파일만 등록할 수 있습니다.'); return; }
@@ -236,20 +249,17 @@ export default function PartnerHospitalInfoPage() {
   };
 
   const saveHours = async () => {
-    const hasInvalid = hoursDraft.some((r) => {
-      const s = r.start_time.trim(); const e = r.end_time.trim();
-      return (s && !e) || (!s && e);
-    });
-    if (hasInvalid) { showToast('시작시간과 마감시간을 모두 입력해주세요.'); return; }
+    const invalid = hoursDraft.find((r) => !r.closed && (!r.start_time || !r.end_time || r.start_time >= r.end_time));
+    if (invalid) { showToast(`${invalid.day}요일 시작·마감 시간을 확인해 주세요.`); return; }
     setSaving(true);
     try {
       await saveHoursAPI(hoursDraft);
       await patchHospitalAPI({ holidayNotice: holidayDraft });
       const hours = hoursDraft.map((r) => ({
         day: r.day,
-        start_time: r.start_time || null,
-        end_time: r.end_time || null,
-        is_closed: !r.start_time && !r.end_time,
+        start_time: r.closed ? null : r.start_time,
+        end_time: r.closed ? null : r.end_time,
+        is_closed: r.closed,
       }));
       patchLocalHospital((prev) => prev ? { ...prev, holiday_notice: holidayDraft, operating_hours: hours } : prev);
       showToast('운영시간을 저장했습니다.');
@@ -285,8 +295,15 @@ export default function PartnerHospitalInfoPage() {
     window.setTimeout(() => addressDetailInputRef.current?.focus(), 320);
   };
 
-  const updateHourDraft = (day: string, field: 'start_time' | 'end_time', value: string) => {
-    setHoursDraft((prev) => prev.map((r) => r.day === day ? { ...r, [field]: value } : r));
+  const updateHourDraft = (day: string, patch: Partial<HourDraft>) => {
+    setHoursDraft((prev) => prev.map((r) => r.day === day ? { ...r, ...patch } : r));
+  };
+  // 평일(월~금) 시간을 월요일 시간으로 맞추기
+  const copyMondayToWeekdays = () => {
+    const mon = hoursDraft.find((r) => r.day === '월');
+    if (!mon) return;
+    haptic('light');
+    setHoursDraft((prev) => prev.map((r) => (['화', '수', '목', '금'].includes(r.day) ? { ...r, start_time: mon.start_time, end_time: mon.end_time, closed: mon.closed } : r)));
   };
 
   /* 수정 화면 공통 헤더 — 고객 상세 머리(TopBar .qd-*)와 같은 결: 56 줄 둥근 뒤로 + 아래 큰 제목(+ 회색 한 줄).
@@ -349,12 +366,15 @@ export default function PartnerHospitalInfoPage() {
         />
         <EditHeader title="대문사진" sub="병원 홈 맨 위에 넘겨 보는 사진이에요. 최대 5장까지 올릴 수 있어요." />
         <section className="mx-auto w-full max-w-[640px] px-5 pb-10 pt-5">
-          <div className="space-y-2.5">
-            {coverImages.map((url, idx) => (
-              <div key={url} className="qd-a-item relative h-[160px] overflow-hidden rounded-[16px] bg-[#F2F4F6]" style={{ animationDelay: `${0.04 * idx}s` }}>
+          <LongPressSortList
+            items={coverImages}
+            getKey={(url) => url}
+            onReorder={(next) => { void handleCoverReorder(next); }}
+            renderItem={(url, idx, { dragging }) => (
+              <div className={`relative h-[160px] overflow-hidden rounded-[16px] bg-[#F2F4F6] ${dragging ? '' : 'qd-a-item'}`} style={{ animationDelay: `${0.04 * idx}s` }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={url} alt="" className="h-full w-full object-cover" />
-                <span className="absolute left-2.5 top-2.5 inline-flex h-6 items-center rounded-[6px] bg-black/45 px-2 text-[12.5px] font-semibold text-white">{idx + 1}</span>
+                <img src={url} alt="" draggable={false} className="pointer-events-none h-full w-full object-cover" />
+                <span className="absolute left-2.5 top-2.5 inline-flex h-6 items-center rounded-[6px] bg-black/45 px-2 text-[12.5px] font-semibold text-white">{idx === 0 ? '대표' : idx + 1}</span>
                 <button
                   type="button"
                   onClick={() => handleCoverDelete(idx)}
@@ -364,8 +384,8 @@ export default function PartnerHospitalInfoPage() {
                   <MonoIcon name="bin" size={18} color="#FFFFFF" />
                 </button>
               </div>
-            ))}
-          </div>
+            )}
+          />
 
           {coverImages.length < 5 && (
             <button
@@ -387,7 +407,7 @@ export default function PartnerHospitalInfoPage() {
 
           <p className="mt-4 flex gap-2 rounded-[14px] bg-[#F2F4F6] px-4 py-3.5 text-[14px] leading-[1.5] text-[#4E5968]">
             <MonoIcon name="info-circle" size={18} color="#B0B8C1" className="mt-px" />
-            jpg, png, avif 50MB 이하 사진을 올려 주세요. 자동으로 압축돼요.
+            사진을 꾹 누른 채 위아래로 끌면 순서를 바꿀 수 있어요. 맨 위 사진이 대표 사진이에요. jpg, png, avif 25MB 이하, 자동으로 압축돼요.
           </p>
         </section>
       </div>
@@ -398,45 +418,79 @@ export default function PartnerHospitalInfoPage() {
   if (mode === 'hours') {
     return (
       <div className="partner-mobile-screen partner-edit-screen" style={{ display: 'flex', flexDirection: 'column', paddingBottom: SAVE_BAR_SPACE }}>
-        <EditHeader title="운영일 및 시간" sub="시간을 비워 둔 요일은 휴진으로 보여요." />
+        <EditHeader title="운영일 및 시간" sub="요일마다 진료 여부와 시간을 정해요. 휴무인 요일은 꺼 주세요." />
         <section className="mx-auto w-full max-w-[640px] px-5 pb-6 pt-5">
-          <textarea
-            className={`${FIELD} !h-[96px] resize-none !px-4 !py-3.5 !leading-[1.5]`}
-            placeholder="기타 휴진일 안내 (예: 공휴일 휴진)"
-            value={holidayDraft}
-            onChange={(e) => setHolidayDraft(e.target.value)}
-          />
-          <div className="mt-5 flex items-center gap-2 px-1 text-[14px] text-[#8B95A1]">
-            <span className="w-8 shrink-0">요일</span>
-            <span className="flex-1">시작</span>
-            <span className="w-3 shrink-0" />
-            <span className="flex-1">마감</span>
+          <div className="mb-2.5 flex items-center justify-between px-1">
+            <span className="text-[15px] font-semibold text-[#4E5968]">요일별 시간</span>
+            <button
+              type="button"
+              onClick={copyMondayToWeekdays}
+              className="-mr-2 inline-flex h-9 items-center rounded-[10px] px-2 text-[14px] font-semibold text-[#3180F7] active:bg-[#F2F4F6]"
+            >
+              월요일 시간 평일에 적용
+            </button>
           </div>
-          <div className="mt-1.5 space-y-2">
-            {hoursDraft.map((row, index) => {
-              const weekend = index === 0 || index === 6;
+          <div className="space-y-2.5">
+            {hoursDraft.map((row) => {
+              const open = !row.closed;
+              const weekend = row.day === '토' || row.day === '일';
               return (
-                <div key={row.day} className="flex items-center gap-2">
-                  <span className={`w-8 shrink-0 pl-1 text-[16px] font-semibold ${weekend ? 'text-[#8B95A1]' : 'text-[#333D4B]'}`}>{row.day}</span>
-                  <input
-                    type="time"
-                    aria-label={`${row.day} 시작시간`}
-                    value={row.start_time}
-                    onChange={(e) => updateHourDraft(row.day, 'start_time', e.target.value)}
-                    className={`${FIELD} !min-h-12 min-w-0 flex-1 !px-3 tabular-nums`}
-                  />
-                  <span className="w-3 shrink-0 text-center text-[15px] text-[#B0B8C1]">~</span>
-                  <input
-                    type="time"
-                    aria-label={`${row.day} 마감시간`}
-                    value={row.end_time}
-                    onChange={(e) => updateHourDraft(row.day, 'end_time', e.target.value)}
-                    className={`${FIELD} !min-h-12 min-w-0 flex-1 !px-3 tabular-nums`}
-                  />
+                <div
+                  key={row.day}
+                  className={`rounded-[16px] border-[1.5px] bg-white px-[18px] transition-colors ${open ? 'border-[#C9DDFD]' : 'border-[#E5E8EB]'}`}
+                >
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={open}
+                    aria-label={`${row.day}요일 ${open ? '진료' : '휴무'}`}
+                    onClick={() => { haptic('light'); updateHourDraft(row.day, { closed: open }); }}
+                    className="flex min-h-[60px] w-full items-center justify-between gap-4 text-left"
+                  >
+                    <span className="min-w-0">
+                      <span className={`block text-[16px] font-semibold tracking-[-0.3px] ${weekend && !open ? 'text-[#8B95A1]' : 'text-[#191F28]'}`}>{row.day}요일</span>
+                      <span className={`mt-0.5 block text-[13px] tabular-nums ${open ? 'text-[#3180F7]' : 'text-[#8B95A1]'}`}>
+                        {open ? `${row.start_time} ~ ${row.end_time}` : '휴무'}
+                      </span>
+                    </span>
+                    <span
+                      aria-hidden="true"
+                      className={`relative h-[30px] w-[50px] flex-none rounded-full transition-colors ${open ? 'bg-[#3180F7]' : 'bg-[#E5E8EB]'}`}
+                    >
+                      <span className={`absolute top-[3px] h-6 w-6 rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,.2)] transition-[left] ${open ? 'left-[23px]' : 'left-[3px]'}`} />
+                    </span>
+                  </button>
+                  {open && (
+                    <div className="flex items-center gap-2 pb-3.5">
+                      <input
+                        type="time"
+                        aria-label={`${row.day}요일 시작 시간`}
+                        value={row.start_time}
+                        onChange={(e) => updateHourDraft(row.day, { start_time: e.target.value })}
+                        className="h-12 min-w-0 flex-1 rounded-[12px] border-[1.5px] border-[#E5E8EB] bg-white px-1.5 text-center text-[16px] tabular-nums text-[#191F28] outline-none focus:border-[#3180F7]"
+                      />
+                      <span className="text-[#B0B8C1]">~</span>
+                      <input
+                        type="time"
+                        aria-label={`${row.day}요일 마감 시간`}
+                        value={row.end_time}
+                        onChange={(e) => updateHourDraft(row.day, { end_time: e.target.value })}
+                        className="h-12 min-w-0 flex-1 rounded-[12px] border-[1.5px] border-[#E5E8EB] bg-white px-1.5 text-center text-[16px] tabular-nums text-[#191F28] outline-none focus:border-[#3180F7]"
+                      />
+                    </div>
+                  )}
                 </div>
               );
             })}
           </div>
+
+          <label className="mb-2 mt-7 block px-1 text-[15px] font-semibold text-[#4E5968]">기타 휴무 안내</label>
+          <textarea
+            className={`${FIELD} !h-[96px] resize-none !px-4 !py-3.5 !leading-[1.5]`}
+            placeholder="예) 공휴일 휴진, 점심시간 13:00~14:00"
+            value={holidayDraft}
+            onChange={(e) => setHolidayDraft(e.target.value)}
+          />
         </section>
         <SaveBar onClick={saveHours} disabled={saving} label={saving ? '저장 중...' : '저장하기'} />
       </div>

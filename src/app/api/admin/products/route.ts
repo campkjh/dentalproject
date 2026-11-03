@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { revalidatePath } from 'next/cache';
 import { NextResponse, type NextRequest } from 'next/server';
 import { createAdminClient, createClient } from '@/lib/supabase/server';
 
@@ -133,6 +134,7 @@ export async function PATCH(req: NextRequest) {
     const nextStatus = action === 'deactivate' ? 'paused' : 'active';
     const { error } = await admin.from('products').update({ status: nextStatus }).in('id', ids);
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+    revalidatePath('/api/catalog');
     return NextResponse.json({ ok: true, count: ids.length });
   }
 
@@ -172,6 +174,7 @@ export async function PATCH(req: NextRequest) {
     const legacyPatch = action === 'approve' ? { status: 'active' } : { status: 'removed' };
     const { error } = await admin.from('products').update(legacyPatch).eq('id', ids[0]);
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+    revalidatePath('/api/catalog');
     return NextResponse.json({ ok: true });
   }
 
@@ -188,7 +191,7 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ ok: true });
   }
 
-  const patch: Record<string, any> = { approval_status: 'approved', pending_changes: null };
+  let patch: Record<string, any> = { approval_status: 'approved', pending_changes: null };
   if (approvalStatus === 'pending_create') {
     patch.status = 'active';
   }
@@ -200,10 +203,18 @@ export async function PATCH(req: NextRequest) {
   }
 
   let { error } = await admin.from('products').update(patch).eq('id', ids[0]);
+  if (error && (isMissingProductColumn(error, 'image_urls') || isMissingProductColumn(error, 'detail_image_urls'))) {
+    const { image_urls: _imageUrls, detail_image_urls: _detailImageUrls, ...rest } = patch;
+    patch = rest;
+    const retry = await admin.from('products').update(patch).eq('id', ids[0]);
+    error = retry.error;
+  }
   if (error && isMissingProductColumn(error, 'detail_image_url')) {
     const retry = await admin.from('products').update(withoutDetailImageColumn(patch)).eq('id', ids[0]);
     error = retry.error;
   }
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+  // 승인 즉시 고객 홈·검색(카탈로그 5분 캐시)에 보이게
+  revalidatePath('/api/catalog');
   return NextResponse.json({ ok: true });
 }

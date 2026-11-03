@@ -178,7 +178,7 @@ export default function AdminUsersPage() {
     showAlert('내보내기 완료', `${filteredUsers.length}건의 회원 정보를 CSV로 저장했어요.`);
   };
 
-  const GRID = 'grid grid-cols-[1.8fr_1.6fr_1fr_1fr_1fr_1fr_auto] gap-4 items-center';
+  const GRID = 'grid grid-cols-[1.8fr_1.6fr_1fr_1fr_1fr_1fr_150px] gap-4 items-center';
 
   return (
     <div className="adm-stack">

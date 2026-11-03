@@ -5,6 +5,7 @@ import { cancelExpiredPendingReservations, completePastConfirmedReservations } f
 import { extractProductDetailImageUrl, getVisibleProductTags, normalizeProductImageUrl } from '@/lib/images';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { geocodeAddress } from '@/lib/naver-geocode';
+import { getOwnedHospital, hospitalKeys } from '@/lib/owned-hospital';
 
 export const dynamic = 'force-dynamic';
 
@@ -53,37 +54,9 @@ const hospitalSelect = `
   operating_hours (*)
 `;
 
-const LEGACY_HOSPITAL_SLUG_BY_NAME: Record<string, string> = {
-  '레브치과의원': 'h1',
-  '아이디치과': 'h2',
-  '화이트드림치과': 'h3',
-  '서울스마일치과': 'h4',
-};
-
-function hospitalKeys(hospital: any) {
-  return Array.from(new Set([
-    typeof hospital?.id === 'string' ? hospital.id.trim() : '',
-    typeof hospital?.slug === 'string' ? hospital.slug.trim() : '',
-    typeof hospital?.name === 'string' ? LEGACY_HOSPITAL_SLUG_BY_NAME[hospital.name.trim()] : '',
-  ].filter(Boolean)));
-}
-
-async function collectHospitalIdsByName(admin: Awaited<ReturnType<typeof createAdminClient>>, hospital: any) {
-  const name = typeof hospital?.name === 'string' ? hospital.name.trim() : '';
-  if (!name) return hospitalKeys(hospital);
-
-  const { data } = await admin
-    .from('hospitals')
-    .select('id, slug')
-    .eq('name', name);
-
-  return Array.from(new Set([
-    ...hospitalKeys(hospital),
-    ...((data ?? []) as Array<{ id?: string | null; slug?: string | null }>).flatMap((row) => [
-      row.id?.trim() ?? '',
-      row.slug?.trim() ?? '',
-    ]),
-  ].filter(Boolean)));
+// 상품·리뷰·예약은 이 병원의 id(와 옛 슬러그)로만 찾는다 — 이름이 같은 다른 병원 것이 섞이지 않게
+async function collectHospitalIdsByName(_admin: Awaited<ReturnType<typeof createAdminClient>>, hospital: any) {
+  return hospitalKeys(hospital);
 }
 
 async function fetchHospitalProducts(
@@ -131,6 +104,8 @@ async function fetchHospitalProductsWithFallback(
   hospital: any
 ) {
   const selectors = [
+    `id, title, location, price, original_price, discount, rating, review_count, image_url, tags,
+       detail_image_url, image_urls, detail_image_urls, description, category, sub_category, status, approval_status, pending_changes, created_at`,
     `id, title, location, price, original_price, discount, rating, review_count, image_url, tags,
        detail_image_url, description, category, sub_category, status, approval_status, pending_changes, created_at`,
     `id, title, location, price, original_price, discount, rating, review_count, image_url, tags,
@@ -253,27 +228,11 @@ export async function GET() {
   if (!user) return NextResponse.json({ hospital: null });
 
   const admin = await createAdminClient();
-  let { data: hospital } = await admin
-    .from('hospitals')
-    .select(hospitalSelect)
-    .eq('owner_id', user.id)
-    .maybeSingle();
-
-  if (!hospital) {
-    const { data: doctor } = await admin
-      .from('doctors')
-      .select('hospital_id')
-      .eq('user_id', user.id)
-      .maybeSingle();
-
-    if (doctor?.hospital_id) {
-      const { data } = await admin
-        .from('hospitals')
-        .select(hospitalSelect)
-        .eq('id', doctor.hospital_id)
-        .maybeSingle();
-      hospital = data;
-    }
+  const owned = await getOwnedHospital();
+  let hospital: any = null;
+  if (owned.hospital) {
+    const { data } = await admin.from('hospitals').select(hospitalSelect).eq('id', owned.hospital.id).maybeSingle();
+    hospital = data;
   }
 
   if (!hospital) return NextResponse.json({ hospital: null });
@@ -356,15 +315,9 @@ export async function GET() {
 export async function PATCH(req: NextRequest) {
   const body = await req.json();
 
-  // 1) 유저 인증
-  const sb = await createClient();
-  const { data: { user } } = await sb.auth.getUser();
-  if (!user) return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 });
-
-  // 2) 소유 병원 확인 (anon client: SELECT 가능)
-  const { data: hospital } = await sb
-    .from('hospitals').select('id').eq('owner_id', user.id).maybeSingle();
-  if (!hospital) return NextResponse.json({ error: '병원을 찾을 수 없습니다.' }, { status: 404 });
+  // 1) 유저 인증 + 소유 병원 확인 — 심사 중(pending) 병원은 공개 권한으로 안 보이므로 서버 권한으로 찾는다
+  const { hospital, error: ownedError } = await getOwnedHospital({ ownerOnly: true });
+  if (ownedError) return ownedError;
 
   // 3) admin client로 업데이트 (RLS 우회 — 소유 확인은 위에서 완료)
   const patch: Record<string, any> = {};

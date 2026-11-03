@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { createClient, createAdminClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
+import { getOwnedHospital } from '@/lib/owned-hospital';
 import { sanitizeCareers } from '@/lib/doctor-careers';
 
 export const dynamic = 'force-dynamic';
@@ -11,18 +12,8 @@ function isMissingDoctorColumn(error: { message?: string; details?: string | nul
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  const sb = await createClient();
-  const {
-    data: { user },
-  } = await sb.auth.getUser();
-  if (!user) return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 });
-
-  const { data: hospital } = await sb
-    .from('hospitals')
-    .select('id')
-    .eq('owner_id', user.id)
-    .maybeSingle();
-  if (!hospital) return NextResponse.json({ error: '병원을 찾을 수 없습니다.' }, { status: 404 });
+  const { hospital, error: ownedError } = await getOwnedHospital({ ownerOnly: true });
+  if (ownedError) return ownedError;
 
   const admin = await createAdminClient();
   const insertPayload = {
