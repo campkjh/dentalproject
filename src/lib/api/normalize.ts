@@ -87,6 +87,8 @@ export function normalizeProduct(row: any): Product {
     likeCount: row.like_count ?? 0,
     imageUrl: resolveProductImageUrl(row.image_url, row.id),
     detailImageUrl: normalizeProductImageUrl(row.detail_image_url) ?? extractProductDetailImageUrl(row.tags),
+    imageUrls: imageList(row.image_urls),
+    detailImageUrls: imageList(row.detail_image_urls),
     description: typeof row.description === 'string' ? row.description : undefined,
     tags: getVisibleProductTags(row.tags),
     category: row.category ?? '',
@@ -97,6 +99,12 @@ export function normalizeProduct(row: any): Product {
           .map((o: any) => ({ id: o.id, name: o.name, price: o.price }))
       : undefined,
   };
+}
+
+function imageList(value: unknown): string[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const list = value.map((v) => (typeof v === 'string' ? normalizeProductImageUrl(v) : null)).filter((v): v is string => Boolean(v));
+  return list.length ? list : undefined;
 }
 
 export function normalizeReview(row: any): Review {

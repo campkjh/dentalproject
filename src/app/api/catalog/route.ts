@@ -33,11 +33,12 @@ export async function GET() {
       .from('products')
       .select(
         `id, title, location, price, original_price, discount, rating, review_count, like_count,
-         image_url, detail_image_url, description, tags, category, sub_category, hospital_id,
+         image_url, detail_image_url, image_urls, detail_image_urls, description, tags, category, sub_category, hospital_id, created_at,
          hospitals (id, name, location)`
       )
       .eq('status', 'active')
-      .eq('approval_status', 'approved'),
+      .eq('approval_status', 'approved')
+      .order('created_at', { ascending: false }),
     sb.from('categories').select('*').order('sort_order'),
     sb
       .from('reviews')
@@ -61,6 +62,22 @@ export async function GET() {
   if (hospitalsRes.error) return NextResponse.json({ error: hospitalsRes.error.message }, { status: 500 });
   let productsData = productsRes.data as any[] | null;
   let productsError = productsRes.error;
+
+  // 여러 장 이미지 칸(0024) 마이그레이션 전이면 그 칸만 빼고 다시
+  if (productsError && (isMissingProductColumn(productsError, 'image_urls') || isMissingProductColumn(productsError, 'detail_image_urls'))) {
+    const fallback = await sb
+      .from('products')
+      .select(
+        `id, title, location, price, original_price, discount, rating, review_count, like_count,
+         image_url, detail_image_url, description, tags, category, sub_category, hospital_id, created_at,
+         hospitals (id, name, location)`
+      )
+      .eq('status', 'active')
+      .eq('approval_status', 'approved')
+      .order('created_at', { ascending: false });
+    productsData = fallback.data;
+    productsError = fallback.error;
+  }
 
   if (productsError && isMissingProductColumn(productsError, 'approval_status')) {
     const fallback = await sb

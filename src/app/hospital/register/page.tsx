@@ -10,6 +10,7 @@ import { useRouter } from 'next/navigation';
 import { useStore } from '@/store';
 import { haptic } from '@/lib/haptics';
 import { useSession } from '@/lib/supabase/SessionProvider';
+import { useHospitalApplication } from '@/lib/hospital-application';
 import {
   RegisterShell,
   RgCheck,
@@ -75,6 +76,12 @@ const REQUIRED_DOCS = [
   { title: '대표자 신분증 사본', desc: '주민등록증 또는 운전면허증' },
 ];
 
+const WEEK_DAYS = ['월', '화', '수', '목', '금', '토', '일'];
+const defaultHour = (day: string) => ({ day, start: '10:00', end: '19:00', closed: day === '토' || day === '일' });
+// 옛 중간저장(일요일 없음)도 월~일 7줄로 맞춘다
+const withAllDays = (rows: { day: string; start: string; end: string; closed: boolean }[]) =>
+  WEEK_DAYS.map((day) => rows.find((r) => r.day === day) ?? defaultHour(day));
+
 const OPTIONAL_DOCS = [
   { title: '전문의 자격증', desc: '대표 원장 전문의 자격 (해당 진료과)' },
   { title: '의료기관 대표자 인감증명서', desc: '3개월 이내 발급, 직인 대신 제출 가능' },
@@ -88,6 +95,7 @@ export default function HospitalRegisterPage() {
   const { showToast, categories } = useStore();
   const specialties = categories;
   const { authUser } = useSession();
+  const application = useHospitalApplication(authUser?.id);
   const [submitting, setSubmitting] = useState(false);
 
   const [step, setStep] = useState(1);
@@ -129,14 +137,7 @@ export default function HospitalRegisterPage() {
     addressDetail: '',
     logoUrl: '',
   });
-  const [operatingHours, setOperatingHours] = useState(
-    ['월', '화', '수', '목', '금', '토'].map((day) => ({
-      day,
-      start: '10:00',
-      end: '19:00',
-      closed: day === '토',
-    }))
-  );
+  const [operatingHours, setOperatingHours] = useState(() => WEEK_DAYS.map(defaultHour));
   const [doctorInfo, setDoctorInfo] = useState({
     name: '',
     specialty: '',
@@ -162,7 +163,7 @@ export default function HospitalRegisterPage() {
       if (d.targetHospital?.id) setTargetHospital(d.targetHospital);
       if (Array.isArray(d.agreements)) setAgreements(new Set(d.agreements));
       if (d.hospitalInfo) setHospitalInfo(d.hospitalInfo);
-      if (Array.isArray(d.operatingHours)) setOperatingHours(d.operatingHours);
+      if (Array.isArray(d.operatingHours)) setOperatingHours(withAllDays(d.operatingHours));
       if (d.doctorInfo) setDoctorInfo(d.doctorInfo);
       if (d.documents && typeof d.documents === 'object') setDocuments(d.documents);
     } catch {}
@@ -269,6 +270,9 @@ export default function HospitalRegisterPage() {
 
   const allRequiredAgreed = agreementItems.filter((a) => a.required).every((a) => agreements.has(a.id));
 
+  // 필수 서류 4종을 다 올려야 다음으로 넘어간다(서버도 같은 규칙)
+  const missingRequiredDocs = REQUIRED_DOCS.filter((doc) => !documents[doc.title]).map((doc) => doc.title);
+
   const canProceed = (): boolean => {
     switch (stepKey) {
       case 'specialty':
@@ -282,8 +286,9 @@ export default function HospitalRegisterPage() {
       case 'agree':
         return allRequiredAgreed;
       case 'info':
-        return !!(hospitalInfo.name && hospitalInfo.ownerName && hospitalInfo.phone && hospitalInfo.businessNumber);
+        return !!(hospitalInfo.name && hospitalInfo.ownerName && hospitalInfo.phone && hospitalInfo.businessNumber) && missingRequiredDocs.length === 0;
       case 'hours':
+        return operatingHours.every((oh) => oh.closed || (oh.start && oh.end && oh.start < oh.end));
       case 'owner':
         return true;
       case 'hospital':
@@ -601,13 +606,16 @@ export default function HospitalRegisterPage() {
                 inputMode="numeric"
                 value={hospitalInfo.businessNumber}
                 onChange={(e) => setHospitalInfo((prev) => ({ ...prev, businessNumber: formatBiznum(e.target.value) }))}
-                placeholder="574 17 02394"
+                placeholder="123-12-12345"
                 className="qd-input"
               />
             </RgField>
 
             {/* 서류 첨부 — 의료법 관련 필수·선택 서류 */}
-            <RgField label="필수 서류" hint="PDF · JPG · PNG (각 10MB 이하)">
+            <RgField
+              label="필수 서류"
+              hint={missingRequiredDocs.length ? `아직 ${missingRequiredDocs.length}개 남았어요 · ${missingRequiredDocs.join(', ')}` : '필수 서류를 모두 올렸어요.'}
+            >
               <RgList>
                 {REQUIRED_DOCS.map((doc) => (
                   <DocUploadRow key={doc.title} title={doc.title} desc={doc.desc} required value={documents[doc.title] ?? ''} onChange={setDoc(doc.title)} />
@@ -733,11 +741,44 @@ export default function HospitalRegisterPage() {
               <path d="m5 12.5 4.5 4.5L19 7.5" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </span>
-          <h1 className="qd-a-title m-0 text-[24px] font-semibold leading-[1.4] tracking-[-0.4px] text-[#191F28]">회원가입을 축하해요!</h1>
+          <h1 className="qd-a-title m-0 text-[24px] font-semibold leading-[1.4] tracking-[-0.4px] text-[#191F28]">병원 신청이 접수되었어요</h1>
           <p className="qd-a-sub m-0 mt-2.5 text-[15px] leading-[1.6] text-[#8B95A1]">
-            병원 등록이 완료되었습니다.
+            병원 신청이 정상적으로 접수되었습니다.
             <br />
             심사 후 승인이 완료되면 알려드릴게요.
+          </p>
+        </div>
+      </RegisterShell>
+    );
+  }
+
+  // 이미 신청해 심사 중이면 다시 신청하지 못하게
+  if (application?.status === 'pending' || application?.status === 'approved') {
+    const pending = application.status === 'pending';
+    return (
+      <RegisterShell
+        showBack={false}
+        cta={<RgCta onClick={() => router.push(pending ? '/' : '/partner')}>{pending ? '홈으로' : '병원 화면으로'}</RgCta>}
+      >
+        <div className="flex min-h-full flex-col items-center justify-center pb-10 pt-16 text-center">
+          <span className={s.doneIcon}>
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="m5 12.5 4.5 4.5L19 7.5" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </span>
+          <h1 className="qd-a-title m-0 text-[24px] font-semibold leading-[1.4] tracking-[-0.4px] text-[#191F28]">
+            {pending ? '신청을 심사하고 있어요' : '이미 등록된 병원이 있어요'}
+          </h1>
+          <p className="qd-a-sub m-0 mt-2.5 text-[15px] leading-[1.6] text-[#8B95A1]">
+            {pending ? (
+              <>
+                {application.hospitalName ? `${application.hospitalName} ` : ''}신청이 정상적으로 접수되었어요.
+                <br />
+                승인이 완료되면 알림으로 알려드릴게요.
+              </>
+            ) : (
+              application.hospitalName || '병원 화면에서 관리할 수 있어요.'
+            )}
           </p>
         </div>
       </RegisterShell>

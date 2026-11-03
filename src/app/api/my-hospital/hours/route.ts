@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse, type NextRequest } from 'next/server';
-import { createClient, createAdminClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
+import { getOwnedHospital } from '@/lib/owned-hospital';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,18 +14,9 @@ export async function PUT(req: NextRequest) {
   if (!Array.isArray(hours)) {
     return NextResponse.json({ error: 'hours must be an array' }, { status: 400 });
   }
-  const sb = await createClient();
-  const {
-    data: { user },
-  } = await sb.auth.getUser();
-  if (!user) return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 });
-
-  const { data: hospital } = await sb
-    .from('hospitals')
-    .select('id')
-    .eq('owner_id', user.id)
-    .maybeSingle();
-  if (!hospital) return NextResponse.json({ error: '병원을 찾을 수 없습니다.' }, { status: 404 });
+  // 심사 중 병원도 운영시간을 고칠 수 있게 서버 권한으로 찾는다
+  const { hospital, error: ownedError } = await getOwnedHospital({ ownerOnly: true });
+  if (ownedError) return ownedError;
 
   const rows = hours.map((h: any) => ({
     hospital_id: hospital.id,

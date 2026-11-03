@@ -201,9 +201,15 @@ export default function ProductDetailPage() {
   const reviewCount = productReviews.length;
   const rating = reviewCount > 0 ? productReviews.reduce((s, r) => s + r.rating, 0) / reviewCount : product.rating;
   const productImageUrl = resolveProductImageUrl(product.imageUrl, product.id);
-  const detailImageUrl = product.detailImageUrl ? resolveProductImageUrl(product.detailImageUrl, product.id) : null;
+  // 상세페이지 이미지는 여러 장을 위에서 아래로 이어 붙인다(긴 상세를 한 장에 담지 않게)
+  const detailImageUrls = product.detailImageUrls?.length
+    ? product.detailImageUrls
+    : product.detailImageUrl ? [resolveProductImageUrl(product.detailImageUrl, product.id)] : [];
+  const detailImageUrl = detailImageUrls[0] ?? null;
   const hospitalImageUrl = hospital ? resolveHospitalImageUrl(hospital) : undefined;
-  const images = Array.from(new Set([productImageUrl, ...(detailImageUrl ? [detailImageUrl] : []), ...(hospital?.coverImages || [])])).slice(0, 8);
+  // 위 사진 넘기기 = 썸네일 여러 장 → (없으면) 상세 첫 장 → 병원 대문사진
+  const thumbs = product.imageUrls?.length ? product.imageUrls : [productImageUrl];
+  const images = Array.from(new Set([...thumbs, ...(product.imageUrls?.length || !detailImageUrl ? [] : [detailImageUrl]), ...(hospital?.coverImages || [])])).slice(0, 10);
   const isWished = wishlist.includes(product.id);
   const verified = product.rating >= 4.8;
   const notice = hospital ? closedNotice(hospital.operatingHours) : null;
@@ -579,10 +585,15 @@ export default function ProductDetailPage() {
             <Reveal>
               <h2 className="mb-4 text-[20px] font-bold leading-tight tracking-[-0.4px] text-[#191F28]">상품 설명</h2>
             </Reveal>
-            {detailImageUrl && (
+            {detailImageUrls.length > 0 && (
               <Reveal delay={60}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={detailImageUrl} alt={`${product.title} 상세 이미지`} className="mb-5 w-full rounded-[20px] object-cover" />
+                {/* 여러 장을 틈 없이 이어 붙여 한 장처럼 보이게 */}
+                <div className="mb-5 overflow-hidden rounded-[20px]">
+                  {detailImageUrls.map((url, i) => (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img key={url} src={url} alt={`${product.title} 상세 이미지 ${i + 1}`} loading={i === 0 ? 'eager' : 'lazy'} className="block w-full" />
+                  ))}
+                </div>
               </Reveal>
             )}
             {product.description?.trim() ? (

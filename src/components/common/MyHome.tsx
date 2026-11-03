@@ -10,10 +10,11 @@ import { fetchMyHospitalData, useMyHospitalData } from '@/lib/partner/my-hospita
 import Avatar from './Avatar';
 import { HeaderBellIcon } from '@/components/icons/HeaderIcons';
 import { isDualModeUser, writeAccountMode } from '@/lib/account-mode';
+import { useHospitalApplication } from '@/lib/hospital-application';
 import MyPageDetail from './MyPageDetail';
 import styles from './app-ui.module.css';
 
-type Row = { label: string; icon: string; href?: string; description?: string; badge?: number; action?: () => void };
+type Row = { label: string; icon: string; href?: string; description?: string; badge?: number; tag?: string; action?: () => void };
 type HospitalData = { id: string; name: string; status?: string };
 
 /** 화면 전환 막 — 흰 바탕 + 가운데 글씨가 떠올랐다가, 돌려준 함수를 부르면 흐려지며 걷힌다 */
@@ -41,6 +42,7 @@ export default function MyHome({ partner = false }: { partner?: boolean }) {
   const showModal = useStore(s => s.showModal);
   const showToast = useStore(s => s.showToast);
   const { data: hospitalData } = useMyHospitalData<HospitalData>(partner ? authUser?.id : undefined);
+  const application = useHospitalApplication(partner ? undefined : authUser?.id);
   const [detail, setDetail] = useState<string | null>(null);
   const unread = hydrated && user ? notifications.filter(n => !n.isRead).length : 0;
   const coupons = user?.coupons?.filter(c => c.status === 'available').length ?? 0;
@@ -60,7 +62,12 @@ export default function MyHome({ partner = false }: { partner?: boolean }) {
   function logout() {
     showModal('로그아웃', '로그아웃하시겠습니까?', async () => {
       setDetail(null);
-      try { await signOut(); router.push(partner ? '/partner/login' : '/'); }
+      try {
+        // 병원 화면에서 로그아웃해도 병원 로그인이 아니라 홈으로(partner layout 이 로그인으로 보내지 않게 표시)
+        (window as Window & { __mdLoggingOut?: boolean }).__mdLoggingOut = true;
+        router.replace('/');
+        await signOut();
+      }
       catch { showToast('로그아웃하지 못했습니다. 다시 시도해주세요.'); }
     });
   }
@@ -97,6 +104,22 @@ export default function MyHome({ partner = false }: { partner?: boolean }) {
     setTimeout(veil, 380);
   };
 
+  // 병원 신청 — 심사 중이면 들어가지 못하게 '신청중' 태그만, 승인되면 줄을 숨긴다
+  function hospitalApplyRows(): Row[] {
+    if (partner) return hospitalData && !hospitalData.hospital ? [{ label: '병원 신청', icon: 'profile', href: '/hospital/register', description: '병원 파트너로 활동하기' }] : [];
+    if (application?.status === 'approved') return [];
+    if (application?.status === 'pending') {
+      return [{
+        label: '병원 신청',
+        icon: 'profile',
+        tag: '신청중',
+        description: application.hospitalName || undefined,
+        action: () => showToast(application.kind === 'doctor' ? '원장 등록 요청을 병원에서 확인하고 있어요.' : '병원 신청을 심사하고 있어요. 승인되면 알려드릴게요.'),
+      }];
+    }
+    return [{ label: '병원 신청', icon: 'profile', href: '/hospital/register', description: application?.status === 'rejected' ? '반려됨 · 다시 신청하기' : '병원 파트너로 활동하기' }];
+  }
+
   const sections: { title: string; rows: Row[]; public?: boolean }[] = [
     ...(dual ? [{ title: '화면 전환', rows: [
       partner
@@ -125,7 +148,7 @@ export default function MyHome({ partner = false }: { partner?: boolean }) {
     ] },
     { title: '기타', public: true, rows: [
       { label: '약관 및 정책', icon: 'terms', href: '/terms', description: '이용약관 · 개인정보' },
-      ...(!partner || (hospitalData && !hospitalData.hospital) ? [{ label: '병원 신청', icon: 'profile', href: '/hospital/register', description: '병원 파트너로 활동하기' }] : []),
+      ...hospitalApplyRows(),
     ] },
   ];
 
@@ -133,6 +156,7 @@ export default function MyHome({ partner = false }: { partner?: boolean }) {
     <span className={styles.myRowIcon}>{row.label === '프로필 설정' && user ? <Avatar src={user.profileImage} seed={user.id} role={partner ? 'doctor' : 'user'} size={36} /> : <img src={`/icons/mypage/${row.icon}.svg`} alt="" />}</span>
     <span className={styles.myRowLabel}>{row.label}</span>
     {Boolean(row.badge) && <span className={styles.myRowBadge}>{row.badge}</span>}
+    {row.tag && <span className={styles.myRowBadge}>{row.tag}</span>}
     {row.description && <span className={styles.myRowDesc}>{row.description}</span>}
   </>;
   return <div className={styles.myPage}>

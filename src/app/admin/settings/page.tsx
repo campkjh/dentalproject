@@ -206,7 +206,7 @@ export default function AdminSettingsPage() {
         ) : (
           <div className="adm-tscroll">
             <div className="adm-tscroll-in">
-              <div className="grid grid-cols-[1.2fr_1.4fr_1fr_1.2fr_auto] items-center gap-4 adm-ghead">
+              <div className="grid grid-cols-[1.2fr_1.4fr_1fr_1.2fr_64px] items-center gap-4 adm-ghead">
                 <div>이름</div>
                 <div>이메일</div>
                 <div>연락처</div>
@@ -214,7 +214,7 @@ export default function AdminSettingsPage() {
                 <div className="text-right">관리</div>
               </div>
               {admins.map((a) => (
-                <div key={a.id} className="grid grid-cols-[1.2fr_1.4fr_1fr_1.2fr_auto] items-center gap-4 adm-grow">
+                <div key={a.id} className="grid grid-cols-[1.2fr_1.4fr_1fr_1.2fr_64px] items-center gap-4 adm-grow">
                   <div className="flex items-center gap-2.5 min-w-0">
                     <span className="adm-avatar">{(a.name || a.email || '?').charAt(0).toUpperCase()}</span>
                     <span className="adm-cell-main truncate">{a.name || '(미입력)'}</span>

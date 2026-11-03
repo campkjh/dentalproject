@@ -12,6 +12,11 @@ import { useReservationRealtimeRefresh } from '@/lib/realtime/reservations';
 import { useStore } from '@/store';
 import { HeaderBellIcon } from '@/components/icons/HeaderIcons';
 import MonoIcon from '@/components/common/MonoIcon';
+import LongPressSortList from '@/components/common/LongPressSortList';
+import { compressImage } from '@/lib/compressImage';
+import { uploadDirect } from '@/lib/upload';
+import { categoryLabel, toCategoryCode } from '@/lib/category-code';
+import { treatmentsBySpecialty } from '@/components/hospital-register/register-data';
 
 type ScheduleHistoryItem = {
   id: string;
@@ -47,6 +52,7 @@ type ReservationRow = {
 type HospitalRow = {
   id: string;
   name?: string | null;
+  category?: string | null;
   address?: string | null;
   location?: string | null;
   products?: ProductRow[];
@@ -66,6 +72,8 @@ type ProductRow = {
   reservation_count?: number | null;
   image_url?: string | null;
   detail_image_url?: string | null;
+  image_urls?: string[] | null;
+  detail_image_urls?: string[] | null;
   description?: string | null;
   tags?: string[] | null;
   category?: string | null;
@@ -81,6 +89,8 @@ type ProductRow = {
     discount: number | null;
     image_url: string | null;
     detail_image_url: string | null;
+    image_urls: string[];
+    detail_image_urls: string[];
     description: string | null;
     tags: string[];
     category: string | null;
@@ -103,8 +113,12 @@ type ProductForm = {
   price: string;
   originalPrice: string;
   discount: string;
-  imageUrl: string;
-  detailImageUrl: string;
+  /** 할인 적용 — 끄면 판매가만 받는다(정가·할인율 칸이 사라진다) */
+  discountEnabled: boolean;
+  /** 썸네일 여러 장(첫 장이 대표) */
+  imageUrls: string[];
+  /** 상세페이지 이미지 여러 장(위에서 아래로 이어 붙여 보여 준다) */
+  detailImageUrls: string[];
   description: string;
   tags: string[];
 };
@@ -150,17 +164,15 @@ const PRODUCT_APPROVAL_TAB_LABEL: Record<ProductApprovalTab, string> = {
   rejected: '반려',
 };
 
-const PRODUCT_CATEGORIES = [
-  { value: 'dental', label: '치과' },
-  { value: 'plastic', label: '성형외과' },
-  { value: 'skin', label: '피부과' },
-];
-
+// 상품 진료과는 병원 진료과로 고정한다(서버 /api/my-hospital/products 도 같은 규칙). 세부 카테고리는 그 과의 진료 목록.
 const PRODUCT_SUB_CATEGORIES: Record<string, string[]> = {
+  ...treatmentsBySpecialty,
   dental: ['임플란트', '치아교정', '라미네이트', '치아미백', '스케일링', '충치치료', '사랑니발치', '턱관절치료', '보철치료'],
   plastic: ['쌍꺼풀', '코성형', '안면윤곽', '리프팅', '보톡스', '필러', '지방흡입', '입술필러', '턱보톡스'],
-  skin: ['리프팅', '보톡스', '필러', '레이저', '여드름', '색소치료', '모공관리', '스킨부스터'],
+  dermatology: ['리프팅', '보톡스', '필러', '레이저', '여드름', '색소치료', '모공관리', '스킨부스터', '제모', '흉터치료'],
 };
+const PRODUCT_THUMB_MAX = 10;
+const PRODUCT_DETAIL_MAX = 20;
 
 const EMPTY_PRODUCT_FORM: ProductForm = {
   title: '',
@@ -169,14 +181,16 @@ const EMPTY_PRODUCT_FORM: ProductForm = {
   price: '',
   originalPrice: '',
   discount: '',
-  imageUrl: '',
-  detailImageUrl: '',
+  discountEnabled: false,
+  imageUrls: [],
+  detailImageUrls: [],
   description: '',
   tags: [],
 };
 
 const PRODUCT_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/avif', 'image/webp'];
-const PRODUCT_IMAGE_MAX_SIZE = 10 * 1024 * 1024;
+// 상세 이미지는 한 장씩 25MB 까지(저장소로 바로 올린다). 썸네일은 줄여서 올린다.
+const PRODUCT_IMAGE_MAX_SIZE = 25 * 1024 * 1024;
 
 function onlyDigits(value: string) {
   return value.replace(/[^\d]/g, '');
@@ -196,7 +210,13 @@ function calculateSalePrice(originalPrice: string, discount: string) {
 }
 
 function productSubCategoryOptions(category: string) {
-  return PRODUCT_SUB_CATEGORIES[category] ?? [];
+  return PRODUCT_SUB_CATEGORIES[toCategoryCode(category) ?? category] ?? [];
+}
+
+function urlList(list: unknown, single: unknown): string[] {
+  const fromList = Array.isArray(list) ? list.filter((v): v is string => typeof v === 'string' && Boolean(v)) : [];
+  if (fromList.length) return fromList;
+  return typeof single === 'string' && single ? [single] : [];
 }
 
 function formatDate(value?: string | null) {
@@ -396,8 +416,8 @@ function toProductForm(product?: ProductRow): ProductForm {
   const mergedPrice = pick('price', product.price);
   const mergedOriginalPrice = pick('original_price', product.original_price);
   const mergedDiscount = pick('discount', product.discount);
-  const mergedImageUrl = pick('image_url', product.image_url);
-  const mergedDetailImageUrl = pick('detail_image_url', product.detail_image_url);
+  const mergedImageUrls = urlList(pick('image_urls', product.image_urls), pick('image_url', product.image_url));
+  const mergedDetailImageUrls = urlList(pick('detail_image_urls', product.detail_image_urls), pick('detail_image_url', product.detail_image_url));
   const mergedDescription = pick('description', product.description);
   const mergedTags = pick('tags', product.tags);
 
@@ -411,27 +431,31 @@ function toProductForm(product?: ProductRow): ProductForm {
       : typeof mergedPrice === 'number'
         ? String(mergedPrice)
         : '',
-    discount: typeof mergedDiscount === 'number' ? String(mergedDiscount) : '0',
-    imageUrl: mergedImageUrl ?? '',
-    detailImageUrl: mergedDetailImageUrl ?? '',
+    discount: typeof mergedDiscount === 'number' ? String(mergedDiscount) : '',
+    discountEnabled: typeof mergedDiscount === 'number' && mergedDiscount > 0,
+    imageUrls: mergedImageUrls,
+    detailImageUrls: mergedDetailImageUrls,
     description: mergedDescription ?? '',
     tags: Array.isArray(mergedTags) ? mergedTags : [],
   };
 }
 
 function productPayload(form: ProductForm) {
-  const originalPrice = onlyDigits(form.originalPrice);
-  const discount = normalizeDiscountInput(form.discount);
-  const price = calculateSalePrice(originalPrice, discount);
+  // 할인 끔 = 판매가만(정가·할인율 비움) · 켬 = 정가 × (100 - 할인율)%
+  const originalPrice = form.discountEnabled ? onlyDigits(form.originalPrice) : '';
+  const discount = form.discountEnabled ? normalizeDiscountInput(form.discount) : '';
+  const price = form.discountEnabled ? calculateSalePrice(originalPrice, discount) : onlyDigits(form.price);
   return {
     title: form.title,
     category: form.category,
     subCategory: form.subCategory,
     price,
-    originalPrice,
-    discount,
-    imageUrl: form.imageUrl,
-    detailImageUrl: form.detailImageUrl,
+    originalPrice: originalPrice || null,
+    discount: discount || null,
+    imageUrls: form.imageUrls,
+    detailImageUrls: form.detailImageUrls,
+    imageUrl: form.imageUrls[0] ?? '',
+    detailImageUrl: form.detailImageUrls[0] ?? '',
     description: form.description,
     tags: form.tags,
   };
@@ -748,7 +772,9 @@ export default function PartnerHomePage() {
   const [productForm, setProductForm] = useState<ProductForm>({ ...EMPTY_PRODUCT_FORM });
   const [productTagDraft, setProductTagDraft] = useState('');
   const [productSaving, setProductSaving] = useState(false);
-  const [productImageUploading, setProductImageUploading] = useState<'imageUrl' | 'detailImageUrl' | null>(null);
+  const [productImageUploading, setProductImageUploading] = useState<'imageUrls' | 'detailImageUrls' | null>(null);
+  // 내 병원 진료과 — 상품 카테고리는 이걸로 고정
+  const hospitalCategory = toCategoryCode(hospital?.category) ?? 'dental';
 
   useEffect(() => {
     if (!productModal) return undefined;
@@ -843,24 +869,15 @@ export default function PartnerHomePage() {
   };
 
   const openProductCreate = () => {
-    setProductForm({ ...EMPTY_PRODUCT_FORM });
+    setProductForm({ ...EMPTY_PRODUCT_FORM, category: hospitalCategory });
     setProductTagDraft('');
     setProductModal({ mode: 'create' });
   };
 
   const openProductEdit = (product: ProductRow) => {
-    setProductForm(toProductForm(product));
+    setProductForm({ ...toProductForm(product), category: hospitalCategory });
     setProductTagDraft('');
     setProductModal({ mode: 'edit', product });
-  };
-
-  const updateProductCategory = (category: string) => {
-    const options = productSubCategoryOptions(category);
-    setProductForm((prev) => ({
-      ...prev,
-      category,
-      subCategory: options.includes(prev.subCategory) ? prev.subCategory : '',
-    }));
   };
 
   const updateProductOriginalPrice = (value: string) => {
@@ -881,31 +898,35 @@ export default function PartnerHomePage() {
     }));
   };
 
-  const uploadProductImage = async (field: 'imageUrl' | 'detailImageUrl', file?: File | null) => {
-    if (!file) return;
-    if (!PRODUCT_IMAGE_TYPES.includes(file.type)) {
-      showToast('jpg, png, webp, avif 형식만 업로드할 수 있습니다.');
-      return;
-    }
-    if (file.size > PRODUCT_IMAGE_MAX_SIZE) {
-      showToast('10mb 이하 이미지만 업로드할 수 있습니다.');
-      return;
-    }
+  // 이미지 여러 장 올리기 — 고른 순서대로 뒤에 붙인다. 썸네일은 줄여서, 상세는 원본(25MB 까지) 그대로 저장소로 바로.
+  const uploadProductImages = async (field: 'imageUrls' | 'detailImageUrls', files?: FileList | null) => {
+    const picked = Array.from(files ?? []);
+    if (!picked.length) return;
+    const max = field === 'imageUrls' ? PRODUCT_THUMB_MAX : PRODUCT_DETAIL_MAX;
+    const room = max - productForm[field].length;
+    if (room <= 0) { showToast(`최대 ${max}장까지 올릴 수 있어요.`); return; }
+    const valid = picked.filter((file) => PRODUCT_IMAGE_TYPES.includes(file.type) && file.size <= PRODUCT_IMAGE_MAX_SIZE);
+    if (valid.length < picked.length) showToast('jpg, png, webp, avif 형식 25MB 이하 이미지만 올릴 수 있어요.');
+    const queue = valid.slice(0, room);
+    if (valid.length > room) showToast(`최대 ${max}장까지라 ${room}장만 올려요.`);
+    if (!queue.length) return;
 
     setProductImageUploading(field);
     try {
-      const fd = new FormData();
-      fd.append('file', file);
-      fd.append('folder', 'product-images');
-      const res = await fetch('/api/upload', { method: 'POST', body: fd });
-      const payload = await res.json().catch(() => ({}));
-      if (!res.ok || !payload.url) throw new Error(payload.error || '이미지 업로드에 실패했습니다.');
-      setProductForm((prev) => ({ ...prev, [field]: payload.url }));
+      for (const file of queue) {
+        const body = field === 'imageUrls' ? await compressImage(file, 1600).catch(() => file) : file;
+        const url = await uploadDirect(body, field === 'imageUrls' ? 'product-images' : 'product-details');
+        setProductForm((prev) => ({ ...prev, [field]: [...prev[field], url] }));
+      }
     } catch (error) {
-      showToast(error instanceof Error ? error.message : '이미지 업로드에 실패했습니다.');
+      showToast(error instanceof Error && error.message ? error.message : '이미지 업로드에 실패했습니다.');
     } finally {
       setProductImageUploading(null);
     }
+  };
+
+  const removeProductImage = (field: 'imageUrls' | 'detailImageUrls', url: string) => {
+    setProductForm((prev) => ({ ...prev, [field]: prev[field].filter((item) => item !== url) }));
   };
 
   const addProductTag = () => {
@@ -928,8 +949,11 @@ export default function PartnerHomePage() {
       showToast('상품명을 입력해주세요.');
       return;
     }
-    if (!productForm.originalPrice.trim()) {
-      showToast('정가를 입력해주세요.');
+    if (productForm.discountEnabled) {
+      if (!productForm.originalPrice.trim()) { showToast('정가를 입력해주세요.'); return; }
+      if (!productForm.discount.trim()) { showToast('할인율을 입력하거나 할인 적용을 꺼 주세요.'); return; }
+    } else if (!onlyDigits(productForm.price)) {
+      showToast('판매가를 입력해주세요.');
       return;
     }
     if (!productModal) return;
@@ -1353,8 +1377,9 @@ export default function PartnerHomePage() {
       )}
 
       {productModal && (
-        <div className="partner-product-sheet-backdrop" role="presentation">
-          <div className="partner-product-sheet" role="dialog" aria-modal="true">
+        <div className="partner-product-sheet-backdrop" role="presentation" onClick={() => setProductModal(null)}>
+          <div className="partner-product-sheet" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
+            <div className="partner-product-sheet-grab" aria-hidden="true" />
             <div className="partner-product-sheet-head">
               <h2>{productModal.mode === 'create' ? '상품 추가' : '상품 수정'}</h2>
               <button type="button" onClick={() => setProductModal(null)}>닫기</button>
@@ -1370,14 +1395,9 @@ export default function PartnerHomePage() {
             </label>
             <label>
               카테고리
-              <select
-                value={productForm.category}
-                onChange={(e) => updateProductCategory(e.target.value)}
-              >
-                {PRODUCT_CATEGORIES.map((category) => (
-                  <option key={category.value} value={category.value}>{category.label}</option>
-                ))}
-              </select>
+              {/* 병원 진료과로 고정 — 바꿀 수 없다 */}
+              <input value={categoryLabel(hospitalCategory)} readOnly aria-readonly="true" className="partner-product-locked" />
+              <span className="partner-product-description-hint">병원 진료과({categoryLabel(hospitalCategory)}) 상품만 등록할 수 있어요.</span>
             </label>
             <label>
               세부 카테고리
@@ -1386,90 +1406,157 @@ export default function PartnerHomePage() {
                 onChange={(e) => setProductForm((prev) => ({ ...prev, subCategory: e.target.value }))}
               >
                 <option value="">세부 카테고리 선택</option>
-                {productSubCategoryOptions(productForm.category).map((category) => (
+                {productSubCategoryOptions(hospitalCategory).map((category) => (
                   <option key={category} value={category}>{category}</option>
                 ))}
               </select>
             </label>
-            <div className="partner-product-form-grid">
+
+            {/* 할인 — 체크해야 정가·할인율을 받는다. 안 하면 판매가만 */}
+            <button
+              type="button"
+              role="checkbox"
+              aria-checked={productForm.discountEnabled}
+              className={`partner-product-check ${productForm.discountEnabled ? 'on' : ''}`}
+              onClick={() => setProductForm((prev) => {
+                const on = !prev.discountEnabled;
+                // 켤 때 지금 판매가를 정가로 옮겨 둔다 · 끌 때 계산된 판매가를 그대로 남긴다
+                return on
+                  ? { ...prev, discountEnabled: true, originalPrice: prev.originalPrice || prev.price, price: calculateSalePrice(prev.originalPrice || prev.price, prev.discount) || prev.price }
+                  : { ...prev, discountEnabled: false };
+              })}
+            >
+              <span className="box" aria-hidden="true">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="m5 12.5 4.5 4.5L19 7.5" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" /></svg>
+              </span>
+              할인 적용
+            </button>
+            {productForm.discountEnabled ? (
+              <>
+                <div className="partner-product-form-grid">
+                  <label>
+                    정가
+                    <input
+                      inputMode="numeric"
+                      value={productForm.originalPrice}
+                      onChange={(e) => updateProductOriginalPrice(e.target.value)}
+                      placeholder="0"
+                    />
+                  </label>
+                  <label>
+                    할인율(%)
+                    <input
+                      inputMode="numeric"
+                      value={productForm.discount}
+                      onChange={(e) => updateProductDiscount(e.target.value)}
+                      placeholder="예: 20"
+                    />
+                  </label>
+                </div>
+                <label>
+                  판매가
+                  <input
+                    inputMode="numeric"
+                    value={productForm.price}
+                    readOnly
+                    placeholder="정가와 할인율을 넣으면 자동 계산"
+                  />
+                </label>
+              </>
+            ) : (
               <label>
-                정가
+                판매가
                 <input
                   inputMode="numeric"
-                  value={productForm.originalPrice}
-                  onChange={(e) => updateProductOriginalPrice(e.target.value)}
+                  value={productForm.price}
+                  onChange={(e) => setProductForm((prev) => ({ ...prev, price: onlyDigits(e.target.value) }))}
                   placeholder="0"
                 />
               </label>
-              <label>
-                할인율
-                <input
-                  inputMode="numeric"
-                  value={productForm.discount}
-                  onChange={(e) => updateProductDiscount(e.target.value)}
-                  placeholder="예: 20"
-                />
-              </label>
-            </div>
-            <label>
-              판매가
-              <input
-                inputMode="numeric"
-                value={productForm.price}
-                readOnly
-                placeholder="정가와 할인율 입력 시 자동 계산"
-              />
-            </label>
-            <label>
-              썸네일 이미지
-              <button
-                type="button"
-                className={`partner-product-upload ${productForm.imageUrl ? 'has-image' : ''}`}
-                onClick={() => thumbnailInputRef.current?.click()}
-                disabled={productImageUploading === 'imageUrl'}
-              >
-                {productForm.imageUrl ? (
-                  <img src={productForm.imageUrl} alt="" />
-                ) : (
-                  <span>{productImageUploading === 'imageUrl' ? '업로드 중...' : '이미지 첨부'}</span>
+            )}
+
+            <div className="partner-product-images">
+              <span className="partner-product-images-label">
+                썸네일 이미지 <b>{productForm.imageUrls.length}/{PRODUCT_THUMB_MAX}</b>
+              </span>
+              <div className="partner-product-thumbs">
+                {productForm.imageUrls.map((url, i) => (
+                  <div key={url} className="partner-product-thumb">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={url} alt="" />
+                    {i === 0 && <span className="lead">대표</span>}
+                    <button type="button" onClick={() => removeProductImage('imageUrls', url)} aria-label={`썸네일 ${i + 1} 삭제`}>×</button>
+                  </div>
+                ))}
+                {productForm.imageUrls.length < PRODUCT_THUMB_MAX && (
+                  <button
+                    type="button"
+                    className="partner-product-thumb add"
+                    onClick={() => thumbnailInputRef.current?.click()}
+                    disabled={productImageUploading === 'imageUrls'}
+                    aria-label="썸네일 추가"
+                  >
+                    {productImageUploading === 'imageUrls' ? '올리는 중' : <Plus size={22} />}
+                  </button>
                 )}
-              </button>
+              </div>
+              <span className="partner-product-description-hint">첫 장이 대표 이미지예요. 여러 장을 한 번에 고를 수 있어요.</span>
               <input
                 ref={thumbnailInputRef}
                 hidden
                 type="file"
+                multiple
                 accept=".jpg,.jpeg,.png,.webp,.avif,image/jpeg,image/png,image/webp,image/avif"
                 onChange={(event) => {
-                  void uploadProductImage('imageUrl', event.target.files?.[0]);
+                  void uploadProductImages('imageUrls', event.currentTarget.files);
                   event.currentTarget.value = '';
                 }}
               />
-            </label>
-            <label>
-              상세페이지 이미지
-              <button
-                type="button"
-                className={`partner-product-upload detail ${productForm.detailImageUrl ? 'has-image' : ''}`}
-                onClick={() => detailInputRef.current?.click()}
-                disabled={productImageUploading === 'detailImageUrl'}
-              >
-                {productForm.detailImageUrl ? (
-                  <img src={productForm.detailImageUrl} alt="" />
-                ) : (
-                  <span>{productImageUploading === 'detailImageUrl' ? '업로드 중...' : '상세 이미지 첨부'}</span>
+            </div>
+
+            <div className="partner-product-images">
+              <span className="partner-product-images-label">
+                상세페이지 이미지 <b>{productForm.detailImageUrls.length}/{PRODUCT_DETAIL_MAX}</b>
+              </span>
+              <LongPressSortList
+                items={productForm.detailImageUrls}
+                getKey={(url) => url}
+                gap={8}
+                onReorder={(next) => setProductForm((prev) => ({ ...prev, detailImageUrls: next }))}
+                renderItem={(url, i) => (
+                  <div className="partner-product-detail-row">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={url} alt="" draggable={false} />
+                    <span className="num">{i + 1}</span>
+                    <button type="button" onClick={() => removeProductImage('detailImageUrls', url)} aria-label={`상세 이미지 ${i + 1} 삭제`}>×</button>
+                  </div>
                 )}
-              </button>
+              />
+              {productForm.detailImageUrls.length < PRODUCT_DETAIL_MAX && (
+                <button
+                  type="button"
+                  className="partner-product-detail-add"
+                  onClick={() => detailInputRef.current?.click()}
+                  disabled={productImageUploading === 'detailImageUrls'}
+                >
+                  {productImageUploading === 'detailImageUrls' ? '올리는 중…' : <><Plus size={18} /> 상세 이미지 추가</>}
+                </button>
+              )}
+              <span className="partner-product-description-hint">
+                긴 상세페이지는 여러 장으로 나눠 올려 주세요. 한 장에 25MB까지, 위에서부터 순서대로 이어 보여요. 꾹 눌러 끌면 순서를 바꿀 수 있어요.
+              </span>
               <input
                 ref={detailInputRef}
                 hidden
                 type="file"
+                multiple
                 accept=".jpg,.jpeg,.png,.webp,.avif,image/jpeg,image/png,image/webp,image/avif"
                 onChange={(event) => {
-                  void uploadProductImage('detailImageUrl', event.target.files?.[0]);
+                  void uploadProductImages('detailImageUrls', event.currentTarget.files);
                   event.currentTarget.value = '';
                 }}
               />
-            </label>
+            </div>
             <label>
               상품 설명
               <textarea

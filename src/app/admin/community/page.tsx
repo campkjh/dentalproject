@@ -116,7 +116,7 @@ export default function AdminCommunityPage() {
     );
   };
 
-  const GRID = 'grid grid-cols-[36px_100px_1.8fr_1fr_140px_140px_auto] gap-4 items-center';
+  const GRID = 'grid grid-cols-[36px_100px_1.8fr_1fr_140px_140px_112px] gap-4 items-center';
   const allSel = pageData.length > 0 && pageData.every((p) => selected.has(p.id));
 
   // 제목·설명은 레이아웃이 '게시글 · 신고' 제목 탭과 함께 그린다

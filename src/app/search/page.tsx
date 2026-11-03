@@ -470,7 +470,7 @@ function SearchPage() {
     return (
       <div className="min-h-screen bg-white page-enter">
         {/* Header: 뒤로가기 + 검색창 */}
-        <div style={{ position: 'sticky', top: 0, zIndex: 40 }} className="bg-white flex h-[60px] items-center gap-1 pl-1.5 pr-4">
+        <div style={{ position: 'sticky', top: 0, zIndex: 40, paddingTop: 'env(safe-area-inset-top, 0px)', boxSizing: 'content-box' }} className="bg-white flex h-[60px] items-center gap-1 pl-1.5 pr-4">
           <button type="button" onClick={() => router.back()} aria-label="뒤로가기" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[#191F28] transition-colors active:bg-[#F2F4F6]">
             <i aria-hidden="true" className="block h-[26px] w-[26px] bg-[#191F28]" style={{ WebkitMaskImage: 'url(/quick-match/icons/back.svg)', maskImage: 'url(/quick-match/icons/back.svg)', WebkitMaskSize: 'contain', maskSize: 'contain', WebkitMaskRepeat: 'no-repeat', maskRepeat: 'no-repeat', WebkitMaskPosition: 'center', maskPosition: 'center' }} />
           </button>
@@ -583,7 +583,7 @@ function SearchPage() {
   if (hasSearched) {
     return (
       <div className="pb-[86px] lg:pb-0 bg-white min-h-screen page-enter">
-        <div style={{ position: 'sticky', top: 0, zIndex: 40 }} className="bg-white flex h-[60px] items-center gap-1 pl-1.5 pr-4 lg:hidden">
+        <div style={{ position: 'sticky', top: 0, zIndex: 40, paddingTop: 'env(safe-area-inset-top, 0px)', boxSizing: 'content-box' }} className="bg-white flex h-[60px] items-center gap-1 pl-1.5 pr-4 lg:hidden">
           <button type="button" onClick={() => router.back()} aria-label="뒤로가기" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[#191F28] transition-colors active:bg-[#F2F4F6]">
             <i aria-hidden="true" className="block h-[26px] w-[26px] bg-[#191F28]" style={{ WebkitMaskImage: 'url(/quick-match/icons/back.svg)', maskImage: 'url(/quick-match/icons/back.svg)', WebkitMaskSize: 'contain', maskSize: 'contain', WebkitMaskRepeat: 'no-repeat', maskRepeat: 'no-repeat', WebkitMaskPosition: 'center', maskPosition: 'center' }} />
           </button>

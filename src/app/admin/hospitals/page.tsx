@@ -190,7 +190,7 @@ export default function AdminHospitalsPage() {
     URL.revokeObjectURL(url);
   };
 
-  const GRID = 'grid grid-cols-[1.5fr_1fr_1.2fr_0.8fr_0.7fr_1fr_0.8fr_auto] gap-4 items-center';
+  const GRID = 'grid grid-cols-[1.5fr_1fr_1.2fr_0.8fr_0.7fr_1fr_0.8fr_196px] gap-4 items-center';
 
   return (
     <div className="adm-stack">

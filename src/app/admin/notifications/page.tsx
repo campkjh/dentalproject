@@ -175,7 +175,7 @@ export default function AdminNotificationsPage() {
     }
   };
 
-  const GRID = 'grid grid-cols-[48px_1fr_180px_100px_auto] gap-4 items-center';
+  const GRID = 'grid grid-cols-[48px_1fr_180px_100px_176px] gap-4 items-center';
 
   return (
     <div className="adm-stack">

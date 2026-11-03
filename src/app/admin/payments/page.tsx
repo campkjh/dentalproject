@@ -199,7 +199,7 @@ export default function AdminPaymentsPage() {
     URL.revokeObjectURL(url);
   };
 
-  const GRID = 'grid grid-cols-[1fr_1.2fr_1.4fr_1fr_0.9fr_1fr_0.7fr_auto] gap-4 items-center';
+  const GRID = 'grid grid-cols-[1fr_1.2fr_1.4fr_1fr_0.9fr_1fr_0.7fr_64px] gap-4 items-center';
   const shown = Math.min(filtered.length, 100);
 
   return (

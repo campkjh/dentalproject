@@ -136,6 +136,9 @@ export default function PartnerLayout({ children }: { children: React.ReactNode 
 
     if (isLoginPage || sessionLoading) return;
     if (!authUser) {
+      // 방금 로그아웃했으면 홈으로(MyHome 이 표시) — 그 외엔 병원 로그인으로
+      const w = window as Window & { __mdLoggingOut?: boolean };
+      if (w.__mdLoggingOut) { w.__mdLoggingOut = false; router.replace('/'); return; }
       router.replace('/partner/login');
       return;
     }

@@ -174,7 +174,7 @@ export default function AdminCouponsPage() {
     );
   };
 
-  const CGRID = 'grid grid-cols-[1.4fr_1fr_120px_140px_100px_140px_auto] gap-4 items-center';
+  const CGRID = 'grid grid-cols-[1.4fr_1fr_120px_140px_100px_140px_64px] gap-4 items-center';
   const PGRID = 'grid grid-cols-[1.4fr_100px_1.6fr_140px_140px] gap-4 items-center';
 
   return (

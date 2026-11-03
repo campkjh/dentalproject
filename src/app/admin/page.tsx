@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useSyncExternalStore } from 'react';
-import { TrendingUp, TrendingDown, ChevronRight, CalendarDays } from 'lucide-react';
+import { TrendingUp, TrendingDown, ChevronRight, CalendarDays, Building2 } from 'lucide-react';
 import {
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
@@ -81,6 +81,21 @@ export default function AdminDashboard() {
     return () => { cancelled = true; };
   }, [authUser, period]);
 
+  // 병원 신청(심사 대기) — 병원 관리 화면과 같은 목록에서 pending 만
+  const [applications, setApplications] = useState<any[]>([]);
+  useEffect(() => {
+    if (!authUser) return;
+    let cancelled = false;
+    fetch('/api/admin/hospitals', { cache: 'no-store' })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (cancelled || !data) return;
+        setApplications((data.hospitals ?? []).filter((h: any) => h.status === 'pending'));
+      })
+      .catch(() => undefined);
+    return () => { cancelled = true; };
+  }, [authUser]);
+
   const s = apiData?.stats ?? {};
   const ps = apiData?.periodStats ?? {};
   const periodLabel = period === 'today' ? '오늘' : period === 'week' ? '최근 7일' : '이번 달';
@@ -127,6 +142,7 @@ export default function AdminDashboard() {
   };
 
   const GRID = 'grid grid-cols-[1.2fr_1fr_1.6fr_1.2fr_1fr_0.8fr_1fr] gap-4 items-center';
+  const APP_GRID = 'grid grid-cols-[1.6fr_1fr_1.2fr_2fr_1fr_88px] gap-4 items-center';
 
   return (
     <div className="adm-stack">
@@ -169,6 +185,47 @@ export default function AdminDashboard() {
           </div>
         ))}
       </StatRow>
+
+      {/* 병원 신청 대기 */}
+      <SectionCard
+        title={`병원 신청 대기 ${applications.length}건`}
+        action={
+          <a href="/admin/hospitals" className="adm-card-link">
+            병원 관리 <ChevronRight size={16} />
+          </a>
+        }
+      >
+        {applications.length === 0 ? (
+          <EmptyState icon={<Building2 size={22} />} title="심사할 병원 신청이 없어요" hint="병원이 신청하면 여기에 표시돼요." />
+        ) : (
+          <div className="adm-tscroll">
+            <div className="adm-tscroll-in">
+              <div className={`${APP_GRID} adm-ghead`}>
+                <div>병원명</div>
+                <div>신청자</div>
+                <div>연락처</div>
+                <div>주소</div>
+                <div>신청일</div>
+                <div className="text-right">심사</div>
+              </div>
+              {applications.slice(0, 10).map((h: any) => (
+                <div key={h.id} className={`${APP_GRID} adm-grow`}>
+                  <div className="adm-cell-main truncate">{h.name}</div>
+                  <div className="adm-cell truncate">{h.owner?.name ?? '-'}</div>
+                  <div className="adm-cell truncate">{h.phone || h.owner?.phone || '-'}</div>
+                  <div className="adm-cell truncate">{h.address || '-'}</div>
+                  <div className="adm-cell dim">{h.created_at ? new Date(h.created_at).toLocaleDateString('ko-KR') : '-'}</div>
+                  <div className="text-right">
+                    <a href={`/admin/hospitals?status=pending&id=${h.id}`} className="adm-card-link justify-end">
+                      보기 <ChevronRight size={16} />
+                    </a>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </SectionCard>
 
       {/* 매출 + 예약 */}
       <div className="grid grid-cols-1 gap-10 xl:grid-cols-2">

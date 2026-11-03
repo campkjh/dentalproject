@@ -1,10 +1,12 @@
 'use client';
 
 // 원장 등록 — 소속 병원 찾기. 승인된 병원 목록(/api/hospitals)을 한 번 받아 화면에서 거른다.
-//  · 검색어 없으면 고른 과의 병원(없으면 전체) · 있으면 이름·주소에 낱말이 다 들어간 병원(같은 과 먼저)
+//  · 고른 과의 병원만 보여 준다(피부과를 골랐는데 치과·내과가 섞이지 않게) — 과 값은 코드·한글이 섞여 있어 toCategoryCode 로 맞춘다
+//  · 검색어가 있으면 그 과 병원 중 이름·주소에 낱말이 다 들어간 병원
 //  · 찾는 병원이 없으면 '병원 새로 등록하기'로 병원 등록 흐름으로 건너간다(검색어는 병원명에 미리 채워짐).
 import { useEffect, useMemo, useState, type SyntheticEvent } from 'react';
 import { RgCheck, RgEmpty, RgRow, RgRows, RgSearch, rgStyles as s } from './RegisterKit';
+import { toCategoryCode } from '@/lib/category-code';
 
 export type PickedHospital = { id: string; name: string; category: string; address: string; image: string };
 
@@ -62,18 +64,16 @@ export default function HospitalPicker({
 
   const view = useMemo(() => {
     if (!all) return null;
+    const code = toCategoryCode(category);
+    const same = code ? all.filter((h) => toCategoryCode(h.category) === code) : all;
     const tokens = query.toLowerCase().split(/\s+/).filter(Boolean);
-    if (!tokens.length) {
-      const same = all.filter((h) => h.category === category);
-      const base = same.length ? same : all;
-      return { rows: base, head: same.length ? `${categoryName} 병원` : '전체 병원' };
-    }
+    if (!tokens.length) return { rows: same, head: `${categoryName || '전체'} 병원` };
     const whole = squash(query);
-    const hits = all.filter((h) => {
+    const hits = same.filter((h) => {
       const hay = `${h.name} ${h.address}`.toLowerCase();
       return tokens.every((t) => hay.includes(t)) || squash(h.name).includes(whole);
     });
-    const rank = (h: PickedHospital) => (h.category === category ? 0 : 2) + (squash(h.name).startsWith(squash(tokens[0])) ? 0 : 1);
+    const rank = (h: PickedHospital) => (squash(h.name).startsWith(squash(tokens[0])) ? 0 : 1);
     hits.sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name, 'ko'));
     return { rows: hits, head: `검색 결과 ${hits.length}곳` };
   }, [all, query, category, categoryName]);
@@ -132,7 +132,7 @@ export default function HospitalPicker({
         </>
       ) : (
         <RgEmpty
-          title={query.trim() ? `‘${query.trim()}’ 병원을 찾지 못했어요` : '아직 등록된 병원이 없어요'}
+          title={query.trim() ? `${categoryName ? `${categoryName} 중 ` : ''}‘${query.trim()}’ 병원을 찾지 못했어요` : `아직 등록된 ${categoryName || ''} 병원이 없어요`}
           desc="마이닥에 없는 병원이라면 새로 등록할 수 있어요."
           action={{ label: '병원 새로 등록하기', onClick: onRegisterNew }}
         />

@@ -3,6 +3,8 @@
 // 병원 신청 서류·프로필 사진 올리기 — 업로드 흐름(/api/upload · folder)은 옛 화면 그대로, 겉모습만 선택 카드 결로.
 import { useRef, useState } from 'react';
 import { rgCx as cx, rgStyles as s } from './RegisterKit';
+import { compressImage } from '@/lib/compressImage';
+import { uploadDirect } from '@/lib/upload';
 
 function UploadIcon({ color = '#828E9B' }: { color?: string }) {
   return (
@@ -49,19 +51,11 @@ export function DocUploadRow({
     setError(null);
     setFileName(f.name);
     try {
-      const formData = new FormData();
-      formData.append('file', f);
-      formData.append('folder', 'hospital-docs');
-      const res = await fetch('/api/upload', { method: 'POST', body: formData });
-      const payload = await res.json().catch(() => ({}));
-      if (!res.ok || !payload.url) {
-        setError(payload.error || '업로드 실패');
-        setFileName(null);
-        return;
-      }
-      onChange(payload.url);
-    } catch {
-      setError('업로드 실패');
+      // 사진은 줄이고, 서버 함수 한도(4.5MB) 없이 저장소로 바로 올린다 — 휴대폰 원본 사진도 올라가게
+      const file = f.type.startsWith('image/') ? await compressImage(f).catch(() => f) : f;
+      onChange(await uploadDirect(file, 'hospital-docs'));
+    } catch (err) {
+      setError(err instanceof Error && err.message ? err.message : '업로드 실패');
       setFileName(null);
     } finally {
       setUploading(false);
@@ -121,18 +115,10 @@ export function ProfilePhotoUploader({ value, onChange }: { value: string; onCha
     setUploading(true);
     setError(null);
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('folder', 'doctor-profiles');
-      const res = await fetch('/api/upload', { method: 'POST', body: formData });
-      const payload = await res.json().catch(() => ({}));
-      if (!res.ok || !payload.url) {
-        setError(payload.error || '업로드에 실패했어요.');
-        return;
-      }
-      onChange(payload.url);
-    } catch {
-      setError('업로드 실패');
+      const small = await compressImage(file).catch(() => file);
+      onChange(await uploadDirect(small, 'doctor-profiles'));
+    } catch (err) {
+      setError(err instanceof Error && err.message ? err.message : '업로드 실패');
     } finally {
       setUploading(false);
     }

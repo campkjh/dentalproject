@@ -149,7 +149,9 @@ export default function HomePage() {
     return () => { window.removeEventListener('scroll', close, { capture: true }); window.removeEventListener('keydown', key); };
   }, [areaMenuAt]);
 
-  const popularProducts = areaProducts.slice(0, 6);
+  // 카탈로그는 최신 등록순 — 인기는 찜·후기 많은 순, '새로 들어온 상품'은 그대로 앞에서(방금 승인된 상품이 바로 보이게)
+  const popularProducts = [...areaProducts].sort((a, b) => (b.likeCount + b.reviewCount) - (a.likeCount + a.reviewCount)).slice(0, 6);
+  const newProducts = areaProducts.slice(0, 8);
   const recentProducts = recentlyViewed
     .map(id => products.find(p => p.id === id))
     .filter(Boolean) as typeof products;
@@ -448,6 +450,24 @@ export default function HomePage() {
             <div className="grid grid-cols-2 pc:grid-cols-5 gap-2.5 pc:gap-4 pc:[&>*:nth-child(n+6)]:hidden stagger-children">
               {popularProducts.map((product) => (
                 <ProductCard key={product.id} product={product} index={popularProducts.indexOf(product)} />
+              ))}
+            </div>
+          </div>
+        </div>
+        )}
+
+        {/* 새로 들어온 상품 */}
+        {newProducts.length > 0 && (
+        <div className="mb-8">
+          <SectionHeader
+            title="새로 들어온 상품"
+          />
+          <div className="px-[10px] pc:px-0">
+            <div className="flex snap-x gap-2.5 overflow-x-auto hide-scrollbar pb-2 scroll-px-[10px] pc:grid pc:grid-cols-5 pc:gap-4 pc:overflow-visible pc:[&>*:nth-child(n+6)]:hidden">
+              {newProducts.map((product) => (
+                <div key={product.id} className="w-[44vw] max-w-[200px] flex-shrink-0 snap-start pc:w-auto pc:max-w-none pc:shrink">
+                  <ProductCard product={product} />
+                </div>
               ))}
             </div>
           </div>

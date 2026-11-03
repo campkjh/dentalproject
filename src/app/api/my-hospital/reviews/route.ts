@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
+import { getOwnedHospital } from '@/lib/owned-hospital';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,12 +13,8 @@ export async function PATCH(req: NextRequest) {
 
   // 요청자가 해당 리뷰의 병원 오너인지 확인
   const sb = await createClient();
-  const { data: { user } } = await sb.auth.getUser();
-  if (!user) return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 });
-
-  const { data: hospital } = await sb
-    .from('hospitals').select('id').eq('owner_id', user.id).maybeSingle();
-  if (!hospital) return NextResponse.json({ error: '병원을 찾을 수 없습니다.' }, { status: 404 });
+  const { hospital, error: ownedError } = await getOwnedHospital({ ownerOnly: true });
+  if (ownedError) return ownedError;
 
   // 리뷰가 해당 병원 것인지 확인
   const { data: review } = await sb

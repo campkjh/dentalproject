@@ -261,7 +261,7 @@ export default function AdminCategoriesPage() {
   }
 
   // ---------- 목록 ----------
-  const GRID = 'grid grid-cols-[26px_60px_1fr_1fr_64px_100px_auto] gap-4 items-center';
+  const GRID = 'grid grid-cols-[26px_60px_1fr_1fr_64px_100px_112px] gap-4 items-center';
 
   return (
     <div className="adm-stack">
