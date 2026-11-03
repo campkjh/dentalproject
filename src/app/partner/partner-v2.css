@@ -414,6 +414,8 @@ html[data-pd-scrolled] .partner-page .qd-header::after { opacity: 1; }
 .partner-shell-bg .partner-product-sheet::before { content: ''; position: absolute; top: 12px; left: 50%; width: 40px; height: 4px; margin-left: -20px; border-radius: 999px; background: #D1D6DB; }
 .partner-shell-bg .partner-product-sheet-head h2 { font-size: 22px; font-weight: 700; line-height: 1.42; letter-spacing: -0.4px; color: #191F28; }
 .partner-shell-bg .partner-product-sheet-head button { height: 36px; padding: 0 12px; border-radius: 999px; background: #F2F4F6; color: #4E5968; font-size: 14px; font-weight: 600; }
+.partner-shell-bg .partner-product-thumbs .partner-product-thumb { width: 100%; height: auto; min-width: 0; }
+.partner-shell-bg .partner-product-thumbs .partner-product-thumb .lead { width: auto; height: auto; }
 .partner-shell-bg .partner-product-sheet label,
 .partner-shell-bg .partner-product-tag-field { gap: 8px; font-size: 14px; font-weight: 600; color: #4E5968; }
 .partner-shell-bg .partner-product-sheet input,

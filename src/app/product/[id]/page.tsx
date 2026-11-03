@@ -16,7 +16,7 @@ import ReviewSummaryCard, { useReviewSummary } from '@/components/product/Review
 import { Reveal, StarRating, SingleStar, SectionHead, ReviewCommentRow, ExpandRow, type ReviewRowData } from '@/components/detail/DetailKit';
 import { useStore } from '@/store';
 import { toneAccent, useImageTone } from '@/lib/image-tone';
-import { resolveHospitalImageUrl, resolveProductImageUrl } from '@/lib/images';
+import { productGalleryImages, resolveHospitalImageUrl, resolveProductImageUrl } from '@/lib/images';
 import MonoIcon from '@/components/common/MonoIcon';
 import TossBubble, { BubbleMoonIcon } from '@/components/common/TossBubble';
 import { haptic } from '@/lib/haptics';
@@ -209,9 +209,8 @@ export default function ProductDetailPage() {
     : product.detailImageUrl ? [resolveProductImageUrl(product.detailImageUrl, product.id)] : [];
   const detailImageUrl = detailImageUrls[0] ?? null;
   const hospitalImageUrl = hospital ? resolveHospitalImageUrl(hospital) : undefined;
-  // 위 사진 넘기기 = 썸네일 여러 장 → (없으면) 상세 첫 장 → 병원 대문사진
-  const thumbs = product.imageUrls?.length ? product.imageUrls : [productImageUrl];
-  const images = Array.from(new Set([...thumbs, ...(product.imageUrls?.length || !detailImageUrl ? [] : [detailImageUrl]), ...(hospital?.coverImages || [])])).slice(0, 10);
+  // 상품 갤러리에는 선택한 썸네일만 표시한다. 병원 대문·상세 이미지는 각 영역에 둔다.
+  const images = productGalleryImages(product);
   const isWished = wishlist.includes(product.id);
   const verified = product.rating >= 4.8;
   const notice = hospital ? closedNotice(hospital.operatingHours) : null;

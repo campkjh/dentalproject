@@ -13,6 +13,9 @@ import { useStore } from '@/store';
 import { HeaderBellIcon } from '@/components/icons/HeaderIcons';
 import MonoIcon from '@/components/common/MonoIcon';
 import LongPressSortList from '@/components/common/LongPressSortList';
+import CurrencyInput from '@/components/common/CurrencyInput';
+import ProductImagePicker from '@/components/common/ProductImagePicker';
+import { prepareProductImage } from '@/lib/product-image-input';
 import { compressImage } from '@/lib/compressImage';
 import { uploadDirect } from '@/lib/upload';
 import { categoryLabel, toCategoryCode } from '@/lib/category-code';
@@ -187,10 +190,6 @@ const EMPTY_PRODUCT_FORM: ProductForm = {
   description: '',
   tags: [],
 };
-
-const PRODUCT_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/avif', 'image/webp'];
-// 상세 이미지는 한 장씩 25MB 까지(저장소로 바로 올린다). 썸네일은 줄여서 올린다.
-const PRODUCT_IMAGE_MAX_SIZE = 25 * 1024 * 1024;
 
 function onlyDigits(value: string) {
   return value.replace(/[^\d]/g, '');
@@ -407,8 +406,8 @@ function pendingChangeEntries(product: ProductRow) {
 function toProductForm(product?: ProductRow): ProductForm {
   if (!product) return { ...EMPTY_PRODUCT_FORM };
   const pc = product.pending_changes ?? {};
-  const pick = <K extends keyof NonNullable<ProductRow['pending_changes']>>(key: K, fallback: any) =>
-    Object.prototype.hasOwnProperty.call(pc, key) ? (pc as any)[key] : fallback;
+  const pick = <K extends keyof NonNullable<ProductRow['pending_changes']>>(key: K, fallback: ProductRow[K]) =>
+    Object.prototype.hasOwnProperty.call(pc, key) ? pc[key] : fallback;
 
   const mergedTitle = pick('title', product.title);
   const mergedCategory = pick('category', product.category);
@@ -766,13 +765,18 @@ export default function PartnerHomePage() {
   // '⊞ 전체 ⌄' 버튼 폭 — 등록 상품 탭으로 가면 이 폭에서 0 으로 줄며 사라진다(뚝 사라지지 않게)
   const filterBtnRef = useRef<HTMLButtonElement>(null);
   const [filterBtnW, setFilterBtnW] = useState<number | null>(null);
-  const thumbnailInputRef = useRef<HTMLInputElement>(null);
-  const detailInputRef = useRef<HTMLInputElement>(null);
   const [productModal, setProductModal] = useState<{ mode: 'create' | 'edit'; product?: ProductRow } | null>(null);
   const [productForm, setProductForm] = useState<ProductForm>({ ...EMPTY_PRODUCT_FORM });
   const [productTagDraft, setProductTagDraft] = useState('');
   const [productSaving, setProductSaving] = useState(false);
   const [productImageUploading, setProductImageUploading] = useState<'imageUrls' | 'detailImageUrls' | null>(null);
+  const [productImageSelection, setProductImageSelection] = useState({ imageUrls: 0, detailImageUrls: 0 });
+  const productFormSession = useRef<symbol | null>(null);
+  const productUploadOperation = useRef<symbol | null>(null);
+  useEffect(() => () => {
+    productFormSession.current = null;
+    productUploadOperation.current = null;
+  }, []);
   // 내 병원 진료과 — 상품 카테고리는 이걸로 고정
   const hospitalCategory = toCategoryCode(hospital?.category) ?? 'dental';
 
@@ -869,15 +873,31 @@ export default function PartnerHomePage() {
   };
 
   const openProductCreate = () => {
+    productFormSession.current = Symbol();
+    productUploadOperation.current = null;
+    setProductImageUploading(null);
+    setProductImageSelection({ imageUrls: 0, detailImageUrls: 0 });
     setProductForm({ ...EMPTY_PRODUCT_FORM, category: hospitalCategory });
     setProductTagDraft('');
     setProductModal({ mode: 'create' });
   };
 
   const openProductEdit = (product: ProductRow) => {
+    productFormSession.current = Symbol();
+    productUploadOperation.current = null;
+    setProductImageUploading(null);
+    setProductImageSelection({ imageUrls: 0, detailImageUrls: 0 });
     setProductForm({ ...toProductForm(product), category: hospitalCategory });
     setProductTagDraft('');
     setProductModal({ mode: 'edit', product });
+  };
+
+  const closeProductModal = () => {
+    productFormSession.current = null;
+    productUploadOperation.current = null;
+    setProductImageUploading(null);
+    setProductImageSelection({ imageUrls: 0, detailImageUrls: 0 });
+    setProductModal(null);
   };
 
   const updateProductOriginalPrice = (value: string) => {
@@ -899,29 +919,52 @@ export default function PartnerHomePage() {
   };
 
   // 이미지 여러 장 올리기 — 고른 순서대로 뒤에 붙인다. 썸네일은 줄여서, 상세는 원본(25MB 까지) 그대로 저장소로 바로.
-  const uploadProductImages = async (field: 'imageUrls' | 'detailImageUrls', files?: FileList | null) => {
-    const picked = Array.from(files ?? []);
-    if (!picked.length) return;
+  const uploadProductImages = async (field: 'imageUrls' | 'detailImageUrls', picked: File[]): Promise<File[]> => {
+    if (productUploadOperation.current || productSaving || !productFormSession.current) return picked;
+    const session = productFormSession.current;
+    if (!picked.length) return [];
     const max = field === 'imageUrls' ? PRODUCT_THUMB_MAX : PRODUCT_DETAIL_MAX;
     const room = max - productForm[field].length;
-    if (room <= 0) { showToast(`최대 ${max}장까지 올릴 수 있어요.`); return; }
-    const valid = picked.filter((file) => PRODUCT_IMAGE_TYPES.includes(file.type) && file.size <= PRODUCT_IMAGE_MAX_SIZE);
-    if (valid.length < picked.length) showToast('jpg, png, webp, avif 형식 25MB 이하 이미지만 올릴 수 있어요.');
+    if (picked.length > room) { showToast(`최대 ${max}장까지 올릴 수 있어요. 선택한 사진 수를 줄여주세요.`); return picked; }
+    const valid: File[] = [];
+    const failed: File[] = [];
+    const errors: string[] = [];
+    for (const file of picked) {
+      try { prepareProductImage(file); valid.push(file); }
+      catch (error) {
+        failed.push(file);
+        errors.push(error instanceof Error ? error.message : `${file.name}: 올릴 수 없는 파일입니다.`);
+      }
+    }
     const queue = valid.slice(0, room);
-    if (valid.length > room) showToast(`최대 ${max}장까지라 ${room}장만 올려요.`);
-    if (!queue.length) return;
+    if (!queue.length) { showToast(errors[0] || '선택한 이미지를 확인해주세요.'); return picked; }
 
+    const operation = Symbol();
+    productUploadOperation.current = operation;
+    const isCurrent = () => productFormSession.current === session && productUploadOperation.current === operation;
     setProductImageUploading(field);
     try {
       for (const file of queue) {
-        const body = field === 'imageUrls' ? await compressImage(file, 1600).catch(() => file) : file;
-        const url = await uploadDirect(body, field === 'imageUrls' ? 'product-images' : 'product-details');
-        setProductForm((prev) => ({ ...prev, [field]: [...prev[field], url] }));
+        if (!isCurrent()) return [];
+        try {
+          const prepared = prepareProductImage(file);
+          const body = field === 'imageUrls' ? await compressImage(prepared, 1600).catch(() => prepared) : prepared;
+          if (!isCurrent()) return [];
+          const url = await uploadDirect(body, field === 'imageUrls' ? 'product-images' : 'product-details');
+          if (!isCurrent()) return [];
+          setProductForm((prev) => productFormSession.current === session ? { ...prev, [field]: [...prev[field], url] } : prev);
+        } catch (error) {
+          failed.push(file);
+          errors.push(`${file.name}: ${error instanceof Error ? error.message : '이미지 업로드에 실패했습니다.'}`);
+        }
       }
-    } catch (error) {
-      showToast(error instanceof Error && error.message ? error.message : '이미지 업로드에 실패했습니다.');
+      if (isCurrent() && errors.length) showToast(errors[0]);
+      return failed;
     } finally {
-      setProductImageUploading(null);
+      if (isCurrent()) {
+        productUploadOperation.current = null;
+        setProductImageUploading(null);
+      }
     }
   };
 
@@ -945,6 +988,8 @@ export default function PartnerHomePage() {
   };
 
   const submitProductRequest = async () => {
+    if (productUploadOperation.current) { showToast('이미지 업로드가 끝난 뒤 승인 요청을 보내주세요.'); return; }
+    if (productImageSelection.imageUrls || productImageSelection.detailImageUrls) { showToast('선택한 사진을 올리거나 선택을 취소해주세요.'); return; }
     if (!productForm.title.trim()) {
       showToast('상품명을 입력해주세요.');
       return;
@@ -999,7 +1044,7 @@ export default function PartnerHomePage() {
           : current
         );
       }
-      setProductModal(null);
+      closeProductModal();
       await refreshHospital({ force: true, showLoading: false });
     } catch {
       showToast('네트워크 오류가 발생했습니다.');
@@ -1377,12 +1422,12 @@ export default function PartnerHomePage() {
       )}
 
       {productModal && (
-        <div className="partner-product-sheet-backdrop" role="presentation" onClick={() => setProductModal(null)}>
+        <div className="partner-product-sheet-backdrop" role="presentation" onClick={closeProductModal}>
           <div className="partner-product-sheet" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
             <div className="partner-product-sheet-grab" aria-hidden="true" />
             <div className="partner-product-sheet-head">
               <h2>{productModal.mode === 'create' ? '상품 추가' : '상품 수정'}</h2>
-              <button type="button" onClick={() => setProductModal(null)}>닫기</button>
+              <button type="button" onClick={closeProductModal}>닫기</button>
             </div>
 
             <label>
@@ -1435,11 +1480,10 @@ export default function PartnerHomePage() {
               <>
                 <div className="partner-product-form-grid">
                   <label>
-                    정가
-                    <input
-                      inputMode="numeric"
+                    정가(원)
+                    <CurrencyInput
                       value={productForm.originalPrice}
-                      onChange={(e) => updateProductOriginalPrice(e.target.value)}
+                      onValueChange={updateProductOriginalPrice}
                       placeholder="0"
                     />
                   </label>
@@ -1454,9 +1498,8 @@ export default function PartnerHomePage() {
                   </label>
                 </div>
                 <label>
-                  판매가
-                  <input
-                    inputMode="numeric"
+                  판매가(원)
+                  <CurrencyInput
                     value={productForm.price}
                     readOnly
                     placeholder="정가와 할인율을 넣으면 자동 계산"
@@ -1465,11 +1508,10 @@ export default function PartnerHomePage() {
               </>
             ) : (
               <label>
-                판매가
-                <input
-                  inputMode="numeric"
+                판매가(원)
+                <CurrencyInput
                   value={productForm.price}
-                  onChange={(e) => setProductForm((prev) => ({ ...prev, price: onlyDigits(e.target.value) }))}
+                  onValueChange={(price) => setProductForm((prev) => ({ ...prev, price }))}
                   placeholder="0"
                 />
               </label>
@@ -1485,33 +1527,20 @@ export default function PartnerHomePage() {
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={url} alt="" />
                     {i === 0 && <span className="lead">대표</span>}
-                    <button type="button" onClick={() => removeProductImage('imageUrls', url)} aria-label={`썸네일 ${i + 1} 삭제`}>×</button>
+                    <button type="button" disabled={!!productImageUploading || productSaving} onClick={() => removeProductImage('imageUrls', url)} aria-label={`썸네일 ${i + 1} 삭제`}>×</button>
                   </div>
                 ))}
-                {productForm.imageUrls.length < PRODUCT_THUMB_MAX && (
-                  <button
-                    type="button"
-                    className="partner-product-thumb add"
-                    onClick={() => thumbnailInputRef.current?.click()}
-                    disabled={productImageUploading === 'imageUrls'}
-                    aria-label="썸네일 추가"
-                  >
-                    {productImageUploading === 'imageUrls' ? '올리는 중' : <Plus size={22} />}
-                  </button>
-                )}
               </div>
-              <span className="partner-product-description-hint">첫 장이 대표 이미지예요. 여러 장을 한 번에 고를 수 있어요.</span>
-              <input
-                ref={thumbnailInputRef}
-                hidden
-                type="file"
-                multiple
-                accept=".jpg,.jpeg,.png,.webp,.avif,image/jpeg,image/png,image/webp,image/avif"
-                onChange={(event) => {
-                  void uploadProductImages('imageUrls', event.currentTarget.files);
-                  event.currentTarget.value = '';
-                }}
+              <ProductImagePicker
+                label="썸네일 추가"
+                className="partner-product-detail-add"
+                room={PRODUCT_THUMB_MAX - productForm.imageUrls.length}
+                disabled={!!productImageUploading || productSaving}
+                uploading={productImageUploading === 'imageUrls'}
+                onUpload={(files) => uploadProductImages('imageUrls', files)}
+                onSelectionChange={(count) => setProductImageSelection(prev => ({ ...prev, imageUrls: count }))}
               />
+              <span className="partner-product-description-hint">첫 장이 대표 이미지예요. 선택한 사진을 미리 확인한 뒤 올려주세요.</span>
             </div>
 
             <div className="partner-product-images">
@@ -1520,6 +1549,7 @@ export default function PartnerHomePage() {
               </span>
               <LongPressSortList
                 items={productForm.detailImageUrls}
+                disabled={!!productImageUploading || productSaving}
                 getKey={(url) => url}
                 gap={8}
                 onReorder={(next) => setProductForm((prev) => ({ ...prev, detailImageUrls: next }))}
@@ -1528,34 +1558,22 @@ export default function PartnerHomePage() {
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={url} alt="" draggable={false} />
                     <span className="num">{i + 1}</span>
-                    <button type="button" onClick={() => removeProductImage('detailImageUrls', url)} aria-label={`상세 이미지 ${i + 1} 삭제`}>×</button>
+                    <button type="button" disabled={!!productImageUploading || productSaving} onClick={() => removeProductImage('detailImageUrls', url)} aria-label={`상세 이미지 ${i + 1} 삭제`}>×</button>
                   </div>
                 )}
               />
-              {productForm.detailImageUrls.length < PRODUCT_DETAIL_MAX && (
-                <button
-                  type="button"
-                  className="partner-product-detail-add"
-                  onClick={() => detailInputRef.current?.click()}
-                  disabled={productImageUploading === 'detailImageUrls'}
-                >
-                  {productImageUploading === 'detailImageUrls' ? '올리는 중…' : <><Plus size={18} /> 상세 이미지 추가</>}
-                </button>
-              )}
-              <span className="partner-product-description-hint">
-                긴 상세페이지는 여러 장으로 나눠 올려 주세요. 한 장에 25MB까지, 위에서부터 순서대로 이어 보여요. 꾹 눌러 끌면 순서를 바꿀 수 있어요.
-              </span>
-              <input
-                ref={detailInputRef}
-                hidden
-                type="file"
-                multiple
-                accept=".jpg,.jpeg,.png,.webp,.avif,image/jpeg,image/png,image/webp,image/avif"
-                onChange={(event) => {
-                  void uploadProductImages('detailImageUrls', event.currentTarget.files);
-                  event.currentTarget.value = '';
-                }}
+              <ProductImagePicker
+                label="상세 이미지 추가"
+                className="partner-product-detail-add"
+                room={PRODUCT_DETAIL_MAX - productForm.detailImageUrls.length}
+                disabled={!!productImageUploading || productSaving}
+                uploading={productImageUploading === 'detailImageUrls'}
+                onUpload={(files) => uploadProductImages('detailImageUrls', files)}
+                onSelectionChange={(count) => setProductImageSelection(prev => ({ ...prev, detailImageUrls: count }))}
               />
+              <span className="partner-product-description-hint">
+                JPG·PNG·WEBP·AVIF, 한 장에 25MB까지 등록할 수 있어요. 상세 이미지는 위에서부터 순서대로 이어 보여요. 꾹 눌러 끌면 순서를 바꿀 수 있어요.
+              </span>
             </div>
             <label>
               상품 설명
@@ -1606,8 +1624,8 @@ export default function PartnerHomePage() {
             </div>
 
             <div className="partner-product-sheet-actions">
-              <button type="button" onClick={() => setProductModal(null)}>취소</button>
-              <button type="button" onClick={submitProductRequest} disabled={productSaving}>
+              <button type="button" onClick={closeProductModal}>취소</button>
+              <button type="button" onClick={submitProductRequest} disabled={productSaving || !!productImageUploading || productImageSelection.imageUrls > 0 || productImageSelection.detailImageUrls > 0}>
                 {productSaving ? '저장 중...' : '승인 요청'}
               </button>
             </div>
