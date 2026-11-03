@@ -1,6 +1,8 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse, type NextRequest } from 'next/server';
 import { createAdminClient, createClient } from '@/lib/supabase/server';
+import { getOwnedHospital } from '@/lib/owned-hospital';
+import { parseHospitalSchedule } from '@/lib/hospital-schedule';
+import { allSlotsForDay } from '@/components/booking/schedule';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,57 +19,19 @@ function slotKey(date: string, time: string) {
   return `${SLOT_PREFIX}${date}:${time}`;
 }
 
-function parseScheduleRows(rows: Array<{ day: string | null; is_closed?: boolean | null }>) {
-  const disabledDays: string[] = [];
-  const disabledSlots: Record<string, string[]> = {};
-
-  for (const row of rows) {
-    if (!row.day || !row.is_closed) continue;
-    if (row.day.startsWith(DATE_PREFIX)) {
-      const date = row.day.slice(DATE_PREFIX.length);
-      if (DATE_RE.test(date)) disabledDays.push(date);
-    }
-    if (row.day.startsWith(SLOT_PREFIX)) {
-      const rest = row.day.slice(SLOT_PREFIX.length);
-      const date = rest.slice(0, 10);
-      const time = rest.slice(11);
-      if (!DATE_RE.test(date) || !TIME_RE.test(time)) continue;
-      disabledSlots[date] = [...(disabledSlots[date] ?? []), time];
-    }
-  }
-
-  disabledDays.sort();
-  Object.keys(disabledSlots).forEach((date) => disabledSlots[date].sort());
-  return { disabledDays, disabledSlots };
-}
-
-async function resolveManagedHospitalId(userId: string) {
-  const admin = await createAdminClient();
-  const { data: ownedHospital } = await admin
-    .from('hospitals')
-    .select('id')
-    .eq('owner_id', userId)
-    .maybeSingle();
-  if (ownedHospital?.id) return ownedHospital.id as string;
-
-  const { data: member } = await admin
-    .from('doctors')
-    .select('hospital_id')
-    .eq('user_id', userId)
-    .limit(1)
-    .maybeSingle();
-
-  return (member?.hospital_id as string | undefined) ?? null;
+async function resolveManagedHospitalId() {
+  const owned = await getOwnedHospital();
+  return owned.hospital?.id ?? null;
 }
 
 async function readSettings(hospitalId: string) {
   const admin = await createAdminClient();
   const { data, error } = await admin
     .from('operating_hours')
-    .select('day, is_closed')
+    .select('day, start_time, end_time, is_closed')
     .eq('hospital_id', hospitalId);
   if (error) throw error;
-  return parseScheduleRows(data ?? []);
+  return parseHospitalSchedule(data ?? []);
 }
 
 export async function GET() {
@@ -77,8 +41,8 @@ export async function GET() {
   } = await sb.auth.getUser();
   if (!user) return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 });
 
-  const hospitalId = await resolveManagedHospitalId(user.id);
-  if (!hospitalId) return NextResponse.json({ disabledDays: [], disabledSlots: {} });
+  const hospitalId = await resolveManagedHospitalId();
+  if (!hospitalId) return NextResponse.json({ error: '병원을 찾을 수 없습니다.' }, { status: 404 });
 
   try {
     const settings = await readSettings(hospitalId);
@@ -117,9 +81,14 @@ export async function PATCH(req: NextRequest) {
   } = await sb.auth.getUser();
   if (!user) return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 });
 
-  const hospitalId = await resolveManagedHospitalId(user.id);
+  const hospitalId = await resolveManagedHospitalId();
   if (!hospitalId) return NextResponse.json({ error: '병원을 찾을 수 없습니다.' }, { status: 404 });
 
+  if (!allDay) {
+    const settings = await readSettings(hospitalId);
+    const [year, month, day] = date.split('-').map(Number);
+    if (!allSlotsForDay(year, month, day, settings.hoursByDow).includes(time)) return NextResponse.json({ error: '병원 운영시간 내 30분 단위 시간을 선택해주세요.' }, { status: 400 });
+  }
   const key = allDay ? dayKey(date) : slotKey(date, time);
   const admin = await createAdminClient();
 

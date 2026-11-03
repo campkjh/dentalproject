@@ -3,38 +3,9 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { broadcastReservationChange } from '@/lib/realtime/server';
 import { createAdminClient, createClient } from '@/lib/supabase/server';
 import { getIdentityStatus } from '@/lib/identity';
+import { isHospitalVisitAvailable, parseHospitalSchedule } from '@/lib/hospital-schedule';
 
 export const dynamic = 'force-dynamic';
-
-function scheduleKeysFromVisitAt(value: unknown) {
-  if (typeof value !== 'string' || !value.trim()) return null;
-  const direct = value.match(/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/);
-  if (direct) {
-    return {
-      dayKey: `date:${direct[1]}`,
-      slotKey: `slot:${direct[1]}:${direct[2]}`,
-    };
-  }
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return null;
-  const parts = new Intl.DateTimeFormat('sv-SE', {
-    timeZone: 'Asia/Seoul',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    hourCycle: 'h23',
-  }).formatToParts(date);
-  const part = (type: string) => parts.find((item) => item.type === type)?.value ?? '';
-  const dateKey = `${part('year')}-${part('month')}-${part('day')}`;
-  const timeKey = `${part('hour')}:${part('minute')}`;
-  return {
-    dayKey: `date:${dateKey}`,
-    slotKey: `slot:${dateKey}:${timeKey}`,
-  };
-}
 
 function parseVisitAt(value: unknown) {
   if (typeof value !== 'string' || !value.trim()) return null;
@@ -76,24 +47,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: '이미 지난 예약 시간입니다.' }, { status: 400 });
   }
 
-  const scheduleKeys = scheduleKeysFromVisitAt(body.visitAt);
-
-  if (scheduleKeys) {
-    const admin = await createAdminClient();
-    const { data: blockedRows, error: blockedError } = await admin
-      .from('operating_hours')
-      .select('day')
-      .eq('hospital_id', hospitalId)
-      .eq('is_closed', true)
-      .in('day', [scheduleKeys.dayKey, scheduleKeys.slotKey]);
-
-    if (blockedError) {
-      return NextResponse.json({ error: blockedError.message }, { status: 400 });
-    }
-    if ((blockedRows ?? []).length > 0) {
-      return NextResponse.json({ error: '병원에서 비활성화한 예약 시간입니다.' }, { status: 400 });
-    }
-  }
+  const admin = await createAdminClient();
+  const { data: hours, error: hoursError } = await admin.from('operating_hours').select('day, start_time, end_time, is_closed').eq('hospital_id', hospitalId);
+  if (hoursError) return NextResponse.json({ error: '병원 운영시간을 확인하지 못했습니다.' }, { status: 500 });
+  if (!isHospitalVisitAvailable(visitAt, parseHospitalSchedule(hours ?? []))) return NextResponse.json({ error: '예약할 수 없는 시간입니다. 병원 운영시간 내 30분 단위로 다시 선택해주세요.' }, { status: 400 });
 
   const { data, error } = await sb
     .from('reservations')

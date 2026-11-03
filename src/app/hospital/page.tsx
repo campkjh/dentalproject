@@ -1,5 +1,7 @@
 'use client';
 
+import { categoryLabel, specialtyLabel } from '@/lib/category-code';
+
 import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { Bell, MapPin, Package } from 'lucide-react';
 import EmptyState from '@/components/common/EmptyState';
@@ -301,7 +303,7 @@ function getProductApprovalTab(status?: string | null): ProductApprovalTab {
 function ProductRow({ product }: { product: HospitalProduct }) {
   const price = product.price ?? 0;
   const originalPrice = product.original_price ?? 0;
-  const category = product.sub_category || product.category;
+  const category = product.sub_category ? specialtyLabel(product.sub_category) : categoryLabel(product.category);
 
   return (
     <div className="flex items-center gap-3 py-3">

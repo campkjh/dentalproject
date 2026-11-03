@@ -1,5 +1,7 @@
 'use client';
 
+import { categoryLabel } from '@/lib/category-code';
+
 import { useEffect, useMemo, useState } from 'react';
 import { AlertCircle, Megaphone, Save, Search as SearchIc } from 'lucide-react';
 import { useStore } from '@/store';
@@ -37,7 +39,7 @@ export default function AdminSearchPromoPage() {
         if (!cancelled) {
           if (productsRes.ok) {
             const data = await productsRes.json();
-            setProducts(Array.isArray(data.products) ? data.products : []);
+            setProducts(Array.isArray(data.products) ? data.products.map((product: AdminProduct) => ({ ...product, category: categoryLabel(product.category) || '미분류' })) : []);
           } else {
             const data = await productsRes.json().catch(() => ({}));
             setProductsError(data?.error ?? `상품 목록 불러오기 실패 (HTTP ${productsRes.status})`);

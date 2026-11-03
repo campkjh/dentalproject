@@ -1,5 +1,7 @@
 'use client';
 
+import { categoryName } from '@/lib/category-code';
+
 import { useCallback, useEffect, useState } from 'react';
 import { Plus, Image as ImageIcon, ArrowLeft, LayoutGrid } from 'lucide-react';
 import { useStore } from '@/store';
@@ -86,7 +88,7 @@ export default function AdminCategoriesPage() {
 
   const openEdit = (cat: Category) => {
     setEditId(cat.id);
-    setForm({ id: cat.id, name: cat.name, icon: cat.icon ?? '', popular: cat.popular });
+    setForm({ id: cat.id, name: categoryName(cat.name, cat.id), icon: cat.icon ?? '', popular: cat.popular });
     setFormError(null);
     setMode('form');
   };
@@ -126,7 +128,7 @@ export default function AdminCategoriesPage() {
   const handleDelete = (cat: Category) => {
     showConfirm(
       '카테고리 삭제',
-      `"${cat.name}" 카테고리를 삭제하시겠습니까? 연결된 상품의 카테고리가 빈 값이 됩니다.`,
+      `"${categoryName(cat.name, cat.id)}" 카테고리를 삭제하시겠습니까? 연결된 상품의 카테고리가 빈 값이 됩니다.`,
       async () => {
         const res = await fetch('/api/admin/categories', {
           method: 'DELETE',
@@ -308,14 +310,14 @@ export default function AdminCategoriesPage() {
                 className={`${GRID} adm-grow ${sort.rowClass(cat.id)}`}
                 style={sort.rowStyle(cat.id, i)}
               >
-                <button type="button" className="adm-grip" aria-label={`${cat.name} 순서 바꾸기(위아래 화살표로도 옮겨요)`} {...sort.handleProps(i)}>
+                <button type="button" className="adm-grip" aria-label={`${categoryName(cat.name, cat.id)} 순서 바꾸기(위아래 화살표로도 옮겨요)`} {...sort.handleProps(i)}>
                   <GripIcon />
                 </button>
                 <div className="adm-thumb flex items-center justify-center">
                   {cat.icon ? (
                     <img
                       src={cat.icon}
-                      alt={cat.name}
+                      alt={categoryName(cat.name, cat.id)}
                       className="w-6 h-6"
                       onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                     />
@@ -324,10 +326,10 @@ export default function AdminCategoriesPage() {
                   )}
                 </div>
                 <div className="adm-mono truncate">{cat.id}</div>
-                <div className="adm-cell-main">{cat.name}</div>
+                <div className="adm-cell-main">{categoryName(cat.name, cat.id)}</div>
                 <div className="adm-num">{i + 1}</div>
                 <div>
-                  <Switch checked={cat.popular} onChange={() => togglePopular(cat)} ariaLabel={`${cat.name} 인기 노출`} />
+                  <Switch checked={cat.popular} onChange={() => togglePopular(cat)} ariaLabel={`${categoryName(cat.name, cat.id)} 인기 노출`} />
                 </div>
                 <div className="adm-actions">
                   <PillButton tone="blue" onClick={() => openEdit(cat)}>수정</PillButton>

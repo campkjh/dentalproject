@@ -3,6 +3,20 @@
 import { categories } from '@/lib/mock-data';
 
 const ALIASES: Record<string, string> = {
+  dentistry: 'dental',
+  'internal-medicine': 'internal',
+  pediatrics: 'pediatric',
+  paediatrics: 'pediatric',
+  'plastic-surgery': 'plastic',
+  ophthalmology: 'eye',
+  otolaryngology: 'ent',
+  orthopedics: 'orthopedic',
+  orthopaedics: 'orthopedic',
+  'rehabilitation-medicine': 'physical-therapy',
+  rehabilitation: 'physical-therapy',
+  'obstetrics-and-gynecology': 'obstetrics',
+  gynecology: 'obstetrics',
+  obgyn: 'obstetrics',
   skin: 'dermatology',
   derma: 'dermatology',
   피부과: 'dermatology',
@@ -32,12 +46,13 @@ const ALIASES: Record<string, string> = {
 };
 
 const CODES = new Set(categories.map((c) => c.id));
+export const CATEGORY_OPTIONS = categories.map(({ id, name }) => ({ value: id, label: name }));
 
 /** 'dental' · '치과' · 'skin' → 'dental' · 'dental' · 'dermatology'. 모르는 값은 null */
 export function toCategoryCode(value?: string | null): string | null {
   const v = (value ?? '').trim();
   if (!v) return null;
-  const lower = v.toLowerCase();
+  const lower = v.toLowerCase().replace(/[_\s]+/g, '-');
   if (CODES.has(lower)) return lower;
   if (ALIASES[lower]) return ALIASES[lower];
   if (ALIASES[v]) return ALIASES[v];
@@ -46,6 +61,17 @@ export function toCategoryCode(value?: string | null): string | null {
 }
 
 export function categoryLabel(value?: string | null) {
+  const trimmed = (value ?? '').trim();
+  if (!trimmed) return '';
   const code = toCategoryCode(value);
-  return categories.find((c) => c.id === code)?.name ?? (value || '');
+  return categories.find((c) => c.id === code)?.name ?? (/[가-힣]/.test(trimmed) ? trimmed : '기타');
+}
+
+export function categoryName(name?: string | null, id?: string | null) {
+  return categoryLabel(toCategoryCode(name) ?? toCategoryCode(id) ?? name) || '기타';
+}
+
+/** 전문의 타이틀은 자유 입력을 보존하고, 진료과 코드로 저장된 경우만 한글로 표시한다. */
+export function specialtyLabel(value?: string | null) {
+  return toCategoryCode(value) ? categoryLabel(value) : (value ?? '').trim();
 }

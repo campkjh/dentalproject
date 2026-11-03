@@ -1,5 +1,7 @@
 'use client';
 
+import { specialtyLabel } from '@/lib/category-code';
+
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -358,7 +360,7 @@ export default function HospitalDetailPage() {
                     <Avatar src={d.profileImage} role="doctor" seed={d.name} size={48} alt={d.name} className="shrink-0" />
                     <div className="min-w-0 flex-1">
                       <p className="text-[16px] font-medium text-[#191F28]">{d.name} <span className="text-[14px] text-[#6B7684]">{d.isOwner ? '대표원장' : d.title || '원장'}</span></p>
-                      {d.specialty && <p className="mt-0.5 truncate text-[14px] text-[#8B95A1]">{d.specialty}</p>}
+                      {d.specialty && <p className="mt-0.5 truncate text-[14px] text-[#8B95A1]">{specialtyLabel(d.specialty)}</p>}
                     </div>
                     <ChevronRight size={18} className="shrink-0 text-[#B0B8C1]" />
                   </Link>

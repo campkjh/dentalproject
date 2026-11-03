@@ -1,5 +1,7 @@
 'use client';
 
+import { categoryLabel } from '@/lib/category-code';
+
 import { useState, useEffect, useSyncExternalStore } from 'react';
 import { TrendingUp, TrendingDown, ChevronRight, CalendarDays, Building2 } from 'lucide-react';
 import {
@@ -102,6 +104,7 @@ export default function AdminDashboard() {
 
   const categoryData = (apiData?.categoryData ?? []).map((c: any, i: number) => ({
     ...c,
+    name: categoryLabel(c.name) || '기타',
     color: [COLORS.primary, COLORS.green, COLORS.yellow, COLORS.red, COLORS.gray][i % 5],
   }));
 

@@ -9,6 +9,7 @@ import { normalizeProductImageUrl } from '@/lib/images';
 import { broadcastReservationChange } from '@/lib/realtime/server';
 import { createAdminClient, createClient } from '@/lib/supabase/server';
 import { cancelTossPayment } from '@/lib/toss-server';
+import { isHospitalVisitAvailable, parseHospitalSchedule } from '@/lib/hospital-schedule';
 
 export const dynamic = 'force-dynamic';
 
@@ -295,6 +296,12 @@ export async function PATCH(
     patch.visit_at = nextVisitAt;
   }
 
+  if (patch.visit_at) {
+    const nextVisit = new Date(patch.visit_at as string);
+    const { data: hours, error: hoursError } = await admin.from('operating_hours').select('day, start_time, end_time, is_closed').eq('hospital_id', reservation.hospital_id);
+    if (hoursError) return NextResponse.json({ error: '병원 운영시간을 확인하지 못했습니다.' }, { status: 500 });
+    if (nextVisit.getTime() <= Date.now() || !isHospitalVisitAvailable(nextVisit, parseHospitalSchedule(hours ?? []))) return NextResponse.json({ error: '병원 운영시간 내 예약 가능한 30분 단위로 선택해주세요.' }, { status: 400 });
+  }
   if (Object.keys(patch).length === 0) {
     return NextResponse.json({ ok: true });
   }

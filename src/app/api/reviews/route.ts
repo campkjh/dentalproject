@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse, type NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { reviewInput } from '@/lib/review-input';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,7 +13,9 @@ async function resolveHospitalId(sb: any, hospitalIdOrSlug: string | null) {
 }
 
 export async function POST(req: NextRequest) {
-  const body = await req.json();
+  const body = await req.json().catch(() => null);
+  const parsed = reviewInput.safeParse(body);
+  if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0]?.message || '리뷰 내용을 확인해주세요.' }, { status: 400 });
   const sb = await createClient();
   const {
     data: { user },
@@ -23,18 +26,29 @@ export async function POST(req: NextRequest) {
   const productId = body.productId && /^[0-9a-f]{8}-/.test(body.productId) ? body.productId : null;
   const reservationId = body.reservationId && /^[0-9a-f]{8}-/.test(body.reservationId) ? body.reservationId : null;
   const doctorId = body.doctorId && /^[0-9a-f]{8}-/.test(body.doctorId) ? body.doctorId : null;
-  const treatmentDate = body.treatmentDate ?? null;
+  const treatmentDate = parsed.data.treatmentDate || null;
+  let treatmentName = typeof body.treatmentName === 'string' ? body.treatmentName : null;
+  if (productId) {
+    const { data: product } = await sb.from('products').select('hospital_id, title').eq('id', productId).maybeSingle();
+    if (!product || product.hospital_id !== hospitalId) return NextResponse.json({ error: '병원과 시술 정보가 일치하지 않습니다.' }, { status: 400 });
+    treatmentName = product.title;
+  }
+  if (doctorId) {
+    const { data: doctor } = await sb.from('doctors').select('hospital_id').eq('id', doctorId).maybeSingle();
+    if (!doctor || doctor.hospital_id !== hospitalId) return NextResponse.json({ error: '해당 병원의 의사를 선택해주세요.' }, { status: 400 });
+  }
 
   if (reservationId) {
     const { data: reservation } = await sb
       .from('reservations')
-      .select('id, user_id, status')
+      .select('id, user_id, status, hospital_id, product_id')
       .eq('id', reservationId)
       .eq('user_id', user.id)
       .maybeSingle();
     if (!reservation) {
       return NextResponse.json({ error: '예약 정보를 찾을 수 없습니다.' }, { status: 404 });
     }
+    if (reservation.hospital_id !== hospitalId || reservation.product_id !== productId) return NextResponse.json({ error: '예약의 병원과 시술 정보가 일치하지 않습니다.' }, { status: 400 });
     if (!['confirmed', 'completed'].includes(reservation.status)) {
       return NextResponse.json({ error: '확정 또는 완료된 예약만 후기를 작성할 수 있습니다.' }, { status: 400 });
     }
@@ -72,13 +86,13 @@ export async function POST(req: NextRequest) {
       hospital_id: hospitalId,
       product_id: productId,
       doctor_id: doctorId,
-      rating: Number(body.rating ?? 5),
-      content: body.content ?? '',
-      treatment_name: body.treatmentName ?? null,
+      rating: parsed.data.rating,
+      content: parsed.data.content,
+      treatment_name: treatmentName,
       treatment_date: treatmentDate,
-      total_cost: body.totalCost ?? 0,
-      before_image: body.beforeImage ?? null,
-      after_image: body.afterImage ?? null,
+      total_cost: parsed.data.totalCost,
+      before_image: parsed.data.beforeImage || null,
+      after_image: parsed.data.afterImage || null,
     })
     .select('id')
     .single();

@@ -401,7 +401,7 @@ function pendingChangeEntries(product: ProductRow) {
 
   return labels
     .filter(([key]) => Object.prototype.hasOwnProperty.call(changes, key))
-    .map(([key, label]) => ({ key, label, value: formatPendingValue(changes[key]) }));
+    .map(([key, label]) => ({ key, label, value: key === 'category' ? categoryLabel(changes[key] as string) || '비움' : formatPendingValue(changes[key]) }));
 }
 
 function toProductForm(product?: ProductRow): ProductForm {

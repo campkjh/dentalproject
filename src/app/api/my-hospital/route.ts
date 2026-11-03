@@ -247,7 +247,7 @@ export async function GET() {
       admin,
       'reviews',
       hospital,
-        `id, rating, content, treatment_name, treatment_date, total_cost,
+        `id, author_id, rating, content, treatment_name, treatment_date, total_cost,
          before_image, after_image, created_at, hidden,
 	         author:profiles!reviews_author_id_fkey (name, profile_image),
 	         doctor:doctors (name, profile_image)`,

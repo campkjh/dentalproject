@@ -3,6 +3,7 @@ import { User, Reservation, Product, Post, Comment, Review, Hospital, Notificati
 import { pickCustomerProfileAvatarBySeed } from '@/lib/customer-profile-avatars';
 import { resolveHospitalImageUrl, resolveProductImageUrl } from '@/lib/images';
 import { haptic, toneOfMessage } from '@/lib/haptics';
+import { normalizeCategory } from '@/lib/api/normalize';
 import {
   products as mockProducts,
   hospitals as mockHospitals,
@@ -177,6 +178,7 @@ interface AppState {
 
   // Notifications & point history (hydrated from /api/me)
   notifications: Notification[];
+  refreshNotifications: () => Promise<void>;
   markNotificationRead: (id: string) => void;
   pointHistory: PointHistory[];
 
@@ -232,7 +234,7 @@ export const useStore = create<AppState>((set, get) => ({
           hospitals: data.hospitals ?? get().hospitals,
           products: data.products ?? get().products,
           reviews: data.reviews ?? get().reviews,
-          categories: data.categories ?? get().categories,
+          categories: (data.categories ?? get().categories).map(normalizeCategory),
           posts: data.posts ?? get().posts,
           comments: data.comments ?? get().comments,
           announcements: data.announcements ?? get().announcements,
@@ -250,7 +252,7 @@ export const useStore = create<AppState>((set, get) => ({
         hospitals: data.hospitals?.length ? data.hospitals : get().hospitals,
         products: data.products?.length ? data.products : get().products,
         reviews: data.reviews?.length ? data.reviews : get().reviews,
-        categories: data.categories?.length ? data.categories : get().categories,
+        categories: (data.categories?.length ? data.categories : get().categories).map(normalizeCategory),
         posts: data.posts?.length ? data.posts : get().posts,
         comments: data.comments?.length ? data.comments : get().comments,
         announcements: data.announcements?.length ? data.announcements : get().announcements,
@@ -571,6 +573,16 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   notifications: mockNotifications,
+  refreshNotifications: async () => {
+    const userId = get().user?.id;
+    if (!userId) return;
+    try {
+      const response = await fetch('/api/notifications', { cache: 'no-store' });
+      if (!response.ok) return;
+      const data = await response.json();
+      if (get().user?.id === userId) set({ notifications: (data.notifications ?? []).map(notificationFromRow) });
+    } catch { /* Keep existing messages when temporarily offline. */ }
+  },
   markNotificationRead: (id) => {
     set({
       notifications: get().notifications.map((notification) =>
@@ -600,7 +612,7 @@ export const useStore = create<AppState>((set, get) => ({
           rating: review.rating,
           content: review.content,
           treatmentName: review.treatmentName,
-          treatmentDate: review.treatmentDate,
+          treatmentDate: review.treatmentDate || undefined,
           totalCost: review.totalCost,
           beforeImage: review.beforeImage,
           afterImage: review.afterImage,

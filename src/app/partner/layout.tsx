@@ -106,6 +106,11 @@ function ApprovalPendingScreen({ status, hospitalName }: { status: string | null
 
 export default function PartnerLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  useEffect(() => {
+    if (pathname !== '/partner/account') return;
+    document.documentElement.dataset.partnerAccount = 'true';
+    return () => { delete document.documentElement.dataset.partnerAccount; };
+  }, [pathname]);
   const router = useRouter();
   const { authUser, loading: sessionLoading } = useSession();
   const isDoctor = useStore((s) => s.isDoctor);
@@ -198,7 +203,7 @@ export default function PartnerLayout({ children }: { children: React.ReactNode 
   const gated = Boolean(hospitalData) && !isApproved && isGatedRoute(pathname);
 
   return (
-    <div className={`partner-shell-bg ${appStyles.partnerShell}`}>
+    <div className={`partner-shell-bg ${appStyles.partnerShell}${pathname === '/partner/account' ? ' partner-account-shell' : ''}`}>
       <div className="partner-phone-shell" style={hideNav ? { overflowX: 'visible' } : undefined}>
         {showManagementHeader && !gated && (
           <header className="pd-tabhead">

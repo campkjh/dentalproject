@@ -5,15 +5,13 @@ import Link from 'next/link';
 import { useSession } from '@/lib/supabase/SessionProvider';
 import { useMyHospitalData } from '@/lib/partner/my-hospital-cache';
 import { useStore } from '@/store';
-import { createClient, hasSupabaseEnv } from '@/lib/supabase/client';
 import Avatar from '@/components/common/Avatar';
 import MonoIcon from '@/components/common/MonoIcon';
-import CommunityModal from '@/components/community/CommunityModal';
-import { ImageUploader } from '@/components/admin/ImageUploader';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type ReviewRow = {
   id: string;
+  author_id?: string;
   rating: number;
   content: string;
   treatment_name: string | null;
@@ -52,16 +50,12 @@ export default function PartnerReviewsPage() {
   const {
     data: hospitalData,
     loading,
-    refresh: refreshHospital,
   } = useMyHospitalData<HospitalSummary, unknown, ReviewRow>(authUser?.id);
-  const items = hospitalData?.reviews ?? [];
-  const hospitalId = hospitalData?.hospital?.id ?? null;
+  const items = useMemo(() => hospitalData?.reviews ?? [], [hospitalData?.reviews]);
   const hospitalCreatedAt = hospitalData?.hospital?.created_at ?? null;
+  const [now] = useState(() => Date.now());
   const [tab, setTab] = useState<ReviewTab>('image');
   const [hiddenIds, setHiddenIds] = useState<Set<string>>(new Set());
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [addForm, setAddForm] = useState({ type: 'image' as 'image' | 'text', content: '', rating: 5, treatmentName: '', beforeImage: '', afterImage: '' });
-  const [saving, setSaving] = useState(false);
 
   const avgRating = useMemo(() => {
     if (!items.length) return 0;
@@ -76,14 +70,12 @@ export default function PartnerReviewsPage() {
   const canAddInitial = useMemo(() => {
     if (!hospitalCreatedAt) return false;
     const created = new Date(hospitalCreatedAt);
-    const diff = Date.now() - created.getTime();
-    return diff < 30 * 24 * 60 * 60 * 1000;
-  }, [hospitalCreatedAt]);
+    const diff = now - created.getTime();
+    return diff >= 0 && diff < 30 * 24 * 60 * 60 * 1000;
+  }, [hospitalCreatedAt, now]);
 
-  const initialImageCount = imageReviews.length;
-  const initialTextCount = textReviews.length;
-  const canAddImage = canAddInitial && initialImageCount < MAX_INITIAL_IMAGE;
-  const canAddText = canAddInitial && initialTextCount < MAX_INITIAL_TEXT;
+  const initialImageCount = imageReviews.filter((review) => review.author_id === authUser?.id).length;
+  const initialTextCount = textReviews.filter((review) => review.author_id === authUser?.id).length;
 
   const toggleHide = async (id: string) => {
     const willHide = !hiddenIds.has(id);
@@ -113,38 +105,6 @@ export default function PartnerReviewsPage() {
     showToast(willHide ? '리뷰를 숨겼어요.' : '리뷰를 다시 보여 드려요.');
   };
 
-  const handleAddReview = async () => {
-    if (!addForm.content.trim()) { showToast('리뷰 내용을 입력해주세요.'); return; }
-    if (!hospitalId || !hasSupabaseEnv()) { showToast('병원 정보를 불러올 수 없습니다.'); return; }
-    if (addForm.type === 'image' && !canAddImage) { showToast(`이미지 리뷰는 최대 ${MAX_INITIAL_IMAGE}개까지 등록할 수 있습니다.`); return; }
-    if (addForm.type === 'text' && !canAddText) { showToast(`텍스트 리뷰는 최대 ${MAX_INITIAL_TEXT}개까지 등록할 수 있습니다.`); return; }
-
-    setSaving(true);
-    try {
-      const sb = createClient();
-      const { data: { user } } = await sb.auth.getUser();
-      if (!user) throw new Error('로그인이 필요합니다.');
-      const { error } = await sb.from('reviews').insert({
-        author_id: user.id,
-        hospital_id: hospitalId,
-        rating: addForm.rating,
-        content: addForm.content,
-        treatment_name: addForm.treatmentName || null,
-        total_cost: 0,
-        before_image: addForm.type === 'image' ? addForm.beforeImage.trim() || null : null,
-        after_image: addForm.type === 'image' ? addForm.afterImage.trim() || null : null,
-      });
-      if (error) throw error;
-      showToast('초기 리뷰를 등록했어요.');
-      setShowAddModal(false);
-      setAddForm({ type: 'image', content: '', rating: 5, treatmentName: '', beforeImage: '', afterImage: '' });
-      await refreshHospital({ force: true, showLoading: false });
-    } catch (e: any) {
-      showToast(e?.message || '등록에 실패했습니다.');
-    } finally {
-      setSaving(false);
-    }
-  };
 
   if (!authUser) return (
     <div className="flex min-h-[60vh] flex-col items-center justify-center px-6 py-10 text-center">
@@ -255,7 +215,7 @@ export default function PartnerReviewsPage() {
                   )}
 
                   {(before || after) && (
-                    <div className="mt-3 grid grid-cols-2 gap-2">
+                    <div className={`mt-3 grid gap-2 ${before && after ? "grid-cols-2" : "grid-cols-1"}`}>
                       {before && (
                         <div className="relative overflow-hidden rounded-[14px] bg-[#F2F4F6]">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -266,8 +226,8 @@ export default function PartnerReviewsPage() {
                       {after && (
                         <div className="relative overflow-hidden rounded-[14px] bg-[#F2F4F6]">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={after} alt="After" className="aspect-square w-full object-cover" />
-                          <span className="absolute left-2 top-2 rounded-[6px] bg-black/45 px-1.5 py-0.5 text-[12px] font-semibold text-white">After</span>
+                          <img src={after} alt={before ? "시술 후" : "리뷰 사진"} className="aspect-square w-full object-cover" />
+                          <span className="absolute left-2 top-2 rounded-[6px] bg-black/45 px-1.5 py-0.5 text-[12px] font-semibold text-white">{before ? 'After' : '사진'}</span>
                         </div>
                       )}
                     </div>
@@ -283,15 +243,14 @@ export default function PartnerReviewsPage() {
         {/* 초기 리뷰 등록 */}
         {canAddInitial && (
           <div className="pt-4">
-            <button
-              type="button"
-              onClick={() => setShowAddModal(true)}
+            <Link
+              href="/partner/reviews/write"
               className="flex h-12 w-full items-center justify-center gap-1.5 rounded-[14px] bg-[#F2F4F6] text-[15px] font-semibold text-[#333D4B] transition-all active:scale-[0.98] active:bg-[#E5E8EB]"
             >
               <MonoIcon name="plus" size={18} color="#6B7684" />
               초기 리뷰 등록
               <span className="font-medium tabular-nums text-[#8B95A1]">이미지 {initialImageCount}/{MAX_INITIAL_IMAGE} · 텍스트 {initialTextCount}/{MAX_INITIAL_TEXT}</span>
-            </button>
+            </Link>
             <p className="mt-3 flex gap-2 rounded-[14px] bg-[#F2F4F6] px-4 py-3.5 text-[14px] leading-[1.5] text-[#4E5968]">
               <MonoIcon name="info-circle" size={18} color="#B0B8C1" className="mt-px" />
               초기 리뷰는 가입 후 1개월 안에만 등록할 수 있어요
@@ -300,95 +259,6 @@ export default function PartnerReviewsPage() {
         )}
       </section>
 
-      {/* 초기 리뷰 등록 시트 */}
-      {showAddModal && (
-        <CommunityModal label="초기 리뷰 등록" onClose={() => { if (!saving) setShowAddModal(false); }}>
-          <div className="overflow-y-auto px-5 pb-5 pt-1">
-            <h2 className="text-[20px] font-bold tracking-[-0.4px] text-[#191F28]">초기 리뷰 등록</h2>
-
-            {/* 리뷰 종류 */}
-            <div className="relative mt-5 flex rounded-[12px] bg-[#F2F4F6] p-1">
-              <span
-                aria-hidden
-                className="absolute bottom-1 top-1 rounded-[10px] bg-white shadow-[0_1px_4px_rgba(0,0,0,0.06)] transition-transform duration-300"
-                style={{ left: 4, width: 'calc((100% - 8px) / 2)', transform: `translateX(${addForm.type === 'image' ? 0 : 100}%)`, transitionTimingFunction: 'cubic-bezier(0.22, 1, 0.36, 1)' }}
-              />
-              {([{ v: 'image', label: '이미지 리뷰' }, { v: 'text', label: '텍스트 리뷰' }] as const).map((t) => (
-                <button
-                  key={t.v}
-                  type="button"
-                  onClick={() => setAddForm((f) => ({
-                    ...f,
-                    type: t.v,
-                    ...(t.v === 'text' ? { beforeImage: '', afterImage: '' } : {}),
-                  }))}
-                  className={`relative z-[1] flex h-10 flex-1 items-center justify-center text-[15.5px] transition-colors ${addForm.type === t.v ? 'font-bold text-[#191F28]' : 'font-semibold text-[#8B95A1]'}`}
-                >
-                  {t.label}
-                </button>
-              ))}
-            </div>
-
-            {/* 별점 */}
-            <p className="mt-5 text-[15px] font-semibold text-[#4E5968]">별점</p>
-            <div className="mt-1.5 flex gap-1">
-              {[1, 2, 3, 4, 5].map((n) => (
-                <button key={n} type="button" onClick={() => setAddForm((f) => ({ ...f, rating: n }))} aria-label={`${n}점`} className="flex h-10 w-10 items-center justify-center rounded-[10px] transition-transform active:scale-[0.9]">
-                  <MonoIcon name="star" size={30} color={n <= addForm.rating ? '#FFC342' : '#E5E8EB'} />
-                </button>
-              ))}
-            </div>
-
-            <input
-              value={addForm.treatmentName}
-              onChange={(e) => setAddForm((f) => ({ ...f, treatmentName: e.target.value }))}
-              placeholder="시술명 (선택)"
-              className="mt-4 h-14 w-full rounded-[14px] bg-[#F2F4F6] px-4 text-[16px] text-[#191F28] outline-none transition-colors placeholder:text-[#B0B8C1] focus:bg-[#EDEFF2]"
-            />
-            <textarea
-              value={addForm.content}
-              onChange={(e) => setAddForm((f) => ({ ...f, content: e.target.value }))}
-              rows={4}
-              placeholder="리뷰 내용을 입력하세요"
-              className="mt-2 w-full resize-none rounded-[14px] bg-[#F2F4F6] px-4 py-3.5 text-[16px] leading-[1.6] text-[#191F28] outline-none transition-colors placeholder:text-[#B0B8C1] focus:bg-[#EDEFF2]"
-            />
-
-            {addForm.type === 'image' && (
-              <div className="mt-3 grid grid-cols-2 gap-2.5">
-                <div>
-                  <p className="mb-1.5 text-[14px] font-semibold text-[#4E5968]">Before</p>
-                  <ImageUploader
-                    value={addForm.beforeImage}
-                    onChange={(url) => setAddForm((f) => ({ ...f, beforeImage: url }))}
-                    folder="review-before"
-                    aspect="1/1"
-                    placeholder="Before 이미지"
-                  />
-                </div>
-                <div>
-                  <p className="mb-1.5 text-[14px] font-semibold text-[#4E5968]">After</p>
-                  <ImageUploader
-                    value={addForm.afterImage}
-                    onChange={(url) => setAddForm((f) => ({ ...f, afterImage: url }))}
-                    folder="review-after"
-                    aspect="1/1"
-                    placeholder="After 이미지"
-                  />
-                </div>
-              </div>
-            )}
-
-            <div className="mt-5 flex gap-2">
-              <button type="button" onClick={() => setShowAddModal(false)} className="flex h-14 flex-1 items-center justify-center rounded-[18px] bg-[#F2F4F6] text-[17px] font-bold text-[#4E5968] transition-all active:scale-[0.98]">
-                취소
-              </button>
-              <button type="button" onClick={handleAddReview} disabled={saving} className="flex h-14 flex-1 items-center justify-center rounded-[18px] bg-[#4A82EE] text-[17px] font-bold text-white transition-all active:scale-[0.98]">
-                {saving ? '등록 중…' : '등록하기'}
-              </button>
-            </div>
-          </div>
-        </CommunityModal>
-      )}
     </div>
   );
 }

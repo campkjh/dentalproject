@@ -60,7 +60,7 @@ export default function MyReviewsPage() {
           const hospitalName = (review.hospitalId && hospitals.find(h => h.id === review.hospitalId)?.name) || product?.hospitalName;
           const photos = [
             ...(review.beforeImage ? [{ src: review.beforeImage, label: '전' }] : []),
-            ...(review.afterImage ? [{ src: review.afterImage, label: '후' }] : []),
+            ...(review.afterImage ? [{ src: review.afterImage, label: review.beforeImage ? '후' : '사진' }] : []),
           ];
           const head = (
             <>
