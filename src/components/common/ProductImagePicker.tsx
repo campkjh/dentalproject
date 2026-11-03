@@ -18,7 +18,7 @@ function SelectionPreview({ file }: { file: File }) {
   </div>;
 }
 
-/** Review only the files returned by this picker before adding them to the product. */
+/** Show the selected files immediately and upload them without a second confirmation. */
 export default function ProductImagePicker({ label, className, disabled, uploading, room, onUpload, onSelectionChange }: {
   label: string;
   className: string;
@@ -38,6 +38,7 @@ export default function ProductImagePicker({ label, className, disabled, uploadi
     return () => { mounted.current = false; };
   }, []);
   const [selected, setSelected] = useState<{ id: string; file: File }[]>([]);
+  const [error, setError] = useState('');
   useEffect(() => {
     if (!selected.length || !revealSelection.current) return;
     const frame = requestAnimationFrame(() => {
@@ -50,6 +51,25 @@ export default function ProductImagePicker({ label, className, disabled, uploadi
     setSelected(next);
     onSelectionChange(next.length);
   };
+  const uploadSelection = async (items: typeof selected) => {
+    if (working.current || !items.length) return;
+    if (items.length > room) {
+      setError(`추가할 수 있는 사진은 ${room}장이에요. 초과한 사진을 제외해주세요.`);
+      return;
+    }
+    working.current = true;
+    setError('');
+    try {
+      const failed = await onUpload(items.map(item => item.file));
+      if (!mounted.current) return;
+      changeSelection(items.filter(item => failed.includes(item.file)));
+      if (failed.length) setError('일부 사진을 올리지 못했어요. 이미지 형식·25MB 제한·네트워크 연결을 확인하고 다시 시도해주세요.');
+    } catch (cause) {
+      if (mounted.current) setError(cause instanceof Error ? cause.message : '사진을 올리지 못했어요. 다시 시도해주세요.');
+    } finally {
+      working.current = false;
+    }
+  };
   return <>
     {room > 0 && <button type="button" className={className}
       disabled={disabled} aria-label={label} onClick={() => inputRef.current?.click()}>
@@ -59,15 +79,16 @@ export default function ProductImagePicker({ label, className, disabled, uploadi
       onChange={(event) => {
         const files = Array.from(event.currentTarget.files ?? []);
         event.currentTarget.value = '';
-        // Cancel preserves the current selection; a new selection replaces the staged batch.
         if (files.length) {
+          const items = files.map(file => ({ id: crypto.randomUUID(), file }));
           revealSelection.current = true;
-          changeSelection(files.map(file => ({ id: crypto.randomUUID(), file })));
+          changeSelection(items);
+          void uploadSelection(items);
         }
       }} />
     {selected.length > 0 && <div ref={previewRef} className="flex scroll-mt-4 flex-col gap-3 rounded-2xl bg-[#EFF5FE] p-3" aria-live="polite">
-      <p className="text-sm font-semibold">{label} · 선택한 사진 {selected.length}장</p>
-      <p className="text-xs text-[#6B7684]">아래 사진만 추가합니다. 기존 사진은 삭제 버튼으로 뺄 수 있어요.</p>
+      <p className="text-sm font-semibold">{label} · {uploading ? '사진 업로드 중' : '업로드 대기'} {selected.length}장</p>
+      <p className="text-xs text-[#6B7684]">선택한 사진을 자동으로 올립니다. 완료되면 등록된 사진에 표시돼요.</p>
       {selected.map(item => <div key={item.id} className="flex items-center gap-3">
         <SelectionPreview file={item.file} />
         <span className="min-w-0 flex-1 break-all text-xs">{item.file.name}</span>
@@ -75,18 +96,12 @@ export default function ProductImagePicker({ label, className, disabled, uploadi
           onClick={() => changeSelection(selected.filter(candidate => candidate.id !== item.id))}>제외</button>
       </div>)}
       {selected.length > room && <p className="text-sm text-[#D14343]">최대 등록 수를 초과했어요. {selected.length - room}장을 제외해주세요.</p>}
-      <div className="flex gap-3">
-        <button type="button" className="rounded-xl bg-white px-3 py-3 text-sm font-semibold disabled:opacity-50" disabled={disabled} onClick={() => changeSelection([])}>선택 취소</button>
+      {error && <p role="alert" className="text-sm text-[#D14343]">{error}</p>}
+      {!uploading && <div className="flex gap-3">
+        <button type="button" className="rounded-xl bg-white px-3 py-3 text-sm font-semibold disabled:opacity-50" disabled={disabled} onClick={() => { changeSelection([]); setError(''); }}>선택 취소</button>
         <button type="button" className="rounded-xl bg-[#4A82EE] px-3 py-3 text-sm font-semibold text-white disabled:opacity-50" disabled={disabled || selected.length > room}
-          onClick={async () => {
-            if (working.current) return;
-            working.current = true;
-            try {
-              const failed = await onUpload(selected.map(item => item.file));
-              if (mounted.current) changeSelection(selected.filter(item => failed.includes(item.file)));
-            } finally { working.current = false; }
-          }}>{uploading ? '올리는 중…' : `선택한 ${selected.length}장 올리기`}</button>
-      </div>
+          onClick={() => void uploadSelection(selected)}>업로드 다시 시도</button>
+      </div>}
     </div>}
   </>;
 }
