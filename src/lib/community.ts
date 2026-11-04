@@ -20,6 +20,21 @@ export function postInCustomerConsult(post: Pick<Post, 'boardType' | 'tags' | 'a
 
 // 고객 커뮤니티 주제(261101) — 진료 과목(임플란트·교정…) 대신 글 성격으로 나눈다. 의사꿀팁 = 의사가 쓴 글(TIP_TAG).
 export const communityTopicTags = ['자유수다', '시술질문', '병원추천'];
+export type CustomerTopic = '자유수다' | '시술질문' | '병원추천';
+export function isCustomerTopic(value: unknown): value is CustomerTopic {
+  return typeof value === 'string' && communityTopicTags.includes(value);
+}
+/** 고객이 고른 주제 하나를 첫 태그로 저장하며, 이전 주제와 의사꿀팁 표시는 제외한다. */
+export function customerPostTags(topic: unknown, existing: string[] = []): string[] | null {
+  if (!isCustomerTopic(topic)) return null;
+  return [topic, ...existing.filter(tag => !isCustomerTopic(tag) && tag !== TIP_TAG)].slice(0, 5);
+}
+export function selectedCustomerTags(value: unknown): string[] | null {
+  if (!Array.isArray(value)) return null;
+  const tags = value.filter((tag): tag is string => typeof tag === 'string');
+  const topics = [...new Set(tags.filter(isCustomerTopic))];
+  return topics.length === 1 ? customerPostTags(topics[0], tags) : null;
+}
 export const communityCategories = ['전체', ...communityTopicTags, TIP_TAG];
 /** 탭 거르기 — 의사꿀팁은 꿀팁 글만, 시술질문엔 주제 태그가 없는 예전 질문(임플란트·교정 태그 등)도 넣는다 */
 export function postInCategory(post: Pick<Post, 'boardType' | 'tags' | 'authorTitle'>, category: string) {

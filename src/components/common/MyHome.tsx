@@ -140,6 +140,7 @@ export default function MyHome({ partner = false }: { partner?: boolean }) {
       { label: '결제·환불 내역', icon: 'payments', href: '/mypage/payments', description: '결제 · 환불 기록' },
       { label: '포켓', icon: 'pocket', href: '/wishlist', description: '담아 둔 시술' },
       { label: '내 리뷰', icon: 'my-review', href: '/mypage/reviews', description: '내가 남긴 후기' },
+      { label: '내가 쓴 글', icon: 'messages', href: '/mypage/posts', description: '내가 남긴 커뮤니티 글' },
     ] },
     { title: '설정', rows: [
       { label: '프로필 설정', icon: 'profile', href: '/mypage/profile', description: '사진 · 이름 · 연락처' },

@@ -435,3 +435,5 @@ button.tagBadge:hover { border-color: #d1d5db; }
 .secretToggle:active { transform: scale(.92); }
 .secretToggle[aria-pressed=true] { color: #2f6fe4; background: #fff; }
 .secretMark { display: inline-flex; align-items: center; gap: 3px; height: 20px; padding: 0 6px; border-radius: 5px; background: #f2f4f6; color: #6b7684; font-size: 12px; font-weight: 600; }
+
+.cmpTopic { border: 0; padding: 0; margin: 12px 0 14px; min-width: 0; }
