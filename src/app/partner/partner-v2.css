@@ -407,7 +407,9 @@ html[data-pd-scrolled] .partner-page .qd-header::after { opacity: 1; }
 /* 상품 추가·수정 시트(partner/page.tsx productModal) */
 .partner-shell-bg .partner-product-sheet-backdrop { background: rgba(0, 0, 0, .4); animation: pdFade .22s ease; }
 .partner-shell-bg .partner-product-sheet {
-  position: relative; width: 100%; max-width: 448px; max-height: calc(100dvh - 32px); gap: 16px;
+  position: relative; width: 100%; max-width: 448px;
+  /* Keep the sheet below the iOS status bar, including landscape and smaller viewports. */
+  max-height: min(calc(100dvh - 32px), calc(100dvh - env(safe-area-inset-top, 0px) - 16px)); gap: 16px;
   padding: 38px 24px calc(24px + env(safe-area-inset-bottom, 0px)); box-shadow: none;
   animation: pdSheetUp .34s cubic-bezier(.16, 1, .3, 1);
 }
