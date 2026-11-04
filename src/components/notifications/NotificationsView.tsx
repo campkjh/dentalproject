@@ -14,7 +14,7 @@ import { Trash2 } from 'lucide-react';
  *  · 한 줄 = 둥근 아이콘 칸 · 제목(진하게) · 본문(회색, 3줄까지) · 오른쪽 날짜 + 같은 곳에서 여럿 오면 'N건'.
  *    같은 종류·같은 곳·같은 제목은 한 줄로 묶는다(토스 'N건').
  *  · 등장: 제목 아래→위 페이드, 줄은 오른쪽→왼쪽 순차 슬라이드.
- *  · 각 묶음 삭제 · 전체 삭제는 본인 알림만 서버에서 삭제한 뒤 목록에 반영한다.
+ *  · 알림을 왼쪽으로 밀면 삭제 버튼이 나타난다. 각 묶음 삭제 · 전체 삭제는 본인 알림만 서버에서 삭제한 뒤 목록에 반영한다.
  * ⚠ 스토어 알림엔 생성 시각이 없고 날짜(ko-KR 문자열)만 있어 '방금 전·N분 전' 대신 오늘·어제·M월 D일로 보인다.
  *  · variant='drawer' 면 ‹ 뒤로 = 서랍 닫기, 알림을 눌러 이동하면 서랍을 닫고 이동, 스크롤은 서랍 칸 기준.
  * ════════════════════════════════════════════════════════════════ */
@@ -60,6 +60,10 @@ const NT_CSS = `
 /* fill backwards — 끝나면 빠져서 눌림 효과가 산다 */
 .nt-a-item { animation: ntSlideIn .46s cubic-bezier(.22,.61,.36,1) backwards; }
 .nt-a-divider { animation: ntSlideIn .42s cubic-bezier(.22,.61,.36,1) backwards; }
+.nt-swipe { display: flex; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; overscroll-behavior-x: contain; scrollbar-width: none; }
+.nt-swipe::-webkit-scrollbar { display: none; }
+.nt-swipe-content { flex: 0 0 100%; scroll-snap-align: start; }
+.nt-swipe-delete { flex: 0 0 80px; scroll-snap-align: end; }
 @media (prefers-reduced-motion: reduce) { .nt-a-title, .nt-a-sub, .nt-a-item, .nt-a-divider { animation: none !important; } }
 `;
 
@@ -217,11 +221,11 @@ export default function NotificationsView({
     const count = g.items.length;
     const delay = `${0.3 + Math.min(order++, 12) * 0.06}s`;
     return (
-      <div key={g.key} className="relative flex overflow-hidden" style={{ backgroundColor: g.unread ? UNREAD_BG : '#FFFFFF' }}>
+      <div key={g.key} className="nt-swipe" style={{ backgroundColor: g.unread ? UNREAD_BG : '#FFFFFF' }}>
         <button
           type="button"
           onClick={() => openGroup(g)}
-          className="nt-a-item flex min-w-0 flex-1 gap-3 py-3.5 pl-5 pr-1 text-left transition-colors active:bg-black/[0.03]"
+          className="nt-swipe-content nt-a-item flex min-w-0 gap-3 px-5 py-3.5 text-left transition-colors active:bg-black/[0.03]"
           style={{ animationDelay: delay }}
         >
           <span className={`mt-[2px] flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] ${g.unread ? 'bg-white' : 'bg-[#F2F4F6]'}`}>
@@ -245,8 +249,9 @@ export default function NotificationsView({
         </button>
         <button type="button" aria-label={`${n.title || '알림'} 삭제${count > 1 ? ` (${count}건)` : ''}`} disabled={deleting}
           onClick={() => requestDelete(g.items.map(item => item.id))}
-          className="flex min-h-11 w-11 shrink-0 items-center justify-center self-start rounded-xl text-[#8B95A1] active:bg-black/[0.04] disabled:opacity-40">
-          <Trash2 size={18} aria-hidden="true" />
+          className="nt-swipe-delete flex min-h-11 flex-col items-center justify-center gap-1 bg-[#F04452] text-sm font-semibold text-white active:bg-[#D93643] disabled:opacity-40">
+          <Trash2 size={20} aria-hidden="true" />
+          삭제
         </button>
       </div>
     );
@@ -319,6 +324,7 @@ export default function NotificationsView({
             </svg>
           </button>
         </h1>
+        {!empty && <p className="mt-2 text-[13px] text-[#8B95A1]">알림을 왼쪽으로 밀면 삭제할 수 있어요.</p>}
 
         {menuOpen && (
           <>
