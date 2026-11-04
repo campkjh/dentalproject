@@ -411,7 +411,7 @@ html[data-pd-scrolled] .partner-page .qd-header::after { opacity: 1; }
   padding: 38px 24px calc(24px + env(safe-area-inset-bottom, 0px)); box-shadow: none;
   animation: pdSheetUp .34s cubic-bezier(.16, 1, .3, 1);
 }
-.partner-shell-bg .partner-product-sheet::before { content: ''; position: absolute; top: 12px; left: 50%; width: 40px; height: 4px; margin-left: -20px; border-radius: 999px; background: #D1D6DB; }
+.partner-shell-bg .partner-product-sheet-grab { position: absolute; top: 12px; left: 50%; width: 40px; height: 4px; margin: 0 0 0 -20px; border-radius: 999px; background: #D1D6DB; }
 .partner-shell-bg .partner-product-sheet-head h2 { font-size: 22px; font-weight: 700; line-height: 1.42; letter-spacing: -0.4px; color: #191F28; }
 .partner-shell-bg .partner-product-sheet-head button { height: 36px; padding: 0 12px; border-radius: 999px; background: #F2F4F6; color: #4E5968; font-size: 14px; font-weight: 600; }
 .partner-shell-bg .partner-product-thumbs .partner-product-thumb { width: 100%; height: auto; min-width: 0; }
@@ -460,7 +460,7 @@ html[data-pd-scrolled] .partner-page .qd-header::after { opacity: 1; }
   .partner-shell-bg .partner-detail-picker { border-radius: 24px; animation: pdPop .28s cubic-bezier(.16, 1, .3, 1); }
   .pd-grab,
   .partner-shell-bg .partner-modal::before,
-  .partner-shell-bg .partner-product-sheet::before,
+  .partner-shell-bg .partner-product-sheet-grab,
   .partner-shell-bg .partner-detail-picker::before { display: none; }
   .pd-sheet { padding: 28px 28px 24px; }
   .partner-shell-bg .partner-product-sheet { padding: 28px 28px 24px; }
@@ -493,7 +493,7 @@ html[data-pd-scrolled] .partner-page .qd-header::after { opacity: 1; }
 /* 입력 칸 공통(globals .partner-page input) — 회색 면, focus 는 한 톤 진하게(파랑 테두리·고리 없음) */
 .partner-shell-bg .partner-page input:not([type="checkbox"]):not([type="radio"]):focus,
 .partner-shell-bg .partner-page select:focus,
-.partner-shell-bg .partner-page textarea:focus { border-color: transparent; background: #EDEFF2; box-shadow: none; outline: 0; }
+.partner-shell-bg .partner-page textarea:focus { border-color: transparent; background-color: #EDEFF2; box-shadow: none; outline: 0; }
 .partner-shell-bg .partner-page :is(input, textarea)::placeholder { color: #B0B8C1; }
 
 /* ─── 분할(.pd-seg)·칩(.pd-chip)·옛 분할(.partner-inline-segment) — 261031 톤(globals 값을 의사 화면 안에서 덮는다) ─── */
