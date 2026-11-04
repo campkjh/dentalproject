@@ -43,6 +43,8 @@ html[data-partner-account] body,
 .partner-account-shell .partner-page {
   background: #f4f6fa;
 }
+/* MyHome reserves the tab bar height once, including the bottom safe area. */
+.partner-account-shell .partner-app-main { padding-bottom: 0; }
 .partner-shell-bg .partner-page {
   color: #333D4B;
   letter-spacing: -0.2px;

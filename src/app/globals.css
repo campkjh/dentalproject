@@ -43,6 +43,13 @@ body {
   position: relative;
 }
 
+/* Keep the customer, hospital and doctor My pages on the same canvas at the scroll boundary. */
+html[data-my-page],
+html[data-my-page] body {
+  background: #f4f6fa;
+  overscroll-behavior-y: none;
+}
+
 /* Mobile constraint applied via layout wrapper, not body */
 
 /* ===== Utilities ===== */
