@@ -1,18 +1,9 @@
-// Run only inside a Vercel preview build. Credentials stay in that server environment.
+// Exercise the real route with public coordinates, locally or inside a Vercel preview build.
 import assert from 'node:assert/strict';
 import { NextRequest } from 'next/server';
 import { POST } from '../src/app/api/location/region/route';
 
 async function main() {
-  if (process.env.VERCEL_ENV !== 'preview') throw new Error('Run this check inside a Vercel preview build.');
-
-  const originalFetch = globalThis.fetch;
-  globalThis.fetch = async (...args: Parameters<typeof fetch>) => {
-    const response = await originalFetch(...args);
-    console.info(`LOCATION_PROVIDER_HTTP ${response.status}`);
-    return response;
-  };
-
   // Public city hall coordinates, never the user's device coordinates.
   for (const point of [
     { city: '안산시', lat: 37.3219, lng: 126.8309 },
@@ -24,8 +15,9 @@ async function main() {
     }));
     const result = await response.json();
     console.info(`LOCATION_REGION_CHECK ${JSON.stringify({ expected: point.city, status: response.status, actual: result.region?.district ?? null })}`);
-    assert.equal(response.status, 200, 'Location provider must be available before release.');
+    assert.equal(response.status, 200, 'GPS region lookup must succeed before release.');
     assert.equal(result.region?.district, point.city);
+    assert.equal(response.headers.get('Cache-Control'), 'no-store');
   }
 }
 

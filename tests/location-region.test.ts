@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { regionFromReverseGeocode, validKoreaCoordinates } from '../src/lib/location-region';
+import { validKoreaCoordinates } from '../src/lib/location-region';
 import { currentLocationRegion, CurrentLocationError } from '../src/lib/current-location';
 import { catalogForArea } from '../src/lib/home-area';
+import { regionAtCoordinates } from '../src/lib/korea-region-boundaries';
 
 test('위치가 안산이면 안산 상품만, 안양이면 안양 상품만 자동 필터링한다', () => {
   const hospitals = [{ id: 'ansan', address: '경기도 안산시 단원구 광덕대로' }, { id: 'anyang', address: '경기도 안양시 동안구 시민대로' }];
@@ -16,13 +17,14 @@ test('위치가 안산이면 안산 상품만, 안양이면 안양 상품만 자
   assert.deepEqual(catalogForArea(products, hospitals, null).products, products);
 });
 
-test('실제 행정구역 응답을 사용하고 서울·경기 경계나 가까운 구청으로 바꾸지 않는다', () => {
-  const region = (province: string, district: string) => ({ status: { code: 0 }, results: [{ region: { area1: { name: province }, area2: { name: district } } }] });
-  assert.deepEqual(regionFromReverseGeocode(region('서울특별시', '서초구')), { city: '서울', district: '서초구', label: '서초구' });
-  assert.deepEqual(regionFromReverseGeocode(region('경기도', '광명시')), { city: '경기', district: '광명시', label: '경기 광명시' });
-  assert.deepEqual(regionFromReverseGeocode(region('경기도', '안산시 단원구')), { city: '경기', district: '안산시', label: '경기 안산시' });
-  assert.equal(regionFromReverseGeocode({ status: { code: 3 } }), null);
-  assert.equal(regionFromReverseGeocode({ status: { code: 0 }, results: [] }), null);
+test('실제 시군구 경계로 안산·안양·광명·서울과 제주를 판정한다', () => {
+  assert.deepEqual(regionAtCoordinates(37.3219, 126.8309), { city: '경기', district: '안산시', label: '경기 안산시' });
+  assert.deepEqual(regionAtCoordinates(37.3943, 126.9568), { city: '경기', district: '안양시', label: '경기 안양시' });
+  assert.equal(regionAtCoordinates(37.4785, 126.8645)?.district, '광명시');
+  assert.equal(regionAtCoordinates(37.5665, 126.978)?.district, '중구');
+  assert.equal(regionAtCoordinates(33.4996, 126.5312)?.district, '제주시');
+  assert.equal(regionAtCoordinates(0, 0), null);
+  assert.equal(regionAtCoordinates(35, 125), null);
 });
 
 test('유효하지 않은 좌표와 한국 밖 좌표는 지도 API로 보내지 않는다', () => {
