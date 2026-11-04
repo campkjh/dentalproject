@@ -428,11 +428,10 @@ html[data-pd-scrolled] .partner-page .qd-header::after { opacity: 1; }
   -webkit-appearance: none;
   appearance: none;
   padding-right: 44px;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20'%3E%3Cpath d='m5 7.5 5 5 5-5' fill='none' stroke='%238B95A1' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 16px center;
-  background-size: 20px 20px;
+  background-image: none;
 }
+.partner-shell-bg .partner-product-select-field { position: relative; display: block; width: 100%; }
+.partner-shell-bg .partner-product-select-chevron { position: absolute; z-index: 1; top: 50%; right: 16px; width: 20px; height: 20px; transform: translateY(-50%); color: #8B95A1; pointer-events: none; }
 .partner-shell-bg .partner-product-sheet input[readonly] { background: #EFF5FE; color: #1E3A78; font-weight: 700; }
 .partner-shell-bg .partner-product-sheet input::placeholder,
 .partner-shell-bg .partner-product-description::placeholder { color: #B0B8C1; font-weight: 500; }

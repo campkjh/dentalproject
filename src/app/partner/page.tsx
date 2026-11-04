@@ -1446,15 +1446,18 @@ export default function PartnerHomePage() {
             </label>
             <label>
               세부 카테고리
-              <select
-                value={productForm.subCategory}
-                onChange={(e) => setProductForm((prev) => ({ ...prev, subCategory: e.target.value }))}
-              >
-                <option value="">세부 카테고리 선택</option>
-                {productSubCategoryOptions(hospitalCategory).map((category) => (
-                  <option key={category} value={category}>{category}</option>
-                ))}
-              </select>
+              <span className="partner-product-select-field">
+                <select
+                  value={productForm.subCategory}
+                  onChange={(e) => setProductForm((prev) => ({ ...prev, subCategory: e.target.value }))}
+                >
+                  <option value="">세부 카테고리 선택</option>
+                  {productSubCategoryOptions(hospitalCategory).map((category) => (
+                    <option key={category} value={category}>{category}</option>
+                  ))}
+                </select>
+                <ChevronDown className="partner-product-select-chevron" size={20} strokeWidth={1.8} aria-hidden="true" />
+              </span>
             </label>
 
             {/* 할인 — 체크해야 정가·할인율을 받는다. 안 하면 판매가만 */}
