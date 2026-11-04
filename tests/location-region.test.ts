@@ -2,6 +2,19 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { regionFromReverseGeocode, validKoreaCoordinates } from '../src/lib/location-region';
 import { currentLocationRegion, CurrentLocationError } from '../src/lib/current-location';
+import { catalogForArea } from '../src/lib/home-area';
+
+test('위치가 안산이면 안산 상품만, 안양이면 안양 상품만 자동 필터링한다', () => {
+  const hospitals = [{ id: 'ansan', address: '경기도 안산시 단원구 광덕대로' }, { id: 'anyang', address: '경기도 안양시 동안구 시민대로' }];
+  const products = [{ id: 'a', hospitalId: 'ansan' }, { id: 'b', hospitalId: 'anyang' }];
+  assert.deepEqual(catalogForArea(products, hospitals, { city: '경기', district: '안산시' }).products.map(p => p.id), ['a']);
+  assert.deepEqual(catalogForArea(products, hospitals, { city: '경기', district: '안양시' }).products.map(p => p.id), ['b']);
+  const empty = catalogForArea(products, hospitals, { city: '경기', district: '과천시' });
+  assert.deepEqual(empty.products, []);
+  assert.deepEqual(empty.hospitals, []);
+  assert.equal(empty.ids?.size, 0);
+  assert.deepEqual(catalogForArea(products, hospitals, null).products, products);
+});
 
 test('실제 행정구역 응답을 사용하고 서울·경기 경계나 가까운 구청으로 바꾸지 않는다', () => {
   const region = (province: string, district: string) => ({ status: { code: 0 }, results: [{ region: { area1: { name: province }, area2: { name: district } } }] });

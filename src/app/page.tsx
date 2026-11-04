@@ -22,7 +22,7 @@ import {
   areaKey,
   areaLabel,
   areaOfAddress,
-  hospitalInArea,
+  catalogForArea,
   parseAreaKey,
   type AreaChoice,
   type HospitalArea,
@@ -127,24 +127,18 @@ export default function HomePage() {
       .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label, 'ko'));
   }, [hospitals]);
 
-  // 실제로 거를 지역 — 내 위치에 병원이 하나도 없으면 전체를 보여 주고 그렇다고 알린다
+  // 현재 지역에 등록된 병원이 없어도 다른 지역 상품을 섞지 않는다.
   const target = areaChoice === 'all' ? null : areaChoice === 'near' ? near : parseAreaKey(areaChoice);
   const targetCity = target?.city ?? null;
   const targetDistrict = target?.district ?? null;
-  const areaHospitalIds = useMemo(() => {
-    if (!targetCity) return null;
-    const where = { city: targetCity, district: targetDistrict };
-    return new Set(hospitals.filter((h) => hospitalInArea(h.address, where)).map((h) => h.id));
-  }, [hospitals, targetCity, targetDistrict]);
-  const nearFallback = areaChoice === 'near' && !!near && hospitals.length > 0 && areaHospitalIds?.size === 0;
-  const filterIds = areaHospitalIds && areaHospitalIds.size > 0 ? areaHospitalIds : null;
+  const { products: areaProducts, hospitals: areaHospitals, ids: filterIds } = useMemo(() => (
+    catalogForArea(products, hospitals, targetCity ? { city: targetCity, district: targetDistrict } : null)
+  ), [products, hospitals, targetCity, targetDistrict]);
   const headerAreaLabel = areaChoice === 'all'
     ? '전체 지역'
     : areaChoice === 'near'
       ? near?.label ?? '내 근처'
       : areaLabel(parseAreaKey(areaChoice));
-  const areaProducts = filterIds ? products.filter((p) => filterIds.has(p.hospitalId)) : products;
-  const areaHospitals = filterIds ? hospitals.filter((h) => filterIds.has(h.id)) : hospitals;
 
   // 지역 메뉴는 스크롤하거나 Esc 를 누르면 닫는다
   useEffect(() => {
@@ -427,15 +421,14 @@ export default function HomePage() {
         </div>
 
         {/* 지역 거르기 알림 — 고른 지역 병원만 보이는 중이면 몇 곳인지 + 전체 보기, 내 위치에 병원이 없으면 그렇다고 */}
-        {(filterIds || nearFallback) && (
+        {filterIds && (
           <div className="qd-a-item mx-[10px] mb-5 flex items-center gap-2 rounded-[14px] bg-[#F2F4F6] py-3 pl-4 pr-3 pc:mx-0">
             <MonoIcon name="pin-location" size={18} color="#8B95A1" />
             <p className="min-w-0 flex-1 break-keep text-[14px] leading-[1.45] tracking-[-0.2px] text-[#4E5968]">
-              {nearFallback
-                ? `${near?.label ?? '내 위치'} 근처엔 아직 병원이 없어 전체 지역을 보여 드려요`
+              {filterIds.size === 0
+                ? `${headerAreaLabel}에 아직 등록된 병원이 없어요`
                 : `${headerAreaLabel} 병원 ${filterIds?.size ?? 0}곳만 보고 있어요`}
             </p>
-            {!nearFallback && (
               <button
                 type="button"
                 onClick={() => chooseArea('all')}
@@ -443,7 +436,6 @@ export default function HomePage() {
               >
                 전체 보기
               </button>
-            )}
           </div>
         )}
 

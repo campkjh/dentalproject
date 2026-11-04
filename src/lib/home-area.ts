@@ -50,3 +50,12 @@ export function hospitalInArea(address: string | null | undefined, target: { cit
   if (!area || area.city !== target.city) return false;
   return !target.district || area.district === target.district;
 }
+
+export function catalogForArea<P extends { hospitalId: string }, H extends { id: string; address?: string | null }>(
+  products: P[], hospitals: H[], target: HospitalArea | null,
+) {
+  if (!target) return { products, hospitals, ids: null };
+  const matching = hospitals.filter(hospital => hospitalInArea(hospital.address, target));
+  const ids = new Set(matching.map(hospital => hospital.id));
+  return { products: products.filter(product => ids.has(product.hospitalId)), hospitals: matching, ids };
+}
