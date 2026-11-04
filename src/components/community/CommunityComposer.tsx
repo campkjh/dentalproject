@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import Avatar from '@/components/common/Avatar';
 import { useStore } from '@/store';
 import { compressImage } from '@/lib/compressImage';
-import { communityTopicTags, TIP_TAG } from '@/lib/community';
+import { communityTopicTags, customerPostTags, isCustomerTopic, TIP_TAG } from '@/lib/community';
 import { communityTags } from '@/lib/mock-data';
 import type { Post } from '@/types';
 import { CloseIcon } from './StadyIcons';
@@ -34,6 +34,8 @@ export default function CommunityComposer({ initialBoard = 'question', initialCa
   const [content, setContent] = useState(post?.content ?? '');
   const [title, setTitle] = useState(post?.title ?? '');
   const [tags, setTags] = useState(post?.tags ?? (initialCategory && initialCategory !== '전체' ? [initialCategory] : []));
+  const initialTopic = post?.tags.find(isCustomerTopic) ?? (isCustomerTopic(initialCategory) ? initialCategory : '');
+  const [topic, setTopic] = useState(initialTopic);
   const [image, setImage] = useState(post?.imageUrl ?? '');
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -47,7 +49,7 @@ export default function CommunityComposer({ initialBoard = 'question', initialCa
   const alive = useRef(true);
   const choices = mode === 'lounge' ? LOUNGE_CHOICES : [{ value: 'question' as const, label: mode === 'tip' ? '의사 꿀팁' : '고객 질문' }];
   const availableTags = board === 'question' ? communityTopicTags : communityTags;
-  const dirty = content !== (post?.content ?? '') || image !== (post?.imageUrl ?? '') || title !== (post?.title ?? '');
+  const dirty = content !== (post?.content ?? '') || image !== (post?.imageUrl ?? '') || title !== (post?.title ?? '') || (mode === 'customer' && topic !== initialTopic);
   const boardLabel = choices.find(item => item.value === board)?.label || choices[0].label;
   const anonymous = board === 'free';
 
@@ -108,14 +110,15 @@ export default function CommunityComposer({ initialBoard = 'question', initialCa
     if (busy.current || uploading || !content.trim()) return;
     if (!user) { showToast('로그인이 필요합니다.'); router.push('/login'); return; }
     if (post && post.authorId !== user.id) { setError('본인이 작성한 글만 수정할 수 있습니다.'); return; }
+    if (mode === 'customer' && !isCustomerTopic(topic)) { setError('카테고리를 선택해주세요.'); return; }
     busy.current = true;
     setSubmitting(true);
     setError('');
     try {
       // 꿀팁은 첫 태그로 표시(카드 알약이 '의사꿀팁'), 그 밖의 글엔 붙지 않게
-      const finalTags = post
+      const finalTags = mode === 'customer' ? customerPostTags(topic, tags)! : post
         ? (mode === 'tip' ? [TIP_TAG, ...tags.filter(t => t !== TIP_TAG)] : tags.filter(t => t !== TIP_TAG))
-        : (mode === 'tip' ? [TIP_TAG] : []); // 새 글 태그는 서버에서 AI 가 고른다
+        : (mode === 'tip' ? [TIP_TAG] : []); // 의사 글 태그는 서버에서 자동 분류한다
 
       const nextTitle = (post ? title.trim() : content.trim().split('\n')[0].slice(0, 60)) || '새 글';
       if (post) {
@@ -176,7 +179,7 @@ export default function CommunityComposer({ initialBoard = 'question', initialCa
   const head = <div className={styles.cmpHead}>
     <button type="button" className={styles.cmpCancel} onClick={requestClose} disabled={submitting || uploading}>취소</button>
     <span className={styles.cmpTitle}>{post ? '게시글 수정' : '새 게시글'}</span>
-    <span className={styles.cmpHeadRight}><button type="button" className={styles.cmpPost} onClick={submit} disabled={!content.trim() || submitting || uploading}>{submitting ? (post ? '저장 중…' : '태그 고르는 중…') : uploading ? '업로드 중…' : post ? '저장' : '게시'}</button></span>
+    <span className={styles.cmpHeadRight}><button type="button" className={styles.cmpPost} onClick={submit} disabled={!content.trim() || submitting || uploading || (mode === 'customer' && !topic)}>{submitting ? (post ? '저장 중…' : mode === 'customer' ? '게시 중…' : '태그 고르는 중…') : uploading ? '업로드 중…' : post ? '저장' : '게시'}</button></span>
   </div>;
   const body = <div className={styles.cmpBody}>
     <div className={styles.cmpRow}>
@@ -188,9 +191,15 @@ export default function CommunityComposer({ initialBoard = 'question', initialCa
         <div className={styles.cmpUserLine}>
           <span className={styles.cmpNick}>{anonymous ? '익명' : user?.name || '나'}</span>
           <span className={styles.cmpChevron}>›</span>
-          <button type="button" className={styles.cmpCat} aria-expanded={pickerOpen} disabled={Boolean(post) || choices.length < 2} onClick={() => setPickerOpen(v => !v)}>{boardLabel}</button>
+          <button type="button" className={styles.cmpCat} aria-expanded={pickerOpen} disabled={Boolean(post) || choices.length < 2} onClick={() => setPickerOpen(v => !v)}>{mode === 'customer' ? '고객 커뮤니티' : boardLabel}</button>
         </div>
         {pickerOpen && <div className={styles.cmpCatList}>{choices.map(item => <button key={item.value} type="button" className={styles.cmpCatItem} aria-pressed={board === item.value} onClick={() => { setBoard(item.value); setTags([]); setPickerOpen(false); }}>{item.label}</button>)}</div>}
+        {mode === 'customer' && <fieldset className={styles.cmpTopic}>
+          <legend className={styles.cmpLabel}>카테고리 선택</legend>
+          <div className={styles.cmpCatList} aria-label="게시글 카테고리">
+            {communityTopicTags.map(item => <button key={item} type="button" className={styles.cmpCatItem} aria-pressed={topic === item} onClick={() => { setTopic(item); setError(''); }}>{item}</button>)}
+          </div>
+        </fieldset>}
         {post && <input className={styles.cmpTitleInput} aria-label="제목" placeholder="제목" value={title} maxLength={100} onChange={e => setTitle(e.target.value)} />}
         <textarea ref={textarea} className={styles.cmpTextarea} aria-label="게시글 내용" rows={1} placeholder={mode === 'tip' ? '고객에게 도움이 될 꿀팁을 남겨 주세요.' : board === 'question' ? '궁금한 치아 이야기를 들려주세요.' : '동료 의사들과 나누고 싶은 이야기가 있나요?'} value={content} maxLength={5000} onChange={e => setContent(e.target.value)} />
         {image && <div className={styles.cmpImages}><div className={styles.cmpImage}>
@@ -213,11 +222,11 @@ export default function CommunityComposer({ initialBoard = 'question', initialCa
             <span className="block text-[13px] text-[#8B95A1]">의사와 나만 볼 수 있어요</span>
           </span>
         </button>}
-        {!post && <p className="mt-3 flex items-center gap-1.5 text-[13.5px] text-[#8B95A1]">
+        {!post && mode !== 'customer' && <p className="mt-3 flex items-center gap-1.5 text-[13.5px] text-[#8B95A1]">
           <span className="inline-flex h-5 items-center rounded-[5px] bg-[#EFF5FE] px-1.5 text-[11.5px] font-bold text-[#2F6FE4]">AI</span>
           태그는 글을 읽고 자동으로 붙여요
         </p>}
-        {post && <><p className={styles.cmpLabel}>태그 · 최대 5개</p>
+        {post && mode !== 'customer' && <><p className={styles.cmpLabel}>태그 · 최대 5개</p>
         <div className={styles.cmpCatList} aria-label="게시글 태그">
           {availableTags.map(tag => <button key={tag} type="button" className={styles.cmpCatItem} aria-pressed={tags.includes(tag)} onClick={() => {
             if (!tags.includes(tag) && tags.length >= 5) { showToast('태그는 최대 5개까지 선택할 수 있습니다.'); return; }

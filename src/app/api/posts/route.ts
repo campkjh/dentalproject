@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { communityPostFromRow, TIP_TAG, type CommunityPostRow } from '@/lib/community';
+import { communityPostFromRow, selectedCustomerTags, TIP_TAG, type CommunityPostRow } from '@/lib/community';
 import { canSeeSecretPost, getCommunityViewer, isMissingSecretColumn } from '@/lib/community-viewer';
 import { autoTags } from '@/lib/community-auto-tag';
 
@@ -71,10 +71,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: '일반 회원은 질문게시판에만 글을 작성할 수 있습니다.' }, { status: 403 });
   }
 
-  // 태그는 AI 가 글을 읽고 고른다(클라이언트가 보낸 태그 중엔 '의사꿀팁' 표시만 의사에게 허용)
+  // 고객 글은 선택한 주제 하나를 유지한다. 의사 글의 자동 태그는 기존대로 처리한다.
   const sentTags: string[] = Array.isArray(body.tags) ? body.tags.filter((tag: unknown): tag is string => typeof tag === 'string') : [];
   const tip = Boolean(profile?.is_doctor) && requestedBoard === 'question' && sentTags.includes(TIP_TAG);
-  const tags = [...(tip ? [TIP_TAG] : []), ...(await autoTags(requestedBoard, String(body.title ?? ''), String(body.content ?? '')))];
+  const tags = requestedBoard === 'question' && !tip
+    ? selectedCustomerTags(sentTags)
+    : [...(tip ? [TIP_TAG] : []), ...(await autoTags(requestedBoard, String(body.title ?? ''), String(body.content ?? '')))];
+  if (!tags) return NextResponse.json({ error: '자유수다, 병원추천, 시술질문 중 카테고리 하나를 선택해주세요.' }, { status: 400 });
   // 비밀 상담글 = 고객이 쓰는 질문만(꿀팁·의사 라운지는 비밀 없음)
   const secret = body.isSecret === true && requestedBoard === 'question' && !profile?.is_doctor;
 

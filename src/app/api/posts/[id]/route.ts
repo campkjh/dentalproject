@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getPost } from '@/lib/db/posts';
-import { communityPostFromRow, isDoctorOnlyBoard } from '@/lib/community';
+import { communityPostFromRow, isDoctorOnlyBoard, selectedCustomerTags, TIP_TAG } from '@/lib/community';
 import { canSeeSecretPost, getCommunityViewer } from '@/lib/community-viewer';
 
 export const dynamic = 'force-dynamic';
@@ -57,7 +57,16 @@ export async function PATCH(
   const patch: Record<string, unknown> = {};
   if (typeof body.title === 'string') patch.title = body.title;
   if (typeof body.content === 'string') patch.content = body.content;
-  if (Array.isArray(body.tags)) patch.tags = body.tags;
+  if (Array.isArray(body.tags)) {
+    const { data: context } = await sb.from('posts').select('board_type, tags, author:profiles!posts_author_id_fkey(is_doctor)').eq('id', id).single();
+    if (!context) return NextResponse.json({ error: '게시글 정보를 확인하지 못했습니다.' }, { status: 500 });
+    const author = Array.isArray(context.author) ? context.author[0] : context.author;
+    if (context.board_type === 'question' && !context.tags?.includes(TIP_TAG) && !author?.is_doctor) {
+      const tags = selectedCustomerTags(body.tags);
+      if (!tags) return NextResponse.json({ error: '카테고리 하나를 선택해주세요.' }, { status: 400 });
+      patch.tags = tags;
+    } else patch.tags = body.tags;
+  }
   if (typeof body.imageUrl === 'string' || body.imageUrl === null) {
     patch.image_url = body.imageUrl;
     patch.thumbnail_url = body.imageUrl;

@@ -11,6 +11,7 @@ const pages = {
   '/mypage/coupons': dynamic(() => import('@/app/mypage/coupons/page')),
   '/mypage/payments': dynamic(() => import('@/app/mypage/payments/page')),
   '/mypage/reviews': dynamic(() => import('@/app/mypage/reviews/page')),
+  '/mypage/posts': dynamic(() => import('@/app/mypage/posts/page')),
   '/mypage/notifications': dynamic(() => import('@/app/mypage/notifications/page')),
   '/mypage/faq': dynamic(() => import('@/app/mypage/faq/page')),
   '/mypage/announcements': dynamic(() => import('@/app/mypage/announcements/page')),
