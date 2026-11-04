@@ -3,6 +3,7 @@
 // 예약 상세 — 상품 상세(261031 쿠팡 견본) 톤: 상태 띠 · 상품 줄 · 연파랑 금액 카드 · 회색 이름 정보 줄 ·
 // 회색 띠로 칸 나눔 · 20 굵은 제목 · 회색 안내 카드 · 토스 흑백 아이콘 · 바닥에 떠 있는 버튼(흐림 띠).
 import Link from 'next/link';
+import PhoneNumber from '@/components/common/PhoneNumber';
 import { useParams, useRouter } from 'next/navigation';
 import { ChevronRight } from 'lucide-react';
 import TopBar from '@/components/common/TopBar';
@@ -236,7 +237,7 @@ export default function ReservationDetailPage() {
           <InfoRows
             rows={[
               ...(hospitalAddress ? [{ label: '주소', value: hospitalAddress }] : []),
-              ...(hospital?.phone ? [{ label: '전화', value: hospital.phone }] : []),
+              ...(hospital?.phone ? [{ label: '전화', value: <PhoneNumber phone={hospital.phone} /> }] : []),
               ...(hospital?.tags?.length ? [{ label: '키워드', value: hospital.tags.slice(0, 6).map((t) => t.replace(/^#/, '')).join(', ') }] : []),
             ]}
           />
