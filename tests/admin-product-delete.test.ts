@@ -40,7 +40,8 @@ test('삭제한 상품은 새 목록에서 제외되고 승인 대기 내용도 
   assert.equal(result.error, null);
   assert.deepEqual(result.data, [{ id: 'pending' }]);
   assert.deepEqual(rows.find(row => row.id === 'pending'), { id: 'pending', status: 'removed', approval_status: 'rejected', pending_changes: null });
-  assert.deepEqual((await adminProductsQuery(client, 'id,status')).data?.map(row => row.id), ['active']);
+  const remaining = await adminProductsQuery(client, 'id,status').returns<{ id: string; status: string }[]>();
+  assert.deepEqual(remaining.data?.map(row => row.id), ['active']);
 });
 
 test('일괄 삭제는 실제 변경한 ID만 반환하고 중복·없는 ID·재시도를 과대 집계하지 않는다', async () => {

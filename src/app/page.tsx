@@ -1,7 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createPortal } from 'react-dom';
@@ -17,11 +17,11 @@ import { useStore } from '@/store';
 import { resolveHospitalImageUrl } from '@/lib/images';
 import { siteConfig } from '@/lib/site-config';
 import MonoIcon from '@/components/common/MonoIcon';
+import { currentLocationRegion, CurrentLocationError } from '@/lib/current-location';
 import {
   areaKey,
   areaLabel,
   areaOfAddress,
-  detectNearArea,
   hospitalInArea,
   parseAreaKey,
   type AreaChoice,
@@ -42,7 +42,7 @@ const searchPlaceholders = [
 
 export default function HomePage() {
   const router = useRouter();
-  const { products, hospitals, reviews, categories, isLoggedIn, isDoctor, recentlyViewed, recentSearches, removeRecentSearch, catalogHydrated } = useStore();
+  const { products, hospitals, reviews, categories, isLoggedIn, isDoctor, recentlyViewed, recentSearches, removeRecentSearch, catalogHydrated, showToast } = useStore();
   // Live unread count for the 쪽지 badge — only counted once /api/me has hydrated
   // so we don't briefly render a 0 on the wrong account.
   const [scrolled, setScrolled] = useState(false);
@@ -56,7 +56,8 @@ export default function HomePage() {
   const scrollTopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // 지역 거르기 — 'near'(내 위치, 기본) · 'all'(전체) · 'city|district'(고른 지역)
   const [near, setNear] = useState<NearArea | null>(null);
-  const [nearState, setNearState] = useState<'finding' | 'ok' | 'denied'>('finding');
+  const [nearState, setNearState] = useState<'finding' | 'ok' | 'denied' | 'unavailable'>('finding');
+  const locationRequest = useRef(0);
   const [areaChoice, setAreaChoice] = useState<AreaChoice>('near');
   const [areaMenuAt, setAreaMenuAt] = useState<{ left: number; top: number } | null>(null);
 
@@ -73,34 +74,40 @@ export default function HomePage() {
     } catch { /* 저장소 막힘 — 기본(내 위치) */ }
   }, []);
 
-  // 내 위치 — 브라우저 좌표로 대략 지역을 찾는다(권한이 없으면 조용히 '내 근처'). 결과는 콜백에서만 상태에 넣는다
-  const locate = () => {
+  // Use fresh device coordinates and the administrative region returned by Maps.
+  const locate = useCallback(async (notify = false) => {
+    const request = ++locationRequest.current;
+    setNearState('finding');
     try {
-      if (!navigator?.geolocation) throw new Error('no geolocation');
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          setNear(detectNearArea(pos.coords.latitude, pos.coords.longitude));
-          setNearState('ok');
-        },
-        () => setNearState('denied'),
-        { enableHighAccuracy: false, timeout: 8000, maximumAge: 300000 }
-      );
-    } catch {
-      queueMicrotask(() => setNearState('denied'));
+      const region = await currentLocationRegion();
+      if (request !== locationRequest.current) return;
+      setNear(region);
+      setNearState('ok');
+    } catch (error) {
+      if (request !== locationRequest.current) return;
+      setNear(null);
+      setNearState(error instanceof CurrentLocationError && error.kind === 'denied' ? 'denied' : 'unavailable');
+      if (notify) showToast(error instanceof Error ? error.message : '현재 위치를 확인하지 못했어요.');
     }
-  };
+  }, [showToast]);
   useEffect(() => {
-    locate();
-  }, []);
+    if (areaChoice !== 'near') return;
+    const refresh = () => { if (document.visibilityState === 'visible') void locate(); };
+    refresh();
+    window.addEventListener('focus', refresh);
+    document.addEventListener('visibilitychange', refresh);
+    return () => {
+      locationRequest.current += 1;
+      window.removeEventListener('focus', refresh);
+      document.removeEventListener('visibilitychange', refresh);
+    };
+  }, [locate, areaChoice]);
 
   const chooseArea = (choice: AreaChoice) => {
     setAreaChoice(choice);
     setAreaMenuAt(null);
     try { localStorage.setItem(AREA_STORAGE_KEY, choice); } catch { /* 저장 못 해도 지금 화면엔 반영 */ }
-    if (choice === 'near' && nearState !== 'ok') {
-      setNearState('finding');
-      locate();
-    }
+    if (choice === 'near') void locate(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -604,7 +611,7 @@ export default function HomePage() {
             <div className="fixed inset-0 z-[130]" onClick={() => setAreaMenuAt(null)} aria-hidden="true" />
             <div role="menu" aria-label="지역" className="pop-menu fixed z-[131] max-h-[60vh] overflow-y-auto" style={{ left: areaMenuAt.left, top: areaMenuAt.top, transformOrigin: 'top left' }}>
               {[
-                { key: 'near', label: '내 위치', sub: nearState === 'ok' ? near?.label ?? '지원 지역 밖' : nearState === 'denied' ? '위치 권한 필요' : '찾는 중', icon: 'pin' as const },
+                { key: 'near', label: '내 위치', sub: nearState === 'ok' ? near?.label ?? '지원 지역 밖' : nearState === 'denied' ? '위치 권한 필요' : nearState === 'unavailable' ? '다시 확인 필요' : '찾는 중', icon: 'pin' as const },
                 { key: 'all', label: '전체 지역', sub: `${hospitals.length}곳`, icon: 'all' as const },
                 ...areaOptions.map((o) => ({ key: o.key, label: o.label, sub: `${o.count}곳`, icon: 'area' as const })),
               ].map((item, i) => {

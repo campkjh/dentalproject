@@ -9,7 +9,7 @@ import {
   normalizeCategory,
 } from '@/lib/api/normalize';
 
-export const revalidate = 300; // ISR: 5분 캐시
+export const dynamic = 'force-dynamic';
 
 function isMissingProductColumn(error: { message?: string; details?: string | null; hint?: string | null } | null, column: string) {
   const text = `${error?.message ?? ''} ${error?.details ?? ''} ${error?.hint ?? ''}`.toLowerCase();
@@ -172,7 +172,7 @@ export async function GET() {
     { hospitals, products, reviews, categories, posts, comments: [], announcements },
     {
       headers: {
-        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=3600',
+        'Cache-Control': 'no-store',
       },
     }
   );

@@ -13,6 +13,7 @@ import AllCategoriesSheet, { rememberCategory } from '@/components/search/AllCat
 import ProductCard from '@/components/common/ProductCard';
 import MonoIcon from '@/components/common/MonoIcon';
 import { haptic } from '@/lib/haptics';
+import { currentLocationRegion } from '@/lib/current-location';
 
 const PROVINCES: Record<string, string[]> = {
   '서울': ['전체', '강남구', '서초구', '송파구', '강동구', '마포구', '용산구', '성동구', '광진구', '동대문구', '중랑구', '성북구', '강북구', '도봉구', '노원구', '은평구', '서대문구', '종로구', '중구', '동작구', '관악구', '금천구', '구로구', '영등포구', '양천구'],
@@ -259,203 +260,19 @@ function SearchPage() {
     if (e.key === 'Enter') handleSearch();
   };
 
-  const handleCurrentLocation = () => {
-    if (!navigator.geolocation) { showToast('위치 서비스를 지원하지 않는 브라우저입니다.'); return; }
+  const handleCurrentLocation = async () => {
+    if (locating) return;
     setLocating(true);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const { latitude, longitude } = pos.coords;
-        const detected = detectKoreaRegion(latitude, longitude);
-        if (!detected) {
-          setLocating(false);
-          showToast('현재 위치를 한국 내에서 찾을 수 없어요.');
-          return;
-        }
-        const entry = detected.district
-          ? `${detected.province} ${detected.district}`
-          : `${detected.province}`;
-        setSelectedRegions([entry]);
-        setActiveProvince(detected.province);
-        setLocating(false);
-        showToast(`현재 위치: ${entry}`);
-      },
-      (err) => {
-        setLocating(false);
-        if (err.code === err.PERMISSION_DENIED) {
-          showToast('위치 권한이 거부됐어요. 브라우저 설정에서 허용해 주세요.');
-        } else if (err.code === err.TIMEOUT) {
-          showToast('위치 찾기에 시간이 너무 오래 걸려요. 잠시 후 다시 시도해 주세요.');
-        } else {
-          showToast('현재 위치를 가져올 수 없어요.');
-        }
-      },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 }
-    );
+    try {
+      const detected = await currentLocationRegion();
+      const entry = detected.district ? `${detected.city} ${detected.district}` : detected.city;
+      setSelectedRegions([entry]);
+      setActiveProvince(detected.city);
+      showToast(`현재 위치: ${entry}`);
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : '현재 위치를 가져오지 못했어요.');
+    } finally { setLocating(false); }
   };
-
-  // Map GPS coordinates to Korean 광역시도 + 주요 시군구.
-  // Uses bounding boxes for province detection, then nearest-center for sub-region.
-  function detectKoreaRegion(lat: number, lng: number): { province: string; district: string | null } | null {
-    // Province bounding boxes (rough).
-    const provinces: { name: string; box: [number, number, number, number] /* minLat, maxLat, minLng, maxLng */ }[] = [
-      { name: '서울',   box: [37.42, 37.70, 126.76, 127.18] },
-      { name: '인천',   box: [37.30, 37.60, 126.40, 126.78] },
-      { name: '경기',   box: [36.90, 38.30, 126.40, 127.90] },
-      { name: '강원',   box: [37.00, 38.62, 127.40, 129.40] },
-      { name: '대전',   box: [36.20, 36.50, 127.30, 127.55] },
-      { name: '세종',   box: [36.40, 36.70, 127.20, 127.40] },
-      { name: '충북',   box: [36.00, 37.20, 127.30, 128.80] },
-      { name: '충남',   box: [35.90, 37.00, 126.10, 127.50] },
-      { name: '광주',   box: [35.06, 35.27, 126.65, 127.00] },
-      { name: '전북',   box: [35.40, 36.30, 126.30, 127.90] },
-      { name: '전남',   box: [33.90, 35.65, 125.80, 127.60] },
-      { name: '대구',   box: [35.70, 36.00, 128.40, 128.80] },
-      { name: '울산',   box: [35.40, 35.75, 129.10, 129.50] },
-      { name: '부산',   box: [34.95, 35.40, 128.80, 129.30] },
-      { name: '경북',   box: [35.40, 37.20, 127.80, 129.70] },
-      { name: '경남',   box: [34.60, 36.00, 127.50, 129.20] },
-      { name: '제주',   box: [33.10, 33.60, 126.10, 126.95] },
-    ];
-
-    // 1) Find which province the user falls into. If multiple match (Seoul is inside Gyeonggi), prefer the smaller/metro one (it's listed first).
-    let provinceName: string | null = null;
-    for (const p of provinces) {
-      const [minLat, maxLat, minLng, maxLng] = p.box;
-      if (lat >= minLat && lat <= maxLat && lng >= minLng && lng <= maxLng) {
-        provinceName = p.name;
-        break;
-      }
-    }
-    if (!provinceName) return null;
-
-    // 2) Within the province, find the nearest district center.
-    const districtCenters: Record<string, { name: string; lat: number; lng: number }[]> = {
-      '서울': [
-        { name: '강남구', lat: 37.4979, lng: 127.0276 },
-        { name: '서초구', lat: 37.4837, lng: 127.0324 },
-        { name: '송파구', lat: 37.5145, lng: 127.1050 },
-        { name: '강동구', lat: 37.5301, lng: 127.1237 },
-        { name: '마포구', lat: 37.5564, lng: 126.9236 },
-        { name: '용산구', lat: 37.5326, lng: 126.9909 },
-        { name: '성동구', lat: 37.5634, lng: 127.0367 },
-        { name: '광진구', lat: 37.5384, lng: 127.0822 },
-        { name: '동대문구', lat: 37.5744, lng: 127.0397 },
-        { name: '중랑구', lat: 37.6063, lng: 127.0928 },
-        { name: '성북구', lat: 37.5894, lng: 127.0167 },
-        { name: '강북구', lat: 37.6396, lng: 127.0257 },
-        { name: '도봉구', lat: 37.6688, lng: 127.0471 },
-        { name: '노원구', lat: 37.6541, lng: 127.0568 },
-        { name: '은평구', lat: 37.6027, lng: 126.9291 },
-        { name: '서대문구', lat: 37.5791, lng: 126.9368 },
-        { name: '종로구', lat: 37.5735, lng: 126.9790 },
-        { name: '중구', lat: 37.5636, lng: 126.9976 },
-        { name: '동작구', lat: 37.5124, lng: 126.9396 },
-        { name: '관악구', lat: 37.4784, lng: 126.9516 },
-        { name: '금천구', lat: 37.4568, lng: 126.8956 },
-        { name: '구로구', lat: 37.4955, lng: 126.8874 },
-        { name: '영등포구', lat: 37.5247, lng: 126.8965 },
-        { name: '양천구', lat: 37.5170, lng: 126.8664 },
-        { name: '강서구', lat: 37.5509, lng: 126.8495 },
-      ],
-      '경기': [
-        { name: '수원시', lat: 37.2636, lng: 127.0286 },
-        { name: '성남시', lat: 37.4200, lng: 127.1265 },
-        { name: '고양시', lat: 37.6584, lng: 126.8320 },
-        { name: '용인시', lat: 37.2411, lng: 127.1776 },
-        { name: '부천시', lat: 37.5036, lng: 126.7660 },
-        { name: '안산시', lat: 37.3219, lng: 126.8309 },
-        { name: '안양시', lat: 37.3943, lng: 126.9568 },
-        { name: '남양주시', lat: 37.6360, lng: 127.2165 },
-        { name: '화성시', lat: 37.1995, lng: 126.8316 },
-        { name: '평택시', lat: 36.9921, lng: 127.1129 },
-        { name: '의정부시', lat: 37.7381, lng: 127.0337 },
-        { name: '시흥시', lat: 37.3800, lng: 126.8030 },
-        { name: '파주시', lat: 37.7600, lng: 126.7800 },
-        { name: '광명시', lat: 37.4780, lng: 126.8645 },
-        { name: '김포시', lat: 37.6153, lng: 126.7156 },
-        { name: '하남시', lat: 37.5394, lng: 127.2148 },
-        { name: '광주시', lat: 37.4290, lng: 127.2552 },
-      ],
-      '인천': [
-        { name: '중구', lat: 37.4738, lng: 126.6217 },
-        { name: '동구', lat: 37.4736, lng: 126.6432 },
-        { name: '미추홀구', lat: 37.4634, lng: 126.6502 },
-        { name: '연수구', lat: 37.4099, lng: 126.6786 },
-        { name: '남동구', lat: 37.4474, lng: 126.7314 },
-        { name: '부평구', lat: 37.5077, lng: 126.7218 },
-        { name: '계양구', lat: 37.5375, lng: 126.7376 },
-        { name: '서구', lat: 37.5454, lng: 126.6760 },
-      ],
-      '부산': [
-        { name: '중구', lat: 35.1057, lng: 129.0345 },
-        { name: '서구', lat: 35.0975, lng: 129.0244 },
-        { name: '동구', lat: 35.1294, lng: 129.0451 },
-        { name: '영도구', lat: 35.0913, lng: 129.0676 },
-        { name: '부산진구', lat: 35.1631, lng: 129.0530 },
-        { name: '동래구', lat: 35.1972, lng: 129.0837 },
-        { name: '남구', lat: 35.1366, lng: 129.0844 },
-        { name: '북구', lat: 35.1972, lng: 129.0123 },
-        { name: '해운대구', lat: 35.1631, lng: 129.1639 },
-        { name: '사하구', lat: 35.1042, lng: 128.9744 },
-        { name: '금정구', lat: 35.2426, lng: 129.0921 },
-        { name: '강서구', lat: 35.2122, lng: 128.9810 },
-        { name: '연제구', lat: 35.1761, lng: 129.0807 },
-        { name: '수영구', lat: 35.1456, lng: 129.1133 },
-        { name: '사상구', lat: 35.1525, lng: 128.9911 },
-      ],
-      '대구': [
-        { name: '중구', lat: 35.8693, lng: 128.6058 },
-        { name: '동구', lat: 35.8866, lng: 128.6356 },
-        { name: '서구', lat: 35.8716, lng: 128.5591 },
-        { name: '남구', lat: 35.8459, lng: 128.5973 },
-        { name: '북구', lat: 35.8854, lng: 128.5827 },
-        { name: '수성구', lat: 35.8584, lng: 128.6308 },
-        { name: '달서구', lat: 35.8298, lng: 128.5326 },
-      ],
-      '광주': [
-        { name: '동구', lat: 35.1462, lng: 126.9233 },
-        { name: '서구', lat: 35.1521, lng: 126.8901 },
-        { name: '남구', lat: 35.1330, lng: 126.9027 },
-        { name: '북구', lat: 35.1740, lng: 126.9120 },
-        { name: '광산구', lat: 35.1395, lng: 126.7937 },
-      ],
-      '대전': [
-        { name: '동구', lat: 36.3119, lng: 127.4548 },
-        { name: '중구', lat: 36.3257, lng: 127.4214 },
-        { name: '서구', lat: 36.3551, lng: 127.3833 },
-        { name: '유성구', lat: 36.3623, lng: 127.3565 },
-        { name: '대덕구', lat: 36.3464, lng: 127.4148 },
-      ],
-      '울산': [
-        { name: '중구', lat: 35.5694, lng: 129.3328 },
-        { name: '남구', lat: 35.5440, lng: 129.3300 },
-        { name: '동구', lat: 35.5050, lng: 129.4170 },
-        { name: '북구', lat: 35.5829, lng: 129.3613 },
-      ],
-      '세종': [{ name: '세종시', lat: 36.4801, lng: 127.2890 }],
-      '제주': [
-        { name: '제주시', lat: 33.4996, lng: 126.5312 },
-        { name: '서귀포시', lat: 33.2541, lng: 126.5601 },
-      ],
-    };
-
-    const candidates = districtCenters[provinceName];
-    if (!candidates || candidates.length === 0) {
-      // Province without sub-district mapping (예: 강원, 충북 등) → 전체로 표시
-      return { province: provinceName, district: null };
-    }
-
-    let closest = candidates[0];
-    let minDist = Infinity;
-    for (const c of candidates) {
-      const dist = Math.hypot(lat - c.lat, lng - c.lng);
-      if (dist < minDist) {
-        minDist = dist;
-        closest = c;
-      }
-    }
-    return { province: provinceName, district: closest.name };
-  }
 
   const [activeProvince, setActiveProvince] = useState('서울');
 
