@@ -258,7 +258,20 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   // Load customer catalog only where it is actually used.
   useEffect(() => {
     if (pathname?.startsWith('/partner') || pathname?.startsWith('/admin')) return;
-    hydrateCatalog();
+    const refresh = () => {
+      if (document.visibilityState === 'visible') void hydrateCatalog({ force: true });
+    };
+    refresh();
+    const timer = window.setInterval(refresh, 30000);
+    window.addEventListener('focus', refresh);
+    window.addEventListener('online', refresh);
+    document.addEventListener('visibilitychange', refresh);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener('focus', refresh);
+      window.removeEventListener('online', refresh);
+      document.removeEventListener('visibilitychange', refresh);
+    };
   }, [hydrateCatalog, pathname]);
 
   useEffect(() => {

@@ -1,7 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createPortal } from 'react-dom';
@@ -17,12 +17,12 @@ import { useStore } from '@/store';
 import { resolveHospitalImageUrl } from '@/lib/images';
 import { siteConfig } from '@/lib/site-config';
 import MonoIcon from '@/components/common/MonoIcon';
+import { currentLocationRegion, CurrentLocationError } from '@/lib/current-location';
 import {
   areaKey,
   areaLabel,
   areaOfAddress,
-  detectNearArea,
-  hospitalInArea,
+  catalogForArea,
   parseAreaKey,
   type AreaChoice,
   type HospitalArea,
@@ -42,7 +42,7 @@ const searchPlaceholders = [
 
 export default function HomePage() {
   const router = useRouter();
-  const { products, hospitals, reviews, categories, isLoggedIn, isDoctor, recentlyViewed, recentSearches, removeRecentSearch, catalogHydrated } = useStore();
+  const { products, hospitals, reviews, categories, isLoggedIn, isDoctor, recentlyViewed, recentSearches, removeRecentSearch, catalogHydrated, showToast } = useStore();
   // Live unread count for the 쪽지 badge — only counted once /api/me has hydrated
   // so we don't briefly render a 0 on the wrong account.
   const [scrolled, setScrolled] = useState(false);
@@ -56,7 +56,8 @@ export default function HomePage() {
   const scrollTopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // 지역 거르기 — 'near'(내 위치, 기본) · 'all'(전체) · 'city|district'(고른 지역)
   const [near, setNear] = useState<NearArea | null>(null);
-  const [nearState, setNearState] = useState<'finding' | 'ok' | 'denied'>('finding');
+  const [nearState, setNearState] = useState<'finding' | 'ok' | 'denied' | 'unavailable'>('finding');
+  const locationRequest = useRef(0);
   const [areaChoice, setAreaChoice] = useState<AreaChoice>('near');
   const [areaMenuAt, setAreaMenuAt] = useState<{ left: number; top: number } | null>(null);
 
@@ -73,34 +74,40 @@ export default function HomePage() {
     } catch { /* 저장소 막힘 — 기본(내 위치) */ }
   }, []);
 
-  // 내 위치 — 브라우저 좌표로 대략 지역을 찾는다(권한이 없으면 조용히 '내 근처'). 결과는 콜백에서만 상태에 넣는다
-  const locate = () => {
+  // Use fresh device coordinates and the administrative region returned by Maps.
+  const locate = useCallback(async (notify = false) => {
+    const request = ++locationRequest.current;
+    setNearState('finding');
     try {
-      if (!navigator?.geolocation) throw new Error('no geolocation');
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          setNear(detectNearArea(pos.coords.latitude, pos.coords.longitude));
-          setNearState('ok');
-        },
-        () => setNearState('denied'),
-        { enableHighAccuracy: false, timeout: 8000, maximumAge: 300000 }
-      );
-    } catch {
-      queueMicrotask(() => setNearState('denied'));
+      const region = await currentLocationRegion();
+      if (request !== locationRequest.current) return;
+      setNear(region);
+      setNearState('ok');
+    } catch (error) {
+      if (request !== locationRequest.current) return;
+      setNear(null);
+      setNearState(error instanceof CurrentLocationError && error.kind === 'denied' ? 'denied' : 'unavailable');
+      if (notify) showToast(error instanceof Error ? error.message : '현재 위치를 확인하지 못했어요.');
     }
-  };
+  }, [showToast]);
   useEffect(() => {
-    locate();
-  }, []);
+    if (areaChoice !== 'near') return;
+    const refresh = () => { if (document.visibilityState === 'visible') void locate(); };
+    refresh();
+    window.addEventListener('focus', refresh);
+    document.addEventListener('visibilitychange', refresh);
+    return () => {
+      locationRequest.current += 1;
+      window.removeEventListener('focus', refresh);
+      document.removeEventListener('visibilitychange', refresh);
+    };
+  }, [locate, areaChoice]);
 
   const chooseArea = (choice: AreaChoice) => {
     setAreaChoice(choice);
     setAreaMenuAt(null);
     try { localStorage.setItem(AREA_STORAGE_KEY, choice); } catch { /* 저장 못 해도 지금 화면엔 반영 */ }
-    if (choice === 'near' && nearState !== 'ok') {
-      setNearState('finding');
-      locate();
-    }
+    if (choice === 'near') void locate(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -120,24 +127,18 @@ export default function HomePage() {
       .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label, 'ko'));
   }, [hospitals]);
 
-  // 실제로 거를 지역 — 내 위치에 병원이 하나도 없으면 전체를 보여 주고 그렇다고 알린다
+  // 현재 지역에 등록된 병원이 없어도 다른 지역 상품을 섞지 않는다.
   const target = areaChoice === 'all' ? null : areaChoice === 'near' ? near : parseAreaKey(areaChoice);
   const targetCity = target?.city ?? null;
   const targetDistrict = target?.district ?? null;
-  const areaHospitalIds = useMemo(() => {
-    if (!targetCity) return null;
-    const where = { city: targetCity, district: targetDistrict };
-    return new Set(hospitals.filter((h) => hospitalInArea(h.address, where)).map((h) => h.id));
-  }, [hospitals, targetCity, targetDistrict]);
-  const nearFallback = areaChoice === 'near' && !!near && hospitals.length > 0 && areaHospitalIds?.size === 0;
-  const filterIds = areaHospitalIds && areaHospitalIds.size > 0 ? areaHospitalIds : null;
+  const { products: areaProducts, hospitals: areaHospitals, ids: filterIds } = useMemo(() => (
+    catalogForArea(products, hospitals, targetCity ? { city: targetCity, district: targetDistrict } : null)
+  ), [products, hospitals, targetCity, targetDistrict]);
   const headerAreaLabel = areaChoice === 'all'
     ? '전체 지역'
     : areaChoice === 'near'
       ? near?.label ?? '내 근처'
       : areaLabel(parseAreaKey(areaChoice));
-  const areaProducts = filterIds ? products.filter((p) => filterIds.has(p.hospitalId)) : products;
-  const areaHospitals = filterIds ? hospitals.filter((h) => filterIds.has(h.id)) : hospitals;
 
   // 지역 메뉴는 스크롤하거나 Esc 를 누르면 닫는다
   useEffect(() => {
@@ -420,15 +421,14 @@ export default function HomePage() {
         </div>
 
         {/* 지역 거르기 알림 — 고른 지역 병원만 보이는 중이면 몇 곳인지 + 전체 보기, 내 위치에 병원이 없으면 그렇다고 */}
-        {(filterIds || nearFallback) && (
+        {filterIds && (
           <div className="qd-a-item mx-[10px] mb-5 flex items-center gap-2 rounded-[14px] bg-[#F2F4F6] py-3 pl-4 pr-3 pc:mx-0">
             <MonoIcon name="pin-location" size={18} color="#8B95A1" />
             <p className="min-w-0 flex-1 break-keep text-[14px] leading-[1.45] tracking-[-0.2px] text-[#4E5968]">
-              {nearFallback
-                ? `${near?.label ?? '내 위치'} 근처엔 아직 병원이 없어 전체 지역을 보여 드려요`
+              {filterIds.size === 0
+                ? `${headerAreaLabel}에 아직 등록된 병원이 없어요`
                 : `${headerAreaLabel} 병원 ${filterIds?.size ?? 0}곳만 보고 있어요`}
             </p>
-            {!nearFallback && (
               <button
                 type="button"
                 onClick={() => chooseArea('all')}
@@ -436,7 +436,6 @@ export default function HomePage() {
               >
                 전체 보기
               </button>
-            )}
           </div>
         )}
 
@@ -604,7 +603,7 @@ export default function HomePage() {
             <div className="fixed inset-0 z-[130]" onClick={() => setAreaMenuAt(null)} aria-hidden="true" />
             <div role="menu" aria-label="지역" className="pop-menu fixed z-[131] max-h-[60vh] overflow-y-auto" style={{ left: areaMenuAt.left, top: areaMenuAt.top, transformOrigin: 'top left' }}>
               {[
-                { key: 'near', label: '내 위치', sub: nearState === 'ok' ? near?.label ?? '지원 지역 밖' : nearState === 'denied' ? '위치 권한 필요' : '찾는 중', icon: 'pin' as const },
+                { key: 'near', label: '내 위치', sub: nearState === 'ok' ? near?.label ?? '지원 지역 밖' : nearState === 'denied' ? '위치 권한 필요' : nearState === 'unavailable' ? '다시 확인 필요' : '찾는 중', icon: 'pin' as const },
                 { key: 'all', label: '전체 지역', sub: `${hospitals.length}곳`, icon: 'all' as const },
                 ...areaOptions.map((o) => ({ key: o.key, label: o.label, sub: `${o.count}곳`, icon: 'area' as const })),
               ].map((item, i) => {
