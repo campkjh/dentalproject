@@ -47,6 +47,11 @@ export default function MyHome({ partner = false }: { partner?: boolean }) {
   const unread = hydrated && user ? notifications.filter(n => !n.isRead).length : 0;
   const coupons = user?.coupons?.filter(c => c.status === 'available').length ?? 0;
   useEffect(() => {
+    const root = document.documentElement;
+    root.setAttribute('data-my-page', '');
+    return () => root.removeAttribute('data-my-page');
+  }, []);
+  useEffect(() => {
     if (!detail) return;
     const escape = (e: KeyboardEvent) => { if (e.key === 'Escape' && !document.querySelector('dialog[open]')) setDetail(null); };
     const resize = () => { if (window.innerWidth < 1024) { setDetail(null); router.push(detail); } };
