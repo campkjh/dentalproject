@@ -1,8 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect } from 'react';
-import { useParams } from 'next/navigation';
+import { useEffect, useRef, useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import TopBar from '@/components/common/TopBar';
 import { useStore } from '@/store';
 
@@ -17,10 +17,28 @@ const typeBadgeMap: Record<string, { label: string; className: string }> = {
 export default function NotificationDetailPage() {
   const params = useParams();
   const id = params.id as string;
+  const router = useRouter();
+  const [deleting, setDeleting] = useState(false);
+  const deletingRef = useRef(false);
+  const deleteNotifications = useStore(s => s.deleteNotifications);
+  const showConfirm = useStore(s => s.showConfirm);
+  const showToast = useStore(s => s.showToast);
   const notifications = useStore((s) => s.notifications);
   const markNotificationRead = useStore((s) => s.markNotificationRead);
 
   const notification = notifications.find((n) => n.id === id);
+
+  const requestDelete = () => {
+    showConfirm('쪽지 삭제', '이 쪽지를 삭제할까요? 삭제한 쪽지는 복구할 수 없어요.', () => {
+      if (deletingRef.current) return;
+      deletingRef.current = true;
+      setDeleting(true);
+      void deleteNotifications([id])
+        .then(() => { showToast('쪽지를 삭제했어요.'); router.replace('/notifications'); })
+        .catch(() => showToast('쪽지를 삭제하지 못했어요. 다시 시도해주세요.'))
+        .finally(() => { deletingRef.current = false; setDeleting(false); });
+    }, { confirmText: '삭제', cancelText: '취소' });
+  };
 
   // Keep the unread badge in sync immediately, then persist UUID-backed messages.
   useEffect(() => {
@@ -45,7 +63,7 @@ export default function NotificationDetailPage() {
 
   return (
     <div className="min-h-screen bg-white max-w-[500px] mx-auto">
-      <TopBar title="쪽지" />
+      <TopBar title="쪽지" rightContent={<button type="button" disabled={deleting} onClick={requestDelete} className="min-h-11 px-3 text-sm font-semibold text-[#F04452] disabled:opacity-40">{deleting ? '삭제 중…' : '삭제'}</button>} />
 
       <div className="px-2.5 py-6">
         <span className={`inline-block text-xs font-medium px-2.5 py-1 rounded-full mb-3 ${badge.className}`}>

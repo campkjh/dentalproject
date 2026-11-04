@@ -179,6 +179,7 @@ interface AppState {
   // Notifications & point history (hydrated from /api/me)
   notifications: Notification[];
   refreshNotifications: () => Promise<void>;
+  deleteNotifications: (ids?: string[]) => Promise<void>;
   markNotificationRead: (id: string) => void;
   pointHistory: PointHistory[];
 
@@ -220,6 +221,8 @@ interface AppState {
   hideModal: () => void;
 }
 
+// A GET started before deletion must not restore the removed messages.
+let notificationsRevision = 0;
 let catalogInFlight: Promise<void> | null = null;
 
 export const useStore = create<AppState>((set, get) => ({
@@ -277,6 +280,7 @@ export const useStore = create<AppState>((set, get) => ({
 
   meHydrated: false,
   hydrateMe: async () => {
+    const notificationRevision = notificationsRevision;
     try {
       const res = await fetch('/api/me', { cache: 'no-store' });
       if (!res.ok) return;
@@ -291,7 +295,7 @@ export const useStore = create<AppState>((set, get) => ({
         recentlyViewed: data.recentlyViewed ?? [],
         reservations: (data.reservations ?? []).map(reservationFromRow),
         interestedCategories: data.interestedCategories ?? [],
-        notifications: (data.notifications ?? []).map(notificationFromRow),
+        ...(notificationRevision === notificationsRevision ? { notifications: (data.notifications ?? []).map(notificationFromRow) } : {}),
         pointHistory: (data.pointHistory ?? []).map(pointFromRow),
         recentSearches: data.recentSearches ?? [],
         meHydrated: true,
@@ -584,12 +588,28 @@ export const useStore = create<AppState>((set, get) => ({
   refreshNotifications: async () => {
     const userId = get().user?.id;
     if (!userId) return;
+    const revision = notificationsRevision;
     try {
       const response = await fetch('/api/notifications', { cache: 'no-store' });
       if (!response.ok) return;
       const data = await response.json();
-      if (get().user?.id === userId) set({ notifications: (data.notifications ?? []).map(notificationFromRow) });
+      if (get().user?.id === userId && revision === notificationsRevision) set({ notifications: (data.notifications ?? []).map(notificationFromRow) });
     } catch { /* Keep existing messages when temporarily offline. */ }
+  },
+  deleteNotifications: async (ids) => {
+    const userId = get().user?.id;
+    if (!userId) throw new Error('로그인이 필요합니다.');
+    const response = await fetch('/api/notifications', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(ids ? { ids } : { all: true }),
+    });
+    const data = await response.json();
+    if (!response.ok || !data.ok || !Array.isArray(data.deletedIds)) throw new Error('알림을 삭제하지 못했어요.');
+    if (get().user?.id !== userId) return;
+    notificationsRevision++;
+    const deletedIds = new Set<string>(data.deletedIds);
+    set(state => ({ notifications: state.notifications.filter(item => !deletedIds.has(item.id)) }));
   },
   markNotificationRead: (id) => {
     set({

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useStore } from '@/store';
 import type { Notification } from '@/types';
+import { Trash2 } from 'lucide-react';
 
 /* ════════════════════════════════════════════════════════════════
  * 알림 — 프리티풀 알림 화면(토스 알림) 그대로 이식.
@@ -13,8 +14,7 @@ import type { Notification } from '@/types';
  *  · 한 줄 = 둥근 아이콘 칸 · 제목(진하게) · 본문(회색, 3줄까지) · 오른쪽 날짜 + 같은 곳에서 여럿 오면 'N건'.
  *    같은 종류·같은 곳·같은 제목은 한 줄로 묶는다(토스 'N건').
  *  · 등장: 제목 아래→위 페이드, 줄은 오른쪽→왼쪽 순차 슬라이드.
- * ⚠ 마이닥엔 알림 삭제 API 가 없어 '밀어서 삭제'·'전체 삭제'는 뺐다(화면만 지우는 가짜 동작 금지).
- *   삭제 API 가 생기면 프리티풀 원본(freetiful NotificationsView)의 밀기 핸들러를 그대로 붙이면 된다.
+ *  · 각 묶음 삭제 · 전체 삭제는 본인 알림만 서버에서 삭제한 뒤 목록에 반영한다.
  * ⚠ 스토어 알림엔 생성 시각이 없고 날짜(ko-KR 문자열)만 있어 '방금 전·N분 전' 대신 오늘·어제·M월 D일로 보인다.
  *  · variant='drawer' 면 ‹ 뒤로 = 서랍 닫기, 알림을 눌러 이동하면 서랍을 닫고 이동, 스크롤은 서랍 칸 기준.
  * ════════════════════════════════════════════════════════════════ */
@@ -125,6 +125,24 @@ export default function NotificationsView({
   const notifications = useStore((s) => s.notifications);
   const markNotificationRead = useStore((s) => s.markNotificationRead);
   const showToast = useStore((s) => s.showToast);
+  const showConfirm = useStore((s) => s.showConfirm);
+  const deleteNotifications = useStore((s) => s.deleteNotifications);
+  const [deleting, setDeleting] = useState(false);
+  const deletingRef = useRef(false);
+
+  const requestDelete = (ids?: string[]) => {
+    if (deletingRef.current) return;
+    setMenuOpen(false);
+    showConfirm(ids ? '알림 삭제' : '전체 알림 삭제', ids ? '선택한 알림을 삭제할까요? 삭제한 알림은 복구할 수 없어요.' : '모든 알림을 삭제할까요? 삭제한 알림은 복구할 수 없어요.', () => {
+      if (deletingRef.current) return;
+      deletingRef.current = true;
+      setDeleting(true);
+      void deleteNotifications(ids)
+        .then(() => showToast('알림을 삭제했어요.'))
+        .catch(() => showToast('알림을 삭제하지 못했어요. 다시 시도해주세요.'))
+        .finally(() => { deletingRef.current = false; setDeleting(false); });
+    }, { confirmText: '삭제', cancelText: '취소' });
+  };
 
   const items = useMemo<Item[]>(
     () => notifications.map((n, i) => ({ ...n, kind: kindOf(n), order: i })),
@@ -199,11 +217,11 @@ export default function NotificationsView({
     const count = g.items.length;
     const delay = `${0.3 + Math.min(order++, 12) * 0.06}s`;
     return (
-      <div key={g.key} className="relative overflow-hidden" style={{ backgroundColor: g.unread ? UNREAD_BG : '#FFFFFF' }}>
+      <div key={g.key} className="relative flex overflow-hidden" style={{ backgroundColor: g.unread ? UNREAD_BG : '#FFFFFF' }}>
         <button
           type="button"
           onClick={() => openGroup(g)}
-          className="nt-a-item flex w-full gap-3 px-5 py-3.5 text-left transition-colors active:bg-black/[0.03]"
+          className="nt-a-item flex min-w-0 flex-1 gap-3 py-3.5 pl-5 pr-1 text-left transition-colors active:bg-black/[0.03]"
           style={{ animationDelay: delay }}
         >
           <span className={`mt-[2px] flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] ${g.unread ? 'bg-white' : 'bg-[#F2F4F6]'}`}>
@@ -224,6 +242,11 @@ export default function NotificationsView({
               <span className="rounded-[6px] bg-[#E8F3FF] px-1.5 py-[2px] text-[14px] font-semibold leading-[1.3] text-[#3182F6]">{count}건</span>
             )}
           </span>
+        </button>
+        <button type="button" aria-label={`${n.title || '알림'} 삭제${count > 1 ? ` (${count}건)` : ''}`} disabled={deleting}
+          onClick={() => requestDelete(g.items.map(item => item.id))}
+          className="flex min-h-11 w-11 shrink-0 items-center justify-center self-start rounded-xl text-[#8B95A1] active:bg-black/[0.04] disabled:opacity-40">
+          <Trash2 size={18} aria-hidden="true" />
         </button>
       </div>
     );
@@ -333,6 +356,11 @@ export default function NotificationsView({
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src="/icons/toss/check-circle.svg" alt="" />
                     <span>모두 읽음</span>
+                  </button>
+                  <button type="button" role="menuitem" disabled={deleting || notifications.length === 0}
+                    onClick={() => requestDelete()} className="pop-menu-item" style={popItemDelay(FILTERS.length + 2)}>
+                    <Trash2 size={22} aria-hidden="true" className="text-[#F04452]" />
+                    <span className="text-[#F04452]">전체 삭제</span>
                   </button>
                 </>
               )}
