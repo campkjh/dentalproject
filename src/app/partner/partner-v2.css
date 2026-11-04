@@ -423,6 +423,16 @@ html[data-pd-scrolled] .partner-page .qd-header::after { opacity: 1; }
 .partner-shell-bg .partner-product-sheet input:focus,
 .partner-shell-bg .partner-product-sheet select:focus,
 .partner-shell-bg .partner-product-description:focus { border: 0; background: #EDEFF2; box-shadow: none; outline: 0; }
+.partner-shell-bg .partner-product-sheet select,
+.partner-shell-bg .partner-product-sheet select:focus {
+  -webkit-appearance: none;
+  appearance: none;
+  padding-right: 44px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20'%3E%3Cpath d='m5 7.5 5 5 5-5' fill='none' stroke='%238B95A1' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+  background-size: 20px 20px;
+}
 .partner-shell-bg .partner-product-sheet input[readonly] { background: #EFF5FE; color: #1E3A78; font-weight: 700; }
 .partner-shell-bg .partner-product-sheet input::placeholder,
 .partner-shell-bg .partner-product-description::placeholder { color: #B0B8C1; font-weight: 500; }
