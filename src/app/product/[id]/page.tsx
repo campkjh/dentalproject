@@ -6,6 +6,7 @@ import { useState, useEffect, useRef } from 'react';
 import { trackProduct } from '@/lib/product-tracking';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import PhoneNumber from '@/components/common/PhoneNumber';
 import { PocketIcon } from '@/components/icons/PocketIcon';
 import { Share2, ChevronLeft, ChevronRight, ChevronDown, MoreHorizontal, X } from 'lucide-react';
 import NaverMap from '@/components/common/NaverMap';
@@ -675,7 +676,7 @@ export default function ProductDetailPage() {
                   <div className="mt-3">
                     {[
                       ...(hospital.location ? [{ label: '지역', value: hospital.location }] : []),
-                      ...(hospital.phone ? [{ label: '전화', value: hospital.phone }] : []),
+                      ...(hospital.phone ? [{ label: '전화', value: <PhoneNumber phone={hospital.phone} /> }] : []),
                       { label: '진료시간', value: todayHours },
                       ...(hospital.tags?.length > 0 ? [{ label: '키워드', value: hospital.tags.slice(0, 6).map(t => t.replace(/^#/, '')).join(', ') }] : []),
                     ].map(r => (

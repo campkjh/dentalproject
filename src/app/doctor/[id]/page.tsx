@@ -6,6 +6,7 @@ import { specialtyLabel } from '@/lib/category-code';
 
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import PhoneNumber from '@/components/common/PhoneNumber';
 import { ChevronRight } from 'lucide-react';
 import Avatar from '@/components/common/Avatar';
 import TopBar from '@/components/common/TopBar';
@@ -165,7 +166,7 @@ export default function DoctorDetailPage() {
             <div className="mt-3">
               {[
                 ...(hospital.location ? [{ label: '지역', value: hospital.location }] : []),
-                ...(hospital.phone ? [{ label: '전화', value: hospital.phone }] : []),
+                ...(hospital.phone ? [{ label: '전화', value: <PhoneNumber phone={hospital.phone} /> }] : []),
               ].map((r) => (
                 <p key={r.label} className="flex min-h-11 items-center py-1.5">
                   <span className="w-[86px] shrink-0 text-[17px] text-[#8B95A1]">{r.label}</span>

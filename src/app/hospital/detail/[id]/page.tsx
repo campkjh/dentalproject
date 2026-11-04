@@ -5,6 +5,7 @@ import { specialtyLabel } from '@/lib/category-code';
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import PhoneNumber from '@/components/common/PhoneNumber';
 import { ChevronLeft, ChevronRight, Share2, X } from 'lucide-react';
 import Avatar from '@/components/common/Avatar';
 import ProductCard from '@/components/common/ProductCard';
@@ -263,6 +264,13 @@ export default function HospitalDetailPage() {
                 복사
               </button>
             </div>
+
+            {hospital.phone && (
+              <div className="flex items-center gap-3 border-t border-[#F2F4F6] py-3">
+                <span className="w-[64px] shrink-0 text-[14px] text-[#6B7684]">전화</span>
+                <PhoneNumber phone={hospital.phone} />
+              </div>
+            )}
 
             {/* 바로 하기 — 전화 · 길찾기 · 공유 */}
             <div className="grid grid-cols-3 gap-2 border-t border-[#F2F4F6] py-5">

@@ -52,30 +52,28 @@ type Props = {
 
 export default function NaverMap({ address, lat, lng, name, zoom = 16, className }: Props) {
   const ref = useRef<HTMLDivElement>(null);
-  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(
-    typeof lat === 'number' && typeof lng === 'number' ? { lat, lng } : null
-  );
+  const [geocoded, setGeocoded] = useState<{ address: string; lat: number; lng: number } | null>(null);
+  const hasCoordinates = typeof lat === 'number' && typeof lng === 'number';
+  const matchingAddress = geocoded?.address === address?.trim() ? geocoded : null;
+  const resolvedLat = hasCoordinates ? lat : matchingAddress?.lat;
+  const resolvedLng = hasCoordinates ? lng : matchingAddress?.lng;
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+  const displayStatus = !hasCoordinates && !address?.trim() ? 'error' : status;
 
   // 1) 좌표 확보: props 우선, 없으면 주소로 geocode
   useEffect(() => {
     let cancelled = false;
-    if (typeof lat === 'number' && typeof lng === 'number') {
-      setCoords({ lat, lng });
-      return;
-    }
+    if (hasCoordinates) return;
     const q = address?.trim();
     if (!q) {
-      setStatus('error');
       return;
     }
-    setStatus('loading');
     fetch(`/api/geocode?query=${encodeURIComponent(q)}`)
       .then((r) => r.json())
       .then((d) => {
         if (cancelled) return;
         if (typeof d?.lat === 'number' && typeof d?.lng === 'number') {
-          setCoords({ lat: d.lat, lng: d.lng });
+          setGeocoded({ address: q, lat: d.lat, lng: d.lng });
         } else {
           setStatus('error');
         }
@@ -86,17 +84,17 @@ export default function NaverMap({ address, lat, lng, name, zoom = 16, className
     return () => {
       cancelled = true;
     };
-  }, [address, lat, lng]);
+  }, [address, hasCoordinates]);
 
   // 2) 좌표가 준비되면 지도 렌더
   useEffect(() => {
-    if (!coords) return;
+    if (resolvedLat == null || resolvedLng == null) return;
     let cancelled = false;
     loadNaverMaps()
       .then(() => {
         if (cancelled || !ref.current || !window.naver?.maps) return;
         const { naver } = window;
-        const center = new naver.maps.LatLng(coords.lat, coords.lng);
+        const center = new naver.maps.LatLng(resolvedLat, resolvedLng);
         const map = new naver.maps.Map(ref.current, {
           center,
           zoom,
@@ -111,12 +109,12 @@ export default function NaverMap({ address, lat, lng, name, zoom = 16, className
     return () => {
       cancelled = true;
     };
-  }, [coords, zoom, name]);
+  }, [resolvedLat, resolvedLng, zoom, name]);
 
   return (
-    <div className={className} style={{ position: 'relative', width: '100%', height: '100%' }}>
+    <div className={className} style={{ position: 'relative', isolation: 'isolate', overflow: 'hidden', width: '100%', height: '100%' }}>
       <div ref={ref} style={{ width: '100%', height: '100%' }} />
-      {status !== 'ready' && (
+      {displayStatus !== 'ready' && (
         <div
           style={{
             position: 'absolute',
@@ -129,7 +127,7 @@ export default function NaverMap({ address, lat, lng, name, zoom = 16, className
             fontSize: 13,
           }}
         >
-          {status === 'error' ? '위치 정보를 불러올 수 없습니다' : '지도 불러오는 중…'}
+          {displayStatus === 'error' ? '위치 정보를 불러올 수 없습니다' : '지도 불러오는 중…'}
         </div>
       )}
     </div>
