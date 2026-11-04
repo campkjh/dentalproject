@@ -180,6 +180,7 @@ interface AppState {
   notifications: Notification[];
   refreshNotifications: () => Promise<void>;
   deleteNotifications: (ids?: string[]) => Promise<void>;
+  markAllNotificationsRead: () => Promise<void>;
   markNotificationRead: (id: string) => void;
   pointHistory: PointHistory[];
 
@@ -221,7 +222,7 @@ interface AppState {
   hideModal: () => void;
 }
 
-// A GET started before deletion must not restore the removed messages.
+// A GET started before a mutation must not restore deleted or unread messages.
 let notificationsRevision = 0;
 let catalogInFlight: Promise<void> | null = null;
 
@@ -610,6 +611,21 @@ export const useStore = create<AppState>((set, get) => ({
     notificationsRevision++;
     const deletedIds = new Set<string>(data.deletedIds);
     set(state => ({ notifications: state.notifications.filter(item => !deletedIds.has(item.id)) }));
+  },
+  markAllNotificationsRead: async () => {
+    const userId = get().user?.id;
+    if (!userId) throw new Error('로그인이 필요합니다.');
+    const response = await fetch('/api/notifications', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ all: true }),
+    });
+    const data = await response.json();
+    if (!response.ok || !data.ok || !Array.isArray(data.readIds)) throw new Error('알림을 읽음 처리하지 못했어요.');
+    if (get().user?.id !== userId) return;
+    notificationsRevision++;
+    const readIds = new Set<string>(data.readIds);
+    set(state => ({ notifications: state.notifications.map(item => readIds.has(item.id) ? { ...item, isRead: true } : item) }));
   },
   markNotificationRead: (id) => {
     set({

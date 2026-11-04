@@ -131,14 +131,19 @@ export default function NotificationsView({
   const showToast = useStore((s) => s.showToast);
   const showConfirm = useStore((s) => s.showConfirm);
   const deleteNotifications = useStore((s) => s.deleteNotifications);
+  const markAllNotificationsRead = useStore((s) => s.markAllNotificationsRead);
   const [deleting, setDeleting] = useState(false);
   const deletingRef = useRef(false);
+  const [reading, setReading] = useState(false);
+  const readingRef = useRef(false);
+  const busy = deleting || reading;
+  const hasUnread = notifications.some(n => !n.isRead);
 
   const requestDelete = (ids?: string[]) => {
-    if (deletingRef.current) return;
+    if (deletingRef.current || readingRef.current) return;
     setMenuOpen(false);
     showConfirm(ids ? '알림 삭제' : '전체 알림 삭제', ids ? '선택한 알림을 삭제할까요? 삭제한 알림은 복구할 수 없어요.' : '모든 알림을 삭제할까요? 삭제한 알림은 복구할 수 없어요.', () => {
-      if (deletingRef.current) return;
+      if (deletingRef.current || readingRef.current) return;
       deletingRef.current = true;
       setDeleting(true);
       void deleteNotifications(ids)
@@ -204,7 +209,13 @@ export default function NotificationsView({
 
   const markAllRead = () => {
     setMenuOpen(false);
-    persistRead(notifications.filter((n) => !n.isRead).map((n) => n.id));
+    if (!hasUnread || deletingRef.current || readingRef.current) return;
+    readingRef.current = true;
+    setReading(true);
+    void markAllNotificationsRead()
+      .then(() => showToast('모든 알림을 읽음 처리했어요.'))
+      .catch(() => showToast('읽음 처리하지 못했어요. 다시 시도해주세요.'))
+      .finally(() => { readingRef.current = false; setReading(false); });
   };
 
   const openGroup = (g: Group) => {
@@ -247,7 +258,7 @@ export default function NotificationsView({
             )}
           </span>
         </button>
-        <button type="button" aria-label={`${n.title || '알림'} 삭제${count > 1 ? ` (${count}건)` : ''}`} disabled={deleting}
+        <button type="button" aria-label={`${n.title || '알림'} 삭제${count > 1 ? ` (${count}건)` : ''}`} disabled={busy}
           onClick={() => requestDelete(g.items.map(item => item.id))}
           className="nt-swipe-delete flex min-h-11 flex-col items-center justify-center gap-1 bg-[#F04452] text-sm font-semibold text-white active:bg-[#D93643] disabled:opacity-40">
           <Trash2 size={20} aria-hidden="true" />
@@ -324,6 +335,16 @@ export default function NotificationsView({
             </svg>
           </button>
         </h1>
+        {user && <div className="mt-3 flex justify-end gap-2" aria-label="알림 일괄 관리">
+          <button type="button" onClick={markAllRead} disabled={busy || !hasUnread}
+            className="min-h-11 rounded-xl bg-[#F2F4F6] px-3 text-[14px] font-semibold text-[#4E5968] disabled:opacity-40">
+            {reading ? '읽음 처리 중…' : '모두 읽음'}
+          </button>
+          <button type="button" onClick={() => requestDelete()} disabled={busy || notifications.length === 0}
+            className="min-h-11 rounded-xl bg-[#FFF0F1] px-3 text-[14px] font-semibold text-[#F04452] disabled:opacity-40">
+            {deleting ? '삭제 중…' : '전체 삭제'}
+          </button>
+        </div>}
         {!empty && <p className="mt-2 text-[13px] text-[#8B95A1]">알림을 왼쪽으로 밀면 삭제할 수 있어요.</p>}
 
         {menuOpen && (
@@ -356,6 +377,7 @@ export default function NotificationsView({
                     type="button"
                     role="menuitem"
                     onClick={markAllRead}
+                    disabled={busy || !hasUnread}
                     className="pop-menu-item"
                     style={popItemDelay(FILTERS.length + 1)}
                   >
@@ -363,7 +385,7 @@ export default function NotificationsView({
                     <img src="/icons/toss/check-circle.svg" alt="" />
                     <span>모두 읽음</span>
                   </button>
-                  <button type="button" role="menuitem" disabled={deleting || notifications.length === 0}
+                  <button type="button" role="menuitem" disabled={busy || notifications.length === 0}
                     onClick={() => requestDelete()} className="pop-menu-item" style={popItemDelay(FILTERS.length + 2)}>
                     <Trash2 size={22} aria-hidden="true" className="text-[#F04452]" />
                     <span className="text-[#F04452]">전체 삭제</span>

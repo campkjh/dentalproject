@@ -11,3 +11,8 @@ export function removeOwnNotifications(client: SupabaseClient<Database>, userId:
   const query = client.from('notifications').delete().eq('user_id', userId);
   return (ids ? query.in('id', [...new Set(ids)]) : query).select('id');
 }
+
+export function readOwnNotifications(client: SupabaseClient<Database>, userId: string) {
+  return client.from('notifications').update({ is_read: true })
+    .eq('user_id', userId).eq('is_read', false).select('id');
+}
