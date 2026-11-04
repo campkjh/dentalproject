@@ -34,7 +34,7 @@ export default function MyPostsPage() {
       : !ownerId ? <NeedLogin />
       : current?.error ? <p role="alert" className="px-6 py-12 text-center text-[#8B95A1]">{current.error}</p>
       : !current?.posts.length ? <EmptyBlock icon="chat" title="아직 작성한 글이 없어요" desc="커뮤니티에서 이야기를 남기면 이곳에 모여요." />
-      : <div className="px-4 pb-8">
+      : <div className="px-[24px] pb-8 pc:px-0">
         <p className="mb-3 text-[14px] text-[#8B95A1]">내가 쓴 글 {current.posts.length}개</p>
         {current.posts.map(post => <CommunityPostCard key={post.id} post={post} onDeleted={() => setResult(previous => previous?.ownerId === ownerId ? { ...previous, posts: previous.posts.filter(item => item.id !== post.id) } : previous)} />)}
       </div>}
