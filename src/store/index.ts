@@ -640,10 +640,7 @@ export const useStore = create<AppState>((set, get) => ({
   reviews: mockReviews,
   addReview: async (review) => {
     set({ reviews: [review, ...get().reviews] });
-    const user = get().user;
-    if (user) {
-      set({ user: { ...user, points: user.points + 500 } });
-    }
+    const authorId = get().user?.id;
     try {
       const res = await fetch('/api/reviews', {
         method: 'POST',
@@ -665,15 +662,15 @@ export const useStore = create<AppState>((set, get) => ({
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));
         set({ reviews: get().reviews.filter((r) => r.id !== review.id) });
-        if (user) set({ user: { ...user, points: user.points } });
         return { error: j.error || `리뷰 등록 실패 (${res.status})` };
       }
       const { id } = await res.json();
+      // Reload the committed balance and reward ledger together; never invent +500 locally.
+      if (get().user?.id === authorId) await get().hydrateMe();
       set({ reviews: get().reviews.map((r) => (r.id === review.id ? { ...r, id } : r)) });
       return { error: null, id };
     } catch (e) {
       set({ reviews: get().reviews.filter((r) => r.id !== review.id) });
-      if (user) set({ user: { ...user, points: user.points } });
       return { error: (e as Error).message || '네트워크 오류' };
     }
   },

@@ -147,7 +147,7 @@ ${hasAspectFeedback && aspects.kindness >= 4 ? '원장님과 스태프분들의 
         });
         if (result.error) throw new Error(result.error);
       }
-      showToast(partner ? '초기 리뷰를 등록했어요.' : '리뷰가 작성되었습니다!');
+      showToast(partner ? '초기 리뷰를 등록했어요.' : '리뷰를 등록하고 500P를 적립했어요.');
       router.push(partner ? '/partner/reviews' : '/mypage/reviews');
     } catch (error) { showToast(error instanceof Error ? error.message : '리뷰를 등록하지 못했어요.'); }
     finally { setSubmitting(false); }
