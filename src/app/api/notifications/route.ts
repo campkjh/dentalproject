@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { notificationDeleteInput, removeOwnNotifications } from '@/lib/notification-management';
+import { notificationDeleteInput, readOwnNotifications, removeOwnNotifications } from '@/lib/notification-management';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,4 +23,17 @@ export async function DELETE(request: Request) {
   const { data, error } = await removeOwnNotifications(sb, user.id, ids);
   if (error) return NextResponse.json({ error: '알림을 삭제하지 못했어요.' }, { status: 500 });
   return NextResponse.json({ ok: true, deletedIds: (data ?? []).map(row => row.id) }, { headers: { 'Cache-Control': 'no-store' } });
+}
+
+export async function PATCH(request: Request) {
+  const sb = await createClient();
+  const { data: { user } } = await sb.auth.getUser();
+  if (!user) return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 });
+  const body = await request.json().catch(() => null);
+  if (!body || body.all !== true || Object.keys(body).length !== 1) {
+    return NextResponse.json({ error: '읽음 처리할 알림을 확인해주세요.' }, { status: 400 });
+  }
+  const { data, error } = await readOwnNotifications(sb, user.id);
+  if (error) return NextResponse.json({ error: '알림을 읽음 처리하지 못했어요.' }, { status: 500 });
+  return NextResponse.json({ ok: true, readIds: (data ?? []).map(row => row.id) }, { headers: { 'Cache-Control': 'no-store' } });
 }

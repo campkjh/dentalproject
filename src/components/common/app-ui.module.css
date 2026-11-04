@@ -92,6 +92,9 @@
 .alertActions { display: flex; gap: 8px; margin-top: 24px; animation: alertUp .42s cubic-bezier(.22, .61, .36, 1) .22s both; }.alertActions button { flex: 1; min-width: 0; }
 .alertPrimary, .alertSecondary { display: flex; align-items: center; justify-content: center; height: 56px; border-radius: 17px; font-size: 17px; font-weight: 700; letter-spacing: -0.3px; cursor: pointer; transition: transform .15s, background .15s; }
 .alertPrimary { background: #3182f6; color: #fff; }.alertSecondary { background: #f2f4f6; color: #4e5968; }
+.alertActions .alertSecondary { appearance: none; -webkit-appearance: none; border: 0; box-shadow: none; }
+.alertActions .alertSecondary:focus { outline: none; box-shadow: none; }
+.alertActions .alertSecondary:focus-visible { background: #e5e8eb; }
 .alertPrimary:active, .alertSecondary:active { transform: scale(.97); }
 @keyframes alertIconPop { 0% { opacity: 0; transform: scale(.3) rotate(-16deg); } 100% { opacity: 1; transform: scale(1) rotate(0); } }
 @keyframes alertUp { 0% { opacity: 0; transform: translateY(8px); } 100% { opacity: 1; transform: translateY(0); } }

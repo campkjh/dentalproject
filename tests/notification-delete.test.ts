@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createClient } from '@supabase/supabase-js';
-import { notificationDeleteInput, removeOwnNotifications } from '../src/lib/notification-management';
+import { notificationDeleteInput, readOwnNotifications, removeOwnNotifications } from '../src/lib/notification-management';
 import { useStore } from '../src/store';
 import type { Notification, User } from '../src/types';
 
@@ -85,5 +85,57 @@ test('삭제 응답 중 계정이 바뀌면 새 계정의 알림을 건드리지
     finish(Response.json({ ok: true, deletedIds: [mine] }));
     await deletion;
     assert.equal(useStore.getState().notifications.length, 1);
+  } finally { useStore.setState(previous); }
+});
+
+test('모두 읽음은 본인의 미읽음 알림만 하나의 DB 요청으로 갱신한다', async () => {
+  let requests = 0;
+  const client = createClient('https://notifications.example.test', 'test-only-key', {
+    auth: { persistSession: false, autoRefreshToken: false },
+    global: { fetch: async (input, init) => {
+      requests++;
+      const url = new URL(String(input));
+      assert.equal(init?.method, 'PATCH');
+      assert.equal(url.searchParams.get('user_id'), 'eq.me');
+      assert.equal(url.searchParams.get('is_read'), 'eq.false');
+      assert.deepEqual(JSON.parse(String(init?.body)), { is_read: true });
+      return Response.json([{ id: mine }]);
+    } },
+  });
+  assert.deepEqual((await readOwnNotifications(client, 'me')).data, [{ id: mine }]);
+  assert.equal(requests, 1);
+});
+
+test('모두 읽음은 HTTP 요청 한 번으로 처리하며 오래된 목록 응답이 미읽음으로 되돌리지 않는다', async t => {
+  const previous = useStore.getState();
+  let requests = 0;
+  let finish!: (response: Response) => void;
+  t.mock.method(globalThis, 'fetch', async (_url: string, init?: RequestInit) => {
+    if (init?.method === 'PATCH') {
+      requests++;
+      assert.deepEqual(JSON.parse(String(init.body)), { all: true });
+      return Response.json({ ok: true, readIds: [mine, other] });
+    }
+    return new Promise<Response>(resolve => { finish = resolve; });
+  });
+  try {
+    useStore.setState({ user: { id: 'me' } as User, notifications: [message(mine), message(other)] });
+    const refresh = useStore.getState().refreshNotifications();
+    await useStore.getState().markAllNotificationsRead();
+    finish(Response.json({ notifications: [{ id: mine, is_read: false }] }));
+    await refresh;
+    assert.equal(requests, 1);
+    assert.equal(useStore.getState().notifications.length, 2);
+    assert.equal(useStore.getState().notifications.filter(n => !n.isRead).length, 0);
+  } finally { useStore.setState(previous); }
+});
+
+test('모두 읽음 실패 시 알림 상태를 보존한다', async t => {
+  const previous = useStore.getState();
+  t.mock.method(globalThis, 'fetch', async () => Response.json({ error: 'failed' }, { status: 500 }));
+  try {
+    useStore.setState({ user: { id: 'me' } as User, notifications: [message(mine)] });
+    await assert.rejects(useStore.getState().markAllNotificationsRead());
+    assert.equal(useStore.getState().notifications[0].isRead, false);
   } finally { useStore.setState(previous); }
 });
