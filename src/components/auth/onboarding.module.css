@@ -266,6 +266,9 @@
 .sheetBackdrop[data-leaving] { animation: obFadeOut .22s ease both; }
 .sheet {
   width: 100%;
+  max-height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -274,6 +277,7 @@
   background: #fff;
   animation: obSheetUp .36s var(--ob-ease) both;
 }
+.sheet > * { flex-shrink: 0; }
 .sheetBackdrop[data-leaving] .sheet { animation: obSheetDown .22s ease both; }
 .sheetHandle {
   align-self: center;
@@ -298,6 +302,7 @@
   color: var(--ob-label);
 }
 .kakao,
+.apple,
 .email,
 .partner {
   width: 100%;
@@ -319,6 +324,11 @@
 .kakao { background: #fee500; color: #191919; }
 .kakao:active:not(:disabled) { transform: scale(.985); filter: brightness(.97); }
 .kakao:disabled { opacity: .6; cursor: default; }
+.apple { background: #000; color: #fff; }
+.apple:active:not(:disabled) { transform: scale(.985); background: #222; }
+.apple:disabled,
+.email:disabled,
+.partner:disabled { opacity: .6; cursor: default; }
 .email { background: var(--ob-gray); color: var(--ob-weak); }
 .email:active { transform: scale(.985); background: var(--ob-gray-press); }
 .partner { background: #eff5fe; color: #2f6fe4; }
