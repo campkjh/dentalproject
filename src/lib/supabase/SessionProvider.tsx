@@ -456,7 +456,8 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       const redirectTo = `${
         process.env.NEXT_PUBLIC_SITE_URL ?? window.location.origin
       }/auth/callback`;
-      await supabase.auth.signInWithOAuth({ provider, options: { redirectTo } });
+      const { error } = await supabase.auth.signInWithOAuth({ provider, options: { redirectTo } });
+      if (error) throw error;
     },
     async signOut() {
       const currentUserId = session?.user.id;

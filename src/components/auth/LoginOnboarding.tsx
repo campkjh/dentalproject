@@ -8,6 +8,8 @@ import { useSession } from '@/lib/supabase/SessionProvider';
 import { useStore } from '@/store';
 import MonoIcon from '@/components/common/MonoIcon';
 import { startNativeKakaoLogin } from './kakao-login';
+import { startNativeAppleLogin } from './apple-login';
+import AppleLoginIcon from './AppleLoginIcon';
 import styles from './onboarding.module.css';
 import { haptic } from '@/lib/haptics';
 
@@ -16,7 +18,7 @@ import { haptic } from '@/lib/haptics';
  *  · 위쪽 대부분 = 큰 일러스트(이미지 안에 글자 없음, 아래 40% 는 흰색으로 빠짐 → 글은 그 흰 자리에),
  *    아래 = 제목 2줄(검정/파랑) + 회색 설명 2줄 + 페이지 점 + 알약 버튼 2개(회원가입/로그인).
  *  · 장은 좌우로 밀어 넘기고 4초마다 자동으로도 넘어간다(동작 줄이기 설정이면 자동 넘김 끔).
- *  · 로그인 = 아래에서 올라오는 시트(카카오/이메일), 회원가입 = /login 의 가입 모드.
+ *  · 로그인 = 아래에서 올라오는 시트(카카오/Apple/이메일), 회원가입 = /login 의 가입 모드.
  *  · PC(1024↑) = 화면 가운데 폰 비율 카드.
  *  · 닫힘 조건(경로 바뀜·로그인됨)은 AppInteractions 가 그대로 쥔다 — 여기는 그리기와 닫기 애니메이션만.
  * ──────────────────────────────────────────────────────────── */
@@ -73,7 +75,7 @@ export default function LoginOnboarding({ onClose }: { onClose: () => void }) {
   const [drag, setDrag] = useState<number | null>(null);
   const [leaving, setLeaving] = useState(false);
   const [sheet, setSheet] = useState<'closed' | 'open' | 'leaving'>('closed');
-  const [kakaoPending, setKakaoPending] = useState(false);
+  const [socialPending, setSocialPending] = useState<'kakao' | 'apple' | null>(null);
 
   const cardRef = useRef<HTMLElement>(null);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -179,18 +181,19 @@ export default function LoginOnboarding({ onClose }: { onClose: () => void }) {
   const goPartnerLogin = () => {
     router.push('/partner/login');
   };
-  const startKakao = () => {
-    if (kakaoPending) return;
-    setKakaoPending(true);
-    const native = startNativeKakaoLogin((message) => {
-      showToast(message);
-      setKakaoPending(false);
-    });
+  const startSocial = (provider: 'kakao' | 'apple') => {
+    if (socialPending) return;
+    setSocialPending(provider);
+    const onError = (message: string) => {
+      if (message) showToast(message);
+      setSocialPending(null);
+    };
+    const native = provider === 'apple' ? startNativeAppleLogin(onError) : startNativeKakaoLogin(onError);
     if (native) return;
     // OAuth 인증 페이지로 넘어간다 — 실패했을 때만 상태 복구
-    void signInWithOAuth('kakao').catch(() => {
+    void signInWithOAuth(provider).catch(() => {
       showToast('로그인을 시작하지 못했습니다.');
-      setKakaoPending(false);
+      setSocialPending(null);
     });
   };
 
@@ -299,13 +302,17 @@ export default function LoginOnboarding({ onClose }: { onClose: () => void }) {
               <span className={styles.sheetHandle} aria-hidden="true" />
               <h3 className={styles.sheetTitle}>어떻게 로그인할까요?</h3>
               <p className={styles.sheetSub}>로그인하면 예약 내역과 후기를 이어서 볼 수 있어요.</p>
-              <button type="button" className={styles.kakao} onClick={startKakao} disabled={kakaoPending}>
+              <button type="button" className={styles.kakao} onClick={() => startSocial('kakao')} disabled={socialPending !== null}>
                 <KakaoIcon />
-                {kakaoPending ? '카카오로 이동 중…' : '카카오로 시작하기'}
+                {socialPending === 'kakao' ? '카카오로 이동 중…' : '카카오로 시작하기'}
               </button>
-              <button type="button" className={styles.email} onClick={goEmailLogin}>이메일로 로그인</button>
+              <button type="button" className={styles.apple} onClick={() => startSocial('apple')} disabled={socialPending !== null}>
+                <AppleLoginIcon />
+                {socialPending === 'apple' ? 'Apple로 이동 중…' : 'Apple로 로그인'}
+              </button>
+              <button type="button" className={styles.email} onClick={goEmailLogin} disabled={socialPending !== null}>이메일로 로그인</button>
               {/* 병원 회원은 병원페이지(/partner/login)로 — 연파랑으로 손님 로그인과 구분 */}
-              <button type="button" className={styles.partner} onClick={goPartnerLogin}>
+              <button type="button" className={styles.partner} onClick={goPartnerLogin} disabled={socialPending !== null}>
                 <MonoIcon name="hospital" size={20} color="#2F6FE4" />
                 병원페이지로 로그인
               </button>

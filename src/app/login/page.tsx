@@ -9,6 +9,8 @@ import { useStore } from '@/store';
 import MonoIcon from '@/components/common/MonoIcon';
 import { safeNextPath, startNativeKakaoLogin } from '@/components/auth/kakao-login';
 import styles from './login.module.css';
+import { startNativeAppleLogin } from '@/components/auth/apple-login';
+import AppleLoginIcon from '@/components/auth/AppleLoginIcon';
 
 /* ─────────────────────────────────────────────────────────────
  * 이메일 로그인·가입 — 프리티풀 이메일 로그인(퀵매칭 어법) 모양.
@@ -176,31 +178,10 @@ function LoginInner() {
       if (native) return;
     }
 
-    // iOS 앱: Apple은 네이티브 Sign in with Apple 사용.
-    // window.webkit.messageHandlers.appleLogin.postMessage({}) → 네이티브가
-    // onAppleNativeLogin(identityToken, nonce, name?)을 호출 → Supabase 세션.
-    if (provider === 'apple' && typeof window !== 'undefined') {
-      const w = window as Window & {
-        webkit?: {
-          messageHandlers?: { appleLogin?: { postMessage: (msg: unknown) => void } };
-        };
-        onAppleNativeLoginError?: (message: string) => void;
-      };
-      const iosApple = w.webkit?.messageHandlers?.appleLogin;
-      if (iosApple) {
-        w.onAppleNativeLoginError = (message: string) => {
-          if (message) setError(message); // 빈 문자열 = 사용자 취소 → 조용히 리셋
-          setSocialPending(null);
-        };
-        try {
-          iosApple.postMessage({});
-        } catch {
-          setError('Apple 로그인을 시작하지 못했습니다.');
-          setSocialPending(null);
-        }
-        return;
-      }
-    }
+    if (provider === 'apple' && startNativeAppleLogin((message) => {
+      if (message) setError(message);
+      setSocialPending(null);
+    })) return;
 
     try {
       await signInWithOAuth(provider);
@@ -377,7 +358,7 @@ function LoginInner() {
                 disabled={socialPending !== null || pending}
                 className={`${styles.socialBtn} ${styles.apple}`}
               >
-                <AppleIcon />
+                <AppleLoginIcon size={18} />
                 {socialPending === 'apple' ? 'Apple로 이동 중…' : `Apple로 ${isLogin ? '로그인' : '시작하기'}`}
               </button>
               {/* 병원 회원은 병원페이지 로그인으로 */}
@@ -412,17 +393,6 @@ function KakaoIcon() {
       <path
         fill="#191600"
         d="M128 36C70.562 36 24 72.713 24 118c0 29.279 19.466 54.97 48.748 69.477-1.593 5.494-10.237 35.34-10.583 37.685 0 0-.207 1.762.934 2.434s2.483.15 2.483.15c3.272-.457 37.876-24.755 43.863-28.964 6.064.856 12.297 1.302 18.652 1.302 57.438 0 104-36.713 104-82S185.438 36 128 36z"
-      />
-    </svg>
-  );
-}
-
-function AppleIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
-      <path
-        fill="#ffffff"
-        d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"
       />
     </svg>
   );
