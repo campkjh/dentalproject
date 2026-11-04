@@ -13,7 +13,7 @@ import { Trash2 } from 'lucide-react';
  *  · 새 알림은 맨 위 연한 파랑 바탕(#F2F6FC), 그 아래 '지난 알림'.
  *  · 한 줄 = 둥근 아이콘 칸 · 제목(진하게) · 본문(회색, 3줄까지) · 오른쪽 날짜 + 같은 곳에서 여럿 오면 'N건'.
  *    같은 종류·같은 곳·같은 제목은 한 줄로 묶는다(토스 'N건').
- *  · 등장: 제목 아래→위 페이드, 줄은 오른쪽→왼쪽 순차 슬라이드.
+ *  · 등장: 제목 아래→위 페이드, 알림 줄은 가로 위치를 유지하며 순차 페이드.
  *  · 알림을 왼쪽으로 밀면 삭제 버튼이 나타난다. 각 묶음 삭제 · 전체 삭제는 본인 알림만 서버에서 삭제한 뒤 목록에 반영한다.
  * ⚠ 스토어 알림엔 생성 시각이 없고 날짜(ko-KR 문자열)만 있어 '방금 전·N분 전' 대신 오늘·어제·M월 D일로 보인다.
  *  · variant='drawer' 면 ‹ 뒤로 = 서랍 닫기, 알림을 눌러 이동하면 서랍을 닫고 이동, 스크롤은 서랍 칸 기준.
@@ -55,10 +55,12 @@ const popItemDelay = (i: number): CSSProperties => ({ animationDelay: `${0.07 + 
 const NT_CSS = `
 @keyframes ntFadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes ntSlideIn { from { opacity: 0; transform: translateX(22px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes ntItemFade { from { opacity: 0; } to { opacity: 1; } }
 .nt-a-title { animation: ntFadeUp .5s cubic-bezier(.22,.61,.36,1) both; }
 .nt-a-sub { animation: ntFadeUp .5s cubic-bezier(.22,.61,.36,1) .18s both; }
 /* fill backwards — 끝나면 빠져서 눌림 효과가 산다 */
-.nt-a-item { animation: ntSlideIn .46s cubic-bezier(.22,.61,.36,1) backwards; }
+/* Keep the snap target stationary so entry motion cannot reveal the delete action. */
+.nt-a-item { animation: ntItemFade .46s cubic-bezier(.22,.61,.36,1) backwards; }
 .nt-a-divider { animation: ntSlideIn .42s cubic-bezier(.22,.61,.36,1) backwards; }
 .nt-swipe { display: flex; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; overscroll-behavior-x: contain; scrollbar-width: none; }
 .nt-swipe::-webkit-scrollbar { display: none; }
