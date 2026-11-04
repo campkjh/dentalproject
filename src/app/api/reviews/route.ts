@@ -1,7 +1,7 @@
 import { writeNotifications } from '@/lib/push/delivery';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse, type NextRequest } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient, createClient } from '@/lib/supabase/server';
 import { reviewInput } from '@/lib/review-input';
 
 export const dynamic = 'force-dynamic';
@@ -79,10 +79,10 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  const { data, error } = await sb
-    .from('reviews')
-    .insert({
-      author_id: user.id,
+  const admin = await createAdminClient();
+  const { data, error } = await admin.rpc('create_review_with_points', {
+    p_author_id: user.id,
+    p_review: {
       reservation_id: reservationId,
       hospital_id: hospitalId,
       product_id: productId,
@@ -94,51 +94,45 @@ export async function POST(req: NextRequest) {
       total_cost: parsed.data.totalCost,
       before_image: parsed.data.beforeImage || null,
       after_image: parsed.data.afterImage || null,
-    })
-    .select('id')
-    .single();
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
-
-  // Award 500P (idempotent: only on first review per reservation/product/day)
-  await sb.from('point_history').insert({
-    user_id: user.id,
-    type: 'earn',
-    description: '후기작성',
-    amount: 500,
+    },
   });
-  // Bump cached profile.points
-  const { data: profile } = await sb.from('profiles').select('points, name').eq('id', user.id).maybeSingle();
-  if (profile) {
-    await sb.from('profiles').update({ points: (profile.points ?? 0) + 500 }).eq('id', user.id);
+  if (error || !data?.id) {
+    if (error?.code === '23505') return NextResponse.json({ error: '이미 작성된 후기입니다.' }, { status: 409 });
+    console.error('Review and point transaction failed:', error?.code ?? 'missing_result');
+    return NextResponse.json({ error: '리뷰 등록과 포인트 적립을 완료하지 못했어요. 잠시 후 다시 시도해주세요.' }, { status: 500 });
   }
+  const { data: profile } = await sb.from('profiles').select('name').eq('id', user.id).maybeSingle();
 
-  // Notify reviewer
-  await writeNotifications({
-    user_id: user.id,
-    type: 'info',
-    title: '후기 작성 완료',
-    content: '소중한 후기 감사합니다! 500P가 적립되었어요.',
-    link: '/mypage/points',
-  });
+  // Notifications are best effort after the review + reward commit succeeded.
+  try {
+    // Notify reviewer
+    await writeNotifications({
+      user_id: user.id,
+      type: 'info',
+      title: '후기 작성 완료',
+      content: '소중한 후기 감사합니다! 500P가 적립되었어요.',
+      link: '/mypage/points',
+    });
 
-  // Notify hospital owner of new review
-  if (hospitalId) {
-    const { data: hospitalRow } = await sb
-      .from('hospitals')
-      .select('owner_id, name')
-      .eq('id', hospitalId)
-      .maybeSingle();
-    if (hospitalRow?.owner_id) {
-      await writeNotifications({
-        user_id: hospitalRow.owner_id,
-        type: 'important',
-        title: '새 후기가 등록되었습니다',
-        content: `${profile?.name ?? '회원'}님이 ${hospitalRow.name}에 후기를 남겼습니다.`,
-        link: `/hospital/manage`,
-      });
+    // Notify hospital owner of new review
+    if (hospitalId) {
+      const { data: hospitalRow } = await sb
+        .from('hospitals')
+        .select('owner_id, name')
+        .eq('id', hospitalId)
+        .maybeSingle();
+      if (hospitalRow?.owner_id) {
+        await writeNotifications({
+          user_id: hospitalRow.owner_id,
+          type: 'important',
+          title: '새 후기가 등록되었습니다',
+          content: `${profile?.name ?? '회원'}님이 ${hospitalRow.name}에 후기를 남겼습니다.`,
+          link: `/hospital/manage`,
+        });
+      }
     }
-  }
 
-  return NextResponse.json({ id: data.id });
+  } catch { console.error('Review saved, but notification delivery failed'); }
+
+  return NextResponse.json(data);
 }
