@@ -3,6 +3,10 @@
 // 내 리뷰 — 프리티풀 마이(퀵매칭 어법): 요약 카드 + 리뷰 카드(상품 사진·병원·시술명 머리 + 상품 상세 댓글형 리뷰 줄 그대로).
 //  · 수정/삭제는 ⋯ 툴팁 메뉴(.pop-menu). 동작은 예전처럼 아직 연결 전(메뉴만 닫힌다).
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
+import { useSession } from '@/lib/supabase/SessionProvider';
+import { ownReviews } from '@/lib/own-reviews';
+import type { Review } from '@/types';
 import { useStore } from '@/store';
 import TopBar from '@/components/common/TopBar';
 import { QdBody, MY_CARD } from '@/components/detail/QdKit';
@@ -10,9 +14,32 @@ import { ReviewCommentRow, StarRating } from '@/components/detail/DetailKit';
 import { Screen, MoreMenu, EmptyBlock, NeedLogin } from '@/components/mypage/screens/ScreenKit';
 
 export default function MyReviewsPage() {
-  const { isLoggedIn, reviews, products, hospitals } = useStore();
+  const { isLoggedIn, products, hospitals } = useStore();
+  const { authUser, loading: sessionLoading } = useSession();
+  const ownerId = authUser?.id;
+  const [result, setResult] = useState<{ ownerId: string; reviews: (Review & { hospitalName?: string; productImage?: string })[]; error?: string } | null>(null);
+  useEffect(() => {
+    if (!ownerId) return;
+    const controller = new AbortController();
+    fetch('/api/reviews/mine', { cache: 'no-store', signal: controller.signal })
+      .then(async response => {
+        if (!response.ok) throw new Error('내 리뷰를 불러오지 못했어요. 다시 시도해주세요.');
+        const data = await response.json();
+        if (data.userId !== ownerId || !Array.isArray(data.reviews)) throw new Error('로그인 정보를 다시 확인해주세요.');
+        if (!controller.signal.aborted) setResult({ ownerId, reviews: ownReviews(data.reviews, ownerId) });
+      })
+      .catch(error => {
+        if (!controller.signal.aborted) setResult({ ownerId, reviews: [], error: error instanceof Error ? error.message : '내 리뷰를 불러오지 못했어요.' });
+      });
+    return () => controller.abort();
+  }, [ownerId]);
 
-  if (!isLoggedIn) {
+  const current = result?.ownerId === ownerId ? result : null;
+  if (sessionLoading || (isLoggedIn && ownerId && !current)) {
+    return <Screen><TopBar title="내 리뷰" /><p className="px-6 py-12 text-center text-[#8B95A1]">내 리뷰를 불러오는 중이에요.</p></Screen>;
+  }
+
+  if (!isLoggedIn || !ownerId) {
     return (
       <Screen>
         <TopBar title="내 리뷰" />
@@ -21,8 +48,10 @@ export default function MyReviewsPage() {
     );
   }
 
-  // Use first 4 reviews as user reviews for demo
-  const userReviews = reviews.slice(0, 4);
+  if (current?.error) {
+    return <Screen><TopBar title="내 리뷰" /><p role="alert" className="px-6 py-12 text-center text-[#8B95A1]">{current.error}</p></Screen>;
+  }
+  const userReviews = current?.reviews ?? [];
 
   if (userReviews.length === 0) {
     return (
@@ -57,7 +86,7 @@ export default function MyReviewsPage() {
 
         {userReviews.map((review) => {
           const product = review.productId ? products.find(p => p.id === review.productId) : undefined;
-          const hospitalName = (review.hospitalId && hospitals.find(h => h.id === review.hospitalId)?.name) || product?.hospitalName;
+          const hospitalName = review.hospitalName || (review.hospitalId && hospitals.find(h => h.id === review.hospitalId)?.name) || product?.hospitalName;
           const photos = [
             ...(review.beforeImage ? [{ src: review.beforeImage, label: '전' }] : []),
             ...(review.afterImage ? [{ src: review.afterImage, label: review.beforeImage ? '후' : '사진' }] : []),
@@ -65,9 +94,9 @@ export default function MyReviewsPage() {
           const head = (
             <>
               <span className="h-[52px] w-[52px] shrink-0 overflow-hidden rounded-[12px] bg-[#F2F4F6]">
-                {product?.imageUrl && (
+                {(product?.imageUrl || review.productImage) && (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={product.imageUrl} alt="" loading="lazy" className="h-full w-full object-cover" />
+                  <img src={product?.imageUrl || review.productImage} alt="" loading="lazy" className="h-full w-full object-cover" />
                 )}
               </span>
               <span className="flex min-w-0 flex-1 flex-col gap-[3px]">
