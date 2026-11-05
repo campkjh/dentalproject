@@ -1,6 +1,7 @@
 import { after, NextResponse, type NextRequest } from 'next/server';
 import { flushNativePush } from '@/lib/push/delivery';
 import { createAdminClient, createClient } from '@/lib/supabase/server';
+import { broadcastReservationChange } from '@/lib/realtime/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -47,7 +48,7 @@ export async function POST(req: NextRequest) {
   // 예약 조회 + 소유자/금액 검증
   const { data: reservation, error: resErr } = await admin
     .from('reservations')
-    .select('id, user_id, amount, payment_status, virtual_account, order_id, status')
+    .select('id, user_id, hospital_id, amount, payment_status, virtual_account, order_id, status')
     .eq('id', reservationId)
     .maybeSingle();
 
@@ -153,7 +154,12 @@ export async function POST(req: NextRequest) {
     });
     return NextResponse.json({ error: '결제는 승인됐지만 예약 반영을 확인하지 못했습니다. 고객센터로 문의해주세요.' }, { status: 503 });
   }
-  after(async () => { await flushNativePush().catch(() => {}); });
+  after(async () => {
+    await Promise.allSettled([
+      flushNativePush(),
+      broadcastReservationChange({ event: 'UPDATE', reservationId, hospitalId: reservation.hospital_id, userId: user.id }),
+    ]);
+  });
 
   return NextResponse.json({
     ok: true,

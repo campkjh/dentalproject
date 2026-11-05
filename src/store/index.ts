@@ -452,6 +452,7 @@ export const useStore = create<AppState>((set, get) => ({
     }
   },
   addReservation: async (reservation, opts) => {
+    const ownerId = get().user?.id;
     set({ reservations: [reservation, ...get().reservations] });
     try {
       const res = await fetch('/api/reservations', {
@@ -477,10 +478,12 @@ export const useStore = create<AppState>((set, get) => ({
         set({ reservations: get().reservations.filter((r) => r.id !== reservation.id) });
         return { error: j.error || `예약 실패 (${res.status})` };
       }
-      const { id, amount, orderId } = await res.json();
+      const { id, amount, orderId, points } = await res.json();
+      if (get().user?.id !== ownerId) return { error: '로그인 계정이 변경되었습니다. 예약 내역을 다시 확인해주세요.' };
       set({
         reservations: get().reservations.map((r) => (r.id === reservation.id ? { ...r, id } : r)),
       });
+      if (typeof points === 'number' && get().user) set({ user: { ...get().user!, points } });
       void get().hydrateMe();
       return { error: null, id, amount, orderId };
     } catch (e) {
