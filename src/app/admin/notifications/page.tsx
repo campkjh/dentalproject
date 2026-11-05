@@ -45,6 +45,7 @@ export default function AdminNotificationsPage() {
   const [search, setSearch] = useState('');
   const [viewItem, setViewItem] = useState<Announcement | null>(null);
 
+  const [pushCategory, setPushCategory] = useState<'marketing' | 'event'>('marketing');
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState({ title: '', content: '', publishedAt: '' });
@@ -162,7 +163,7 @@ export default function AdminNotificationsPage() {
       const res = await fetch('/api/admin/push', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: pushForm.title.trim(), body: pushForm.body.trim(), target: 'all' }),
+        body: JSON.stringify({ title: pushForm.title.trim(), body: pushForm.body.trim(), target: 'all', category: pushCategory }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -286,6 +287,12 @@ export default function AdminNotificationsPage() {
           }
         >
           <div className="space-y-4">
+            <label className="adm-label">수신 동의 유형
+              <select value={pushCategory} onChange={e => setPushCategory(e.target.value as 'marketing' | 'event')} className="adm-input mt-2">
+                <option value="marketing">광고성 정보 수신 동의자</option>
+                <option value="event">이벤트·혜택 알림 동의자</option>
+              </select>
+            </label>
             <div>
               <label className="adm-label">제목 *</label>
               <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="공지 제목" className="adm-input" />

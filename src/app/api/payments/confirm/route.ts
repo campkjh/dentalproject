@@ -1,5 +1,6 @@
-import { NextResponse, type NextRequest } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { after, NextResponse, type NextRequest } from 'next/server';
+import { flushNativePush } from '@/lib/push/delivery';
+import { createAdminClient, createClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -42,10 +43,11 @@ export async function POST(req: NextRequest) {
   } = await sb.auth.getUser();
   if (!user) return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 });
 
+  const admin = await createAdminClient();
   // 예약 조회 + 소유자/금액 검증
-  const { data: reservation, error: resErr } = await sb
+  const { data: reservation, error: resErr } = await admin
     .from('reservations')
-    .select('id, user_id, amount, payment_status, virtual_account')
+    .select('id, user_id, amount, payment_status, virtual_account, order_id, status')
     .eq('id', reservationId)
     .maybeSingle();
 
@@ -55,6 +57,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: '본인의 예약이 아닙니다.' }, { status: 403 });
   }
 
+  if (reservation.order_id !== orderId || reservation.amount !== amount) return NextResponse.json({ error: '결제 주문 정보가 일치하지 않습니다.' }, { status: 400 });
+  if (reservation.status === 'cancelled' || ['failed', 'canceled'].includes(reservation.payment_status)) return NextResponse.json({ error: '취소된 주문입니다. 다시 예약해주세요.' }, { status: 409 });
   // 이미 결제 완료된 예약이면 중복 승인하지 않고 성공 처리(멱등성)
   if (reservation.payment_status === 'paid') {
     return NextResponse.json({ ok: true, alreadyPaid: true });
@@ -77,6 +81,7 @@ export async function POST(req: NextRequest) {
     headers: {
       Authorization: `Basic ${Buffer.from(`${secretKey}:`).toString('base64')}`,
       'Content-Type': 'application/json',
+      'Idempotency-Key': reservationId,
     },
     body: JSON.stringify({ paymentKey, orderId, amount }),
   });
@@ -84,7 +89,7 @@ export async function POST(req: NextRequest) {
 
   if (!tossRes.ok) {
     // 승인 실패 — 예약을 결제 실패로 표시
-    await sb
+    await admin
       .from('reservations')
       .update({ payment_status: 'failed', order_id: orderId })
       .eq('id', reservationId);
@@ -93,6 +98,8 @@ export async function POST(req: NextRequest) {
       { status: 400 }
     );
   }
+
+  if (!['DONE', 'WAITING_FOR_DEPOSIT'].includes(tossData?.status) || tossData.orderId !== orderId || tossData.totalAmount !== amount) return NextResponse.json({ error: '결제 결과를 확인하지 못했습니다. 고객센터로 문의해주세요.' }, { status: 502 });
 
   // 무통장입금(가상계좌): 승인 시점에는 계좌만 발급되고 입금 전이다.
   // 'paid'로 기록하지 않고 입금 대기로 두며, 입금 확인은 /api/payments/webhook에서 처리한다.
@@ -104,7 +111,7 @@ export async function POST(req: NextRequest) {
       customerName: va.customerName ?? null,
       dueDate: va.dueDate ?? null,
     };
-    const { error: vaErr } = await sb
+    const { error: vaErr } = await admin
       .from('reservations')
       .update({
         payment_status: 'waiting_deposit',
@@ -119,15 +126,15 @@ export async function POST(req: NextRequest) {
       console.error('[payments/confirm] 가상계좌 발급 성공했으나 예약 갱신 실패:', vaErr.message, {
         reservationId,
         orderId,
-        paymentKey,
       });
+      return NextResponse.json({ error: '발급된 계좌를 저장하지 못했습니다. 고객센터로 문의해주세요.' }, { status: 503 });
     }
 
     return NextResponse.json({ ok: true, status: 'WAITING_FOR_DEPOSIT', virtualAccount });
   }
 
   // 승인 성공 — 예약에 결제 결과 기록
-  const { error: updateErr } = await sb
+  const { error: updateErr } = await admin
     .from('reservations')
     .update({
       payment_status: 'paid',
@@ -139,13 +146,14 @@ export async function POST(req: NextRequest) {
     .eq('id', reservationId);
 
   if (updateErr) {
-    // 결제는 성공했으나 기록 실패 — 사용자에겐 성공을 반환하되 서버 로그 남김
+    // 결제는 성공했으나 기록 실패 — 재확인 안내와 오류를 반환한다
     console.error('[payments/confirm] 결제 승인 성공했으나 예약 갱신 실패:', updateErr.message, {
       reservationId,
       orderId,
-      paymentKey,
     });
+    return NextResponse.json({ error: '결제는 승인됐지만 예약 반영을 확인하지 못했습니다. 고객센터로 문의해주세요.' }, { status: 503 });
   }
+  after(async () => { await flushNativePush().catch(() => {}); });
 
   return NextResponse.json({
     ok: true,

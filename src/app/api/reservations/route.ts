@@ -1,4 +1,5 @@
-import { writeNotifications } from '@/lib/push/delivery';
+import { after } from 'next/server';
+import { flushNativePush } from '@/lib/push/delivery';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse, type NextRequest } from 'next/server';
 import { broadcastReservationChange } from '@/lib/realtime/server';
@@ -22,7 +23,8 @@ async function resolveHospitalId(sb: any, hospitalIdOrSlug: string) {
 }
 
 export async function POST(req: NextRequest) {
-  const body = await req.json();
+  const body = await req.json().catch(() => null);
+  if (!body || typeof body.hospitalId !== 'string' || !Number.isSafeInteger(body.amount) || body.amount < 0 || !Number.isSafeInteger(body.pointsUsed ?? 0)) return NextResponse.json({ error: '예약 금액을 확인해주세요.' }, { status: 400 });
   const sb = await createClient();
   const {
     data: { user },
@@ -53,50 +55,15 @@ export async function POST(req: NextRequest) {
   if (hoursError) return NextResponse.json({ error: '병원 운영시간을 확인하지 못했습니다.' }, { status: 500 });
   if (!isHospitalVisitAvailable(visitAt, parseHospitalSchedule(hours ?? []))) return NextResponse.json({ error: '예약할 수 없는 시간입니다. 병원 운영시간 내 30분 단위로 다시 선택해주세요.' }, { status: 400 });
 
-  const { data, error } = await sb
-    .from('reservations')
-    .insert({
-      user_id: user.id,
-      hospital_id: hospitalId,
-      product_id: productId,
-      doctor_id: doctorId,
-      visit_at: visitAt.toISOString(),
-      amount: body.amount ?? 0,
-      customer_name: body.customerName ?? '',
-      customer_phone: body.customerPhone ?? '',
-      payment_type: body.paymentType ?? null,
-      payment_method: body.paymentMethod ?? null,
-      status: 'pending',
-    })
-    .select('id')
-    .single();
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
-
-  // Create notification for the user
-  await writeNotifications({
-    user_id: user.id,
-    type: 'info',
-    title: '예약이 접수되었습니다',
-    content: `${body.customerName ?? '회원'}님의 예약이 접수되었습니다. 병원 확인 후 알려드릴게요.`,
-    link: `/reservations/${data.id}`,
+  const { data, error } = await admin.rpc('create_customer_booking', {
+    p_user_id: user.id,
+    p_booking: { hospital_id: hospitalId, product_id: productId, doctor_id: doctorId, visit_at: visitAt.toISOString(),
+      amount: body.amount, customer_name: body.customerName ?? '', customer_phone: body.customerPhone ?? '',
+      payment_type: body.paymentType ?? null, payment_method: body.paymentMethod ?? null,
+      points_used: body.pointsUsed ?? 0, coupon_id: body.couponId ?? null, option_id: body.optionId ?? null },
   });
-
-  // Notify hospital owner if exists
-  const { data: hospitalRow } = await sb
-    .from('hospitals')
-    .select('owner_id, name')
-    .eq('id', hospitalId)
-    .maybeSingle();
-  if (hospitalRow?.owner_id) {
-    await writeNotifications({
-      user_id: hospitalRow.owner_id,
-      type: 'important',
-      title: '새 예약이 들어왔습니다',
-      content: `${body.customerName ?? '회원'}님이 ${hospitalRow.name}에 예약을 신청했습니다.`,
-      link: `/hospital/appointments`,
-    });
-  }
+  if (error || !data?.id) return NextResponse.json({ error: error?.code === '22023' ? error.message : '예약 저장을 완료하지 못했습니다. 잠시 후 다시 시도해주세요.' }, { status: 400 });
+  after(async () => { await flushNativePush().catch(() => {}); });
 
   await broadcastReservationChange({
     event: 'INSERT',
@@ -105,5 +72,5 @@ export async function POST(req: NextRequest) {
     userId: user.id,
   });
 
-  return NextResponse.json({ id: data.id });
+  return NextResponse.json(data);
 }

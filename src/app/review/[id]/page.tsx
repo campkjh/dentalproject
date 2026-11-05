@@ -1,4 +1,5 @@
 'use client';
+import ReviewPhotoViewer from '@/components/reviews/ReviewPhotoViewer';
 
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -125,7 +126,7 @@ export default function ReviewDetailPage() {
             {imgs.before && (
               <div className="relative aspect-square rounded-xl overflow-hidden bg-gray-100">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={imgs.before} alt="전" className="w-full h-full object-cover" />
+                <ReviewPhotoViewer src={imgs.before} label="시술 전" className="h-full w-full" />
                 <span
                   className="absolute top-2 left-2 px-2 py-0.5 text-[10px] font-bold rounded"
                   style={{ backgroundColor: 'rgba(0,0,0,0.6)', color: '#fff' }}
@@ -137,7 +138,7 @@ export default function ReviewDetailPage() {
             {imgs.after && (
               <div className="relative aspect-square rounded-xl overflow-hidden bg-gray-100">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={imgs.after} alt={imgs.before ? "시술 후" : "리뷰 사진"} className="w-full h-full object-cover" />
+                <ReviewPhotoViewer src={imgs.after} label={imgs.before ? "시술 후" : "리뷰 사진"} className="h-full w-full" />
                 <span className="absolute top-2 left-2 px-2 py-0.5 text-[10px] font-bold rounded bg-[#8037FF] text-white">
                   {imgs.before ? 'AFTER' : '사진'}
                 </span>
@@ -236,12 +237,12 @@ export default function ReviewDetailPage() {
                     <div className={`grid gap-1 ${r.beforeImage && r.afterImage ? 'grid-cols-2' : 'grid-cols-1'}`}>
                       {r.beforeImage && (
                         <div className="aspect-square rounded-lg overflow-hidden bg-gray-100">
-                          <img src={r.beforeImage} alt="" className="w-full h-full object-cover" />
+                          <img src={r.beforeImage} alt="시술 전" className="w-full h-full object-cover" />
                         </div>
                       )}
                       {r.afterImage && (
                         <div className="aspect-square rounded-lg overflow-hidden bg-gray-100">
-                          <img src={r.afterImage} alt="" className="w-full h-full object-cover" />
+                          <img src={r.afterImage} alt="시술 후" className="w-full h-full object-cover" />
                         </div>
                       )}
                     </div>

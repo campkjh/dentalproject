@@ -6,9 +6,11 @@ import { useState, useEffect, useRef } from 'react';
 import { trackProduct } from '@/lib/product-tracking';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import AddressCopy from '@/components/common/AddressCopy';
 import PhoneNumber from '@/components/common/PhoneNumber';
 import { PocketIcon } from '@/components/icons/PocketIcon';
 import { Share2, ChevronLeft, ChevronRight, ChevronDown, MoreHorizontal, X } from 'lucide-react';
+import { openHospitalMap } from '@/lib/hospital-map';
 import NaverMap from '@/components/common/NaverMap';
 import Avatar from '@/components/common/Avatar';
 import ProductCard from '@/components/common/ProductCard';
@@ -144,7 +146,7 @@ export default function ProductDetailPage() {
   const productTone = useImageTone(product ? resolveProductImageUrl(product.imageUrl, product.id) : null, 'square');
   const pocketColor = toneAccent(productTone) || '#6B7684';
   const hospital = hospitals.find(h => h.id === product?.hospitalId);
-  const productReviews = reviews.filter(r => r.productId === product?.id);
+  const productReviews = reviews.filter(r => r.productId === product?.id).sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
 
   // 의사 상품 인사이트 '조회' — 상세를 열면 1회(같은 기기·하루 한 번)
   useEffect(() => { trackProduct('views', typeof params.id === 'string' ? params.id : undefined); }, [params.id]);
@@ -201,6 +203,8 @@ export default function ProductDetailPage() {
     );
   }
 
+  const hospitalReviewRows = reviews.filter(r => r.hospitalId === hospital?.id);
+  const hospitalRating = hospital?.rating ?? 0;
   const reviewCount = productReviews.length;
   const rating = reviewCount > 0 ? productReviews.reduce((s, r) => s + r.rating, 0) / reviewCount : product.rating;
   const productImageUrl = resolveProductImageUrl(product.imageUrl, product.id);
@@ -231,16 +235,11 @@ export default function ProductDetailPage() {
   // 옵션 줄 — 옵션이 없으면 상품 자체가 옵션 1. 옵션 정가는 상품 할인율로 되짚는다(정가가 따로 없어서)
   const baseDiscount = product.discount ?? (product.originalPrice && product.originalPrice > product.price ? Math.round((1 - product.price / product.originalPrice) * 100) : 0);
   const optionRows = (product.options && product.options.length > 0 ? product.options : [{ id: 'base', name: product.title, price: product.price }]).map(o => {
-    const original = o.id === 'base' && product.originalPrice ? product.originalPrice : baseDiscount > 0 ? Math.round(o.price / (1 - baseDiscount / 100) / 100) * 100 : o.price;
+    const original = o.id === 'base' && product.originalPrice ? product.originalPrice : o.price;
     return { ...o, original, discount: original > o.price ? baseDiscount : 0 };
   });
   const selected = optionRows.find(o => o.id === optionId) ?? optionRows[0];
   const cheapestId = optionRows.reduce((m, o) => (o.price < m.price ? o : m), optionRows[0]).id;
-  // 진료과 순위 = 같은 진료과 안에서 찜 수 → 후기 수 순
-  const categoryRanked = products.filter(p => p.category === product.category).sort((x, y) => y.likeCount - x.likeCount || y.reviewCount - x.reviewCount);
-  const categoryRankIdx = categoryRanked.findIndex(p => p.id === product.id);
-  const categoryRank = categoryRankIdx >= 0 && categoryRankIdx < 100 ? categoryRankIdx + 1 : null;
-  const categoryTop = categoryRanked.slice(0, 3);
   const todayHours = (() => {
     const oh = hospital?.operatingHours.find(h => DAY_INDEX[h.day] === new Date().getDay());
     if (!oh) return '병원 정보에서 확인';
@@ -294,14 +293,14 @@ export default function ProductDetailPage() {
       </button>
       <button
         type="button"
-        onClick={() => router.push(`/booking?productId=${product.id}`)}
+        onClick={() => router.push(`/booking?productId=${product.id}${selected.id !== 'base' ? '&optionId=' + encodeURIComponent(selected.id) : ''}`)}
         className="ml-1 flex h-14 flex-1 items-center justify-center rounded-[18px] bg-[#EBF2FD] text-[17px] font-bold text-[#3A6FDB] transition-all active:scale-[0.98]"
       >
         예약하기
       </button>
       <button
         type="button"
-        onClick={() => router.push(`/booking?productId=${product.id}&payment=app`)}
+        onClick={() => router.push(`/booking?productId=${product.id}&payment=app${selected.id !== 'base' ? '&optionId=' + encodeURIComponent(selected.id) : ''}`)}
         className="flex h-14 flex-1 items-center justify-center rounded-[18px] bg-[#4A82EE] text-[17px] font-bold text-white transition-all active:scale-[0.98]"
       >
         앱결제하기
@@ -385,18 +384,6 @@ export default function ProductDetailPage() {
           <div className="bg-white pt-6">
             <Reveal>
               <div className="px-5">
-                <div className="flex items-start justify-between gap-3">
-                  <Link
-                    href={`/search?category=${product.category}`}
-                    className="flex min-w-0 items-center gap-0.5 rounded-[8px] bg-[#F2F4F6] py-1.5 pl-2.5 pr-1.5 text-[14px] font-semibold text-[#333D4B] transition-colors active:bg-[#E5E8EB]"
-                  >
-                    <span className="truncate">{categoryRank ? `${categoryName} ${categoryRank}위` : product.hospitalName}</span>
-                    <ChevronRight size={16} strokeWidth={2.2} className="shrink-0 text-[#6B7684]" />
-                  </Link>
-                  <button type="button" aria-label="자주 묻는 질문" onClick={() => document.getElementById('product-faq')?.scrollIntoView({ behavior: 'smooth', block: 'center' })} className="-mr-1 -mt-0.5 shrink-0 p-1 transition-transform active:scale-90">
-                    <MonoIcon name="chat-bubble-question" size={30} color="#B0B8C1" />
-                  </button>
-                </div>
                 <h1 className="mt-3 break-keep text-[20px] font-medium leading-[1.4] tracking-[-0.4px] text-[#191F28]">{product.title}</h1>
 
                 {/* 가격 카드 — 연한 파랑 바탕 · 파란 띠 · 남색 큰 값 */}
@@ -460,7 +447,7 @@ export default function ProductDetailPage() {
                     </span>
                     <ChevronRight size={20} className="shrink-0 text-[#B0B8C1]" />
                   </button>
-                  <button type="button" onClick={() => scrollToSection('info')} className="flex h-12 w-full items-center text-left">
+                  <button type="button" onClick={() => document.getElementById('product-weekly-hours')?.scrollIntoView({ behavior: 'smooth', block: 'start' })} className="flex h-12 w-full items-center text-left">
                     <span className="w-[86px] shrink-0 text-[17px] text-[#8B95A1]">진료시간</span>
                     <span className="min-w-0 flex-1 truncate text-[17px] text-[#333D4B]">{todayHours}</span>
                     <ChevronRight size={20} className="shrink-0 text-[#B0B8C1]" />
@@ -480,22 +467,7 @@ export default function ProductDetailPage() {
               </div>
             </Reveal>
 
-            {/* 인기 순위 줄 */}
-            {categoryTop.length > 0 && (
-              <>
-                <div className="h-2.5 bg-[#F2F4F6]" />
-                <Link href={`/search?category=${product.category}`} className="flex h-[72px] items-center gap-3 px-5 transition-colors active:bg-[#F9FAFB]">
-                  <span className="min-w-0 flex-1 truncate text-[18px] font-medium text-[#333D4B]">{categoryName ?? '마이닥'} 인기 순위</span>
-                  <span className="flex shrink-0 gap-1">
-                    {categoryTop.map(p => (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img key={p.id} src={resolveProductImageUrl(p.imageUrl, p.id)} alt="" className="h-[30px] w-[30px] rounded-[6px] object-cover" />
-                    ))}
-                  </span>
-                  <ChevronRight size={20} className="shrink-0 text-[#B0B8C1]" />
-                </Link>
-              </>
-            )}
+
           </div>
 
           {/* 칸 나눔 — 회색 띠 */}
@@ -668,7 +640,7 @@ export default function ProductDetailPage() {
                       </p>
                       <p className="mt-0.5 flex items-center gap-1 text-[14px] text-[#4E5968]">
                         <SingleStar size={15} />
-                        {hospital.rating.toFixed(1)} ({hospital.reviewCount})
+                        {hospitalRating.toFixed(1)} ({hospital.reviewCount || hospitalReviewRows.length})
                       </p>
                     </div>
                     <ChevronRight size={20} className="shrink-0 text-[#B0B8C1]" />
@@ -678,7 +650,7 @@ export default function ProductDetailPage() {
                       ...(hospital.location ? [{ label: '지역', value: hospital.location }] : []),
                       ...(hospital.phone ? [{ label: '전화', value: <PhoneNumber phone={hospital.phone} /> }] : []),
                       { label: '진료시간', value: todayHours },
-                      ...(hospital.tags?.length > 0 ? [{ label: '키워드', value: hospital.tags.slice(0, 6).map(t => t.replace(/^#/, '')).join(', ') }] : []),
+                      { label: '진료과목', value: hospital.tags?.length ? hospital.tags.map(t => t.replace(/^#/, '')).join(', ') : categoryLabel(hospital.category) },
                     ].map(r => (
                       <p key={r.label} className="flex min-h-11 items-center py-1.5">
                         <span className="w-[86px] shrink-0 text-[17px] text-[#8B95A1]">{r.label}</span>
@@ -690,7 +662,7 @@ export default function ProductDetailPage() {
                   <div className="mt-4 grid grid-cols-3 gap-2">
                     {[
                       ...(hospital.phone ? [{ label: '전화하기', icon: 'call', onClick: () => { window.location.href = `tel:${hospital.phone.replace(/[^0-9+]/g, '')}`; } }] : []),
-                      { label: '길찾기', icon: 'pin-location', onClick: () => window.open(`https://map.naver.com/p?q=${encodeURIComponent(hospital.address || hospital.name)}`, '_blank') },
+                      { label: '길찾기', icon: 'pin-location', onClick: () => void openHospitalMap(hospital) },
                       { label: '병원 홈', icon: 'hospital', onClick: () => router.push(`/hospital/detail/${hospital.id}`) },
                     ].map(btn => (
                       <button
@@ -718,16 +690,7 @@ export default function ProductDetailPage() {
                   <div className="relative mt-3 aspect-[16/10] overflow-hidden rounded-[16px] bg-[#F2F4F6]">
                     <NaverMap address={hospital.address} lat={hospital.lat} lng={hospital.lng} name={hospital.name} />
                   </div>
-                  <div className="mt-3 flex items-start gap-3">
-                    <p className="min-w-0 flex-1 text-[15px] leading-[1.5] text-[#191F28]">{hospital.address}</p>
-                    <button
-                      type="button"
-                      onClick={() => { navigator.clipboard?.writeText(hospital.address).then(() => showToast('주소를 복사했어요.')).catch(() => {}); }}
-                      className="shrink-0 text-[14px] font-semibold text-[#3180F7]"
-                    >
-                      주소 복사
-                    </button>
-                  </div>
+                  <div className="mt-3 text-[15px] text-[#191F28]"><AddressCopy address={hospital.address} /></div>
                   {hospital.addressDetail && <p className="mt-1.5 whitespace-pre-line rounded-[14px] bg-[#F2F4F6] px-4 py-3 text-[14px] leading-[1.6] text-[#4E5968]">{hospital.addressDetail}</p>}
                 </Reveal>
 
@@ -758,7 +721,7 @@ export default function ProductDetailPage() {
           {hospital && (
             <>
               <div className="h-2.5 bg-[#F2F4F6]" />
-              <div className="bg-white px-5 py-7">
+              <div id="product-weekly-hours" className="scroll-mt-[140px] bg-white px-5 py-7">
                 <h2 className="text-[20px] font-bold leading-tight tracking-[-0.4px] text-[#191F28]">진료 시간</h2>
                 <Reveal>
                   {(() => {

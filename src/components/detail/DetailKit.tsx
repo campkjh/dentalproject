@@ -4,6 +4,7 @@
 //  Reveal(닿으면 위로 페이드) · StarRating(반짝 별) · SectionHead(아이콘 + 19 굵게) · 흘러가는 리뷰 카드 · 댓글형 리뷰 줄.
 import { useEffect, useRef, useState, type MouseEvent, type ReactNode } from 'react';
 import Link from 'next/link';
+import ReviewPhotoViewer from '@/components/reviews/ReviewPhotoViewer';
 import { useRouter } from 'next/navigation';
 import Avatar from '@/components/common/Avatar';
 import { reviewerHref } from '@/lib/reviewer';
@@ -146,7 +147,7 @@ export function ReviewCommentRow({ review, first = false, menu, compact = false 
               {photos.slice(0, 6).map((p, i) => (
                 <span key={p.src + i} className="relative h-[84px] w-[84px] shrink-0 overflow-hidden rounded-[12px] bg-[#F2F4F6]">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={p.src} alt={p.label || ''} loading="lazy" decoding="async" className="h-full w-full object-cover" />
+                  <ReviewPhotoViewer src={p.src} label={p.label || '후기 사진'} className="h-full w-full" />
                   {p.label && <span className="absolute left-1 top-1 rounded-[6px] bg-black/50 px-1.5 text-[11px] font-semibold leading-[18px] text-white">{p.label}</span>}
                 </span>
               ))}

@@ -17,7 +17,7 @@ export default function PhoneNumber({ phone }: { phone: string }) {
   return (
     <span className="inline-flex max-w-full flex-wrap items-center gap-x-3 gap-y-1">
       <a href={`tel:${phone.replace(/[^0-9+]/g, '')}`} className="whitespace-nowrap">{formatted}</a>
-      <button type="button" aria-label="전화번호 복사" onClick={copy} className="inline-flex min-h-11 items-center text-[14px] font-semibold text-[#3180F7]">복사</button>
+      <button type="button" aria-label="전화번호 복사" onClick={copy} className="inline-flex h-11 shrink-0 items-center justify-center leading-none text-[14px] font-semibold text-[#3180F7]">복사</button>
     </span>
   );
 }

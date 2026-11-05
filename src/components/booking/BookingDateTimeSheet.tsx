@@ -1,17 +1,16 @@
 'use client';
 
-import { useLayoutEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { FlowSheet, cx, useFlowSheet } from './FlowKit';
 import { DAY_LABELS } from './schedule';
 import s from './flow.module.css';
 import { haptic } from '@/lib/haptics';
 
 /* ── 방문 일시 시트 — 프리티풀 퀵매칭 QmDateTimeSheet(토스 '가는 날' 화이트판) 그대로.
- *  달력(6줄 고정·달마다 줄이 한 줄씩 올라옴) + 시 칩 줄(옆으로 넘김) + 분 칩 줄 + 다음.
- *  다른 점: 고를 수 있는 날·시각은 병원 진료시간·막은 칸·지난 시각으로 정한다(30분 칸 → 분 칩 00·30). */
+ *  달력(6줄 고정) + 운영시간 내 30분 칸 전체 + 다음.
+ *  다른 점: 고를 수 있는 날·시각은 병원 진료시간·막은 칸·지난 시각으로 정한다(30분 칸). */
 
 const MONTHS_AHEAD = 12;
-const SLOT_MINS = [0, 30];
 /** 한 줄씩 올라오는 간격(초) · 첫 줄 시작(시트가 올라오는 동안) */
 const RISE_GAP = 0.05;
 const RISE_START = 0.12;
@@ -96,7 +95,6 @@ export default function BookingDateTimeSheet({ date, time, nowMs, isDayOpen, slo
   const slots = sel ? slotsOf(sel) : { all: [], available: [] };
   const avail = new Set(slots.available);
   const hours = [...new Set(slots.all.map((t) => Number(t.slice(0, 2))))];
-  const hourOpen = (h: number) => SLOT_MINS.some((mm) => avail.has(`${pad2(h)}:${pad2(mm)}`));
   const timeStr = hour === null ? '' : `${pad2(hour)}:${pad2(minute)}`;
   const timeOk = !!timeStr && avail.has(timeStr);
   const canNext = !!sel && timeOk;
@@ -111,29 +109,11 @@ export default function BookingDateTimeSheet({ date, time, nowMs, isDayOpen, slo
     if (firstOpen) { setHour(Number(firstOpen.slice(0, 2))); setMinute(Number(firstOpen.slice(3, 5))); }
     else setHour(null);
   };
-  /** 시를 고르면 — 그 시에 지금 분이 안 되면 되는 분으로 */
-  const pickHour = (h: number) => {
-    if (h !== hour) haptic('selection');
-    setHour(h);
-    if (!avail.has(`${pad2(h)}:${pad2(minute)}`)) {
-      const mm = SLOT_MINS.find((x) => avail.has(`${pad2(h)}:${pad2(x)}`));
-      if (mm !== undefined) setMinute(mm);
-    }
-  };
-
   // 처음 뜬 달만 시트가 올라오는 동안 시작, 넘긴 달은 바로
   const [firstIdx] = useState(curIdx);
   // 달력 밑 줄들 — 처음 뜬 달 6줄 다음부터 이어서
   const [below] = useState(() => RISE_START + 6 * RISE_GAP + 0.03);
 
-  // 시 칩 줄 — 고른 시가 줄 맨 앞에 오게(날짜를 바꿔 줄이 바뀌어도)
-  const hoursRef = useRef<HTMLDivElement>(null);
-  useLayoutEffect(() => {
-    const row = hoursRef.current;
-    if (!row || hour === null) return;
-    const chip = row.querySelector<HTMLElement>(`[data-h="${hour}"]`);
-    if (chip) row.scrollLeft = chip.offsetLeft - (parseFloat(getComputedStyle(row).paddingLeft) || 0);
-  }, [sel]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const { out, close } = useFlowSheet(() => onClose(sel, sel && timeOk ? timeStr : ''));
 
@@ -174,22 +154,12 @@ export default function BookingDateTimeSheet({ date, time, nowMs, isDayOpen, slo
           </p>
           {sel && hours.length > 0 ? (
             <>
-              <div ref={hoursRef} className={cx(s.tchips, s.rise)} style={rise(below + RISE_GAP)} role="group" aria-label="방문 시(時)">
-                {hours.map((h) => (
-                  <button key={`${sel}-${h}`} type="button" data-h={h} className={cx(s.tchip, h === hour && s.on)} disabled={!hourOpen(h)} aria-pressed={h === hour} onClick={() => pickHour(h)}>
-                    {pad2(h)}시
-                  </button>
-                ))}
-              </div>
-              <div className={cx(s.tchips, s.min, s.rise)} style={rise(below + RISE_GAP * 2)} role="group" aria-label="방문 분">
-                {SLOT_MINS.map((mm) => {
-                  const ok = hour !== null && avail.has(`${pad2(hour)}:${pad2(mm)}`);
-                  return (
-                    <button key={mm} type="button" className={cx(s.tchip, ok && mm === minute && s.on)} disabled={!ok} aria-pressed={ok && mm === minute} onClick={() => { if (mm !== minute) haptic('selection'); setMinute(mm); }}>
-                      {pad2(mm)}분
-                    </button>
-                  );
-                })}
+              <div className="mt-3 grid grid-cols-4 gap-2" role="group" aria-label="예약 가능 시간">
+                {slots.all.map(time => <button key={sel + time} type="button" className={cx(s.tchip, time === timeStr && s.on)}
+                  disabled={!avail.has(time)} aria-pressed={time === timeStr}
+                  onClick={() => { haptic('selection'); setHour(Number(time.slice(0, 2))); setMinute(Number(time.slice(3, 5))); }}>
+                  {time}
+                </button>)}
               </div>
             </>
           ) : (

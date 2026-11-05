@@ -5,10 +5,12 @@ import { specialtyLabel } from '@/lib/category-code';
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import AddressCopy from '@/components/common/AddressCopy';
 import PhoneNumber from '@/components/common/PhoneNumber';
 import { ChevronLeft, ChevronRight, Share2, X } from 'lucide-react';
 import Avatar from '@/components/common/Avatar';
 import ProductCard from '@/components/common/ProductCard';
+import { openHospitalMap } from '@/lib/hospital-map';
 import NaverMap from '@/components/common/NaverMap';
 import { Reveal, StarRating, ReviewCommentRow, type ReviewRowData } from '@/components/detail/DetailKit';
 import { useStore } from '@/store';
@@ -54,7 +56,7 @@ export default function HospitalDetailPage() {
   };
 
   const hospital = useMemo(() => hospitals.find(h => h.id === params.id), [params.id, hospitals]);
-  const hospitalReviews = useMemo(() => reviews.filter(r => r.hospitalId === hospital?.id), [hospital, reviews]);
+  const hospitalReviews = useMemo(() => reviews.filter(r => r.hospitalId === hospital?.id).sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || '')), [hospital, reviews]);
   const hospitalProducts = useMemo(() => products.filter(p => p.hospitalId === hospital?.id), [hospital, products]);
 
   // Live cover_images load from supabase (kept from previous implementation)
@@ -110,7 +112,7 @@ export default function HospitalDetailPage() {
   const hospitalLogo = resolveHospitalImageUrl(hospital);
   const todayIdx = new Date().getDay();
   const reviewCount = hospitalReviews.length || hospital.reviewCount;
-  const rating = hospitalReviews.length > 0 ? hospitalReviews.reduce((s, r) => s + r.rating, 0) / hospitalReviews.length : hospital.rating;
+  const rating = hospital.rating;
   const todayHours = hospital.operatingHours.find(o => o.day === WEEK_DAYS[todayIdx].short || o.day === WEEK_DAYS[todayIdx].name);
   const reviewRows: ReviewRowData[] = hospitalReviews.map(r => {
     const doctor = hospital.doctors.find(d => d.id === r.doctorId || d.name === r.doctorName);
@@ -250,19 +252,9 @@ export default function HospitalDetailPage() {
               </button>
             </div>
 
-            {/* 주소 */}
-            <div className="flex items-center gap-3 border-t border-[#F2F4F6] py-5">
-              <div className="min-w-0 flex-1">
-                <p className="text-[14px] text-[#6B7684]">주소</p>
-                <p className="mt-1 break-keep text-[16px] leading-[1.45] text-[#191F28]">{hospital.address}</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => { navigator.clipboard?.writeText(hospital.address).then(() => showToast('주소를 복사했어요.')).catch(() => {}); }}
-                className="shrink-0 text-[14px] font-semibold text-[#3180F7]"
-              >
-                복사
-              </button>
+            <div className="flex items-center gap-3 border-t border-[#F2F4F6] py-3">
+              <span className="w-[64px] shrink-0 text-[14px] text-[#6B7684]">주소</span>
+              <AddressCopy address={hospital.address} />
             </div>
 
             {hospital.phone && (
@@ -276,7 +268,7 @@ export default function HospitalDetailPage() {
             <div className="grid grid-cols-3 gap-2 border-t border-[#F2F4F6] py-5">
               {[
                 ...(hospital.phone ? [{ label: '전화하기', onClick: () => { window.location.href = `tel:${hospital.phone.replace(/[^0-9+]/g, '')}`; } }] : []),
-                { label: '길찾기', onClick: () => window.open(`https://map.naver.com/p?q=${encodeURIComponent(hospital.address || hospital.name)}`, '_blank') },
+                { label: '길찾기', onClick: () => void openHospitalMap(hospital) },
                 { label: '공유하기', onClick: share },
               ].map(btn => (
                 <button
@@ -334,7 +326,7 @@ export default function HospitalDetailPage() {
             <div className="relative mt-3 aspect-[16/10] overflow-hidden rounded-[16px] border border-[#E5E8EB]">
               <NaverMap address={hospital.address} lat={hospital.lat} lng={hospital.lng} name={hospital.name} />
             </div>
-            <p className="mt-3 text-[15px] leading-[1.5] text-[#191F28]">{hospital.address}</p>
+            <div className="mt-3 text-[15px] text-[#191F28]"><AddressCopy address={hospital.address} /></div>
             {hospital.addressDetail && <p className="mt-1.5 whitespace-pre-line rounded-[12px] bg-[#F7F8FA] px-4 py-3 text-[14px] leading-[1.6] text-[#4E5968]">{hospital.addressDetail}</p>}
           </Reveal>
         </div>

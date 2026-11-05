@@ -25,12 +25,6 @@ test('각 활동 알림 설정은 실제 예약·커뮤니티·쪽지 발송을 
   ]) assert.equal(nativePushPolicy(notice, settings).allowed, false);
 });
 
-test('야간 방해 금지는 한국 시간 22시부터 오전 8시 전까지 소리만 끈다', () => {
-  const notice = { type: 'info', title: '알림' };
-  const settings = pushPreferences(null);
-  assert.equal(nativePushPolicy(notice, settings, new Date('2026-11-03T12:59:00Z')).quiet, false);
-  assert.equal(nativePushPolicy(notice, settings, new Date('2026-11-03T13:00:00Z')).quiet, true);
-  assert.equal(nativePushPolicy(notice, settings, new Date('2026-11-03T22:59:00Z')).quiet, true);
-  assert.equal(nativePushPolicy(notice, settings, new Date('2026-11-03T23:00:00Z')).quiet, false);
-  assert.equal(nativePushPolicy(notice, pushPreferences({ night: false }), new Date('2026-11-03T15:00:00Z')).quiet, false);
+test('앱의 야간 방해 금지는 제거되어 기존 저장값이 있어도 조용한 전송을 강제하지 않는다', () => {
+  assert.equal(nativePushPolicy({ type: 'info', title: '알림' }, pushPreferences({ night: true })).quiet, false);
 });

@@ -90,6 +90,7 @@ export interface Doctor {
 }
 
 export interface Review {
+  createdAt?: string;
   id: string;
   authorName: string;
   authorId: string;
@@ -109,6 +110,10 @@ export interface Review {
 }
 
 export interface Reservation {
+  pointsUsed?: number;
+  couponId?: string;
+  optionId?: string;
+  paymentStatus?: string | null;
   id: string;
   status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
   date: string;

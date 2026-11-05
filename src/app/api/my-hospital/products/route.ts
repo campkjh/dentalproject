@@ -114,6 +114,10 @@ function buildProductPatch(body: any, required: boolean) {
   const discount = cleanNullableNumber(body.discount, Object.hasOwn(body, 'discount'));
   const tags = cleanTags(body.tags);
 
+  if (Object.hasOwn(body, 'options')) {
+    if (!Array.isArray(body.options) || body.options.length > 20 || body.options.some((o: any) => !o || typeof o.id !== 'string' || !o.id || o.id.length > 100 || typeof o.name !== 'string' || !o.name.trim() || o.name.length > 100 || !Number.isSafeInteger(o.price) || o.price < 0 || o.price > 100000000) || new Set(body.options.map((o: any) => o.id)).size !== body.options.length) return { error: '옵션 이름과 금액을 확인해주세요.' };
+    patch.options = body.options.map((o: any) => ({ id: o.id, name: o.name.trim(), price: o.price }));
+  }
   if (title !== undefined) patch.title = title;
   if (category !== undefined) patch.category = category;
   if (subCategory !== undefined) patch.sub_category = subCategory;

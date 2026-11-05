@@ -64,6 +64,7 @@ type HospitalRow = {
 type ProductApprovalStatus = 'approved' | 'pending_create' | 'pending_update' | 'pending_delete' | 'rejected';
 
 type ProductRow = {
+  options?: { id: string; name: string; price: number }[];
   id: string;
   title: string;
   location?: string | null;
@@ -85,6 +86,7 @@ type ProductRow = {
   approval_status?: ProductApprovalStatus | null;
   created_at?: string | null;
   pending_changes?: Partial<{
+    options: { id: string; name: string; price: number }[];
     title: string;
     location: string | null;
     price: number;
@@ -110,6 +112,7 @@ type ProductApprovalMeta = {
 };
 
 type ProductForm = {
+  options: { id: string; name: string; price: string }[];
   title: string;
   category: string;
   subCategory: string;
@@ -178,6 +181,7 @@ const PRODUCT_THUMB_MAX = 10;
 const PRODUCT_DETAIL_MAX = 20;
 
 const EMPTY_PRODUCT_FORM: ProductForm = {
+  options: [],
   title: '',
   category: 'dental',
   subCategory: '',
@@ -432,6 +436,7 @@ function toProductForm(product?: ProductRow): ProductForm {
         : '',
     discount: typeof mergedDiscount === 'number' ? String(mergedDiscount) : '',
     discountEnabled: typeof mergedDiscount === 'number' && mergedDiscount > 0,
+    options: (product.pending_changes?.options ?? product.options ?? []).map(o => ({ ...o, price: String(o.price) })),
     imageUrls: mergedImageUrls,
     detailImageUrls: mergedDetailImageUrls,
     description: mergedDescription ?? '',
@@ -451,6 +456,7 @@ function productPayload(form: ProductForm) {
     price,
     originalPrice: originalPrice || null,
     discount: discount || null,
+    options: form.options.map(o => ({ ...o, name: o.name.trim(), price: Number(o.price.replace(/\D/g, '')) })),
     imageUrls: form.imageUrls,
     detailImageUrls: form.detailImageUrls,
     imageUrl: form.imageUrls[0] ?? '',
@@ -1459,6 +1465,20 @@ export default function PartnerHomePage() {
                 <ChevronDown className="partner-product-select-chevron" size={20} strokeWidth={1.8} aria-hidden="true" />
               </span>
             </label>
+
+            <section className="space-y-3">
+              <h3 className="text-[16px] font-semibold">상품 옵션</h3>
+              <p className="text-[13px] text-[#8B95A1]">옵션별 이름과 최종 결제금액을 입력해주세요. 승인 후 고객에게 표시됩니다.</p>
+              {productForm.options.map((option, index) => <div key={option.id} className="flex flex-wrap items-center gap-2">
+                <input aria-label={'옵션 ' + (index + 1) + ' 이름'} value={option.name} placeholder="옵션 이름" className="min-w-0 flex-1 rounded-xl bg-[#F2F4F6] p-3"
+                  onChange={e => setProductForm(prev => ({ ...prev, options: prev.options.map(o => o.id === option.id ? { ...o, name: e.target.value } : o) }))} />
+                <input aria-label={'옵션 ' + (index + 1) + ' 금액'} inputMode="numeric" value={option.price ? Number(option.price).toLocaleString() : ''} placeholder="판매가(원)" className="w-28 rounded-xl bg-[#F2F4F6] p-3"
+                  onChange={e => setProductForm(prev => ({ ...prev, options: prev.options.map(o => o.id === option.id ? { ...o, price: e.target.value.replace(/\D/g, '') } : o) }))} />
+                <button type="button" aria-label={'옵션 ' + (index + 1) + ' 삭제'} onClick={() => setProductForm(prev => ({ ...prev, options: prev.options.filter(o => o.id !== option.id) }))}>삭제</button>
+              </div>)}
+              <button type="button" disabled={productForm.options.length >= 20} className="h-11 rounded-xl bg-[#EFF5FE] px-4 text-[#3180F7]"
+                onClick={() => setProductForm(prev => ({ ...prev, options: [...prev.options, { id: crypto.randomUUID(), name: '', price: '' }] }))}>+ 옵션 추가</button>
+            </section>
 
             {/* 할인 — 체크해야 정가·할인율을 받는다. 안 하면 판매가만 */}
             <button

@@ -5,12 +5,12 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { resolveHospitalImageUrl, resolveProductImageUrl } from '@/lib/images';
 import {
   requestTossPayment,
-  generateOrderId,
   isTossConfigured,
   VIRTUAL_ACCOUNT_VALID_HOURS,
   VIRTUAL_ACCOUNT_ENABLED,
   type TossPayMethod,
 } from '@/lib/toss';
+import { bookingPricing } from '@/lib/booking-pricing';
 import { useStore } from '@/store';
 import { markPendingPayment, clearPendingPayment, cancelAbandonedPayment } from '@/lib/pending-payment';
 import type { Coupon } from '@/types';
@@ -119,22 +119,20 @@ function PaymentPage() {
   const availableCoupons = coupons.filter((c) => c.status === 'available');
   const selectedCoupon = availableCoupons.find((c) => c.id === selectedCouponId);
 
-  const userPoints = user?.points ?? 5000;
-  const pointsToUse = Math.min(parseInt(pointInput || '0', 10) || 0, userPoints);
+  const userPoints = user?.points ?? 0;
 
   // 상품 가격은 VAT 포함가. 부가세는 별도로 더하지 않고, 포함된 금액만 안내용으로 계산한다.
-  const basePrice = product.price;
+  const basePrice = product.options?.find(o => o.id === searchParams.get('optionId'))?.price ?? product.price;
   const vatAmount = basePrice - Math.round(basePrice / 1.1);
-  const couponDiscount = selectedCoupon?.discountAmount ?? 0;
+  const { coupon: couponDiscount, maxPoints, points: pointsToUse, amount: totalPrice } = bookingPricing(basePrice, userPoints, selectedCoupon?.discountAmount ?? 0, Number(pointInput || 0));
   const totalSavings = couponDiscount + pointsToUse;
-  const totalPrice = Math.max(basePrice - couponDiscount - pointsToUse, 0);
   const selectedVisitLabel = dateParam && timeParam
     ? `${dateParam.replaceAll('-', '.')} ${timeParam}`
     : '예약일시 미선택';
 
   const allAgreed = agreementTerms.every((t) => agreed.has(t.id));
 
-  const handleUseAllPoints = () => setPointInput(String(userPoints));
+  const handleUseAllPoints = () => setPointInput(String(maxPoints));
 
   const toggleAgree = (id: string) => {
     setAgreed((prev) => {
@@ -193,6 +191,7 @@ function PaymentPage() {
       return;
     }
 
+    if (paymentMethod === '앱결제' && totalPrice > 0 && !isTossConfigured()) { showToast('앱결제 연결을 확인하고 있어요. 잠시 후 다시 시도해주세요.'); return; }
     setSubmitting(true);
     const newReservation = {
       id: `res-${currentMs()}`,
@@ -211,6 +210,9 @@ function PaymentPage() {
       customerName: user.name ?? '',
       customerPhone: user.phone ?? '',
       paymentMethod,
+      pointsUsed: pointsToUse,
+      couponId: selectedCouponId ?? undefined,
+      optionId: searchParams.get('optionId') ?? undefined,
     };
     const result = await addReservation(newReservation, { visitAtIso: visit.iso });
     if (result?.error) {
@@ -229,8 +231,8 @@ function PaymentPage() {
         if (reservationId) markPendingPayment(reservationId);
         await requestTossPayment({
           method: appPayMethod,
-          amount: totalPrice,
-          orderId: generateOrderId(),
+          amount: result.amount ?? totalPrice,
+          orderId: result.orderId!,
           orderName: product.title,
           successUrl: `${origin}/payment/success?reservationId=${encodeURIComponent(reservationId)}&productId=${encodeURIComponent(product.id)}`,
           failUrl: `${origin}/payment/fail?reservationId=${encodeURIComponent(reservationId)}`,
@@ -263,7 +265,7 @@ function PaymentPage() {
 
     // 후불결제(또는 무료/미설정) — 즉시 완료 처리
     setSubmitting(false);
-    showToast('결제가 완료되었습니다!');
+    showToast(paymentMethod === '앱결제' ? '결제가 완료되었습니다!' : '예약이 접수되었습니다.');
     router.push(`/payment/success?reservationId=${encodeURIComponent(reservationId)}&productId=${encodeURIComponent(product.id)}`);
   };
 
@@ -352,14 +354,14 @@ function PaymentPage() {
         <div className="mt-2 flex gap-2">
           <label className="flex h-14 min-w-0 flex-1 items-center gap-2 rounded-[14px] bg-[#F2F4F6] px-4 transition-colors focus-within:bg-[#EDEFF2]">
             <input
-              type="number"
+              type="text"
               inputMode="numeric"
-              value={pointInput}
+              value={pointInput ? pointsToUse.toLocaleString('ko-KR') : ''}
               onChange={(e) => {
-                const val = parseInt(e.target.value, 10);
+                const val = parseInt(e.target.value.replace(/\D/g, ''), 10);
                 if (isNaN(val) || val < 0) setPointInput('');
-                else if (val > userPoints) setPointInput(String(userPoints));
-                else setPointInput(e.target.value);
+                else if (val > maxPoints) setPointInput(String(maxPoints));
+                else setPointInput(String(val));
               }}
               placeholder={`포인트 (보유 ${userPoints.toLocaleString()}P)`}
               aria-label="사용할 포인트"

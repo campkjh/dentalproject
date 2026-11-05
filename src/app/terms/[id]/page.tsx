@@ -1,6 +1,7 @@
 'use client';
 
 import { useParams } from 'next/navigation';
+import { siteConfig } from '@/lib/site-config';
 import TopBar from '@/components/common/TopBar';
 import { useEffect, useState, ReactNode } from 'react';
 import {
@@ -141,8 +142,8 @@ function Clause({ number, title, children, highlight = false }: { number: string
 
 function ContactCard() {
   const rows = [
-    { icon: <Phone size={18} />, label: '전화 상담', value: '1588-0000 (평일 09:00~18:00)' },
-    { icon: <Mail size={18} />, label: '이메일 문의', value: 'support@kidoctor.co.kr' },
+    { icon: <Phone size={18} />, label: '전화 상담', value: siteConfig.phone },
+    { icon: <Mail size={18} />, label: '이메일 문의', value: siteConfig.email },
     { icon: <Clock size={18} />, label: '운영시간', value: '평일 09:00~18:00 (공휴일 제외)' },
   ];
   return (
@@ -380,13 +381,13 @@ function PrivacyContent() {
       >
         <div className="grid grid-cols-[auto,1fr] gap-x-6 gap-y-2 text-[15px]">
           <span className="font-medium" style={{ color: '#8B95A1' }}>성명</span>
-          <span className="font-semibold" style={{ color: '#191F28' }}>홍길동</span>
+          <span className="font-semibold" style={{ color: '#191F28' }}>{siteConfig.representative}</span>
           <span className="font-medium" style={{ color: '#8B95A1' }}>직위</span>
-          <span style={{ color: '#191F28' }}>개인정보보호 최고책임자(CPO)</span>
+          <span style={{ color: '#191F28' }}>사업자 대표</span>
           <span className="font-medium" style={{ color: '#8B95A1' }}>이메일</span>
-          <span style={{ color: '#191F28' }}>privacy@kidoctor.co.kr</span>
+          <span style={{ color: '#191F28' }}>{siteConfig.email}</span>
           <span className="font-medium" style={{ color: '#8B95A1' }}>전화</span>
-          <span style={{ color: '#191F28' }}>1588-0000</span>
+          <span style={{ color: '#191F28' }}>{siteConfig.phone}</span>
         </div>
       </div>
       <Paragraph>
@@ -591,7 +592,7 @@ function ServiceContent() {
         />
         <InfoBox variant="info">
           <strong>분쟁 해결 절차:</strong> 고객센터 접수 → 담당자 배정(1영업일 이내) → 사실관계 확인 → 해결방안 안내(7영업일 이내) → 분쟁 해결.
-          고객센터: <strong>1588-0000</strong> | 이메일: <strong>support@kidoctor.co.kr</strong>
+          고객센터: <strong>{siteConfig.phone}</strong> | 이메일: <strong>{siteConfig.email}</strong>
         </InfoBox>
       </Clause>
 
@@ -676,8 +677,8 @@ function ThirdPartyContent() {
       <NumberedList
         items={[
           '마이페이지 > 개인정보 설정 > 제3자 제공 동의 관리에서 직접 철회',
-          '고객센터(1588-0000)로 전화하여 동의 철회 요청',
-          '이메일(privacy@kidoctor.co.kr)로 동의 철회 요청',
+          `고객센터(${siteConfig.phone})로 전화하여 동의 철회 요청`,
+          `이메일(${siteConfig.email})로 동의 철회 요청`,
         ]}
       />
 
@@ -761,7 +762,7 @@ function RefundContent() {
       <Paragraph>환불은 다음의 절차를 통해 처리됩니다.</Paragraph>
       <StepDiagram
         steps={[
-          '환불 신청: 마이페이지 > 예약 내역에서 [예약 취소] 버튼 클릭 또는 고객센터(1588-0000) 전화',
+          `환불 신청: 마이페이지 > 예약 내역에서 [예약 취소] 버튼 클릭 또는 고객센터(${siteConfig.phone}) 전화`,
           '접수 확인: 회사가 환불 신청을 접수하고 취소 사유를 확인합니다 (1영업일 이내)',
           '환불 승인: 환불 기준에 따라 환불 금액을 산정하고 환불을 승인합니다',
           '환불 완료: 원래 결제 수단으로 환불이 처리됩니다 (3~5영업일 소요)',
@@ -864,7 +865,7 @@ function WithdrawalContent() {
             고객센터를 통한 탈퇴
           </h4>
           <p className="text-[15px] leading-relaxed" style={{ color: '#4E5968' }}>
-            전화: 1588-0000<br />
+            전화: {siteConfig.phone}<br />
             (평일 09:00~18:00)
           </p>
         </div>
@@ -1072,7 +1073,7 @@ function MetaContent() {
 
       <InfoBox variant="info">
         <strong>문의 안내:</strong> Meta 서비스 연동 관련 문의사항이 있으시면
-        <strong> privacy@kidoctor.co.kr</strong>로 이메일을 보내주시거나 고객센터(<strong>1588-0000</strong>)로 연락해 주세요.
+        <strong> {siteConfig.email}</strong>로 이메일을 보내주시거나 고객센터(<strong>{siteConfig.phone}</strong>)로 연락해 주세요.
       </InfoBox>
 
       <ContactCard />
