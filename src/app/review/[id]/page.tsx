@@ -44,6 +44,8 @@ export default function ReviewDetailPage() {
     ? { before: review.beforeImage, after: review.afterImage }
     : null;
 
+  const photos = [review.beforeImage ? { src: review.beforeImage, label: '시술 전' } : null, review.afterImage ? { src: review.afterImage, label: review.beforeImage ? '시술 후' : '리뷰 사진' } : null].filter((photo): photo is { src: string; label: string } => photo !== null);
+
   const relatedReviews = reviews
     .filter((r) => r.id !== review.id && r.productId && r.productId === review.productId)
     .slice(0, 4);
@@ -126,7 +128,7 @@ export default function ReviewDetailPage() {
           <div className={`grid gap-2 ${imgs.before && imgs.after ? 'grid-cols-2' : 'grid-cols-1'}`}>
             {imgs.before && (
               <div className="relative aspect-square rounded-xl overflow-hidden bg-gray-100">
-                <ReviewPhotoViewer src={imgs.before} label="시술 전" className="h-full w-full" review={photoReview} />
+                <ReviewPhotoViewer initialIndex={0} photos={photos} src={imgs.before} label="시술 전" className="h-full w-full" review={photoReview} />
                 <span
                   className="absolute top-2 left-2 px-2 py-0.5 text-[10px] font-bold rounded"
                   style={{ backgroundColor: 'rgba(0,0,0,0.6)', color: '#fff' }}
@@ -137,7 +139,7 @@ export default function ReviewDetailPage() {
             )}
             {imgs.after && (
               <div className="relative aspect-square rounded-xl overflow-hidden bg-gray-100">
-                <ReviewPhotoViewer src={imgs.after} label={imgs.before ? "시술 후" : "리뷰 사진"} className="h-full w-full" review={photoReview} />
+                <ReviewPhotoViewer initialIndex={imgs.before ? 1 : 0} photos={photos} src={imgs.after} label={imgs.before ? "시술 후" : "리뷰 사진"} className="h-full w-full" review={photoReview} />
                 <span className="absolute top-2 left-2 px-2 py-0.5 text-[10px] font-bold rounded bg-[#8037FF] text-white">
                   {imgs.before ? 'AFTER' : '사진'}
                 </span>

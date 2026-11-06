@@ -147,7 +147,7 @@ export function ReviewCommentRow({ review, first = false, menu, compact = false 
             <div className="mt-2.5 flex gap-1.5 overflow-x-auto hide-scrollbar">
               {photos.slice(0, 6).map((p, i) => (
                 <span key={p.src + i} className="relative h-[84px] w-[84px] shrink-0 overflow-hidden rounded-[12px] bg-[#F2F4F6]">
-                  <ReviewPhotoViewer src={p.src} label={p.label || '후기 사진'} className="h-full w-full" review={review.productTitle ? { authorName: review.name, rating: review.rating, date: review.date, productTitle: review.productTitle, content: review.content } : undefined} />
+                  <ReviewPhotoViewer initialIndex={i} photos={photos} src={p.src} label={p.label || '후기 사진'} className="h-full w-full" review={review.productTitle ? { authorName: review.name, rating: review.rating, date: review.date, productTitle: review.productTitle, content: review.content } : undefined} />
                   {p.label && <span className="absolute left-1 top-1 rounded-[6px] bg-black/50 px-1.5 text-[11px] font-semibold leading-[18px] text-white">{p.label}</span>}
                 </span>
               ))}
