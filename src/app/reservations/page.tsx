@@ -248,7 +248,11 @@ export default function ReservationsPage() {
   const titleEnter = entrance ? styles.enterTitle : '';
 
   return (
-    <div className="min-h-screen bg-white pb-[86px] pc:pb-16">
+    <div
+      className={`${styles.noCallout} min-h-screen bg-white pb-[86px] pc:pb-16`}
+      onContextMenu={(event) => event.preventDefault()}
+      onDragStart={(event) => event.preventDefault()}
+    >
       {/* 모바일 머리줄 — 프리티풀 탭 머리 표준(왼쪽 16 · 20 굵게 · 오른쪽 돋보기 하나) */}
       <header className="sticky top-0 z-20 bg-white px-4 pb-2 pt-[calc(8px+env(safe-area-inset-top))] pc:hidden">
         <div

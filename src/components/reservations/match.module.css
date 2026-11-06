@@ -44,3 +44,13 @@
 @media (prefers-reduced-motion: reduce) {
   .enterTitle, .enterSub, .enterItem, .listSwitch, .rollOut, .rollIn, .deckFlip, .deckFlip .deckInner { animation: none !important; }
 }
+.noCallout,
+.noCallout * {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.noCallout img {
+  -webkit-user-drag: none;
+}
