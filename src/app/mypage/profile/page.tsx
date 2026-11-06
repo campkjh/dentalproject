@@ -4,6 +4,7 @@
 //  · 칸을 누르면 바텀 시트(qd-input + qd-cta 저장 / 고르기 줄). 저장·업로드·탈퇴 흐름은 예전 그대로.
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { loginTypePresentation } from '@/lib/login-type';
 import { useStore } from '@/store';
 import TopBar from '@/components/common/TopBar';
 import Avatar from '@/components/common/Avatar';
@@ -111,11 +112,12 @@ export default function ProfilePage() {
     }
   };
 
+  const loginPresentation = loginTypePresentation(user?.loginType);
   const infoItems: { label: string; value: string; onClick?: () => void; readonly?: boolean }[] = [
     { label: '이름', value: user?.name ?? '-', onClick: () => setSheet('name') },
     {
       label: '로그인 유형',
-      value: user?.loginType === 'kakao' ? '카카오' : '애플',
+      value: loginPresentation.label,
       readonly: true,
     },
     { label: '전화번호', value: user?.phone ?? '-', ...(isDoctor ? { onClick: () => setSheet('phone') } : { readonly: true }) },
@@ -147,7 +149,7 @@ export default function ProfilePage() {
             <input type="file" accept="image/*" className="sr-only" onChange={onAvatarChange} />
           </label>
           <p className="mt-3.5 text-[20px] font-bold text-[#191F28]">{user?.name}</p>
-          <p className="mt-0.5 text-[14px] text-[#8B95A1]">{user?.loginType === 'kakao' ? '카카오' : '애플'} 계정으로 로그인했어요</p>
+          <p className="mt-0.5 text-[14px] text-[#8B95A1]">{loginPresentation.description}</p>
         </div>
 
         {/* 고객정보 — 라벨 위 · 값 아래 칸 */}
