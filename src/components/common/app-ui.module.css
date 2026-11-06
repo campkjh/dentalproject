@@ -66,6 +66,8 @@
 .partnerNav a > span:last-child { font-size: 11px; line-height: 14px; }
 .quickItem > span:first-child { width: min(58px, 100%); height: 58px; border-radius: 18px; background: #fff; display: grid; place-items: center; position: relative; transition: transform .2s; }
 .quickItem:active > span:first-child { transform: scale(.94); }
+.quickLabel { min-width: 0; width: 100%; }
+.quickValue { display: block; margin-top: 3px; font-size: 11px; line-height: 16px; font-weight: 600; color: #3182f6; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 .quickItem img { width: 30px; height: 30px; }
 .quickItem small { position: absolute; top: -3px; right: -5px; background: #3182f6; border-radius: 20px; color: #fff; font-size: 10px; min-width: 17px; padding: 1px 4px; }
 .mySection { animation: rowIn .46s cubic-bezier(.22,.61,.36,1) backwards; }

@@ -14,6 +14,8 @@ import { openHospitalMap } from '@/lib/hospital-map';
 import NaverMap from '@/components/common/NaverMap';
 import Avatar from '@/components/common/Avatar';
 import ProductCard from '@/components/common/ProductCard';
+import ProductReviewCarousel from '@/components/product/ProductReviewCarousel';
+import { useProductReviews } from '@/lib/use-product-reviews';
 import ReviewShowcase from '@/components/product/ReviewShowcase';
 import ReviewSummaryCard, { useReviewSummary } from '@/components/product/ReviewSummaryCard';
 import { Reveal, StarRating, SingleStar, SectionHead, ReviewCommentRow, ExpandRow, type ReviewRowData } from '@/components/detail/DetailKit';
@@ -141,12 +143,14 @@ export default function ProductDetailPage() {
 
   const product = products.find(p => p.id === params.id);
   // 후기 요약(실제 후기 2건 이상일 때만) — 프리티풀 스타일 소개 카드
-  const reviewSummary = useReviewSummary(product?.id, reviews.filter(r => r.productId === product?.id).length);
+  const fallbackProductReviews = reviews.filter(r => r.productId === product?.id).sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+  const productReviewData = useProductReviews(product?.id, user?.id, fallbackProductReviews);
+  const productReviews = productReviewData.reviews;
+  const reviewSummary = useReviewSummary(product?.id, fallbackProductReviews.length);
   // 담은 가방 색 = 대표 사진 색(카드와 같은 계산)
   const productTone = useImageTone(product ? resolveProductImageUrl(product.imageUrl, product.id) : null, 'square');
   const pocketColor = toneAccent(productTone) || '#6B7684';
   const hospital = hospitals.find(h => h.id === product?.hospitalId);
-  const productReviews = reviews.filter(r => r.productId === product?.id).sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
 
   // 의사 상품 인사이트 '조회' — 상세를 열면 1회(같은 기기·하루 한 번)
   useEffect(() => { trackProduct('views', typeof params.id === 'string' ? params.id : undefined); }, [params.id]);
@@ -471,6 +475,8 @@ export default function ProductDetailPage() {
 
 
           </div>
+
+          <ProductReviewCarousel reviews={reviewRows} count={reviewCount} loggedIn={!!user} loading={productReviewData.loading} error={productReviewData.error} onSeeAll={() => scrollToSection('reviews')} />
 
           {/* 칸 나눔 — 회색 띠 */}
           <div className="h-2.5 bg-[#F2F4F6]" />

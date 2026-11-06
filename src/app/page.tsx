@@ -15,6 +15,7 @@ import MobileHomeHeader from '@/components/common/MobileHomeHeader';
 import HomeBannerSlider from '@/components/home/HomeBannerSlider';
 import { useStore } from '@/store';
 import { resolveHospitalImageUrl } from '@/lib/images';
+import { interestedProducts } from '@/lib/interested-products';
 import { siteConfig } from '@/lib/site-config';
 import MonoIcon from '@/components/common/MonoIcon';
 import { currentLocationRegion, CurrentLocationError } from '@/lib/current-location';
@@ -42,7 +43,7 @@ const searchPlaceholders = [
 
 export default function HomePage() {
   const router = useRouter();
-  const { products, hospitals, reviews, categories, isLoggedIn, isDoctor, recentlyViewed, catalogHydrated, showToast } = useStore();
+  const { products, hospitals, reviews, categories, isLoggedIn, isDoctor, recentlyViewed, catalogHydrated, showToast, interestedCategories } = useStore();
   // Live unread count for the 쪽지 badge — only counted once /api/me has hydrated
   // so we don't briefly render a 0 on the wrong account.
   const [scrolled, setScrolled] = useState(false);
@@ -153,6 +154,7 @@ export default function HomePage() {
   // 카탈로그는 최신 등록순 — 인기는 찜·후기 많은 순, '새로 들어온 상품'은 그대로 앞에서(방금 승인된 상품이 바로 보이게)
   const popularProducts = [...areaProducts].sort((a, b) => (b.likeCount + b.reviewCount) - (a.likeCount + a.reviewCount)).slice(0, 6);
   const newProducts = areaProducts.slice(0, 8);
+  const interestProducts = interestedProducts(areaProducts, interestedCategories);
   const recentProducts = recentlyViewed
     .map(id => products.find(p => p.id === id))
     .filter(Boolean) as typeof products;
@@ -437,6 +439,19 @@ export default function HomePage() {
                 전체 보기
               </button>
           </div>
+        )}
+
+        {isLoggedIn && interestedCategories.length > 0 && (
+          <section className="mb-8" aria-label="관심 진료과목 추천">
+            <SectionHeader title="관심 진료과목 추천" subtitle="선택한 진료과목에서 찾은 시술이에요" />
+            {interestProducts.length > 0 ? (
+              <div className="px-[10px] pc:px-0">
+                <div className="flex snap-x gap-2.5 overflow-x-auto hide-scrollbar pb-2 scroll-px-[10px] pc:grid pc:grid-cols-5 pc:gap-4 pc:overflow-visible pc:[&>*:nth-child(n+6)]:hidden">
+                  {interestProducts.map(product => <div key={product.id} className="w-[44vw] max-w-[200px] shrink-0 snap-start pc:w-auto pc:max-w-none"><ProductCard product={product} /></div>)}
+                </div>
+              </div>
+            ) : <p className="px-5 py-4 text-[14px] leading-6 text-[#8B95A1]">{catalogHydrated ? '선택한 지역에는 관심 진료과목의 상품이 아직 없어요.' : '관심 진료과목의 상품을 찾고 있어요.'}</p>}
+          </section>
         )}
 
         {/* 인기 상품 */}
