@@ -633,10 +633,6 @@ export default function ProductDetailPage() {
                     <div className="min-w-0 flex-1">
                       <p className="flex min-w-0 items-center gap-1.5 text-[17px] font-bold text-[#191F28]">
                         <span className="truncate">{hospital.name}</span>
-                        {verified && (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src="/icons/brand-logo.png" alt="인증 병원" width={16} height={16} className="shrink-0" />
-                        )}
                       </p>
                       <p className="mt-0.5 flex items-center gap-1 text-[14px] text-[#4E5968]">
                         <SingleStar size={15} />
