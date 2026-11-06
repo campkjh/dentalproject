@@ -12,10 +12,8 @@
 .zoomed { display: block; touch-action: pan-x pan-y pinch-zoom; }
 .zoomed img { width: 200%; height: auto; max-width: none; max-height: none; }
 .zoomButton { position: absolute; right: 12px; top: 12px; border-radius: 50%; background: #0008; }
-.previous, .next { position: absolute; top: calc(50% - 22px); border-radius: 50%; background: #0006; }
-.previous { left: 8px; }.next { right: 8px; }
 .pagination { display: flex; align-items: center; justify-content: center; padding: 3px 0; }
-.pagination button { display: grid; place-items: center; width: 24px; height: 28px; padding: 0; border: 0; background: transparent; }
+.pagination button { display: grid; place-items: center; width: 16px; height: 28px; padding: 0; border: 0; background: transparent; }
 .pagination span { width: 6px; height: 6px; border-radius: 50%; background: #5b636e; }
 .pagination button[aria-current=true] span { background: #fff; }
 .review { width: 100%; max-width: 640px; margin: 0 auto; padding: 22px 20px 32px; }

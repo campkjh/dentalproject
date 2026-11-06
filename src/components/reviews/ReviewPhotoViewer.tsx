@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type TouchEvent } from 'react';
 import { createPortal } from 'react-dom';
-import { ChevronLeft, ChevronRight, LayoutGrid, X, ZoomIn, ZoomOut } from 'lucide-react';
+import { LayoutGrid, X, ZoomIn, ZoomOut } from 'lucide-react';
 import { maskReviewAuthor } from '@/lib/review-display';
 import styles from './review-photo-viewer.module.css';
 
@@ -102,8 +102,6 @@ export default function ReviewPhotoViewer({ src, label = '후기 사진', classN
                 <img src={current.src} alt={current.label || '후기 사진'} />
               </div>
               <button type="button" aria-label={zoom ? '사진 축소' : '사진 확대'} aria-pressed={zoom} className={`${styles.iconButton} ${styles.zoomButton}`} onClick={() => setZoom(value => !value)}>{zoom ? <ZoomOut size={21} /> : <ZoomIn size={21} />}</button>
-              {index > 0 && <button type="button" aria-label="이전 사진" className={`${styles.iconButton} ${styles.previous}`} onClick={() => selectPhoto(index - 1)}><ChevronLeft size={26} /></button>}
-              {index < gallery.length - 1 && <button type="button" aria-label="다음 사진" className={`${styles.iconButton} ${styles.next}`} onClick={() => selectPhoto(index + 1)}><ChevronRight size={26} /></button>}
             </div>
             {gallery.length > 1 && <div className={styles.pagination} aria-label={`${index + 1} / ${gallery.length} 사진`}>
               {gallery.map((photo, i) => <button key={`${photo.src}-${i}`} type="button" aria-label={`${i + 1}번째 사진`} aria-current={i === index ? 'true' : undefined} onClick={() => selectPhoto(i)}><span /></button>)}
