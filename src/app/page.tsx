@@ -42,7 +42,7 @@ const searchPlaceholders = [
 
 export default function HomePage() {
   const router = useRouter();
-  const { products, hospitals, reviews, categories, isLoggedIn, isDoctor, recentlyViewed, recentSearches, removeRecentSearch, catalogHydrated, showToast } = useStore();
+  const { products, hospitals, reviews, categories, isLoggedIn, isDoctor, recentlyViewed, catalogHydrated, showToast } = useStore();
   // Live unread count for the 쪽지 badge — only counted once /api/me has hydrated
   // so we don't briefly render a 0 on the wrong account.
   const [scrolled, setScrolled] = useState(false);
@@ -473,8 +473,6 @@ export default function HomePage() {
         </div>
         )}
 
-        {/* 최근 본 태그 */}
-        <RecentTagsSection tags={recentSearches} onRemove={removeRecentSearch} />
 
         {/* 스켈레톤 — catalog hydrate 전 */}
         {!catalogHydrated && products.length === 0 && <HomeSkeleton />}
@@ -909,51 +907,5 @@ function SectionHeader({
         {action && <div className="shrink-0">{action}</div>}
       </div>
     </Reveal>
-  );
-}
-
-function RecentTagsSection({
-  tags,
-  onRemove,
-}: {
-  tags: string[];
-  onRemove: (tag: string) => void;
-}) {
-  if (!tags || tags.length === 0) return null;
-
-  return (
-    <div className="mb-6">
-      <SectionHeader title="최근 본 태그" />
-      <div className="px-[10px] pc:px-0">
-        <div className="flex gap-1.5 overflow-x-auto hide-scrollbar pb-1">
-          {tags.map((tag) => (
-            <div
-              key={tag}
-              className="flex-shrink-0 flex items-center gap-1 pl-3 pr-1.5 rounded-full bg-[#F4F5F7] card-press"
-              style={{ height: 32 }}
-            >
-              <Link
-                href={`/search?q=${encodeURIComponent(tag)}`}
-                className="text-[13px] font-medium text-gray-700 whitespace-nowrap"
-              >
-                {tag}
-              </Link>
-              <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onRemove(tag);
-                }}
-                aria-label="삭제"
-                className="w-5 h-5 rounded-full flex items-center justify-center hover:bg-gray-200 transition-colors"
-              >
-                <X size={12} className="text-gray-400" />
-              </button>
-            </div>
-          ))}
-          <div className="flex-shrink-0" style={{ width: 4 }} />
-        </div>
-      </div>
-    </div>
   );
 }

@@ -7,6 +7,7 @@ import TopBar from '@/components/common/TopBar';
 import { useStore } from '@/store';
 import Avatar from '@/components/common/Avatar';
 import { resolveProductImageUrl } from '@/lib/images';
+import { reviewDraft } from '@/lib/review-draft';
 import { haptic } from '@/lib/haptics';
 import { format, subDays, subMonths, subYears } from 'date-fns';
 import { useSession } from '@/lib/supabase/SessionProvider';
@@ -43,13 +44,14 @@ function ReviewWritePage({ partner }: { partner: boolean }) {
 
   const { authUser } = useSession();
   const { data: partnerData, loading: partnerLoading, error: partnerError, refresh: refreshPartner } = useMyHospitalData<PartnerHospital>(authUser?.id, { enabled: partner });
-  const reservation = reservations.find((r) => r.id === reservationId);
-  const baseProduct = products.find((p) => p.id === (productId || reservation?.productId));
-  const ownHospital = partnerData?.hospital;
   const [selectedProductId, setSelectedProductId] = useState('');
+  const reservation = reservations.find(r => r.paymentStatus === 'paid' && ['confirmed', 'completed'].includes(r.status) && (selectedProductId ? r.productId === selectedProductId : reservationId ? r.id === reservationId : r.productId === productId));
+  const baseProduct = products.find((p) => p.id === (selectedProductId || productId || reservation?.productId));
+  const ownHospital = partnerData?.hospital;
+
   const treatmentOptions = partner
     ? (ownHospital?.products ?? []).filter((p) => p.status !== 'removed' && p.approval_status !== 'pending_delete').map((p) => ({ id: p.id, title: p.pending_changes?.title || p.title, price: p.price, imageUrl: p.image_url || '', discount: p.discount, hospitalId: ownHospital!.id, hospitalName: ownHospital!.name }))
-    : products.filter((p) => p.hospitalId === baseProduct?.hospitalId);
+    : products.filter(p => p.hospitalId === baseProduct?.hospitalId && reservations.some(r => r.productId === p.id && r.paymentStatus === 'paid' && ['confirmed', 'completed'].includes(r.status)));
   const product = treatmentOptions.find((p) => p.id === (selectedProductId || productId || reservation?.productId));
   const hospital = hospitals.find((h) => h.id === product?.hospitalId);
   const doctors: Pick<Doctor, 'id' | 'name' | 'profileImage' | 'isOwner'>[] = partner
@@ -75,28 +77,15 @@ function ReviewWritePage({ partner }: { partner: boolean }) {
   const [treatmentDate, setTreatmentDate] = useState('');
   const [selectedDoctorId, setSelectedDoctorId] = useState<string>('');
   const [photos, setPhotos] = useState(EMPTY_REVIEW_PHOTOS);
-  const [aiLoading, setAiLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   const MAX_CONTENT = 2000;
   const [now] = useState(() => Date.now());
 
-  const aiFill = async () => {
+  const aiFill = () => {
     if (!product) return;
-    setAiLoading(true);
-    const hasAspectFeedback = Object.values(aspects).some((v) => v > 0);
-    await new Promise((r) => setTimeout(r, 900));
-    const avgAspect =
-      Object.values(aspects).reduce((s, v) => s + v, 0) /
-      Object.values(aspects).filter((v) => v > 0).length || rating;
-    const satisfaction = avgAspect >= 4 ? '만족' : avgAspect >= 3 ? '보통' : '아쉬움';
-    const text = `${product?.hospitalName || ownHospital?.name}에서 ${product?.title || "시술을 선택해 주세요"} 시술을 받았습니다.
-상담부터 시술까지 전반적으로 ${satisfaction}스러웠고, 결과도 기대에 부합했습니다.
-${hasAspectFeedback && aspects.kindness >= 4 ? '원장님과 스태프분들의 응대가 매우 친절했습니다.\n' : ''}${hasAspectFeedback && aspects.cleanliness >= 4 ? '병원 시설이 깨끗하게 잘 관리되고 있어 편안하게 진료받을 수 있었습니다.\n' : ''}${hasAspectFeedback && aspects.revisit >= 4 ? '다음에도 다른 시술이 필요하면 재방문 의사가 있습니다.\n' : ''}회복 과정도 무난했고, 주의사항 안내도 자세했습니다.
-시술을 고민 중이신 분들께 추천드립니다.`;
-    setContent(text);
-    setAiLoading(false);
-    showToast('AI가 리뷰를 작성했습니다. 내용을 다듬어주세요.');
+    setContent(reviewDraft({ hospital: product.hospitalName || ownHospital?.name || '', treatment: product.title, rating, content, aspects }));
+    showToast('입력한 평가로 초안을 만들었어요. 내용을 확인한 뒤 등록해주세요.');
   };
 
   const handleSubmit = async () => {
@@ -106,6 +95,7 @@ ${hasAspectFeedback && aspects.kindness >= 4 ? '원장님과 스태프분들의 
       return;
     }
     if (submitting) return;
+    if (!partner && !reservation) { showToast('결제가 완료된 예약만 후기를 작성할 수 있어요.'); return; }
     if (rating === 0) {
       showToast('별점을 선택해주세요.');
       return;
@@ -159,6 +149,7 @@ ${hasAspectFeedback && aspects.kindness >= 4 ? '원장님과 스태프분들의 
 
   if (partner && (partnerLoading || !partnerData)) return <div className="min-h-screen bg-white"><TopBar title="초기 리뷰 등록" /><p className="px-5 py-10 text-[#8B95A1]">{partnerError || '병원 정보를 불러오고 있어요.'}</p></div>;
   if (partner && (!ownHospital || now - new Date(ownHospital.created_at).getTime() >= 30 * 86400000)) return <div className="min-h-screen bg-white"><TopBar title="초기 리뷰 등록" /><p className="px-5 py-10 text-[#8B95A1]">초기 리뷰는 병원 등록 후 30일 안에 등록할 수 있어요.</p></div>;
+  if (!partner && !reservation) return <div className="min-h-screen bg-white"><TopBar title="리뷰 쓰기" /><p className="px-5 py-10 text-[#8B95A1]">결제가 완료된 확정 또는 완료 예약에서만 후기를 작성할 수 있어요.</p></div>;
   if (!partner && !baseProduct) return <div className="min-h-screen bg-white"><TopBar title="리뷰 쓰기" /><p className="px-5 py-10 text-[#8B95A1]">리뷰를 작성할 예약이나 상품을 먼저 선택해 주세요.</p></div>;
 
   return (
@@ -368,10 +359,10 @@ ${hasAspectFeedback && aspects.kindness >= 4 ? '원장님과 스태프분들의 
           <Field label="시술 전체 비용">
             <div className="flex h-14 items-center rounded-[14px] bg-[#F2F4F6] px-4 transition-colors focus-within:bg-[#EDEFF2]">
               <input
-                type="number"
+                type="text"
                 inputMode="numeric"
-                value={totalCost}
-                onChange={(e) => setTotalCost(e.target.value)}
+                value={totalCost ? Number(totalCost.replace(/\D/g, '')).toLocaleString('ko-KR') : ''}
+                onChange={(e) => setTotalCost(e.target.value.replace(/\D/g, ''))}
                 className="min-w-0 flex-1 bg-transparent text-[16px] font-semibold text-[#191F28] outline-none"
               />
               <span className="ml-2 text-[16px] text-[#8B95A1]">원</span>
@@ -416,11 +407,11 @@ ${hasAspectFeedback && aspects.kindness >= 4 ? '원장님과 스태프분들의 
             <button
               type="button"
               onClick={aiFill}
-              disabled={aiLoading || rating === 0 || !product || submitting}
+              disabled={rating === 0 || !product || submitting}
               className="inline-flex h-9 items-center gap-1.5 rounded-[8px] bg-[#EFF5FE] px-3 text-[14.5px] font-semibold text-[#2F6FE4] disabled:bg-[#F2F4F6] disabled:text-[#B0B8C1]"
             >
               <MonoIcon name="pencil" size={16} color="currentColor" />
-              {aiLoading ? '쓰는 중...' : 'AI로 쓰기'}
+              후기 초안 쓰기
             </button>
           }
           delay={0.3}

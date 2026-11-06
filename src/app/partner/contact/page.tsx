@@ -1,4 +1,5 @@
 'use client';
+import { siteConfig } from '@/lib/site-config';
 
 // 문의 — 상품 상세(261031) 톤: 테두리 없는 채널 줄 · 회색 띠 · 문의 유형 칩(고르면 연파랑) · 회색 입력 칸 · 큰 파랑 버튼.
 
@@ -12,8 +13,8 @@ import { useSession } from '@/lib/supabase/SessionProvider';
 
 // 연락 채널 — 회색 아이콘 칸 + 이름/설명 + 오른쪽 값(테두리 없는 줄)
 const CHANNELS: { icon: string; title: string; desc: string; value: string; href?: string }[] = [
-  { icon: 'call', title: '전화 상담', desc: '평일 10:00~18:00', value: '1644-0000', href: 'tel:1644-0000' },
-  { icon: 'mail', title: '이메일 문의', desc: '24시간 접수', value: 'partner@kidoctor.com', href: 'mailto:partner@kidoctor.com' },
+  { icon: 'call', title: '전화 상담', desc: '평일 10:00~18:00', value: siteConfig.phone, href: 'tel:' + siteConfig.phone },
+  { icon: 'mail', title: '이메일 문의', desc: '24시간 접수', value: siteConfig.email, href: 'mailto:' + siteConfig.email },
   { icon: 'chat-bubble', title: '카카오 1:1', desc: '검색 후 친구추가', value: '@마이닥파트너' },
 ];
 
@@ -149,7 +150,7 @@ export default function PartnerContactPage() {
               />
               <p className="mt-3 flex gap-2 rounded-[14px] bg-[#F2F4F6] px-4 py-3.5 text-[14px] leading-[1.5] text-[#4E5968]">
                 <MonoIcon name="info-circle" size={18} color="#B0B8C1" className="mt-px" />
-                접수된 문의는 partner@kidoctor.com 으로 답변드려요.
+                접수된 문의는 {siteConfig.email}에서 답변드려요.
               </p>
             </div>
             <button

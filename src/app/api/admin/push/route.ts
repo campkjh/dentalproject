@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse, type NextRequest } from 'next/server';
 import { createAdminClient, createClient } from '@/lib/supabase/server';
+import { nativePushPolicy, pushPreferences } from '@/lib/push/policy';
 import { isPushConfigured, sendPush } from '@/lib/push/fcm';
 
 export const dynamic = 'force-dynamic';
@@ -38,26 +39,21 @@ export async function POST(req: NextRequest) {
 
   if (!title || !message) return NextResponse.json({ error: '제목과 본문은 필수입니다.' }, { status: 400 });
 
-  let tokens: string[] = [];
-  if (target === 'tokens') {
-    tokens = explicitTokens;
-  } else {
-    const admin = await createAdminClient();
-    const { data, error } = await admin.from('push_devices').select('token');
-    if (error) {
-      const text = `${error.message ?? ''} ${error.details ?? ''}`.toLowerCase();
-      if (text.includes('push_devices')) {
-        return NextResponse.json({
-          error: '네이티브 푸시 기기 저장소가 없습니다. 0025 마이그레이션을 적용해주세요.',
-        }, { status: 400 });
-      }
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-    tokens = (data ?? []).map((r: any) => r.token).filter(Boolean);
-  }
+  const admin = await createAdminClient();
+  const type = body.category === 'event' ? 'event' : 'recommendation';
+  let devices = admin.from('push_devices').select('token, user_id');
+  if (target === 'tokens') devices = devices.in('token', explicitTokens);
+  const { data, error } = await devices;
+  if (error) return NextResponse.json({ error: '푸시 기기 정보를 불러오지 못했습니다.' }, { status: 503 });
+  const userIds = [...new Set((data ?? []).map(row => row.user_id))];
+  if (!userIds.length) return NextResponse.json({ error: '발송할 디바이스 토큰이 없습니다.' }, { status: 400 });
+  const { data: settings, error: settingsError } = await admin.from('push_preferences').select('user_id, settings').in('user_id', userIds);
+  if (settingsError) return NextResponse.json({ error: '수신 동의 설정을 확인하지 못했습니다.' }, { status: 503 });
+  const byUser = new Map((settings ?? []).map(row => [row.user_id, row.settings]));
+  const tokens = (data ?? []).filter(row => nativePushPolicy({ title, type, link: '/notifications' }, pushPreferences(byUser.get(row.user_id))).allowed).map(row => row.token);
 
-  if (!tokens.length) return NextResponse.json({ error: '발송할 디바이스 토큰이 없습니다.' }, { status: 400 });
+  if (!tokens.length) return NextResponse.json({ error: '해당 알림 수신에 동의한 기기가 없습니다.' }, { status: 400 });
 
-  const result = await sendPush({ title, body: message, tokens });
+  const result = await sendPush({ title, body: message, tokens, data: { link: '/notifications', type } });
   return NextResponse.json({ ok: result.ok, configured: result.configured, sent: result.sent, failed: result.failed, errors: result.errors });
 }

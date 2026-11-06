@@ -91,7 +91,7 @@ export function normalizeProduct(row: any): Product {
     tags: getVisibleProductTags(row.tags),
     category: toCategoryCode(row.category) ?? row.category ?? '',
     subCategory: specialtyLabel(row.sub_category),
-    options: row.product_options
+    options: Array.isArray(row.options) ? row.options : row.product_options
       ? row.product_options
           .sort((a: any, b: any) => a.sort_order - b.sort_order)
           .map((o: any) => ({ id: o.id, name: o.name, price: o.price }))
@@ -110,6 +110,7 @@ export function normalizeReview(row: any): Review {
     id: row.id,
     authorName: row.author?.name ?? '익명',
     authorId: row.author_id,
+    createdAt: row.created_at,
     date: row.created_at
       ? new Date(row.created_at).toLocaleDateString('ko-KR', {
           year: 'numeric',

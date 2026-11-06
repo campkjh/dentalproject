@@ -133,7 +133,7 @@ function BookingPage() {
       showToast('이미 지난 시간이에요. 다시 골라 주세요.');
       return;
     }
-    const pay = paymentParam === 'app' ? '&payment=app' : '';
+    const pay = (paymentParam === 'app' ? '&payment=app' : '') + (searchParams.get('optionId') ? '&optionId=' + encodeURIComponent(searchParams.get('optionId')!) : '');
     router.push(`/payment?productId=${productId}&date=${date}&time=${encodeURIComponent(time)}${pay}`);
   };
 

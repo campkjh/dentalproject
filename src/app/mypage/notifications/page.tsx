@@ -13,8 +13,7 @@ type NotifKey =
   | 'message'
   | 'community'
   | 'event'
-  | 'marketing'
-  | 'night';
+  | 'marketing';
 
 interface NotifSetting {
   key: NotifKey;
@@ -58,16 +57,7 @@ const sections: { title: string; items: NotifSetting[] }[] = [
       },
     ],
   },
-  {
-    title: '기타',
-    items: [
-      {
-        key: 'night',
-        label: '야간 방해 금지',
-        description: '22:00 ~ 08:00 에는 알림이 조용히 전송돼요.',
-      },
-    ],
-  },
+
 ];
 
 export default function NotificationSettingsPage() {
@@ -137,7 +127,7 @@ export default function NotificationSettingsPage() {
         <p className="flex items-start gap-2 rounded-[16px] bg-[#F7F8FA] px-4 py-3.5 text-[13px] leading-[1.6] text-[#6B7684]">
           <TossIcon name="alarm" size={18} className="mt-px" />
           <span className="break-keep">
-            광고성 정보 수신 동의 시 쿠폰·이벤트 등의 혜택 알림을 받으실 수 있습니다.
+            포인트 적립·쿠폰 알림은 ‘이벤트·혜택 알림’, 맞춤 광고는 ‘광고성 정보 수신’ 설정에 따라 전송됩니다.
             알림 설정은 디바이스 설정보다 후순위로 적용됩니다.
           </span>
         </p>

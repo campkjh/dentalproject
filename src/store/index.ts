@@ -69,6 +69,8 @@ function reservationFromRow(r: any): Reservation {
     assignedDoctorImage: r.doctor?.profile_image ?? undefined,
     assignedDoctorTitle: r.doctor?.title ?? undefined,
     paymentMethod: r.payment_method ?? undefined,
+    paymentStatus: r.payment_status,
+    pointsUsed: r.points_used ?? 0,
     paymentType: r.payment_type ?? undefined,
     scheduleHistory: (r.schedule_history ?? []).map((item: any) => ({
       id: item.id,
@@ -160,7 +162,7 @@ interface AppState {
   reservations: Reservation[];
   /** 서버 반영에 실패하면 화면 상태를 되돌리고 { error }를 돌려준다(예: 결제 취소 실패). */
   updateReservationStatus: (id: string, status: Reservation['status'], cancelReason?: string) => Promise<{ error?: string }>;
-  addReservation: (reservation: Reservation, opts?: { visitAtIso?: string }) => Promise<{ error: string | null; id?: string }>;
+  addReservation: (reservation: Reservation, opts?: { visitAtIso?: string }) => Promise<{ error: string | null; id?: string; amount?: number; orderId?: string }>;
 
   // Posts
   posts: Post[];
@@ -450,6 +452,7 @@ export const useStore = create<AppState>((set, get) => ({
     }
   },
   addReservation: async (reservation, opts) => {
+    const ownerId = get().user?.id;
     set({ reservations: [reservation, ...get().reservations] });
     try {
       const res = await fetch('/api/reservations', {
@@ -464,6 +467,9 @@ export const useStore = create<AppState>((set, get) => ({
           customerPhone: reservation.customerPhone,
           paymentType: reservation.paymentType,
           paymentMethod: reservation.paymentMethod,
+          pointsUsed: reservation.pointsUsed ?? 0,
+          couponId: reservation.couponId,
+          optionId: reservation.optionId,
         }),
       });
       if (!res.ok) {
@@ -472,11 +478,14 @@ export const useStore = create<AppState>((set, get) => ({
         set({ reservations: get().reservations.filter((r) => r.id !== reservation.id) });
         return { error: j.error || `예약 실패 (${res.status})` };
       }
-      const { id } = await res.json();
+      const { id, amount, orderId, points } = await res.json();
+      if (get().user?.id !== ownerId) return { error: '로그인 계정이 변경되었습니다. 예약 내역을 다시 확인해주세요.' };
       set({
         reservations: get().reservations.map((r) => (r.id === reservation.id ? { ...r, id } : r)),
       });
-      return { error: null, id };
+      if (typeof points === 'number' && get().user) set({ user: { ...get().user!, points } });
+      void get().hydrateMe();
+      return { error: null, id, amount, orderId };
     } catch (e) {
       set({ reservations: get().reservations.filter((r) => r.id !== reservation.id) });
       return { error: (e as Error).message || '네트워크 오류' };
@@ -666,7 +675,7 @@ export const useStore = create<AppState>((set, get) => ({
       }
       const { id } = await res.json();
       // Reload the committed balance and reward ledger together; never invent +500 locally.
-      if (get().user?.id === authorId) await get().hydrateMe();
+      if (get().user?.id === authorId) await Promise.all([get().hydrateMe(), get().hydrateCatalog({ force: true })]);
       set({ reviews: get().reviews.map((r) => (r.id === review.id ? { ...r, id } : r)) });
       return { error: null, id };
     } catch (e) {

@@ -1,4 +1,5 @@
 'use client';
+import { formatPhone } from '@/lib/phone';
 
 import { categoryLabel } from '@/lib/category-code';
 
@@ -74,8 +75,7 @@ function buildHourDrafts(hospital: HospitalRow | null): HourDraft[] {
 function hourLines(hospital: HospitalRow) {
   const rows = hospital.operating_hours ?? [];
   return DISPLAY_DAY_ORDER
-    .map((day) => rows.find((row) => row.day === day))
-    .filter((row): row is OperatingHour => Boolean(row))
+    .map((day) => rows.find((row) => row.day === day) ?? { day, is_closed: true })
     .map((row) => {
       if (row.is_closed || !row.start_time || !row.end_time) return `${row.day} 휴진`;
       return `${row.day} ${row.start_time}~${row.end_time}`;
@@ -148,7 +148,7 @@ export default function PartnerHospitalInfoPage() {
     });
     if (!res.ok) {
       const j = await res.json().catch(() => ({}));
-      throw new Error((j as any).error || '저장에 실패했습니다.');
+      throw new Error((j as { error?: string }).error || '저장에 실패했습니다.');
     }
   };
 
@@ -167,7 +167,7 @@ export default function PartnerHospitalInfoPage() {
     });
     if (!res.ok) {
       const j = await res.json().catch(() => ({}));
-      throw new Error((j as any).error || '운영시간 저장에 실패했습니다.');
+      throw new Error((j as { error?: string }).error || '운영시간 저장에 실패했습니다.');
     }
   };
 
@@ -348,7 +348,7 @@ export default function PartnerHospitalInfoPage() {
   const coverImages = (hospital.cover_images ?? []).filter(usableImage) as string[];
   const logo = usableImage(hospital.logo_url) ?? usableImage(hospital.image_url);
   const address = hospital.address ?? hospital.location ?? '';
-  const tags = hospital.tags?.filter(Boolean).slice(0, 3) ?? [];
+  const tags = hospital.tags?.filter(Boolean) ?? [];
   const hours = hourLines(hospital);
 
   /* ── 대문사진 수정 화면 ── */
@@ -572,8 +572,8 @@ export default function PartnerHospitalInfoPage() {
   /* ── 메인 개요 화면 — 상품 상세 '병원 정보' 결: 사진 · 병원 줄 · 회색 이름 정보 줄 · 회색 띠로 칸 나눔 ── */
   const infoRows = [
     { label: '주소', value: address || <span className="text-[#B0B8C1]">주소를 등록해 주세요</span> },
-    ...(hospital.phone ? [{ label: '전화', value: hospital.phone }] : []),
-    ...(tags.length > 0 ? [{ label: '키워드', value: tags.map((t) => t.replace(/^#/, '')).join(', ') }] : []),
+    ...(hospital.phone ? [{ label: '전화', value: formatPhone(hospital.phone) }] : []),
+    { label: '진료과목', value: tags.length ? tags.map(t => t.replace(/^#/, '')).join(', ') : categoryLabel(hospital.category) },
   ];
 
   return (
@@ -605,17 +605,17 @@ export default function PartnerHospitalInfoPage() {
                         type="button"
                         onClick={() => setCoverIdx(i)}
                         aria-label={`${i + 1}번째 사진`}
-                        className={`h-1.5 rounded-full transition-all ${i === coverIdx % coverImages.length ? 'w-4 bg-white' : 'w-1.5 bg-white/55'}`}
+                        className={`!h-[5px] !min-h-0 !min-w-0 !p-0 rounded-full transition-all ${i === coverIdx % coverImages.length ? '!w-[12px] bg-white' : '!w-[5px] bg-white/55'}`}
                       />
                     ))}
                   </div>
                   <button type="button" aria-label="이전 사진" onClick={() => setCoverIdx((p) => (p - 1 + coverImages.length) % coverImages.length)}
-                    className="absolute left-2.5 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-black/30 text-white">
-                    <ChevronLeft size={18} />
+                    className="absolute left-2.5 top-1/2 flex h-[44px] w-[44px] -translate-y-1/2 items-center justify-center rounded-full bg-black/30 text-white">
+                    <ChevronLeft size={24} />
                   </button>
                   <button type="button" aria-label="다음 사진" onClick={() => setCoverIdx((p) => (p + 1) % coverImages.length)}
-                    className="absolute right-2.5 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-black/30 text-white">
-                    <ChevronRight size={18} />
+                    className="absolute right-2.5 top-1/2 flex h-[44px] w-[44px] -translate-y-1/2 items-center justify-center rounded-full bg-black/30 text-white">
+                    <ChevronRight size={24} />
                   </button>
                 </>
               )}

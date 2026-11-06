@@ -1,4 +1,5 @@
 'use client';
+import { matchesSearchRegion } from '@/lib/search-region';
 
 import { useState, useMemo, Suspense, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
@@ -76,7 +77,7 @@ function SearchPage() {
   const router = useRouter();
   const categoryParam = searchParams.get('category');
 
-  const { products, recentSearches, addRecentSearch, removeRecentSearch, showToast, categories, reviews } = useStore();
+  const { hospitals, products, recentSearches, addRecentSearch, removeRecentSearch, showToast, categories, reviews } = useStore();
 
   // 인기검색어: 상품 태그 빈도순 + 리뷰 시술명 빈도순 합산 (실데이터 기반)
   const popularSearches = useMemo(() => {
@@ -182,17 +183,8 @@ function SearchPage() {
   // --- Location filter helper ---
   const matchesRegion = (p: typeof products[0]) => {
     if (selectedRegions.length === 0) return true;
-    const loc = (p.location ?? '') + (p.hospitalName ?? '');
-    return selectedRegions.some((entry) => {
-      const [province, district] = entry.split(' ');
-      if (district) {
-        const districtKey = district.replace(/시$/, '').replace(/구$/, '');
-        return loc.includes(district) || loc.includes(districtKey);
-      }
-      // Province-only entry = "전체" of that province → match any item
-      // containing the province name in its location/hospital field.
-      return loc.includes(province);
-    });
+    const hospital = hospitals.find(h => h.id === p.hospitalId);
+    return matchesSearchRegion(hospital?.address || hospital?.location || p.location || '', selectedRegions);
   };
 
   // --- Price filter helper ---
@@ -383,6 +375,7 @@ function SearchPage() {
             selectedBooking={selectedBooking}
             setSelectedBooking={setSelectedBooking}
             onClose={() => setFilterModalTab(null)}
+            onApply={() => setHasSearched(true)}
             onLocate={handleCurrentLocation}
             locating={locating}
           />
@@ -498,6 +491,7 @@ function SearchPage() {
             selectedBooking={selectedBooking}
             setSelectedBooking={setSelectedBooking}
             onClose={() => setFilterModalTab(null)}
+            onApply={() => setHasSearched(true)}
             onLocate={handleCurrentLocation}
             locating={locating}
           />
@@ -657,6 +651,7 @@ function SearchPage() {
           selectedBooking={selectedBooking}
           setSelectedBooking={setSelectedBooking}
           onClose={() => setFilterModalTab(null)}
+            onApply={() => setHasSearched(true)}
           onLocate={handleCurrentLocation}
           locating={locating}
         />
@@ -721,6 +716,7 @@ function FiltersBottomSheet({
   selectedBooking,
   setSelectedBooking,
   onClose,
+  onApply,
   onLocate,
   locating,
 }: {
@@ -737,6 +733,7 @@ function FiltersBottomSheet({
   selectedBooking: string;
   setSelectedBooking: (b: string) => void;
   onClose: () => void;
+  onApply?: () => void;
   onLocate: () => void;
   locating: boolean;
 }) {
@@ -926,7 +923,7 @@ function FiltersBottomSheet({
           <button type="button" onClick={() => { haptic('light'); resetAll(); }} className="flex h-14 flex-1 items-center justify-center rounded-[18px] bg-[#F2F4F6] text-[17px] font-bold text-[#4E5968] transition-all active:scale-[0.98]">
             초기화
           </button>
-          <button type="button" onClick={requestClose} className="flex h-14 flex-1 items-center justify-center rounded-[18px] bg-[#4A82EE] text-[17px] font-bold text-white transition-all active:scale-[0.98]">
+          <button type="button" onClick={() => { setOpen(false); setTimeout(() => { onApply?.(); onClose(); }, 240); }} className="flex h-14 flex-1 items-center justify-center rounded-[18px] bg-[#4A82EE] text-[17px] font-bold text-white transition-all active:scale-[0.98]">
             결과 보기
           </button>
         </div>

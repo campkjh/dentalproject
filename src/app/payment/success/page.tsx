@@ -105,6 +105,7 @@ function PaymentSuccessPage() {
         if (data?.status === 'WAITING_FOR_DEPOSIT' && data?.virtualAccount) {
           setVirtualAccount(data.virtualAccount as VirtualAccountInfo);
         }
+        await useStore.getState().hydrateMe();
         setStatus('done');
       } catch {
         setErrorMsg('네트워크 오류로 결제 승인에 실패했습니다.');

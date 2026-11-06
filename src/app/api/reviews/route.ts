@@ -39,10 +39,11 @@ export async function POST(req: NextRequest) {
     if (!doctor || doctor.hospital_id !== hospitalId) return NextResponse.json({ error: '해당 병원의 의사를 선택해주세요.' }, { status: 400 });
   }
 
+  if (!reservationId) return NextResponse.json({ error: '결제한 예약에서 후기를 작성해주세요.' }, { status: 403 });
   if (reservationId) {
     const { data: reservation } = await sb
       .from('reservations')
-      .select('id, user_id, status, hospital_id, product_id')
+      .select('id, user_id, status, hospital_id, product_id, payment_status')
       .eq('id', reservationId)
       .eq('user_id', user.id)
       .maybeSingle();
@@ -50,8 +51,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: '예약 정보를 찾을 수 없습니다.' }, { status: 404 });
     }
     if (reservation.hospital_id !== hospitalId || reservation.product_id !== productId) return NextResponse.json({ error: '예약의 병원과 시술 정보가 일치하지 않습니다.' }, { status: 400 });
-    if (!['confirmed', 'completed'].includes(reservation.status)) {
-      return NextResponse.json({ error: '확정 또는 완료된 예약만 후기를 작성할 수 있습니다.' }, { status: 400 });
+    if (reservation.payment_status !== 'paid' || !['confirmed', 'completed'].includes(reservation.status)) {
+      return NextResponse.json({ error: '결제가 완료된 확정 또는 완료 예약만 후기를 작성할 수 있습니다.' }, { status: 400 });
     }
     const { data: duplicateByReservation } = await sb
       .from('reviews')
@@ -109,7 +110,7 @@ export async function POST(req: NextRequest) {
     await writeNotifications({
       user_id: user.id,
       type: 'info',
-      title: '후기 작성 완료',
+      title: '후기 작성 포인트 적립',
       content: '소중한 후기 감사합니다! 500P가 적립되었어요.',
       link: '/mypage/points',
     });

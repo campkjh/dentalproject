@@ -1,5 +1,5 @@
-import { writeNotifications } from '@/lib/push/delivery';
-import { NextResponse, type NextRequest } from 'next/server';
+import { flushNativePush, writeNotifications } from '@/lib/push/delivery';
+import { after, NextResponse, type NextRequest } from 'next/server';
 import { broadcastReservationChange } from '@/lib/realtime/server';
 import { createAdminClient } from '@/lib/supabase/server';
 
@@ -33,23 +33,26 @@ export async function POST(req: NextRequest) {
     // 우리 상점의 주문이 아니거나 조회 실패 — 재시도해도 의미 없으므로 200으로 응답
     return NextResponse.json({ ok: true, ignored: 'lookup failed' });
   }
-  const payment = (await tossRes.json()) as { status?: string; approvedAt?: string | null };
+  const payment = (await tossRes.json()) as { status?: string; approvedAt?: string | null; totalAmount?: number; orderId?: string };
 
   const admin = await createAdminClient();
   const { data: reservation } = await admin
     .from('reservations')
-    .select('id, user_id, hospital_id, status, payment_status')
+    .select('id, user_id, hospital_id, status, payment_status, amount')
     .eq('order_id', orderId)
     .maybeSingle();
   if (!reservation) return NextResponse.json({ ok: true, ignored: 'no reservation' });
 
+  if (payment.orderId !== orderId || payment.totalAmount !== reservation.amount) return NextResponse.json({ error: '결제 금액 불일치' }, { status: 400 });
   const nowIso = new Date().toISOString();
 
   if (payment.status === 'DONE' && reservation.payment_status !== 'paid') {
-    await admin
+    const { error } = await admin
       .from('reservations')
       .update({ payment_status: 'paid', paid_at: payment.approvedAt ?? nowIso, updated_at: nowIso })
       .eq('id', reservation.id);
+    if (error) return NextResponse.json({ error: '예약 갱신 실패' }, { status: 503 });
+    after(async () => { await flushNativePush().catch(() => {}); });
 
     if (reservation.user_id) {
       await writeNotifications({

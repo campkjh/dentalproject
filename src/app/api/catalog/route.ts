@@ -34,7 +34,7 @@ export async function GET() {
       .from('products')
       .select(
         `id, title, location, price, original_price, discount, rating, review_count, like_count,
-         image_url, detail_image_url, image_urls, detail_image_urls, description, tags, category, sub_category, hospital_id, created_at,
+         image_url, detail_image_url, image_urls, detail_image_urls, description, options, tags, category, sub_category, hospital_id, created_at,
          hospitals (id, name, location)`
       )
       .eq('status', 'active')
