@@ -205,8 +205,9 @@ export default function ProductDetailPage() {
 
   const hospitalReviewRows = reviews.filter(r => r.hospitalId === hospital?.id);
   const hospitalRating = hospital?.rating ?? 0;
-  const reviewCount = productReviews.length;
-  const rating = reviewCount > 0 ? productReviews.reduce((s, r) => s + r.rating, 0) / reviewCount : product.rating;
+  // 카탈로그의 후기 목록은 최근 50건만 포함하므로 개수/평점은 상품의 DB 집계값을 사용한다.
+  const reviewCount = product.reviewCount;
+  const rating = product.rating;
   const productImageUrl = resolveProductImageUrl(product.imageUrl, product.id);
   // 상세페이지 이미지는 여러 장을 위에서 아래로 이어 붙인다(긴 상세를 한 장에 담지 않게)
   const detailImageUrls = product.detailImageUrls?.length
@@ -224,6 +225,7 @@ export default function ProductDetailPage() {
   const reviewRows: ReviewRowData[] = productReviews.map(r => ({
     id: r.id,
     name: r.authorName,
+    productTitle: product.title,
     avatarSeed: r.authorId || r.authorName,
     authorId: r.authorId || undefined,
     rating: r.rating,
@@ -491,7 +493,7 @@ export default function ProductDetailPage() {
                   onClick={() => { if (tab.id !== activeSection) haptic('selection'); scrollToSection(tab.id); }}
                   className={`relative flex-1 rounded-[13px] py-2 text-[13px] transition-colors duration-300 ${activeSection === tab.id ? 'font-bold text-[#2B313D]' : 'font-semibold text-[#A4ABBA] hover:text-[#51535C]'}`}
                 >
-                  {tab.label}
+                  {tab.label}{tab.id === 'reviews' && <span className="ml-1 tabular-nums">{reviewCount.toLocaleString()}</span>}
                 </button>
               ))}
             </div>
@@ -599,7 +601,7 @@ export default function ProductDetailPage() {
           <div className="h-2.5 bg-[#F2F4F6]" />
           {/* ─── 시술 후기 — 로그인해야 자세한 후기를 보여 준다(사장 견본). 로그인 전·후기 없음 = 프리티풀 비즈 '카드 3장' 예시 장면 ─── */}
           <div ref={sectionRefs.reviews} className="bg-white px-5 py-6">
-            <h2 className="mb-5 text-[20px] font-bold leading-tight tracking-[-0.4px] text-[#191F28]">시술 후기</h2>
+            <h2 className="mb-5 flex items-center gap-2 text-[20px] font-bold leading-tight tracking-[-0.4px] text-[#191F28]">시술 후기 <span className="tabular-nums text-[#2F6FE4]">{reviewCount.toLocaleString()}개</span></h2>
             <ReviewSummaryCard summary={reviewSummary.value} loading={reviewSummary.loading} className="mb-5" />
             {!user ? (
               <ReviewShowcase mode="login" onLogin={() => window.dispatchEvent(new Event('dental:login'))} />
