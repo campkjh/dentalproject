@@ -1,11 +1,9 @@
 /* 포켓(장바구니) — 프리티풀 토스 결(#191F28 글자 · #3180F7 파랑 · #F2F4F6 회색).
    시트는 프리티풀 globals .ft-* 어법을 모듈로 옮긴 것(모바일 = 아래에서 올라오는 흰 시트 · ≥640 = 가운데 카드 · 버튼 56/r17/17). */
 
-/* 아래 고정 영역 — 모바일은 하단 탭(58 + 안전영역) 바로 위, PC 는 오른쪽 요약 칸이 대신한다.
-   하단 탭이 스크롤로 숨으면(html[data-nav-hidden]) 같이 내려가 틈이 안 생긴다 */
-:global(html[data-nav-hidden]) .checkoutBar { transform: translateY(58px); }
+/* 모바일 결제 영역은 항상 고정된 하단 탭(58 + 안전영역) 바로 위에 둔다. */
 .checkoutBar {
-  position: fixed; left: 0; right: 0; bottom: calc(58px + env(safe-area-inset-bottom, 0px)); z-index: 59; transition: transform .32s cubic-bezier(.22,1,.36,1);
+  position: fixed; left: 0; right: 0; bottom: calc(58px + env(safe-area-inset-bottom, 0px)); z-index: 59;
   pointer-events: none;
 }
 .checkoutInner {

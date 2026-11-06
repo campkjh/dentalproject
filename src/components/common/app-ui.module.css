@@ -6,8 +6,7 @@
 .transparent { background: transparent; backdrop-filter: none; }
 .iconButton { width: 36px; height: 36px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; color: #4e5968; cursor: pointer; transition: background .18s, transform .18s; position: relative; flex-shrink: 0; }
 .iconButton:hover { background: #f2f4f6; }.iconButton:active { transform: scale(.94); }
-.bottomNav { position: fixed; bottom: 0; left: 0; right: 0; z-index: 60; pointer-events: none; transition: transform .32s cubic-bezier(.22,1,.36,1); }
-.navHidden { transform: translateY(115%); }
+.bottomNav { position: fixed; bottom: 0; left: 0; right: 0; z-index: 60; pointer-events: none; }
 .navPill { width: 100%; max-width: 640px; margin: auto; padding: 0 12px env(safe-area-inset-bottom, 0px); border-radius: 24px 24px 0 0; background: #fff; box-shadow: 0 0 0 .5px #e4e4e7, 0 -2px 12px #00000008; pointer-events: auto; display: flex; height: calc(58px + env(safe-area-inset-bottom,0px)); }
 .navPill a { display: flex; flex: 1; min-width: 0; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: #4E5968; font-size: 11px; font-weight: 500; line-height: 13px; letter-spacing: -0.2px; }
 .navPill a[aria-current=page] { font-weight: 600; color: #4E5968; }
