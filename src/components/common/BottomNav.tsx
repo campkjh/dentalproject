@@ -1,6 +1,5 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useStore } from '@/store';
@@ -95,29 +94,9 @@ export type TabBarItem = {
   onPress?: (event: React.MouseEvent<HTMLAnchorElement>) => void;
 };
 
-/** 하단 탭 바 — 고객(BottomNav)·의사(partner layout) 화면이 같이 쓴다. 내리면 숨고 올리면 나온다, 지금 탭을 또 누르면 맨 위로 */
+/** 고객·의사 공통 하단 탭은 항상 고정한다. 현재 탭을 다시 누르면 맨 위로 이동한다. */
 export function TabBarNav({ items: tabs, label = '주요 메뉴' }: { items: TabBarItem[]; label?: string }) {
-  const path = usePathname();
-  const [scrollState, setScrollState] = useState({ path, visible: true });
-  const visible = scrollState.path === path ? scrollState.visible : true;
-  useEffect(() => {
-    let last = window.scrollY;
-    const scroll = (event: Event) => {
-      const element = event.target instanceof Element ? event.target : null;
-      if (element && element.scrollHeight <= element.clientHeight + 10) return;
-      const next = element ? element.scrollTop : window.scrollY;
-      if (Math.abs(next - last) > 8 || next < 30) { setScrollState({ path, visible: next < 60 || next < last }); last = next; }
-    };
-    document.addEventListener('scroll', scroll, { passive: true, capture: true });
-    return () => document.removeEventListener('scroll', scroll, true);
-  }, [path]);
-  // 하단 탭이 숨었는지 문서에 표시 — 탭 바로 위에 붙은 고정 영역(포켓 예약하기 등)이 같이 내려가게
-  useEffect(() => {
-    const root = document.documentElement;
-    root.toggleAttribute('data-nav-hidden', !visible);
-    return () => root.removeAttribute('data-nav-hidden');
-  }, [visible]);
-  return <nav aria-label={label} className={`${styles.bottomNav} ${!visible ? styles.navHidden : ''}`}><div className={styles.navPill}>
+  return <nav aria-label={label} className={styles.bottomNav}><div className={styles.navPill}>
     {tabs.map(({ href, label: name, Icon, active, dot, onPress }) => (
       <Link key={href} href={href} aria-current={active ? 'page' : undefined} onClick={event => {
         onPress?.(event);
