@@ -7,11 +7,8 @@
 .body { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; }
 .body::-webkit-scrollbar, .imageArea::-webkit-scrollbar { display: none; }
 .photoFrame { position: relative; max-width: 760px; margin: 0 auto; }
-.imageArea { width: 100%; max-height: min(62dvh, 640px); overflow: auto; touch-action: pan-y pinch-zoom; scrollbar-width: none; }
-.imageArea img { display: block; width: 100%; height: auto; max-height: min(62dvh, 640px); object-fit: contain; }
-.zoomed { display: block; touch-action: pan-x pan-y pinch-zoom; }
-.zoomed img { width: 200%; height: auto; max-width: none; max-height: none; }
-.zoomButton { position: absolute; right: 12px; top: 12px; border-radius: 50%; background: #0008; }
+.imageArea { width: 100%; max-height: min(62dvh, 640px); overflow: hidden; touch-action: none; scrollbar-width: none; }
+.imageArea img { display: block; width: 100%; height: auto; max-height: min(62dvh, 640px); object-fit: contain; transform-origin: center; user-select: none; -webkit-user-drag: none; }
 .pagination { display: flex; align-items: center; justify-content: center; padding: 3px 0; }
 .pagination button { display: grid; place-items: center; width: 16px; height: 28px; padding: 0; border: 0; background: transparent; }
 .pagination span { width: 6px; height: 6px; border-radius: 50%; background: #5b636e; }

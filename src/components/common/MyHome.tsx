@@ -14,7 +14,7 @@ import { useHospitalApplication } from '@/lib/hospital-application';
 import MyPageDetail from './MyPageDetail';
 import styles from './app-ui.module.css';
 
-type Row = { label: string; icon: string; href?: string; description?: string; badge?: number; tag?: string; action?: () => void };
+type Row = { label: string; icon: string; href?: string; description?: string; value?: string; badge?: number; tag?: string; action?: () => void };
 type HospitalData = { id: string; name: string; status?: string };
 
 /** 화면 전환 막 — 흰 바탕 + 가운데 글씨가 떠올랐다가, 돌려준 함수를 부르면 흐려지며 걷힌다 */
@@ -86,7 +86,7 @@ export default function MyHome({ partner = false }: { partner?: boolean }) {
     { label: '예약내역', icon: 'reservations', href: '/reservations', badge: hydrated && user ? reservations.length : 0 },
     { label: '결제내역', icon: 'payments', href: '/mypage/payments' },
     { label: '쿠폰함', icon: 'coupons', href: '/mypage/coupons', badge: user ? coupons : 0 },
-    { label: '내 포인트', icon: 'points', href: '/mypage/points' },
+    { label: '내 포인트', icon: 'points', href: '/mypage/points', value: user ? hydrated ? `${user.points.toLocaleString()}P` : '—' : undefined },
     { label: '쪽지함', icon: 'messages', href: '/notifications', badge: unread },
   ];
   // 의사 ↔ 고객 화면 오가기 — 정해 둔 계정만(lib/account-mode). 병원 주인이어야 의사 화면으로 갈 수 있다
@@ -176,7 +176,7 @@ export default function MyHome({ partner = false }: { partner?: boolean }) {
     </div>
     <div className={styles.myLayout} data-panel={Boolean(detail)}><div className={styles.myInner}>
     {user ? <header className={styles.myProfile}><div><h1>{user.name}</h1><p>{[authUser?.email, partner ? '병원 파트너' : '마이닥 회원'].filter(Boolean).join(' · ')}</p></div><nav className={styles.myProfileActions}><Link href="/mypage/profile" onClick={event => open(event, '/mypage/profile')}>설정</Link><span>|</span><button type="button" onClick={logout}>로그아웃</button></nav></header> : <div className={styles.myLogin}><h1>로그인이 필요해요</h1><button type="button" className={styles.primaryButton} onClick={() => window.dispatchEvent(new CustomEvent('dental:login'))}>로그인 / 회원가입</button></div>}
-    <div className={styles.quickGrid} style={partner ? undefined : { gridTemplateColumns: 'repeat(5, minmax(0, 1fr))' }}>{quick.map((item, index) => <Link key={item.label} href={item.href!} className={styles.quickItem} onClick={event => open(event, item.href!)} style={{ animationDelay: `${.15 + index * .04}s` }}><span><img src={`/icons/mypage/${item.icon}.svg`} alt="" />{Boolean(item.badge) && <small>{item.badge}</small>}</span><span>{item.label}</span></Link>)}</div>
+    <div className={styles.quickGrid} style={partner ? undefined : { gridTemplateColumns: 'repeat(5, minmax(0, 1fr))' }}>{quick.map((item, index) => <Link key={item.label} href={item.href!} className={styles.quickItem} onClick={event => open(event, item.href!)} style={{ animationDelay: `${.15 + index * .04}s` }}><span><img src={`/icons/mypage/${item.icon}.svg`} alt="" />{Boolean(item.badge) && <small>{item.badge}</small>}</span><span className={styles.quickLabel}>{item.label}{item.value !== undefined && <strong className={styles.quickValue}>{item.value}</strong>}</span></Link>)}</div>
     <div className={styles.mySections}>{sections.map((section, i) => <section key={section.title} className={styles.mySection} style={{ animationDelay: `${.2 + i * .06}s` }}><h2>{section.title}</h2><div className={styles.myRows}>{section.rows.map(row => row.href ? <Link key={row.label} href={row.href} className={styles.myRow} onClick={event => open(event, row.href!, section.public)}>{rowContent(row)}</Link> : <button key={row.label} type="button" className={styles.myRow} onClick={row.action}>{rowContent(row)}</button>)}</div></section>)}</div>
   </div>{detail && <aside className={styles.myDetailPanel} aria-label="마이페이지 상세"><button type="button" className={styles.iconButton} aria-label="상세 닫기" title="상세 닫기" onClick={() => setDetail(null)}><X size={19} /></button><MyPageDetail href={detail} onClose={() => setDetail(null)} /></aside>}</div></div>;
 }

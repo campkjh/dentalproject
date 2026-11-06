@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useRef, useState, type TouchEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type TouchEvent } from 'react';
 import { createPortal } from 'react-dom';
-import { LayoutGrid, X, ZoomIn, ZoomOut } from 'lucide-react';
+import { LayoutGrid, X } from 'lucide-react';
 import { maskReviewAuthor } from '@/lib/review-display';
+import { INITIAL_PHOTO_TRANSFORM, constrainPhotoTransform, pinchPhotoTransform, type PhotoTransform, type PhotoPoint } from '@/lib/photo-zoom';
 import styles from './review-photo-viewer.module.css';
 
 export type PhotoReview = {
@@ -14,6 +15,9 @@ export type PhotoReview = {
   content: string;
 };
 type Photo = { src: string; label?: string };
+type Gesture = { mode: 'pinch'; distance: number; origin: PhotoPoint; start: PhotoTransform }
+  | { mode: 'pan' | 'swipe'; origin: PhotoPoint; start: PhotoTransform; scrollTop: number };
+
 
 export default function ReviewPhotoViewer({ src, label = '후기 사진', className, review, photos, initialIndex }: {
   src: string; label?: string; className?: string; review?: PhotoReview; photos?: Photo[]; initialIndex?: number;
@@ -21,34 +25,72 @@ export default function ReviewPhotoViewer({ src, label = '후기 사진', classN
   const gallery = photos?.length ? photos : [{ src, label }];
   const [open, setOpen] = useState(false);
   const [index, setIndex] = useState(0);
-  const [zoom, setZoom] = useState(false);
+  const [transform, setTransform] = useState<PhotoTransform>({ ...INITIAL_PHOTO_TRANSFORM });
+  const transformRef = useRef<PhotoTransform>({ ...INITIAL_PHOTO_TRANSFORM });
+  const applyTransform = useCallback((next: PhotoTransform) => { transformRef.current = next; setTransform(next); }, []);
   const [grid, setGrid] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const close = useRef<HTMLButtonElement>(null);
   const dialog = useRef<HTMLDivElement>(null);
   const imageArea = useRef<HTMLDivElement>(null);
   const body = useRef<HTMLDivElement>(null);
-  const touch = useRef<{ x: number; y: number } | null>(null);
+  const gesture = useRef<Gesture | null>(null);
   const current = gallery[index] ?? gallery[0];
 
   function selectPhoto(next: number) {
     setIndex(next);
-    setZoom(false);
+    applyTransform({ ...INITIAL_PHOTO_TRANSFORM });
+    gesture.current = null;
     setGrid(false);
     if (imageArea.current) { imageArea.current.scrollTop = 0; imageArea.current.scrollLeft = 0; }
     body.current?.scrollTo({ top: 0 });
     close.current?.focus();
   }
+  function touchPoint(event: TouchEvent, second = false): PhotoPoint {
+    const rect = imageArea.current!.getBoundingClientRect();
+    const a = event.touches[0];
+    const b = second ? event.touches[1] : a;
+    return { x: (a.clientX + b.clientX) / 2 - rect.left - rect.width / 2,
+      y: (a.clientY + b.clientY) / 2 - rect.top - rect.height / 2 };
+  }
   function onTouchStart(event: TouchEvent) {
-    touch.current = event.touches.length === 1 && !zoom
-      ? { x: event.touches[0].clientX, y: event.touches[0].clientY } : null;
+    if (!imageArea.current) return;
+    const start = { ...transformRef.current };
+    if (event.touches.length === 2) {
+      const [a, b] = [event.touches[0], event.touches[1]];
+      const distance = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+      gesture.current = distance > 8 ? { mode: 'pinch', distance, origin: touchPoint(event, true), start } : null;
+    } else if (event.touches.length === 1) {
+      gesture.current = { mode: start.scale > 1 ? 'pan' : 'swipe', origin: start.scale > 1 ? touchPoint(event) : { x: event.touches[0].clientX, y: event.touches[0].clientY }, start, scrollTop: body.current?.scrollTop ?? 0 };
+    } else gesture.current = null;
+  }
+  function onTouchMove(event: TouchEvent) {
+    const active = gesture.current;
+    const area = imageArea.current;
+    if (!active || !area) return;
+    const bounds = { width: area.clientWidth, height: area.clientHeight };
+    if (active.mode === 'pinch' && event.touches.length === 2) {
+      const [a, b] = [event.touches[0], event.touches[1]];
+      const ratio = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY) / active.distance;
+      applyTransform(pinchPhotoTransform(active.start, active.origin, touchPoint(event, true), ratio, bounds));
+    } else if (active.mode !== 'pinch' && event.touches.length === 1) {
+      const current = active.mode === 'pan' ? touchPoint(event) : { x: event.touches[0].clientX, y: event.touches[0].clientY };
+      const dx = current.x - active.origin.x;
+      const dy = current.y - active.origin.y;
+      if (active.mode === 'pan') applyTransform(constrainPhotoTransform({ ...active.start, x: active.start.x + dx, y: active.start.y + dy }, bounds));
+      else if (body.current && Math.abs(dy) > Math.abs(dx)) body.current.scrollTop = active.scrollTop - dy;
+    }
   }
   function onTouchEnd(event: TouchEvent) {
-    const start = touch.current;
-    touch.current = null;
-    if (!start || zoom || !event.changedTouches[0]) return;
-    const dx = event.changedTouches[0].clientX - start.x;
-    const dy = event.changedTouches[0].clientY - start.y;
+    const active = gesture.current;
+    gesture.current = null;
+    if (active?.mode === 'pinch' && event.touches.length === 1 && transformRef.current.scale > 1 && imageArea.current) {
+      gesture.current = { mode: 'pan', origin: touchPoint(event), start: { ...transformRef.current }, scrollTop: body.current?.scrollTop ?? 0 };
+      return;
+    }
+    if (!active || active.mode !== 'swipe' || event.touches.length || !event.changedTouches[0]) return;
+    const dx = event.changedTouches[0].clientX - active.origin.x;
+    const dy = event.changedTouches[0].clientY - active.origin.y;
     if (Math.abs(dx) < 48 || Math.abs(dx) < Math.abs(dy) * 1.4) return;
     const next = index + (dx < 0 ? 1 : -1);
     if (next >= 0 && next < gallery.length) selectPhoto(next);
@@ -58,10 +100,16 @@ export default function ReviewPhotoViewer({ src, label = '후기 사진', classN
     if (!open) return;
     const previous = document.activeElement as HTMLElement | null;
     const overflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
+    document.body.style.setProperty('overflow', 'hidden');
     close.current?.focus();
     const key = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setOpen(false);
+      if (['+', '=', '-', '0'].includes(e.key) && imageArea.current) {
+        e.preventDefault();
+        const area = imageArea.current;
+        const value = transformRef.current;
+        applyTransform(e.key === '0' ? { ...INITIAL_PHOTO_TRANSFORM } : constrainPhotoTransform({ ...value, scale: value.scale + (e.key === '-' ? -.5 : .5) }, { width: area.clientWidth, height: area.clientHeight }));
+      }
       if (e.key === 'Tab') {
         const buttons = Array.from(dialog.current?.querySelectorAll<HTMLButtonElement>('button:not(:disabled)') ?? []);
         if (!buttons.length) return;
@@ -70,13 +118,13 @@ export default function ReviewPhotoViewer({ src, label = '후기 사진', classN
       }
     };
     document.addEventListener('keydown', key);
-    return () => { document.body.style.overflow = overflow; document.removeEventListener('keydown', key); previous?.focus(); };
-  }, [open]);
+    return () => { document.body.style.setProperty('overflow', overflow); document.removeEventListener('keydown', key); previous?.focus(); };
+  }, [open, applyTransform]);
 
   return <>
     <button type="button" className={className} onClick={() => {
       setIndex(initialIndex != null ? Math.max(0, Math.min(initialIndex, gallery.length - 1)) : Math.max(0, gallery.findIndex(photo => photo.src === src)));
-      setZoom(false); setGrid(false); setExpanded(false); setOpen(true);
+      applyTransform({ ...INITIAL_PHOTO_TRANSFORM }); gesture.current = null; setGrid(false); setExpanded(false); setOpen(true);
     }} aria-label={`${label} 확대`}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={src} alt={label} loading="lazy" className="h-full w-full object-cover" />
@@ -97,11 +145,10 @@ export default function ReviewPhotoViewer({ src, label = '후기 사진', classN
             </button>)}
           </div> : <>
             <div className={styles.photoFrame}>
-              <div ref={imageArea} className={`${styles.imageArea} ${zoom ? styles.zoomed : ''}`} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} onTouchCancel={() => { touch.current = null; }}>
+              <div ref={imageArea} className={styles.imageArea} onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd} onTouchCancel={() => { gesture.current = null; }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={current.src} alt={current.label || '후기 사진'} />
+                <img src={current.src} alt={current.label || '후기 사진'} draggable={false} style={{ transform: `translate(${transform.x}px, ${transform.y}px) scale(${transform.scale})` }} />
               </div>
-              <button type="button" aria-label={zoom ? '사진 축소' : '사진 확대'} aria-pressed={zoom} className={`${styles.iconButton} ${styles.zoomButton}`} onClick={() => setZoom(value => !value)}>{zoom ? <ZoomOut size={21} /> : <ZoomIn size={21} />}</button>
             </div>
             {gallery.length > 1 && <div className={styles.pagination} aria-label={`${index + 1} / ${gallery.length} 사진`}>
               {gallery.map((photo, i) => <button key={`${photo.src}-${i}`} type="button" aria-label={`${i + 1}번째 사진`} aria-current={i === index ? 'true' : undefined} onClick={() => selectPhoto(i)}><span /></button>)}
