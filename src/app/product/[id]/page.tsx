@@ -296,7 +296,7 @@ export default function ProductDetailPage() {
         onClick={() => router.push(`/booking?productId=${product.id}${selected.id !== 'base' ? '&optionId=' + encodeURIComponent(selected.id) : ''}`)}
         className="ml-1 flex h-14 flex-1 items-center justify-center rounded-[18px] bg-[#EBF2FD] text-[17px] font-bold text-[#3A6FDB] transition-all active:scale-[0.98]"
       >
-        예약하기
+        상담받기
       </button>
       <button
         type="button"
