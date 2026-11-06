@@ -24,13 +24,14 @@ export async function GET(_req: NextRequest, { params }: Ctx) {
   if (!profile) return NextResponse.json({ error: '사용자를 찾을 수 없어요.' }, { status: 404 });
 
   const [reviewsRes, followers, following, mine] = await Promise.all([
-    admin
+    sb
       .from('reviews')
       .select(`id, rating, content, treatment_name, total_cost, treatment_date, before_image, after_image, created_at,
          product:products (id, title, image_url),
          hospital:hospitals (name),
          doctor:doctors (name)`)
       .eq('author_id', id)
+      .eq('hidden', false)
       .order('created_at', { ascending: false })
       .limit(200),
     // head:true 는 표가 없어도 에러를 안 돌려줘서(본문 없음) limit(1) 로 센다 — 표 없음(0022 전)을 알아채려고

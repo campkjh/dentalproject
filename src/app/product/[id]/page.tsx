@@ -7,9 +7,10 @@ import { trackProduct } from '@/lib/product-tracking';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import AddressCopy from '@/components/common/AddressCopy';
+import ReviewActionsMenu from '@/components/reviews/ReviewActionsMenu';
 import PhoneNumber from '@/components/common/PhoneNumber';
 import { PocketIcon } from '@/components/icons/PocketIcon';
-import { Share2, ChevronLeft, ChevronRight, ChevronDown, MoreHorizontal, X } from 'lucide-react';
+import { Share2, ChevronLeft, ChevronRight, ChevronDown, X } from 'lucide-react';
 import { openHospitalMap } from '@/lib/hospital-map';
 import NaverMap from '@/components/common/NaverMap';
 import Avatar from '@/components/common/Avatar';
@@ -622,7 +623,7 @@ export default function ProductDetailPage() {
                 </div>
                 <h3 className="mb-1 mt-5 text-[16px] font-bold text-[#191F28]">전체 후기 {reviewCount}건</h3>
                 {reviewRows.map((r, i) => (
-                  <ReviewCommentRow key={r.id} review={r} first={i === 0} menu={<ReviewMenu reviewId={r.id} authorName={r.name} />} />
+                  <ReviewCommentRow key={r.id} review={r} first={i === 0} menu={<ReviewActionsMenu reviewId={r.id} authorId={r.authorId} authorName={r.name} />} />
                 ))}
               </>
             )}
@@ -815,44 +816,6 @@ export default function ProductDetailPage() {
             <X size={22} />
           </button>
         </div>
-      )}
-    </div>
-  );
-}
-
-function ReviewMenu({ reviewId, authorName }: { reviewId: string; authorName: string }) {
-  const [open, setOpen] = useState(false);
-  const { showToast, showModal } = useStore();
-  const items = [
-    { icon: '/icons/toss/siren.svg', label: '신고하기', run: () => showModal('리뷰를 신고할까요?', '부적절한 리뷰는 검토 후 조치돼요.', () => showToast('리뷰를 신고했어요.')) },
-    { icon: '/icons/toss/user-blocked.svg', label: '차단하기', run: () => showModal(`${authorName}님을 차단할까요?`, '차단한 사람의 리뷰는 더 이상 보이지 않아요.', () => showToast(`${authorName}님을 차단했어요.`)) },
-  ];
-
-  // 리뷰 ⋯ — 프리티풀 툴팁 메뉴(작게→정비율로 커지고 항목은 오른쪽→왼쪽 촤라락)
-  return (
-    <div className="relative" data-review={reviewId}>
-      <button type="button" onClick={() => setOpen(!open)} aria-label="리뷰 메뉴" className="-mr-1 -mt-0.5 flex h-7 w-7 items-center justify-center rounded-full transition-colors hover:bg-[#F2F4F6]">
-        <MoreHorizontal size={18} className="text-[#8B95A1]" />
-      </button>
-      {open && (
-        <>
-          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="pop-menu absolute right-0 top-8 z-50" style={{ transformOrigin: 'top right' }}>
-            {items.map((item, i) => (
-              <button
-                type="button"
-                key={item.label}
-                className="pop-menu-item"
-                style={{ animationDelay: `${0.07 + i * 0.035}s` }}
-                onClick={() => { setOpen(false); item.run(); }}
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={item.icon} alt="" />
-                {item.label}
-              </button>
-            ))}
-          </div>
-        </>
       )}
     </div>
   );

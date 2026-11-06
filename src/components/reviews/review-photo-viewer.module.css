@@ -2,7 +2,8 @@
 .header { flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; gap: 12px; height: 60px; padding: 4px 12px; background: #000; }
 .header h2 { margin: 0; font-size: 17px; font-weight: 600; letter-spacing: -.3px; }
 .iconButton { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 44px; height: 44px; padding: 0; border: 0; color: #fff; background: transparent; }
-.iconButton:focus-visible, .pagination button:focus-visible, .grid button:focus-visible, .more:focus-visible { outline: 2px solid #fff; outline-offset: -3px; }
+.dialog button:focus, .dialog button:focus-visible { outline: none; box-shadow: none; }
+.dialog[data-keyboard-focus=true] .iconButton:focus-visible, .dialog[data-keyboard-focus=true] .pagination button:focus-visible, .dialog[data-keyboard-focus=true] .grid button:focus-visible, .dialog[data-keyboard-focus=true] .more:focus-visible { outline: 2px solid #fff; outline-offset: -3px; }
 .headerSpacer { width: 44px; }
 .body { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; }
 .body::-webkit-scrollbar, .imageArea::-webkit-scrollbar { display: none; }

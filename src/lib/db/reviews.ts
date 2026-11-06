@@ -16,6 +16,7 @@ export async function listReviews(filters?: {
        doctor:doctors (id, name, title),
        product:products (id, title, image_url)`
     )
+    .eq('hidden', false)
     .order('created_at', { ascending: false });
 
   if (filters?.hospitalId) q = q.eq('hospital_id', filters.hospitalId);

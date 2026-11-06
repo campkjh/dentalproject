@@ -4,6 +4,7 @@
 //  · 칸을 누르면 바텀 시트(qd-input + qd-cta 저장 / 고르기 줄). 저장·업로드·탈퇴 흐름은 예전 그대로.
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import BlockedReviewAuthors from '@/components/reviews/BlockedReviewAuthors';
 import { loginTypePresentation } from '@/lib/login-type';
 import { useStore } from '@/store';
 import TopBar from '@/components/common/TopBar';
@@ -179,6 +180,8 @@ export default function ProfilePage() {
             ))}
           </div>
         </section>
+
+        <BlockedReviewAuthors />
 
         {/* 관심있는 진료과목 */}
         <section>
