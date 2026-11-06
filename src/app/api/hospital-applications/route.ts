@@ -1,3 +1,5 @@
+import { isBookingMethods } from '@/lib/booking-methods';
+import { parseHospitalPaymentSettings } from '@/lib/hospital-payment-settings';
 import { writeNotifications } from '@/lib/push/delivery';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse, type NextRequest } from 'next/server';
@@ -174,6 +176,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: '등록 유형을 선택해 주세요.' }, { status: 400 });
   }
 
+  const paymentSettings = parseHospitalPaymentSettings(body.paymentSettings);
+  if (!paymentSettings || !isBookingMethods(body.bookingMethods)
+    || body.bookingMethods.includes('앱결제') !== paymentSettings.appPaymentRequested) return NextResponse.json({ error: '앱결제 신청 여부와 정산 계좌정보를 확인해 주세요.' }, { status: 400 });
+
   const hospitalName = cleanString(hospitalInfo.name);
   const ownerName = cleanString(hospitalInfo.ownerName) || doctorName;
   if (!hospitalName) return NextResponse.json({ error: '병원명을 입력해 주세요.' }, { status: 400 });
@@ -215,25 +221,15 @@ export async function POST(req: NextRequest) {
     status: 'pending',
   };
 
-  let hospitalRes = await admin
-    .from('hospitals')
-    .insert({ ...baseInsert, submitted_documents: submittedDocs })
-    .select('id')
-    .single();
-
-  if (
-    hospitalRes.error &&
-    /submitted_documents/i.test(`${hospitalRes.error.message ?? ''} ${hospitalRes.error.details ?? ''}`)
-  ) {
-    hospitalRes = await admin.from('hospitals').insert(baseInsert).select('id').single();
+  const { data: hospitalId, error: hospitalError } = await admin.rpc('create_hospital_application_with_payment', {
+    p_hospital: { ...baseInsert, submitted_documents: submittedDocs },
+    p_settings: paymentSettings,
+    p_methods: body.bookingMethods,
+  });
+  if (hospitalError || !hospitalId) {
+    return NextResponse.json({ error: '병원 신청 저장에 실패했습니다. 다시 시도해 주세요.' }, { status: 400 });
   }
-
-  const hospital = hospitalRes.data;
-  const hospitalError = hospitalRes.error;
-
-  if (hospitalError || !hospital) {
-    return NextResponse.json({ error: hospitalError?.message ?? '병원 생성에 실패했습니다.' }, { status: 400 });
-  }
+  const hospital = { id: hospitalId as string };
 
   // Persist operating hours submitted at registration time
   if (Array.isArray(body.operatingHours) && body.operatingHours.length > 0) {

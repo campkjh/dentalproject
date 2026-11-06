@@ -1,6 +1,7 @@
 'use client';
 import { matchesSearchRegion } from '@/lib/search-region';
 
+import { BOOKING_METHODS, matchesBookingMethod } from '@/lib/booking-methods';
 import { useState, useMemo, Suspense, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -52,7 +53,7 @@ const relatedTags: Record<string, string[]> = {
 // Preset price ranges. Each preset translates to a [min, max] interval —
 // max=null means "and up". When the user types into the inputs, the same
 // {min, max} are written; clicking a preset fills the inputs.
-const bookingMethods = ['전체', '앱결제', '현장결제', '상담 후 결제'];
+const bookingMethods = ['전체', ...BOOKING_METHODS];
 /** 예약방법 컬러 아이콘(public/icons/color — 사장 제공 토스 컬러 아이콘, 261031) */
 const BOOKING_ICONS: Record<string, string> = {
   '전체': '/icons/color/grid.svg',
@@ -220,6 +221,7 @@ function SearchPage() {
         (activeCategory ? products.filter(p => p.category === activeCategory) : products)
           .filter(matchesRegion)
           .filter(matchesPrice)
+          .filter((p) => matchesBookingMethod(p.bookingMethods, selectedBooking))
       )
     : [];
 
@@ -237,6 +239,7 @@ function SearchPage() {
           .filter((p) => !activeCategory || p.category === activeCategory)
           .filter(matchesRegion)
           .filter(matchesPrice)
+          .filter((p) => matchesBookingMethod(p.bookingMethods, selectedBooking))
       )
     : [];
 

@@ -1,3 +1,4 @@
+import { getBookingMethods } from '@/lib/booking-methods';
 import type { Hospital, Product, Doctor, Review, OperatingHour } from '@/types';
 import { categoryLabel, categoryName, specialtyLabel, toCategoryCode } from '@/lib/category-code';
 import {
@@ -28,6 +29,7 @@ export function normalizeOptionalImage(value: unknown) {
 export function normalizeHospital(row: any): Hospital {
   return {
     id: row.slug ?? row.id,
+    bookingMethods: getBookingMethods(row.booking_methods),
     name: row.name,
     category: categoryLabel(row.category),
     location: row.location ?? '',
@@ -74,6 +76,7 @@ export function normalizeProduct(row: any): Product {
   return {
     id: row.id,
     title: row.title,
+    bookingMethods: getBookingMethods(row.hospitals?.booking_methods),
     hospitalName: row.hospitals?.name ?? row.hospital_name ?? '',
     hospitalId: row.hospitals?.id ?? row.hospital_id ?? '',
     location: row.location ?? row.hospitals?.location ?? '',

@@ -25,7 +25,7 @@ export async function GET() {
       .from('hospitals')
       .select(
         `id, slug, name, category, location, phone, tags, logo_url, cover_images,
-         introduction, holiday_notice, address, address_detail, rating, review_count,
+         introduction, holiday_notice, booking_methods, address, address_detail, rating, review_count,
          doctors (id, name, title, specialty, profile_image, is_owner, bio, careers),
          operating_hours (day, start_time, end_time, is_closed)`
       )
@@ -35,7 +35,7 @@ export async function GET() {
       .select(
         `id, title, location, price, original_price, discount, rating, review_count, like_count,
          image_url, detail_image_url, image_urls, detail_image_urls, description, options, tags, category, sub_category, hospital_id, created_at,
-         hospitals (id, name, location)`
+         hospitals (id, name, location, booking_methods)`
       )
       .eq('status', 'active')
       .eq('approval_status', 'approved')
@@ -71,7 +71,7 @@ export async function GET() {
       .select(
         `id, title, location, price, original_price, discount, rating, review_count, like_count,
          image_url, detail_image_url, description, tags, category, sub_category, hospital_id, created_at,
-         hospitals (id, name, location)`
+         hospitals (id, name, location, booking_methods)`
       )
       .eq('status', 'active')
       .eq('approval_status', 'approved')
@@ -86,7 +86,7 @@ export async function GET() {
       .select(
         `id, title, location, price, original_price, discount, rating, review_count, like_count,
          image_url, detail_image_url, tags, category, sub_category, hospital_id,
-         hospitals (id, name, location)`
+         hospitals (id, name, location, booking_methods)`
       )
       .eq('status', 'active');
     productsData = fallback.data;
@@ -99,7 +99,7 @@ export async function GET() {
       .select(
         `id, title, location, price, original_price, discount, rating, review_count, like_count,
          image_url, tags, category, sub_category, hospital_id,
-         hospitals (id, name, location)`
+         hospitals (id, name, location, booking_methods)`
       )
       .eq('status', 'active');
     productsData = fallback.data;

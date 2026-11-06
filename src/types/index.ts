@@ -1,4 +1,7 @@
+import type { BookingMethod } from '@/lib/booking-methods';
+
 export interface Product {
+  bookingMethods?: BookingMethod[];
   id: string;
   title: string;
   hospitalName: string;
@@ -47,6 +50,7 @@ export interface HomeBanner {
 }
 
 export interface Hospital {
+  bookingMethods?: BookingMethod[];
   id: string;
   name: string;
   category: string;
