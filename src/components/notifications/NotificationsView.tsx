@@ -320,34 +320,35 @@ export default function NotificationsView({
 
       {/* 큰 제목 '알림 ⌄' — 종류 거르기 · 모두 읽음 */}
       <div className="relative px-5 pb-3 pt-1">
-        <h1 className="nt-a-title">
+        <div className="flex items-center justify-between gap-3">
+        <h1 className="nt-a-title min-w-0">
           <button
             type="button"
             onClick={() => setMenuOpen((v) => !v)}
             aria-expanded={menuOpen}
-            className="flex items-center gap-1.5 rounded-[10px] text-[26px] font-bold tracking-[-0.02em] text-[#191F28] active:opacity-70"
+            className="flex min-w-0 max-w-full items-center gap-1.5 rounded-[10px] text-[26px] font-bold tracking-[-0.02em] text-[#191F28] active:opacity-70"
           >
-            {current.title}
+            <span className="truncate">{current.title}</span>
             <svg
               width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"
-              className="mt-[3px] transition-transform duration-200"
+              className="mt-[3px] shrink-0 transition-transform duration-200"
               style={{ transform: menuOpen ? 'rotate(180deg)' : 'none' }}
             >
               <path d="M6 9l6 6 6-6" stroke="#8B95A1" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </button>
         </h1>
-        {user && <div className="mt-3 flex justify-end gap-2" aria-label="알림 일괄 관리">
+        {user && <div className="ml-auto flex shrink-0 items-center gap-1.5" aria-label="알림 일괄 관리">
           <button type="button" onClick={markAllRead} disabled={busy || !hasUnread}
-            className="min-h-11 rounded-xl bg-[#F2F4F6] px-3 text-[14px] font-semibold text-[#4E5968] disabled:opacity-40">
+            className="min-h-11 whitespace-nowrap rounded-xl bg-[#F2F4F6] px-2.5 text-[13px] font-semibold text-[#4E5968] disabled:opacity-40">
             {reading ? '읽음 처리 중…' : '모두 읽음'}
           </button>
           <button type="button" onClick={() => requestDelete()} disabled={busy || notifications.length === 0}
-            className="min-h-11 rounded-xl bg-[#FFF0F1] px-3 text-[14px] font-semibold text-[#F04452] disabled:opacity-40">
+            className="min-h-11 whitespace-nowrap rounded-xl bg-[#FFF0F1] px-2.5 text-[13px] font-semibold text-[#F04452] disabled:opacity-40">
             {deleting ? '삭제 중…' : '전체 삭제'}
           </button>
         </div>}
-        {!empty && <p className="mt-2 text-[13px] text-[#8B95A1]">알림을 왼쪽으로 밀면 삭제할 수 있어요.</p>}
+        </div>
 
         {menuOpen && (
           <>
