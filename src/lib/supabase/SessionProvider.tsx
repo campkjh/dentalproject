@@ -8,6 +8,7 @@ import { useStore } from '@/store';
 import { clearMyHospitalCache } from '@/lib/partner/my-hospital-cache';
 import { pickCustomerProfileAvatarBySeed } from '@/lib/customer-profile-avatars';
 import { isDualModeUser, readAccountMode } from '@/lib/account-mode';
+import { resolveLoginType } from '@/lib/login-type';
 import { writeViewCookie } from '@/lib/view-cookie';
 
 type Ctx = {
@@ -122,7 +123,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       p = (created as Record<string, unknown> | null) ?? { id: userId };
     }
 
-    const loginType = (p?.login_type as 'kakao' | 'apple' | undefined) ?? 'kakao';
+    const loginType = resolveLoginType(authUser.app_metadata?.provider, p?.login_type);
     const profileIsDoctor = p ? Boolean(p.is_doctor) : null;
     const isAdmin = p ? Boolean(p.is_admin) : false;
     const hasHospital = hospitalQuerySucceeded ? Boolean(hospitalRes.data) : null;

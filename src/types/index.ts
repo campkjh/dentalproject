@@ -1,3 +1,4 @@
+import type { LoginType } from '@/lib/login-type';
 import type { BookingMethod } from '@/lib/booking-methods';
 
 export interface Product {
@@ -224,7 +225,7 @@ export interface User {
   id: string;
   name: string;
   phone: string;
-  loginType: 'kakao' | 'apple';
+  loginType: LoginType;
   gender?: string;
   birthYear?: string;
   country?: string;
