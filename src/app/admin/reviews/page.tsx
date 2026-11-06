@@ -1,5 +1,6 @@
 'use client';
 
+import AdminReviewReports from '@/components/reviews/AdminReviewReports';
 import { useEffect, useMemo, useState } from 'react';
 import { Star, Trash2, Eye, EyeOff, MessageSquare } from 'lucide-react';
 import { useStore } from '@/store';
@@ -147,6 +148,7 @@ export default function AdminReviewsPage() {
 
   return (
     <div className="adm-stack">
+      <AdminReviewReports onReviewChanged={()=>void load()} />
       <StatRow cols={4}>
         <StatCard label="전체 리뷰" value={counts.total} suffix="개" />
         <StatCard label="평균 평점" value={counts.avg.toFixed(1)} suffix="점" accent="#F59E0B" />

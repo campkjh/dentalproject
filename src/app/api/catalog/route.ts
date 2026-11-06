@@ -48,6 +48,7 @@ export async function GET() {
          author:profiles!reviews_author_id_fkey (name),
          doctor:doctors (name, title)`
       )
+      .eq('hidden', false)
       .order('created_at', { ascending: false })
       .limit(50),
     sb

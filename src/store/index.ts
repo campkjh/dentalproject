@@ -1,3 +1,4 @@
+import { visibleReviews } from '@/lib/review-moderation';
 import { create } from 'zustand';
 import { User, Reservation, Product, Post, Comment, Review, Hospital, Notification, PointHistory } from '@/types';
 import { pickCustomerProfileAvatarBySeed } from '@/lib/customer-profile-avatars';
@@ -178,6 +179,9 @@ interface AppState {
 
   // Reviews
   reviews: Review[];
+  blockedReviewAuthorIds: string[];
+  blockReviewAuthor: (id: string) => Promise<void>;
+  unblockReviewAuthor: (id: string) => Promise<void>;
   addReview: (review: Review) => Promise<{ error: string | null; id?: string }>;
 
   // Notifications & point history (hydrated from /api/me)
@@ -252,7 +256,7 @@ export const useStore = create<AppState>((set, get) => ({
           set({
             hospitals: data.hospitals ?? get().hospitals,
             products: data.products ?? get().products,
-            reviews: data.reviews ?? get().reviews,
+            reviews: visibleReviews(data.reviews ?? get().reviews, get().blockedReviewAuthorIds),
             categories: (data.categories ?? get().categories).map(normalizeCategory),
             posts: get().communityFeed.key === null ? data.posts ?? get().posts : get().posts,
             comments: data.comments ?? get().comments,
@@ -270,7 +274,7 @@ export const useStore = create<AppState>((set, get) => ({
         set({
           hospitals: Array.isArray(data.hospitals) ? data.hospitals : get().hospitals,
           products: Array.isArray(data.products) ? data.products : get().products,
-          reviews: Array.isArray(data.reviews) ? data.reviews : get().reviews,
+          reviews: visibleReviews(Array.isArray(data.reviews) ? data.reviews : get().reviews, get().blockedReviewAuthorIds),
           categories: (Array.isArray(data.categories) ? data.categories : get().categories).map(normalizeCategory),
           posts: get().communityFeed.key === null && Array.isArray(data.posts) ? data.posts : get().posts,
           comments: Array.isArray(data.comments) ? data.comments : get().comments,
@@ -292,16 +296,21 @@ export const useStore = create<AppState>((set, get) => ({
 
   meHydrated: false,
   hydrateMe: async () => {
+    const viewerId = get().user?.id ?? null;
     const notificationRevision = notificationsRevision;
     try {
       const res = await fetch('/api/me', { cache: 'no-store' });
       if (!res.ok) return;
       const data = await res.json();
+      if ((get().user?.id ?? null) !== viewerId) return;
       if (!data.user) {
         set({ meHydrated: true });
         return;
       }
+      const blockedReviewAuthorIds: string[] = Array.isArray(data.blockedReviewAuthorIds) ? data.blockedReviewAuthorIds : get().blockedReviewAuthorIds;
       set({
+        blockedReviewAuthorIds,
+        reviews: visibleReviews(get().reviews, blockedReviewAuthorIds),
         wishlist: data.wishlist ?? [],
         postPockets: data.postPockets ?? [],
         recentlyViewed: data.recentlyViewed ?? [],
@@ -329,6 +338,7 @@ export const useStore = create<AppState>((set, get) => ({
   },
   resetMe: () => {
     set({
+      blockedReviewAuthorIds: [],
       wishlist: [],
       postPockets: [],
       recentlyViewed: [],
@@ -365,7 +375,7 @@ export const useStore = create<AppState>((set, get) => ({
 
   logout: () => {
     communityInFlight?.controller.abort();
-    set({ isLoggedIn: false, user: null, isDoctor: false, isAdmin: false, posts: [], communityFeed: emptyCommunityFeed });
+    set({ isLoggedIn: false, user: null, isDoctor: false, isAdmin: false, posts: [], communityFeed: emptyCommunityFeed, blockedReviewAuthorIds: [] });
   },
   updateUser: (patch) => {
     set((state) => (state.user ? { user: { ...state.user, ...patch } } : {}));
@@ -690,6 +700,21 @@ export const useStore = create<AppState>((set, get) => ({
   pointHistory: mockPointHistory,
   announcements: mockAnnouncements,
 
+  blockedReviewAuthorIds: [],
+  blockReviewAuthor: async (id) => {
+    const response = await fetch('/api/review-author-blocks', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({authorId:id})});
+    const data = await response.json().catch(() => ({}));
+    if(!response.ok) throw new Error(data.error || '차단하지 못했습니다.');
+    set(state => ({blockedReviewAuthorIds:[...new Set([...state.blockedReviewAuthorIds,id])], reviews:visibleReviews(state.reviews,[id])}));
+    await get().hydrateCatalog({force:true});
+  },
+  unblockReviewAuthor: async (id) => {
+    const response = await fetch('/api/review-author-blocks', {method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({authorId:id})});
+    const data = await response.json().catch(() => ({}));
+    if(!response.ok) throw new Error(data.error || '차단을 해제하지 못했습니다.');
+    set(state => ({blockedReviewAuthorIds:state.blockedReviewAuthorIds.filter(authorId => authorId!==id)}));
+    await get().hydrateCatalog({force:true});
+  },
   reviews: mockReviews,
   addReview: async (review) => {
     set({ reviews: [review, ...get().reviews] });

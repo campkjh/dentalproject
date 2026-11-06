@@ -1,10 +1,10 @@
 'use client';
+import ReviewActionsMenu from '@/components/reviews/ReviewActionsMenu';
 import ReviewPhotoViewer from '@/components/reviews/ReviewPhotoViewer';
 
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Star, ChevronRight, Share2, Flag, MoreHorizontal } from 'lucide-react';
-import { useState } from 'react';
+import { Star, ChevronRight } from 'lucide-react';
 import TopBar from '@/components/common/TopBar';
 import Avatar from '@/components/common/Avatar';
 import { useStore } from '@/store';
@@ -14,8 +14,7 @@ import { reviewerHref } from '@/lib/reviewer';
 export default function ReviewDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const { showToast, reviews, products, hospitals } = useStore();
-  const [menuOpen, setMenuOpen] = useState(false);
+  const { reviews, products, hospitals } = useStore();
 
   const review = reviews.find((r) => r.id === id);
 
@@ -54,45 +53,7 @@ export default function ReviewDetailPage() {
     <div className="min-h-screen bg-white max-w-[500px] mx-auto pb-12 page-enter">
       <TopBar
         title="리뷰"
-        rightContent={
-          <div className="relative">
-            <button onClick={() => setMenuOpen(!menuOpen)} className="p-1">
-              <MoreHorizontal size={22} className="text-gray-700" />
-            </button>
-            {menuOpen && (
-              <>
-                <div className="fixed inset-0 z-30" onClick={() => setMenuOpen(false)} />
-                <div
-                  className="absolute right-0 top-full mt-1 z-40 bg-white rounded-xl overflow-hidden scale-in"
-                  style={{
-                    border: '1px solid #F2F3F5',
-                    boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-                    minWidth: 140,
-                  }}
-                >
-                  <button
-                    onClick={() => {
-                      setMenuOpen(false);
-                      showToast('리뷰 링크를 복사했습니다.');
-                    }}
-                    className="flex items-center gap-2 w-full px-4 py-2.5 text-left text-[13px] text-gray-700 hover:bg-gray-50"
-                  >
-                    <Share2 size={14} /> 공유하기
-                  </button>
-                  <button
-                    onClick={() => {
-                      setMenuOpen(false);
-                      showToast('리뷰가 신고되었습니다.');
-                    }}
-                    className="flex items-center gap-2 w-full px-4 py-2.5 text-left text-[13px] text-red-500 hover:bg-gray-50 border-t border-gray-100"
-                  >
-                    <Flag size={14} /> 신고하기
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        }
+        rightContent={<ReviewActionsMenu allowShare reviewId={review.id} authorId={review.authorId} authorName={review.authorName} />}
       />
 
       {/* Author row — 누르면 리뷰어 프로필(그 사람이 쓴 리뷰 전부 · 팔로우) */}

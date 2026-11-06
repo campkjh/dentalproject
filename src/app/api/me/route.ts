@@ -18,7 +18,7 @@ export async function GET() {
   await cancelExpiredPendingReservations(admin, { userId: user.id });
   await completePastConfirmedReservations(admin, { userId: user.id });
 
-  const [profile, wishlist, postPockets, recentlyViewed, reservations, coupons, notifications, pointHistory, interestedCats, recentSearches] =
+  const [profile, wishlist, postPockets, recentlyViewed, reservations, coupons, notifications, pointHistory, interestedCats, recentSearches, reviewBlocks] =
     await Promise.all([
       sb.from('profiles').select('*').eq('id', user.id).maybeSingle(),
       sb.from('wishlists').select('product_id').eq('user_id', user.id),
@@ -39,6 +39,7 @@ export async function GET() {
       sb.from('point_history').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(50),
       sb.from('interested_categories').select('category_id').eq('user_id', user.id),
       sb.from('recent_searches').select('keyword').eq('user_id', user.id).order('created_at', { ascending: false }).limit(10),
+      sb.from('review_author_blocks').select('blocked_user_id').eq('user_id', user.id),
     ]);
 
   const reservationRows = reservations.data ?? [];
@@ -74,6 +75,7 @@ export async function GET() {
       email: user.email,
       profile: profile.data,
     },
+    ...(reviewBlocks.error ? {} : {blockedReviewAuthorIds: (reviewBlocks.data ?? []).map((row: {blocked_user_id: string}) => row.blocked_user_id)}),
     wishlist: (wishlist.data ?? []).map((w: any) => w.product_id),
     postPockets: (postPockets.data ?? []).map((p: any) => p.post_id),
     recentlyViewed: (recentlyViewed.data ?? []).map((r: any) => r.product_id),

@@ -24,6 +24,7 @@ export default function ReviewPhotoViewer({ src, label = '후기 사진', classN
 }) {
   const gallery = photos?.length ? photos : [{ src, label }];
   const [open, setOpen] = useState(false);
+  const [keyboardFocus, setKeyboardFocus] = useState(false);
   const [index, setIndex] = useState(0);
   const [transform, setTransform] = useState<PhotoTransform>({ ...INITIAL_PHOTO_TRANSFORM });
   const transformRef = useRef<PhotoTransform>({ ...INITIAL_PHOTO_TRANSFORM });
@@ -103,6 +104,7 @@ export default function ReviewPhotoViewer({ src, label = '후기 사진', classN
     document.body.style.setProperty('overflow', 'hidden');
     close.current?.focus();
     const key = (e: KeyboardEvent) => {
+      if (e.key === 'Tab') setKeyboardFocus(true);
       if (e.key === 'Escape') setOpen(false);
       if (['+', '=', '-', '0'].includes(e.key) && imageArea.current) {
         e.preventDefault();
@@ -124,13 +126,13 @@ export default function ReviewPhotoViewer({ src, label = '후기 사진', classN
   return <>
     <button type="button" className={className} onClick={() => {
       setIndex(initialIndex != null ? Math.max(0, Math.min(initialIndex, gallery.length - 1)) : Math.max(0, gallery.findIndex(photo => photo.src === src)));
-      applyTransform({ ...INITIAL_PHOTO_TRANSFORM }); gesture.current = null; setGrid(false); setExpanded(false); setOpen(true);
+      applyTransform({ ...INITIAL_PHOTO_TRANSFORM }); gesture.current = null; setGrid(false); setExpanded(false); setKeyboardFocus(false); setOpen(true);
     }} aria-label={`${label} 확대`}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={src} alt={label} loading="lazy" className="h-full w-full object-cover" />
     </button>
     {open && createPortal(
-      <div ref={dialog} role="dialog" aria-modal="true" aria-label="후기 사진 보기" className={styles.dialog}>
+      <div ref={dialog} role="dialog" aria-modal="true" aria-label="후기 사진 보기" data-keyboard-focus={keyboardFocus} onPointerDownCapture={() => setKeyboardFocus(false)} onTouchStartCapture={() => setKeyboardFocus(false)} className={styles.dialog}>
         <header className={styles.header}>
           <button ref={close} type="button" aria-label="닫기" className={styles.iconButton} onClick={() => setOpen(false)}><X size={28} /></button>
           <h2>후기 사진</h2>
