@@ -5,6 +5,10 @@
 //  · 과는 고르면 바로 다음 · 과·진료과목은 리스트(과는 검색, 진료과목은 전체 선택) · 머리 = 뒤로 + 홈.
 //  · 중간저장(localStorage hospitalRegisterDraft)·제출(/api/hospital-applications) — 원장 등록은 doctorInfo.hospitalId 로 보낸다.
 //  · 부품 = components/hospital-register(RegisterKit · HospitalPicker · 약관 시트 · 서류 올리기), 약관 문안 = agreements.ts.
+import BookingMethodChoices from '@/components/hospital-register/BookingMethodChoices';
+import { isBookingMethods, type BookingMethod } from '@/lib/booking-methods';
+import HospitalPaymentFields from '@/components/hospital-register/HospitalPaymentFields';
+import { EMPTY_PAYMENT_SETTINGS, parseHospitalPaymentSettings } from '@/lib/hospital-payment-settings';
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useStore } from '@/store';
@@ -127,6 +131,8 @@ export default function HospitalRegisterPage() {
   useEffect(() => () => window.clearTimeout(advanceTimer.current), []);
   const [agreements, setAgreements] = useState<Set<string>>(new Set());
   const [viewingAgreement, setViewingAgreement] = useState<AgreementItem | null>(null);
+  const [bookingMethods, setBookingMethods] = useState<BookingMethod[]>(['현장결제', '상담 후 결제']);
+  const [paymentSettings, setPaymentSettings] = useState({ ...EMPTY_PAYMENT_SETTINGS });
   const [hospitalInfo, setHospitalInfo] = useState({
     name: '',
     ownerName: '',
@@ -286,7 +292,7 @@ export default function HospitalRegisterPage() {
       case 'agree':
         return allRequiredAgreed;
       case 'info':
-        return !!(hospitalInfo.name && hospitalInfo.ownerName && hospitalInfo.phone && hospitalInfo.businessNumber) && missingRequiredDocs.length === 0;
+        return !!(hospitalInfo.name && hospitalInfo.ownerName && hospitalInfo.phone && hospitalInfo.businessNumber) && missingRequiredDocs.length === 0 && !!parseHospitalPaymentSettings(paymentSettings) && isBookingMethods([...(paymentSettings.appPaymentRequested ? ['앱결제'] : []), ...bookingMethods]);
       case 'hours':
         return operatingHours.every((oh) => oh.closed || (oh.start && oh.end && oh.start < oh.end));
       case 'owner':
@@ -326,6 +332,8 @@ export default function HospitalRegisterPage() {
           specialty: selectedSpecialty,
           treatments: Array.from(selectedTreatments),
           hospitalInfo,
+          paymentSettings,
+          bookingMethods: [...(paymentSettings.appPaymentRequested ? ['앱결제'] : []), ...bookingMethods],
           operatingHours,
           doctorInfo: {
             ...doctorInfo,
@@ -610,6 +618,11 @@ export default function HospitalRegisterPage() {
                 className="qd-input"
               />
             </RgField>
+
+            <div className="my-6">
+              <HospitalPaymentFields value={paymentSettings} onChange={setPaymentSettings} disabled={submitting} />
+              <div className="mt-6"><BookingMethodChoices value={bookingMethods} onChange={setBookingMethods} disabled={submitting} /></div>
+            </div>
 
             {/* 서류 첨부 — 의료법 관련 필수·선택 서류 */}
             <RgField

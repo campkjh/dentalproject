@@ -28,10 +28,10 @@ export async function listProducts(filters?: {
 
   const withDetail = `id, title, price, original_price, discount, rating, review_count, like_count, image_url, detail_image_url, tags,
        category, sub_category,
-       hospitals (id, name, location)`;
+       hospitals (id, name, location, booking_methods)`;
   const withoutDetail = `id, title, price, original_price, discount, rating, review_count, like_count, image_url, tags,
        category, sub_category,
-       hospitals (id, name, location)`;
+       hospitals (id, name, location, booking_methods)`;
 
   let { data, error } = await buildQuery(withDetail);
   if (error && isMissingProductColumn(error, 'detail_image_url')) {
@@ -48,7 +48,7 @@ export async function getProduct(id: string) {
   const { data, error } = await sb
     .from('products')
     .select(
-      `*, hospitals (id, name, location, phone, address, rating, review_count),
+      `*, hospitals (id, name, location, phone, address, rating, review_count, booking_methods),
          product_options (id, name, price, sort_order)`
     )
     .eq('id', id)

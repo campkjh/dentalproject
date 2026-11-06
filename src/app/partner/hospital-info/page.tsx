@@ -1,4 +1,8 @@
 'use client';
+import HospitalPaymentFields from '@/components/hospital-register/HospitalPaymentFields';
+import BookingMethodChoices from '@/components/hospital-register/BookingMethodChoices';
+import { EMPTY_PAYMENT_SETTINGS, parseHospitalPaymentSettings, type HospitalPaymentSettings } from '@/lib/hospital-payment-settings';
+import { BOOKING_METHODS, getBookingMethods, type BookingMethod } from '@/lib/booking-methods';
 import { formatPhone } from '@/lib/phone';
 
 import { categoryLabel } from '@/lib/category-code';
@@ -42,9 +46,11 @@ type HospitalRow = {
   logo_url?: string | null;
   image_url?: string | null;
   operating_hours?: OperatingHour[] | null;
+  booking_methods?: BookingMethod[] | null;
+  paymentSettings?: HospitalPaymentSettings | null;
 };
 
-type Mode = 'overview' | 'cover' | 'hours' | 'intro' | 'location';
+type Mode = 'overview' | 'cover' | 'hours' | 'intro' | 'location' | 'booking';
 type HourDraft = { day: string; start_time: string; end_time: string; closed: boolean };
 
 const DISPLAY_DAY_ORDER = ['월', '화', '수', '목', '금', '토', '일'];
@@ -95,6 +101,8 @@ export default function PartnerHospitalInfoPage() {
   } = useMyHospitalData<HospitalRow>(authUser?.id);
   const [hospital, setHospital] = useState<HospitalRow | null>(null);
   const [mode, setMode] = useState<Mode>('overview');
+  const [paymentDraft, setPaymentDraft] = useState<HospitalPaymentSettings>({ ...EMPTY_PAYMENT_SETTINGS });
+  const [bookingDraft, setBookingDraft] = useState<BookingMethod[]>([...BOOKING_METHODS]);
   const [introDraft, setIntroDraft] = useState('');
   const [holidayDraft, setHolidayDraft] = useState('');
   const [hoursDraft, setHoursDraft] = useState<HourDraft[]>(() => buildHourDrafts(null));
@@ -106,6 +114,8 @@ export default function PartnerHospitalInfoPage() {
   const [coverIdx, setCoverIdx] = useState(0);
 
   const syncDrafts = useCallback((row: HospitalRow | null) => {
+    setBookingDraft(getBookingMethods(row?.booking_methods));
+    setPaymentDraft(row?.paymentSettings ?? { ...EMPTY_PAYMENT_SETTINGS });
     setIntroDraft(row?.introduction ?? '');
     setHolidayDraft(row?.holiday_notice ?? '');
     setHoursDraft(buildHourDrafts(row));
@@ -237,6 +247,21 @@ export default function PartnerHospitalInfoPage() {
     } finally {
       setUploadingLogo(false);
     }
+  };
+
+  const saveBookingMethods = async () => {
+    if (!bookingDraft.length) { showToast('예약방식을 한 개 이상 선택해 주세요.'); return; }
+    const settings = parseHospitalPaymentSettings(paymentDraft);
+    if (!settings) { showToast('앱결제 신청 여부와 정산 계좌정보를 확인해 주세요.'); return; }
+    setSaving(true);
+    try {
+      await patchHospitalAPI({ bookingMethods: bookingDraft, paymentSettings: settings });
+      patchLocalHospital((prev) => prev ? { ...prev, booking_methods: [...bookingDraft], paymentSettings: settings } : prev);
+      await useStore.getState().hydrateCatalog({ force: true });
+      showToast('예약방식을 저장했습니다.');
+      goOverview();
+    } catch (e) { showToast(e instanceof Error ? e.message : '저장에 실패했습니다.'); }
+    finally { setSaving(false); }
   };
 
   const saveIntro = async () => {
@@ -547,6 +572,24 @@ export default function PartnerHospitalInfoPage() {
     );
   }
 
+  if (mode === 'booking') {
+    return (
+      <div className="partner-mobile-screen partner-edit-screen" style={{ display: 'flex', flexDirection: 'column', paddingBottom: SAVE_BAR_SPACE }}>
+        <EditHeader title="예약방식" sub="병원에서 제공하는 방식을 모두 선택해 주세요. 고객 검색의 예약방법 필터에 반영돼요." />
+        <div className="mx-auto w-full max-w-[640px] space-y-6 px-5 py-5">
+          <HospitalPaymentFields value={paymentDraft} disabled={saving} onChange={(settings) => {
+            setPaymentDraft(settings);
+            setBookingDraft((current) => settings.appPaymentRequested
+              ? [...new Set<BookingMethod>([...current, '앱결제'])]
+              : current.filter((method) => method !== '앱결제'));
+          }} />
+          <BookingMethodChoices value={bookingDraft} disabled={saving} onChange={setBookingDraft} />
+        </div>
+        <SaveBar onClick={saveBookingMethods} disabled={saving || !bookingDraft.length || !parseHospitalPaymentSettings(paymentDraft)} label={saving ? '저장 중...' : '저장하기'} />
+      </div>
+    );
+  }
+
   /* ── 병원소개 수정 화면 ── */
   if (mode === 'intro') {
     return (
@@ -672,6 +715,28 @@ export default function PartnerHospitalInfoPage() {
             </p>
           ))}
         </div>
+      </section>
+
+      <div className="h-2.5 bg-[#F2F4F6]" />
+      <section className="bg-white px-5 py-7">
+        <SectionHead title="예약방식" label="예약방식 수정" onEdit={() => openMode('booking')} />
+        <div className="mt-3 flex flex-wrap gap-2">
+          {getBookingMethods(hospital.booking_methods).map((method) => (
+            <span key={method} className="rounded-lg bg-[#EFF5FE] px-3 py-2 text-[15px] font-medium text-[#2F6FE4]">{method}</span>
+          ))}
+        </div>
+        {hospital.paymentSettings && (
+          <dl className="mt-4 space-y-3 text-[15px]">
+            {[
+              ['앱결제 신청', hospital.paymentSettings.appPaymentRequested == null ? '미설정' : hospital.paymentSettings.appPaymentRequested ? '신청함' : '신청 안 함'],
+              ['은행명', hospital.paymentSettings.bankName || '미등록'],
+              ['계좌번호', hospital.paymentSettings.accountNumber || '미등록'],
+              ['예금주', hospital.paymentSettings.accountHolder || '미등록'],
+            ].map(([label, value]) => (
+              <div key={label} className="flex items-start gap-3"><dt className="w-[90px] shrink-0 text-[#8B95A1]">{label}</dt><dd className="min-w-0 break-all text-[#333D4B]">{value}</dd></div>
+            ))}
+          </dl>
+        )}
       </section>
 
       {/* 운영시간 */}

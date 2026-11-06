@@ -1,3 +1,5 @@
+import { parseHospitalPaymentSettings, paymentSettingsFromRow } from '@/lib/hospital-payment-settings';
+import { isBookingMethods } from '@/lib/booking-methods';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse, type NextRequest } from 'next/server';
 import { attachScheduleHistory } from '@/lib/db/reservation-history';
@@ -238,6 +240,14 @@ export async function GET() {
 
   if (!hospital) return NextResponse.json({ hospital: null });
 
+  // 정산 계좌는 병원 소유자에게만 반환한다. 소속 의사 및 공개 병원 조회에는 포함하지 않는다.
+  let paymentSettings = null;
+  if (hospital.owner_id === user.id) {
+    const { data, error } = await admin.from('hospital_payment_settings').select('*').eq('hospital_id', hospital.id).maybeSingle();
+    if (error) return NextResponse.json({ error: '정산 설정을 불러오지 못했습니다.' }, { status: 500 });
+    paymentSettings = paymentSettingsFromRow(data);
+  }
+
   // Reviews + recent reservations
   await cancelExpiredPendingReservations(admin, { hospitalId: hospital.id });
   await completePastConfirmedReservations(admin, { hospitalId: hospital.id });
@@ -307,7 +317,7 @@ export async function GET() {
   const reservationsWithHistory = attachScheduleHistory(reservationRows, scheduleNotifications ?? []);
 
   return NextResponse.json({
-    hospital: { ...hospital, products },
+    hospital: { ...hospital, products, paymentSettings },
     reviews: reviewsRes.data ?? [],
     reservations: reservationsWithHistory,
   });
@@ -319,6 +329,24 @@ export async function PATCH(req: NextRequest) {
   // 1) 유저 인증 + 소유 병원 확인 — 심사 중(pending) 병원은 공개 권한으로 안 보이므로 서버 권한으로 찾는다
   const { hospital, error: ownedError } = await getOwnedHospital({ ownerOnly: true });
   if (ownedError) return ownedError;
+
+  if ('bookingMethods' in body && !isBookingMethods(body.bookingMethods)) {
+    return NextResponse.json({ error: '예약방식을 한 개 이상 선택해 주세요.' }, { status: 400 });
+  }
+
+  if ('paymentSettings' in body || 'bookingMethods' in body) {
+    const settings = parseHospitalPaymentSettings(body.paymentSettings);
+    if (!settings || !isBookingMethods(body.bookingMethods)
+      || body.bookingMethods.includes('앱결제') !== settings.appPaymentRequested) {
+      return NextResponse.json({ error: '앱결제 신청 여부와 정산 계좌정보를 확인해 주세요.' }, { status: 400 });
+    }
+    const admin = await createAdminClient();
+    const { error } = await admin.rpc('save_hospital_payment_settings', {
+      p_hospital_id: hospital.id, p_methods: body.bookingMethods, p_settings: settings,
+    });
+    if (error) return NextResponse.json({ error: '예약방식과 정산 계좌 저장에 실패했습니다.' }, { status: 400 });
+    return NextResponse.json({ ok: true });
+  }
 
   // 3) admin client로 업데이트 (RLS 우회 — 소유 확인은 위에서 완료)
   const patch: Record<string, any> = {};

@@ -7,6 +7,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { Star } from 'lucide-react';
 import { PocketIcon } from '@/components/icons/PocketIcon';
+import { getBookingMethods } from '@/lib/booking-methods';
 import { Product } from '@/types';
 import { resolveProductImageUrl } from '@/lib/images';
 import { toneAccent, useImageTone } from '@/lib/image-tone';
@@ -35,7 +36,7 @@ export default function ProductCard({ product, index = 0 }: { product: Product; 
   const sub = tone?.sub || '#6B7684';
   // 담은 가방 색 = 이 상품 사진 색(카드 바탕과 같은 색상을 진하게) — 색이 아직 없으면 회색
   const pocketColor = toneAccent(tone) || '#6B7684';
-  const chips = ['앱결제', ...(product.rating >= 4.8 ? ['인증병원'] : [])];
+  const chips = [...getBookingMethods(product.bookingMethods), ...(product.rating >= 4.8 ? ['인증병원'] : [])];
   const badge = product.likeCount >= 10 ? '프라임' : (product.discount ?? 0) >= 30 ? '특가' : null;
 
   return (
