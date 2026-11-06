@@ -64,7 +64,7 @@
 .partnerNav a > img { width: 26px; height: 26px; opacity: .72; }
 .partnerNav a:global(.is-active) > img { opacity: 1; }
 .partnerNav a > span:last-child { font-size: 11px; line-height: 14px; }
-.quickItem > span:first-child { width: 58px; height: 58px; border-radius: 18px; background: #fff; display: grid; place-items: center; position: relative; transition: transform .2s; }
+.quickItem > span:first-child { width: min(58px, 100%); height: 58px; border-radius: 18px; background: #fff; display: grid; place-items: center; position: relative; transition: transform .2s; }
 .quickItem:active > span:first-child { transform: scale(.94); }
 .quickItem img { width: 30px; height: 30px; }
 .quickItem small { position: absolute; top: -3px; right: -5px; background: #3182f6; border-radius: 20px; color: #fff; font-size: 10px; min-width: 17px; padding: 1px 4px; }
@@ -77,9 +77,6 @@
 .myRowLabel { font-size: 16px; font-weight: 600; flex-shrink: 0; }
 .myRowDesc { flex: 1; min-width: 0; text-align: right; font-size: 13px; color: #a4abba; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .myRowBadge { background: #e8f3ff; color: #3182f6; border-radius: 20px; font-size: 12px; font-weight: 600; padding: 2px 7px; }
-.mySummary { display: flex; gap: 20px; padding: 22px 0 4px; }
-.mySummary a { flex: 1; display: grid; gap: 5px; text-align: left; }
-.mySummary span { font-size: 13px; color: #8b95a1; }.mySummary strong { font-size: 20px; font-weight: 700; }
 .myLogin { display: grid; gap: 14px; margin-bottom: 28px; }.myLogin h1 { font-size: 20px; font-weight: 700; }
 .myLayout { display: block; }.myDetailPanel { display: none; }
 .myDetailPanelContent { height: 100%; overflow-y: auto; overscroll-behavior: contain; }
