@@ -166,6 +166,8 @@ interface AppState {
 
   // Posts
   posts: Post[];
+  communityFeed: { key: string | null; updatedAt: number; loading: boolean; error: string };
+  hydrateCommunity: (options?: { force?: boolean }) => Promise<void>;
   addPost: (post: Post) => Promise<{ error: string | null; id?: string }>;
   deletePost: (id: string) => void;
 
@@ -227,6 +229,13 @@ interface AppState {
 // A GET started before a mutation must not restore deleted or unread messages.
 let notificationsRevision = 0;
 let catalogInFlight: Promise<void> | null = null;
+let communityInFlight: { key: string; controller: AbortController; promise: Promise<void> } | null = null;
+
+export function communityViewerKey(state: Pick<AppState, 'user' | 'isDoctor' | 'isAdmin'>) {
+  return JSON.stringify([state.user?.id ?? null, state.isDoctor, state.isAdmin]);
+}
+
+const emptyCommunityFeed = { key: null, updatedAt: 0, loading: false, error: '' };
 
 export const useStore = create<AppState>((set, get) => ({
   catalogHydrated: false,
@@ -245,7 +254,7 @@ export const useStore = create<AppState>((set, get) => ({
             products: data.products ?? get().products,
             reviews: data.reviews ?? get().reviews,
             categories: (data.categories ?? get().categories).map(normalizeCategory),
-            posts: data.posts ?? get().posts,
+            posts: get().communityFeed.key === null ? data.posts ?? get().posts : get().posts,
             comments: data.comments ?? get().comments,
             announcements: data.announcements ?? get().announcements,
             catalogHydrated: true,
@@ -263,7 +272,7 @@ export const useStore = create<AppState>((set, get) => ({
           products: Array.isArray(data.products) ? data.products : get().products,
           reviews: Array.isArray(data.reviews) ? data.reviews : get().reviews,
           categories: (Array.isArray(data.categories) ? data.categories : get().categories).map(normalizeCategory),
-          posts: Array.isArray(data.posts) ? data.posts : get().posts,
+          posts: get().communityFeed.key === null && Array.isArray(data.posts) ? data.posts : get().posts,
           comments: Array.isArray(data.comments) ? data.comments : get().comments,
           announcements: Array.isArray(data.announcements) ? data.announcements : get().announcements,
           catalogHydrated: true,
@@ -355,7 +364,8 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   logout: () => {
-    set({ isLoggedIn: false, user: null, isDoctor: false, isAdmin: false });
+    communityInFlight?.controller.abort();
+    set({ isLoggedIn: false, user: null, isDoctor: false, isAdmin: false, posts: [], communityFeed: emptyCommunityFeed });
   },
   updateUser: (patch) => {
     set((state) => (state.user ? { user: { ...state.user, ...patch } } : {}));
@@ -493,6 +503,37 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   posts: mockPosts,
+  communityFeed: emptyCommunityFeed,
+  hydrateCommunity: async (options = {}) => {
+    const key = communityViewerKey(get());
+    if (communityInFlight?.key === key && !communityInFlight.controller.signal.aborted) return communityInFlight.promise;
+    const cached = get().communityFeed;
+    if (!options.force && cached.key === key && cached.updatedAt > 0 && Date.now() - cached.updatedAt < 30000) return;
+    communityInFlight?.controller.abort();
+    const controller = new AbortController();
+    set({
+      posts: cached.key === key ? get().posts : [],
+      communityFeed: { key, updatedAt: cached.key === key ? cached.updatedAt : 0, loading: true, error: '' },
+    });
+    const request = { key, controller, promise: Promise.resolve() };
+    communityInFlight = request;
+    const timer = setTimeout(() => controller.abort(), 10000);
+    const current = () => communityInFlight === request && communityViewerKey(get()) === key;
+    request.promise = (async () => {
+      try {
+        const response = await fetch('/api/posts?limit=100', { signal: controller.signal, cache: 'no-store' });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok || !Array.isArray(payload.posts)) throw new Error('게시글 응답을 확인하지 못했습니다.');
+        if (current() && !controller.signal.aborted) set({ posts: payload.posts as Post[], communityFeed: { key, updatedAt: Date.now(), loading: false, error: '' } });
+      } catch {
+        if (current()) set({ communityFeed: { ...get().communityFeed, loading: false, error: '게시글을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.' } });
+      } finally {
+        clearTimeout(timer);
+        if (communityInFlight === request) communityInFlight = null;
+      }
+    })();
+    return request.promise;
+  },
   addPost: async (post) => {
     set({ posts: [post, ...get().posts] });
     try {
