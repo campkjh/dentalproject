@@ -34,6 +34,7 @@ export default function ReviewDetailPage() {
   }
 
   const product = products.find((p) => p.id === review.productId);
+  const photoReview = { authorName: review.authorName, rating: review.rating, date: review.date, productTitle: product?.title || review.treatmentName, content: review.content };
   const hospital = hospitals.find((h) => h.id === review.hospitalId);
   const productImage = product ? resolveProductImageUrl(product.imageUrl, product.id) : undefined;
   const hospitalImage = hospital ? resolveHospitalImageUrl(hospital) : undefined;
@@ -125,8 +126,7 @@ export default function ReviewDetailPage() {
           <div className={`grid gap-2 ${imgs.before && imgs.after ? 'grid-cols-2' : 'grid-cols-1'}`}>
             {imgs.before && (
               <div className="relative aspect-square rounded-xl overflow-hidden bg-gray-100">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <ReviewPhotoViewer src={imgs.before} label="시술 전" className="h-full w-full" />
+                <ReviewPhotoViewer src={imgs.before} label="시술 전" className="h-full w-full" review={photoReview} />
                 <span
                   className="absolute top-2 left-2 px-2 py-0.5 text-[10px] font-bold rounded"
                   style={{ backgroundColor: 'rgba(0,0,0,0.6)', color: '#fff' }}
@@ -137,8 +137,7 @@ export default function ReviewDetailPage() {
             )}
             {imgs.after && (
               <div className="relative aspect-square rounded-xl overflow-hidden bg-gray-100">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <ReviewPhotoViewer src={imgs.after} label={imgs.before ? "시술 후" : "리뷰 사진"} className="h-full w-full" />
+                <ReviewPhotoViewer src={imgs.after} label={imgs.before ? "시술 후" : "리뷰 사진"} className="h-full w-full" review={photoReview} />
                 <span className="absolute top-2 left-2 px-2 py-0.5 text-[10px] font-bold rounded bg-[#8037FF] text-white">
                   {imgs.before ? 'AFTER' : '사진'}
                 </span>
