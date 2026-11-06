@@ -1,6 +1,7 @@
 'use client';
 
 import { loadTossPayments, ANONYMOUS } from '@tosspayments/tosspayments-sdk';
+import { setNativePaymentSafeArea } from '@/lib/payment-safe-area';
 
 /** 브라우저에 노출되는 공개값(클라이언트 키). 시크릿키는 서버(confirm 라우트)에서만 사용. */
 export const TOSS_CLIENT_KEY = process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY ?? '';
@@ -49,54 +50,59 @@ export async function requestTossPayment(params: {
   customerName?: string | null;
   customerMobilePhone?: string | null;
 }): Promise<void> {
-  const tossPayments = await loadTossPayments(TOSS_CLIENT_KEY);
-  const payment = tossPayments.payment({ customerKey: ANONYMOUS });
+  await setNativePaymentSafeArea(true);
+  try {
+    const tossPayments = await loadTossPayments(TOSS_CLIENT_KEY);
+    const payment = tossPayments.payment({ customerKey: ANONYMOUS });
 
-  const common = {
-    amount: { currency: 'KRW' as const, value: params.amount },
-    orderId: params.orderId,
-    orderName: params.orderName.slice(0, 100),
-    successUrl: params.successUrl,
-    failUrl: params.failUrl,
-    customerName: params.customerName || undefined,
-    customerMobilePhone: normalizeMobile(params.customerMobilePhone),
-  };
+    const common = {
+      amount: { currency: 'KRW' as const, value: params.amount },
+      orderId: params.orderId,
+      orderName: params.orderName.slice(0, 100),
+      successUrl: params.successUrl,
+      failUrl: params.failUrl,
+      customerName: params.customerName || undefined,
+      customerMobilePhone: normalizeMobile(params.customerMobilePhone),
+    };
 
-  if (params.method === 'TRANSFER') {
-    // 계좌이체: 결제창에서 은행 계좌로 즉시 이체. 승인(confirm) 시점에 결제가 완료된다.
+    if (params.method === 'TRANSFER') {
+      // 계좌이체: 결제창에서 은행 계좌로 즉시 이체. 승인(confirm) 시점에 결제가 완료된다.
+      await payment.requestPayment({
+        ...common,
+        method: 'TRANSFER',
+        transfer: {
+          cashReceipt: { type: '소득공제' },
+          useEscrow: false,
+        },
+      });
+      return;
+    }
+
+    if (params.method === 'VIRTUAL_ACCOUNT') {
+      // 무통장입금: 결제창에서 은행을 고르면 가상계좌가 발급되고, 입금은 웹훅으로 확인한다.
+      await payment.requestPayment({
+        ...common,
+        method: 'VIRTUAL_ACCOUNT',
+        virtualAccount: {
+          cashReceipt: { type: '소득공제' },
+          useEscrow: false,
+          validHours: VIRTUAL_ACCOUNT_VALID_HOURS,
+        },
+      });
+      return;
+    }
+
     await payment.requestPayment({
       ...common,
-      method: 'TRANSFER',
-      transfer: {
-        cashReceipt: { type: '소득공제' },
+      method: 'CARD',
+      card: {
         useEscrow: false,
+        flowMode: 'DEFAULT',
+        useCardPoint: false,
+        useAppCardOnly: false,
       },
     });
-    return;
+  } finally {
+    await setNativePaymentSafeArea(false);
   }
-
-  if (params.method === 'VIRTUAL_ACCOUNT') {
-    // 무통장입금: 결제창에서 은행을 고르면 가상계좌가 발급되고, 입금은 웹훅으로 확인한다.
-    await payment.requestPayment({
-      ...common,
-      method: 'VIRTUAL_ACCOUNT',
-      virtualAccount: {
-        cashReceipt: { type: '소득공제' },
-        useEscrow: false,
-        validHours: VIRTUAL_ACCOUNT_VALID_HOURS,
-      },
-    });
-    return;
-  }
-
-  await payment.requestPayment({
-    ...common,
-    method: 'CARD',
-    card: {
-      useEscrow: false,
-      flowMode: 'DEFAULT',
-      useCardPoint: false,
-      useAppCardOnly: false,
-    },
-  });
 }

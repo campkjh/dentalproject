@@ -452,7 +452,10 @@ export const useStore = create<AppState>((set, get) => ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status, cancelReason }),
       });
-      if (res.ok) return {};
+      if (res.ok) {
+        await get().hydrateMe();
+        return {};
+      }
       const data = await res.json().catch(() => ({}));
       set({ reservations: previous });
       return { error: data?.error ?? '예약 상태를 변경하지 못했어요.' };

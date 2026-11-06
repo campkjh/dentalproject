@@ -338,7 +338,7 @@ export default function ProductDetailPage() {
       <div>
         <div className="min-w-0">
           {/* ─── 사진 넘기기 — 왼쪽 정렬 + 옆 사진 살짝 보임 + 넘기면 작아짐 ─── */}
-          <div className="overflow-hidden pt-[74px] min-[1024px]:pt-6">
+          <div className="overflow-hidden pt-[calc(80px+env(safe-area-inset-top,0px))] min-[1024px]:pt-6">
             <div
               ref={galleryRef}
               onScroll={e => {
