@@ -163,7 +163,7 @@ interface AppState {
   reservations: Reservation[];
   /** 서버 반영에 실패하면 화면 상태를 되돌리고 { error }를 돌려준다(예: 결제 취소 실패). */
   updateReservationStatus: (id: string, status: Reservation['status'], cancelReason?: string) => Promise<{ error?: string }>;
-  addReservation: (reservation: Reservation, opts?: { visitAtIso?: string }) => Promise<{ error: string | null; id?: string; amount?: number; orderId?: string }>;
+  addReservation: (reservation: Reservation, opts?: { visitAtIso?: string }) => Promise<{ error: string | null; code?: string; id?: string; amount?: number; orderId?: string }>;
 
   // Posts
   posts: Post[];
@@ -499,7 +499,8 @@ export const useStore = create<AppState>((set, get) => ({
         const j = await res.json().catch(() => ({}));
         // rollback optimistic
         set({ reservations: get().reservations.filter((r) => r.id !== reservation.id) });
-        return { error: j.error || `예약 실패 (${res.status})` };
+        // code 는 서버가 준 이유(예: IDENTITY_REQUIRED) — 화면이 본인인증으로 보내는 데 쓴다
+        return { error: j.error || `예약 실패 (${res.status})`, code: typeof j.code === 'string' ? j.code : undefined };
       }
       const { id, amount, orderId, points } = await res.json();
       if (get().user?.id !== ownerId) return { error: '로그인 계정이 변경되었습니다. 예약 내역을 다시 확인해주세요.' };

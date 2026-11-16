@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse, type NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { identityRequiredResponse } from '@/lib/identity';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,6 +35,10 @@ export async function POST(req: NextRequest) {
     .maybeSingle();
 
   if (existing) return NextResponse.json({ id: existing.id });
+
+  // 새 상담방은 본인인증(만 19세 이상)을 마친 고객만 — 이미 있는 방을 여는 건 조회라 막지 않는다(메시지 전송은 따로 막는다)
+  const blocked = await identityRequiredResponse(user.id, '상담을 시작할');
+  if (blocked) return blocked;
 
   const { data: created, error } = await sb
     .from('consultation_rooms')
