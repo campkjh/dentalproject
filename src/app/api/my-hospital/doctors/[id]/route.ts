@@ -92,6 +92,15 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   if (body.action === 'accept') {
     if (!canManage) return NextResponse.json({ error: '병원장만 멤버 요청을 수락할 수 있습니다.' }, { status: 403 });
+    // 자기 자신은 수락할 수 없다 — 원장 본인의 의사 권한은 관리자가 병원을 승인할 때만 켜진다(admin/hospitals/[id])
+    if (doc.user_id === user.id) {
+      return NextResponse.json({ error: '본인 계정은 직접 수락할 수 없습니다.' }, { status: 403 });
+    }
+    // 입점 심사가 끝나지 않은 병원은 의사 권한을 줄 수 없다(의사 권한은 본인인증 면제·의사 전용 기능과 연결됨)
+    const { data: hospitalRow } = await admin.from('hospitals').select('status').eq('id', hospitalId).maybeSingle();
+    if (hospitalRow?.status !== 'approved') {
+      return NextResponse.json({ error: '입점 승인이 완료된 뒤에 의사를 수락할 수 있습니다.' }, { status: 403 });
+    }
     const error = await updateDoctorMembership(
       admin,
       id,

@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { communityPostFromRow, selectedCustomerTags, TIP_TAG, type CommunityPostRow } from '@/lib/community';
 import { canSeeSecretPost, getCommunityViewer, isMissingSecretColumn } from '@/lib/community-viewer';
 import { autoTags } from '@/lib/community-auto-tag';
+import { identityRequiredResponse } from '@/lib/identity';
 
 export const dynamic = 'force-dynamic';
 
@@ -58,6 +59,8 @@ export async function POST(req: NextRequest) {
     data: { user },
   } = await sb.auth.getUser();
   if (!user) return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 });
+  const blocked = await identityRequiredResponse(user.id, '글을 쓸');
+  if (blocked) return blocked;
   const requestedBoard = body.boardType ?? 'free';
   if (!['question', 'free', 'dental'].includes(requestedBoard)) {
     return NextResponse.json({ error: '게시판 유형이 올바르지 않습니다.' }, { status: 400 });

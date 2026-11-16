@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { writeNotifications } from '@/lib/push/delivery';
+import { identityRequiredResponse } from '@/lib/identity';
 
 export const dynamic = 'force-dynamic';
 
@@ -42,6 +43,11 @@ export async function POST(
   if (room.user_id !== user.id && hospital?.owner_id !== user.id) return NextResponse.json({ error: '채팅방에 접근할 수 없습니다.' }, { status: 403 });
 
   const senderType = room.user_id === user.id ? 'user' : 'hospital';
+  // 고객 메시지만 본인인증(만 19세 이상)을 확인한다 — 병원 쪽 답장은 그대로 보낸다
+  if (senderType === 'user') {
+    const blocked = await identityRequiredResponse(user.id, '메시지를 보낼');
+    if (blocked) return blocked;
+  }
 
   const { data, error } = await sb
     .from('consultation_messages')

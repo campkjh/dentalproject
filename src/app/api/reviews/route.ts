@@ -3,6 +3,7 @@ import { writeNotifications } from '@/lib/push/delivery';
 import { NextResponse, type NextRequest } from 'next/server';
 import { createAdminClient, createClient } from '@/lib/supabase/server';
 import { reviewInput } from '@/lib/review-input';
+import { identityRequiredResponse } from '@/lib/identity';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,6 +23,8 @@ export async function POST(req: NextRequest) {
     data: { user },
   } = await sb.auth.getUser();
   if (!user) return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 });
+  const blocked = await identityRequiredResponse(user.id, '후기를 쓸');
+  if (blocked) return blocked;
 
   const hospitalId = await resolveHospitalId(sb, body.hospitalId ?? null);
   const productId = body.productId && /^[0-9a-f]{8}-/.test(body.productId) ? body.productId : null;

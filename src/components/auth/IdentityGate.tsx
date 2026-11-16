@@ -16,13 +16,13 @@ export default function IdentityGate() {
   const pathname = usePathname() ?? '/';
   const router = useRouter();
   const isLoggedIn = useStore((s) => s.isLoggedIn);
-  const isDoctor = useStore((s) => s.isDoctor);
   const isAdmin = useStore((s) => s.isAdmin);
   const verifiedRef = useRef<string | null>(null); // 이미 확인된 사용자는 다시 묻지 않는다
 
   useEffect(() => {
     if (!isLoggedIn) { verifiedRef.current = null; return; }
-    if (isDoctor || isAdmin) return;
+    // 의사·병원 운영자 면제는 서버(/api/identity/status)가 판단한다 — 심사 중인 병원 계정은 면제되지 않는다
+    if (isAdmin) return;
     if (OPEN_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`))) return;
     if (verifiedRef.current === 'ok') return;
 
@@ -37,7 +37,7 @@ export default function IdentityGate() {
       })
       .catch(() => undefined);
     return () => { cancelled = true; };
-  }, [isLoggedIn, isDoctor, isAdmin, pathname, router]);
+  }, [isLoggedIn, isAdmin, pathname, router]);
 
   return null;
 }

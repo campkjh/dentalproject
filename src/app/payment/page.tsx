@@ -218,6 +218,11 @@ function PaymentPage() {
     if (result?.error) {
       setSubmitting(false);
       showToast(result.error);
+      // 본인인증(만 19세 이상)이 안 된 계정 — 인증을 마치면 이 결제 화면으로 다시 돌아온다
+      if (result.code === 'IDENTITY_REQUIRED') {
+        const next = `${window.location.pathname}${window.location.search}`;
+        router.push(`/verify-identity?next=${encodeURIComponent(next)}`);
+      }
       return;
     }
 

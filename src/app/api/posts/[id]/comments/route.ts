@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { communityCommentNotifications } from '@/lib/community-comment-notification';
 import { isDoctorOnlyBoard } from '@/lib/community';
 import { canSeeSecretPost, getCommunityViewer, isMissingSecretColumn, viewerCanSeeDoctorBoards } from '@/lib/community-viewer';
+import { identityRequiredResponse } from '@/lib/identity';
 
 export const dynamic = 'force-dynamic';
 type Context = { params: Promise<{ id: string }> };
@@ -65,6 +66,8 @@ export async function POST(request: Request, { params }: Context) {
     const sb = await createClient();
     const { data: { user } } = await sb.auth.getUser();
     if (!user) return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 });
+    const blocked = await identityRequiredResponse(user.id, '댓글을 쓸');
+    if (blocked) return blocked;
     const body = await request.json();
     const content = typeof body.content === 'string' ? body.content.trim() : '';
     if (!content || content.length > 5000) return NextResponse.json({ error: '댓글은 1~5,000자로 입력해주세요.' }, { status: 400 });
